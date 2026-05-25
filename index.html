@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>IdealFinway - Performance System</title>
+<style>
+:root{--bg:#0d1117;--card:#161b22;--card2:#1c2128;--border:#30363d;--text:#c9d1d9;--muted:#8b949e;--accent:#3fbf7f;--danger:#ef4444;--blue:#3b82f6;--amber:#f59e0b;--purple:#8b5cf6;--pink:#ec4899;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+input,select,textarea,button{font-family:inherit;}
+#loginWrap{display:flex;align-items:center;justify-content:center;min-height:100vh;}
+.login-box{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:40px;width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.5);}
+.login-logo{text-align:center;margin-bottom:24px;}
+.login-logo h1{font-size:26px;font-weight:800;color:var(--accent);}
+.login-logo p{font-size:12px;color:var(--muted);margin-top:4px;letter-spacing:2px;text-transform:uppercase;}
+.form-group{margin-bottom:16px;}
+.form-group label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;}
+.form-group input,.form-group select,.form-group textarea{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:14px;outline:none;transition:border-color 0.2s;}
+.form-group input:focus,.form-group select:focus{border-color:var(--accent);}
+.form-group select option{background:var(--card);}
+.btn-primary{width:100%;background:var(--accent);color:#000;border:none;border-radius:8px;padding:12px;font-size:15px;font-weight:700;cursor:pointer;}
+.login-err{color:var(--danger);font-size:13px;margin-top:10px;text-align:center;display:none;}
+#appWrap{display:none;min-height:100vh;}
+#sidebar{position:fixed;left:0;top:0;width:200px;height:100vh;background:var(--card);border-right:1px solid var(--border);overflow-y:auto;z-index:100;display:flex;flex-direction:column;}
+.sidebar-logo{padding:20px 16px 12px;border-bottom:1px solid var(--border);}
+.sidebar-logo span{font-size:18px;font-weight:800;color:var(--accent);}
+.sidebar-logo small{display:block;font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
+.sidebar-user{padding:12px 16px;border-bottom:1px solid var(--border);}
+.sidebar-user .uname{font-size:13px;font-weight:700;}
+.sidebar-user .urole{font-size:11px;color:var(--accent);font-weight:600;}
+.sidebar-user .ubranch{font-size:11px;color:var(--muted);}
+.nav-section{padding:8px 12px 2px;font-size:10px;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase;}
+.nav-item{padding:9px 16px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:8px;transition:background 0.15s;border-radius:6px;margin:1px 6px;color:var(--muted);}
+.nav-item:hover{background:var(--card2);color:var(--text);}
+.nav-item.active{background:rgba(63,191,127,0.15);color:var(--accent);font-weight:600;}
+.sidebar-bottom{margin-top:auto;padding:12px;border-top:1px solid var(--border);}
+.btn-logout{width:100%;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:8px;font-size:12px;cursor:pointer;}
+.btn-logout:hover{border-color:var(--danger);color:var(--danger);}
+#main{margin-left:200px;padding:24px;min-height:100vh;}
+.page{display:none;}
+.page.active{display:block;}
+.page-header{margin-bottom:20px;}
+.page-header h1{font-size:22px;font-weight:700;}
+.page-header p{color:var(--muted);font-size:13px;margin-top:3px;}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;margin-bottom:20px;}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;}
+.stat-card.green{border-left:3px solid var(--accent);}
+.stat-card.blue{border-left:3px solid var(--blue);}
+.stat-card.amber{border-left:3px solid var(--amber);}
+.stat-card.purple{border-left:3px solid var(--purple);}
+.stat-card.pink{border-left:3px solid var(--pink);}
+.stat-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;}
+.stat-value{font-size:22px;font-weight:800;margin:4px 0 2px;}
+.stat-sub{font-size:11px;color:var(--muted);}
+.filter-bar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center;}
+.filter-btn{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:6px 14px;font-size:12px;cursor:pointer;font-weight:500;}
+.filter-btn:hover,.filter-btn.active{background:var(--accent);border-color:var(--accent);color:#000;font-weight:600;}
+.table-wrap{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.table-inner{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead th{background:var(--card2);padding:10px 14px;text-align:left;font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;}
+tbody tr{border-top:1px solid var(--border);}
+tbody tr:hover{background:rgba(255,255,255,0.03);}
+tbody td{padding:10px 14px;vertical-align:middle;}
+.no-data{padding:40px;text-align:center;color:var(--muted);font-size:14px;}
+.dup-row{background:rgba(239,68,68,0.1)!important;border-left:3px solid var(--danger)!important;}
+.dup-row:hover{background:rgba(239,68,68,0.15)!important;}
+.dup-badge{color:var(--danger);font-weight:700;margin-right:3px;}
+.stat-card.red{border-left:3px solid var(--danger);}
+.money{color:var(--accent);font-weight:700;}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;}
+.badge.green{background:rgba(63,191,127,0.15);color:var(--accent);}
+.badge.red{background:rgba(239,68,68,0.15);color:var(--danger);}
+.badge.blue{background:rgba(59,130,246,0.15);color:var(--blue);}
+.badge.amber{background:rgba(245,158,11,0.15);color:var(--amber);}
+.badge.purple{background:rgba(139,92,246,0.15);color:var(--purple);}
+.badge.sip{background:rgba(63,191,127,0.15);color:var(--accent);}
+.badge.lump{background:rgba(245,158,11,0.15);color:var(--amber);}
+.btn-edit{background:rgba(59,130,246,0.15);color:var(--blue);border:1px solid rgba(59,130,246,0.3);border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer;margin-right:4px;font-weight:600;}
+.btn-del{background:rgba(239,68,68,0.15);color:var(--danger);border:1px solid rgba(239,68,68,0.3);border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer;font-weight:600;}
+.form-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;max-width:520px;}
+.form-card .form-group textarea{min-height:70px;resize:vertical;}
+.btn-submit{background:var(--accent);color:#000;border:none;border-radius:8px;padding:11px 28px;font-size:14px;font-weight:700;cursor:pointer;}
+.btn-submit:disabled{opacity:0.5;cursor:not-allowed;}
+#modal{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:999;display:none;align-items:center;justify-content:center;}
+#modal.show{display:flex;}
+.modal-box{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:28px;width:440px;max-width:95vw;max-height:90vh;overflow-y:auto;}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:20px;}
+.modal-actions{display:flex;gap:10px;margin-top:20px;}
+.btn-cancel{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:9px 20px;font-size:13px;cursor:pointer;}
+.btn-save{background:var(--accent);color:#000;border:none;border-radius:7px;padding:9px 20px;font-size:13px;font-weight:700;cursor:pointer;}
+.btn-danger{background:var(--danger);color:#fff;border:none;border-radius:7px;padding:9px 20px;font-size:13px;font-weight:700;cursor:pointer;}
+#toast{position:fixed;bottom:24px;right:24px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 20px;font-size:13px;z-index:9999;display:none;box-shadow:0 8px 30px rgba(0,0,0,0.4);}
+#toast.show{display:block;}
+#toast.success{border-left:3px solid var(--accent);color:var(--accent);}
+#toast.error{border-left:3px solid var(--danger);color:var(--danger);}
+.emp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:20px;}
+.emp-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;}
+.emp-name{font-size:15px;font-weight:700;margin-bottom:4px;}
+.emp-meta{font-size:12px;color:var(--muted);}
+.emp-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;}
+.emp-stat{background:var(--card2);border-radius:7px;padding:8px 10px;text-align:center;}
+.emp-stat-val{font-size:16px;font-weight:700;color:var(--accent);}
+.emp-stat-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;}
+</style>
+</head>
+<body>
+
+<div id="loginWrap">
+  <div class="login-box">
+    <div class="login-logo"><h1>IdealFinway</h1><p>Performance System</p></div>
+    <div class="form-group"><label>Employee / Admin ID</label><input type="text" id="loginId" placeholder="Enter your ID" autocomplete="off"></div>
+    <div class="form-group"><label>Password</label><input type="password" id="loginPass" placeholder="Enter password"></div>
+    <button class="btn-primary" onclick="login()">Login</button>
+    <div class="login-err" id="loginErr">Invalid ID or Password</div>
+  </div>
+</div>
+
+<div id="appWrap">
+  <nav id="sidebar">
+    <div class="sidebar-logo"><span>IdealFinway</span><small>Performance System</small></div>
+    <div class="sidebar-user">
+      <div class="uname" id="sidebarName">-</div>
+      <div class="urole" id="sidebarRole">-</div>
+      <div class="ubranch" id="sidebarBranch">-</div>
+    </div>
+    <div id="adminNav" style="display:none">
+      <div class="nav-section">Admin</div>
+      <div class="nav-item" onclick="showPage('adminDash')">&#9632; Dashboard</div>
+      <div class="nav-item" onclick="showPage('adminEmps')">&#128101; Employees</div>
+      <div class="nav-section">Reports</div>
+      <div class="nav-item" onclick="showPage('adminBrok')">&#36; Brokerage</div>
+      <div class="nav-item" onclick="showPage('adminSIP')">&#128200; Mutual Fund SIP</div>
+      <div class="nav-item" onclick="showPage('adminIns')">&#128737; Insurance</div>
+      <div class="nav-item" onclick="showPage('adminAcc')">&#128100; Account Opening</div>
+      <div class="nav-item" onclick="showPage('adminLeads')">&#128203; All Leads</div>
+      <div class="nav-section">Manage</div>
+      <div class="nav-item" onclick="showPage('manageEmps')">&#9998; Manage Employees</div>
+      <div class="nav-item" onclick="showPage('addBrok')">&#43; Add Brokerage</div>
+    </div>
+    <div id="empNav" style="display:none">
+      <div class="nav-section">My Work</div>
+      <div class="nav-item" onclick="showPage('empDash')">&#9632; Dashboard</div>
+      <div class="nav-section">Add Entry</div>
+      <div class="nav-item" onclick="showPage('addSIP')">&#43; Add Mutual Fund</div>
+      <div class="nav-item" onclick="showPage('addIns')">&#43; Add Insurance</div>
+      <div class="nav-item" onclick="showPage('addAcc')">&#43; Add Account</div>
+      <div class="nav-item" onclick="showPage('addLead')">&#43; Add Lead</div>
+      <div class="nav-section">My Records</div>
+      <div class="nav-item" onclick="showPage('myBrok')">&#36; My Brokerage</div>
+      <div class="nav-item" onclick="showPage('mySIP')">My SIP/MF</div>
+      <div class="nav-item" onclick="showPage('myIns')">My Insurance</div>
+      <div class="nav-item" onclick="showPage('myAcc')">My Accounts</div>
+      <div class="nav-item" onclick="showPage('myLeads')">My Leads</div>
+    </div>
+    <div class="sidebar-bottom"><button class="btn-logout" onclick="logout()">&#8592; Logout</button></div>
+  </nav>
+
+  <main id="main">
+    <div class="page" id="page-adminDash">
+      <div class="page-header"><h1>Admin Dashboard</h1><p>Overall performance overview</p></div>
+      <div class="filter-bar">
+        <button class="filter-btn active" onclick="setDashF('today',this)">Today</button>
+        <button class="filter-btn" onclick="setDashF('week',this)">This Week</button>
+        <button class="filter-btn" onclick="setDashF('month',this)">This Month</button>
+        <button class="filter-btn" onclick="setDashF('quarter',this)">Quarter</button>
+        <button class="filter-btn" onclick="setDashF('year',this)">This Year</button>
+        <button class="filter-btn" onclick="setDashF('all',this)">All Time</button>
+      </div>
+      <div class="stats-grid" id="adminStats"></div>
+      <div id="adminEmpCards"></div>
+    </div>
+
+    <div class="page" id="page-adminEmps">
+      <div class="page-header"><h1>Employee Performance</h1><p>All employees overview</p></div>
+      <div class="filter-bar">
+        <button class="filter-btn active" onclick="setF('today',this,'empPerf')">Today</button>
+        <button class="filter-btn" onclick="setF('week',this,'empPerf')">This Week</button>
+        <button class="filter-btn" onclick="setF('month',this,'empPerf')">This Month</button>
+        <button class="filter-btn" onclick="setF('quarter',this,'empPerf')">Quarter</button>
+        <button class="filter-btn" onclick="setF('year',this,'empPerf')">This Year</button>
+        <button class="filter-btn" onclick="setF('all',this,'empPerf')">All Time</button>
+      </div>
+      <div id="empPerfCards"></div>
+    </div>
+
+    <div class="page" id="page-adminBrok">
+      <div class="page-header"><h1>Brokerage Records</h1><p>All brokerage entries</p></div>
+      <div class="filter-bar">
+        <button class="filter-btn active" onclick="setF('today',this,'brok')">Today</button>
+        <button class="filter-btn" onclick="setF('week',this,'brok')">This Week</button>
+        <button class="filter-btn" onclick="setF('month',this,'brok')">This Month</button>
+        <button class="filter-btn" onclick="setF('quarter',this,'brok')">Quarter</button>
+        <button class="filter-btn" onclick="setF('year',this,'brok')">This Year</button>
+        <button class="filter-btn" onclick="setF('all',this,'brok')">All Time</button>
+      </div>
+      <div class="stats-grid" id="brokStats"></div>
+      <div class="table-wrap"><div class="table-inner" id="brokTable"></div></div>
+    </div>
+
+    <div class="page" id="page-adminSIP">
+      <div class="page-header"><h1>Mutual Fund / SIP Records</h1><p>All SIP and Lumpsum entries</p></div>
+      <div class="filter-bar">
+        <button class="filter-btn active" onclick="setF('today',this,'sip')">Today</button>
+        <button class="filter-btn" onclick="setF('week',this,'sip')">This Week</button>
+        <button class="filter-btn" onclick="setF('month',this,'sip')">This Month</button>
+        <button class="filter-btn" onclick="setF('quarter',this,'sip')">Quarter</button>
+        <button class="filter-btn" onclick="setF('year',this,'sip')">This Year</button>
+        <button class="filter-btn" onclick="setF('all',this,'sip')">All Time</button>
+      </div>
+      <div class="stats-grid" id="sipStats"></div>
+      <div class="table-wrap"><div class="table-inner" id="sipTable"></div></div>
+    </div>
+
+    <div class="page" id="page-adminIns">
+      <div class="page-header"><h1>Insurance Records</h1><p>All insurance entries</p></div>
+      <div class="filter-bar">
+        <button class="filter-btn active" onclick="setF('today',this,'ins')">Today</button>
+        <button class="filter-btn" onclick="setF('week',this,'ins')">This Week</button>
+        <button class="filter-btn" onclick="setF('month',this,'ins')">This Month</button>
+        <button class="filter-btn" onclick="setF('quarter',this,'ins')">Quarter</button>
+        <button class="filter-btn" onclick="setF('year',this,'ins')">This Year</button>
+        <button class="filter-btn" onclick="setF('all',this,'ins')">All Time</button>
+      </div>
+      <div class="stats-grid" id="insStats"></div>
+      <div class="table-wrap"><div class="table-inner" id="insTable"></div></div>
+    </div>
+
+    <div class="page" id="page-adminAcc">
+      <div class="page-header"><h1>Account Opening Records</h1><p>All demat account openings</p></div>
+      <div class="filter-bar">
+        <button class="filter-btn active" onclick="setF('today',this,'acc')">Today</button>
+        <button class="filter-btn" onclick="setF('week',this,'acc')">This Week</button>
+        <button class="filter-btn" onclick="setF('month',this,'acc')">This Month</button>
+        <button class="filter-btn" onclick="setF('quarter',this,'acc')">Quarter</button>
+        <button class="filter-btn" onclick="setF('year',this,'acc')">This Year</button>
+        <button class="filter-btn" onclick="setF('all',this,'acc')">All Time</button>
+        <span style="margin-left:12px;color:var(--muted);font-size:12px;">Status:</span>
+        <button class="filter-btn active" onclick="setAccStat('all',this)">All</button>
+        <button class="filter-btn" onclick="setAccStat('active',this)">Active</button>
+        <button class="filter-btn" onclick="setAccStat('inactive',this)">Inactive</button>
+      </div>
+      <div class="stats-grid" id="accStats"></div>
+      <div class="table-wrap"><div class="table-inner" id="accTable"></div></div>
+    </div>
+
+    <div class="page" id="page-adminLeads">
+      <div class="page-header"><h1>All Leads</h1><p>Client leads from all employees</p></div>
+      <div class="filter-bar">
+        <button class="filter-btn active" onclick="setF('today',this,'aleads')">Today</button>
+        <button class="filter-btn" onclick="setF('week',this,'aleads')">This Week</button>
+        <button class="filter-btn" onclick="setF('month',this,'aleads')">This Month</button>
+        <button class="filter-btn" onclick="setF('quarter',this,'aleads')">Quarter</button>
+        <button class="filter-btn" onclick="setF('year',this,'aleads')">This Year</button>
+        <button class="filter-btn" onclick="setF('all',this,'aleads')">All Time</button>
+      </div>
+      <div class="stats-grid" id="aleadsStats"></div>
+      <div class="table-wrap"><div class="table-inner" id="aleadsTable"></div></div>
+    </div>
+
+    <div class="page" id="page-manageEmps">
+      <div class="page-header"><h1>Manage Employees</h1><p>Add, edit or deactivate employees</p></div>
+      <div style="margin-bottom:16px;"><button class="btn-submit" onclick="showAddEmpModal()">+ Add Employee</button></div>
+      <div class="table-wrap"><div class="table-inner" id="manageEmpTable"></div></div>
+    </div>
+
+    <div class="page" id="page-addBrok">
+      <div class="page-header"><h1>Add Brokerage</h1><p>Enter brokerage details</p></div>
+      <div class="form-card">
+        <div class="form-group"><label>Date</label><input type="date" id="b_date"></div>
+        <div class="form-group"><label>Employee</label><select id="b_emp"><option value="">Select Employee</option></select></div>
+        <div class="form-group"><label>Amount (&#8377;)</label><input type="number" id="b_amount" placeholder="Enter amount"></div>
+        <button class="btn-submit" onclick="submitBrokerage()">Add Brokerage</button>
+      </div>
+    </div>
+
+    <div class="page" id="page-empDash">
+      <div class="page-header"><h1>My Dashboard</h1><p>Your performance overview</p></div>
+      <div class="filter-bar">
+        <button class="filter-btn active" onclick="setF('today',this,'empDash')">Today</button>
+        <button class="filter-btn" onclick="setF('week',this,'empDash')">This Week</button>
+        <button class="filter-btn" onclick="setF('month',this,'empDash')">This Month</button>
+        <button class="filter-btn" onclick="setF('quarter',this,'empDash')">Quarter</button>
+        <button class="filter-btn" onclick="setF('year',this,'empDash')">This Year</button>
+        <button class="filter-btn" onclick="setF('all',this,'empDash')">All Time</button>
+      </div>
+      <div class="stats-grid" id="empDashStats"></div>
+    </div>
+
+    <div class="page" id="page-addSIP">
+      <div class="page-header"><h1>Add Mutual Fund</h1><p>Enter SIP or Lumpsum details</p></div>
+      <div class="form-card">
+        <div class="form-group"><label>Date</label><input type="date" id="s_date"></div>
+        <div class="form-group"><label>Investment Type</label>
+          <select id="s_type" onchange="updateSIPLabel()">
+            <option value="SIP">SIP (Monthly)</option>
+            <option value="Lumpsum">Lumpsum (One-time)</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Client Name</label><input type="text" id="s_cname" placeholder="Enter client name"></div>
+        <div class="form-group"><label>Client ID / Folio No</label><input type="text" id="s_cid" placeholder="e.g. FBO1234"></div>
+        <div class="form-group"><label>Client Phone</label><input type="tel" id="s_cphone" placeholder="10-digit mobile"></div>
+        <div class="form-group"><label id="s_amt_label">SIP Amount (&#8377;/month)</label><input type="number" id="s_amount" placeholder="Enter amount"></div>
+        <button class="btn-submit" onclick="submitSIP()">Add Entry</button>
+      </div>
+    </div>
+
+    <div class="page" id="page-addIns">
+      <div class="page-header"><h1>Add Insurance</h1><p>Enter insurance details</p></div>
+      <div class="form-card">
+        <div class="form-group"><label>Date</label><input type="date" id="i_date"></div>
+        <div class="form-group"><label>Insurance Type</label>
+          <select id="i_type">
+            <option value="Health - ICICI Lombard">Health - ICICI Lombard</option>
+            <option value="Life - Tata">Life - Tata</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Client Name</label><input type="text" id="i_cname" placeholder="Enter client name"></div>
+        <div class="form-group"><label>Client ID / Policy No</label><input type="text" id="i_cid" placeholder="Policy number"></div>
+        <div class="form-group"><label>Client Phone</label><input type="tel" id="i_cphone" placeholder="10-digit mobile"></div>
+        <div class="form-group"><label>Annual Premium (&#8377;)</label><input type="number" id="i_premium" placeholder="Enter premium"></div>
+        <button class="btn-submit" onclick="submitInsurance()">Add Insurance</button>
+      </div>
+    </div>
+
+    <div class="page" id="page-addAcc">
+      <div class="page-header"><h1>Add Account Opening</h1><p>Enter demat account details</p></div>
+      <div class="form-card">
+        <div class="form-group"><label>Date</label><input type="date" id="a_date"></div>
+        <div class="form-group"><label>Client Name</label><input type="text" id="a_cname" placeholder="Enter client name"></div>
+        <div class="form-group"><label>Client ID / Demat No</label><input type="text" id="a_cid" placeholder="e.g. FBO1234"></div>
+        <div class="form-group"><label>Client Phone</label><input type="tel" id="a_cphone" placeholder="10-digit mobile"></div>
+        <div class="form-group"><label>Account Status</label>
+          <select id="a_status"><option value="Active">Active</option><option value="Inactive">Inactive</option></select>
+        </div>
+        <button class="btn-submit" onclick="submitAccount()">Add Account</button>
+      </div>
+    </div>
+
+    <div class="page" id="page-addLead">
+      <div class="page-header"><h1>Add Lead</h1><p>Track client leads and follow-ups</p></div>
+      <div class="form-card">
+        <div class="form-group"><label>Date</label><input type="date" id="l_date"></div>
+        <div class="form-group"><label>Client Name</label><input type="text" id="l_cname" placeholder="Enter client name"></div>
+        <div class="form-group"><label>Client Phone</label><input type="tel" id="l_cphone" placeholder="10-digit mobile"></div>
+        <div class="form-group"><label>Lead Category</label>
+          <select id="l_cat">
+            <option value="SIP/MF">SIP / Mutual Fund</option>
+            <option value="Insurance">Insurance</option>
+            <option value="Account">Account Opening</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Contact Method</label>
+          <select id="l_contact"><option value="Call">Call</option><option value="WhatsApp">WhatsApp</option><option value="Meeting">Meeting</option></select>
+        </div>
+        <div class="form-group"><label>Meeting Done?</label>
+          <select id="l_met"><option value="No">No</option><option value="Yes">Yes</option></select>
+        </div>
+        <div class="form-group"><label>Follow-up Date</label><input type="date" id="l_followup"></div>
+        <div class="form-group"><label>Remarks</label><textarea id="l_remarks" placeholder="Any notes..."></textarea></div>
+        <button class="btn-submit" onclick="submitLead()">Add Lead</button>
+      </div>
+    </div>
+
+    <div class="page" id="page-myBrok">
+      <div class="page-header"><h1>My Brokerage</h1><p>Your brokerage earnings (view only)</p></div>
+      <div class="filter-bar">
+        <button class="filter-btn active" onclick="setF('today',this,'myBrok')">Today</button>
+        <button class="filter-btn" onclick="setF('week',this,'myBrok')">This Week</button>
+        <button class="filter-btn" onclick="setF('month',this,'myBrok')">This Month</button>
+        <button class="filter-btn" onclick="setF('quarter',this,'myBrok')">Quarter</button>
+        <button class="filter-btn" onclick="setF('year',this,'myBrok')">This Year</button>
+        <button class="filter-btn" onclick="setF('all',this,'myBrok')">All Time</button>
+      </div>
+      <div class="stats-grid" id="myBrokStats"></div>
+      <div class="table-wrap"><div class="table-inner" id="myBrokTable"></div></div>
+    </div>
+
+    <div class="page" id="page-mySIP">
+      <div class="page-header"><h1>My SIP / Mutual Fund</h1><p>Your SIP and Lumpsum records</p></div>
+      <div class="filter-bar">
+        <button class="filter-btn active" onclick="setF('today',this,'mySIP')">Today</button>
+        <button class="filter-btn" onclick="setF('week',this,'mySIP')">This Week</button>
+        <button class="filter-btn" onclick="setF('month',this,'mySIP')">This Month</button>
+        <button class="filter-btn" onclick="setF('quarter',this,'mySIP')">Quarter</button>
+        <button class="filter-btn" onclick="setF('year',this,'mySIP')">This Year</button>
+        <button class="filter-btn" onclick="setF('all',this,'mySIP')">All Time</button>
+      </div>
+      <div class="stats-grid" id="mySIPStats"></div>
+      <div class="table-wrap"><div class="table-inner" id="mySIPTable"></div></div>
+    </div>
+
+    <div class="page" id="page-myIns">
+      <div class="page-header"><h1>My Insurance</h1><p>Your insurance records</p></div>
+      <div class="filter-bar">
+        <button class="filter-btn active" onclick="setF('today',this,'myIns')">Today</button>
+        <button class="filter-btn" onclick="setF('week',this,'myIns')">This Week</button>
+        <button class="filter-btn" onclick="setF('month',this,'myIns')">This Month</button>
+        <button class="filter-btn" onclick="setF('quarter',this,'myIns')">Quarter</button>
+        <button class="filter-btn" onclick="setF('year',this,'myIns')">This Year</button>
+        <button class="filter-btn" onclick="setF('all',this,'myIns')">All Time</button>
+      </div>
+      <div class="stats-grid" id="myInsStats"></div>
+      <div class="table-wrap"><div class="table-inner" id="myInsTable"></div></div>
+    </div>
+
+    <div class="page" id="page-myAcc">
+      <div class="page-header"><h1>My Account Openings</h1><p>Your account records</p></div>
+      <div class="filter-bar">
+        <button class="filter-btn active" onclick="setF('today',this,'myAcc')">Today</button>
+        <button class="filter-btn" onclick="setF('week',this,'myAcc')">This Week</button>
+        <button class="filter-btn" onclick="setF('month',this,'myAcc')">This Month</button>
+        <button class="filter-btn" onclick="setF('quarter',this,'myAcc')">Quarter</button>
+        <button class="filter-btn" onclick="setF('year',this,'myAcc')">This Year</button>
+        <button class="filter-btn" onclick="setF('all',this,'myAcc')">All Time</button>
+        <span style="margin-left:12px;color:var(--muted);font-size:12px;">Status:</span>
+        <button class="filter-btn active" onclick="setMyAccStat('all',this)">All</button>
+        <button class="filter-btn" onclick="setMyAccStat('active',this)">Active</button>
+        <button class="filter-btn" onclick="setMyAccStat('inactive',this)">Inactive</button>
+      </div>
+      <div class="stats-grid" id="myAccStats"></div>
+      <div class="table-wrap"><div class="table-inner" id="myAccTable"></div></div>
+    </div>
+
+    <div class="page" id="page-myLeads">
+      <div class="page-header"><h1>My Leads</h1><p>Your client leads and follow-ups</p></div>
+      <div class="filter-bar">
+        <button class="filter-btn active" onclick="setF('today',this,'myLeads')">Today</button>
+        <button class="filter-btn" onclick="setF('week',this,'myLeads')">This Week</button>
+        <button class="filter-btn" onclick="setF('month',this,'myLeads')">This Month</button>
+        <button class="filter-btn" onclick="setF('quarter',this,'myLeads')">Quarter</button>
+        <button class="filter-btn" onclick="setF('year',this,'myLeads')">This Year</button>
+        <button class="filter-btn" onclick="setF('all',this,'myLeads')">All Time</button>
+      </div>
+      <div class="stats-grid" id="myLeadsStats"></div>
+      <div class="table-wrap"><div class="table-inner" id="myLeadsTable"></div></div>
+    </div>
+  </main>
+</div>
+
+<div id="modal"><div class="modal-box" id="modalBox"></div></div>
+<div id="toast"></div>
+
+<script>
+var API='https://script.google.com/macros/s/AKfycbwzCV6-slD3xxZGDrGCa80GAOfEX-JTpcjqAinWXHBuHTvb4sFTFkSSAK6RY6-UHFI/exec';
+var ADMIN_ID='directorravikant.idealfinway';
+var ADMIN_PASS='drrk@1401';
+var currentUser=null;
+var allData={Brokerage:[],SIP:[],Insurance:[],Accounts:[],Leads:[]};
+var employees=[];
+var filters={};
+var accStat='all';
+var myAccStat='all';
+var dashF='today';
+
+function td(){return new Date().toISOString().split('T')[0];}
+function fmt(n){var v=parseFloat(n)||0;return '₹'+v.toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:2});}
+function showToast(m,t){var el=document.getElementById('toast');el.textContent=m;el.className='show '+(t||'success');setTimeout(function(){el.className='';},3000);}
+function closeModal(){document.getElementById('modal').className='';}
+function postData(p){return fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(p)}).then(function(r){return r.text();}).then(function(t){return JSON.parse(t);});}
+
+function getRange(f){
+  var n=new Date(),y=n.getFullYear(),m=n.getMonth(),d=n.getDate();
+  if(f==='today')return{start:new Date(y,m,d),end:new Date(y,m,d,23,59,59)};
+  if(f==='week'){var dw=n.getDay()||7;return{start:new Date(y,m,d-dw+1),end:new Date(y,m,d+(7-dw),23,59,59)};}
+  if(f==='month')return{start:new Date(y,m,1),end:new Date(y,m+1,0,23,59,59)};
+  if(f==='quarter'){var q=Math.floor(m/3);return{start:new Date(y,q*3,1),end:new Date(y,q*3+3,0,23,59,59)};}
+  if(f==='year')return{start:new Date(y,0,1),end:new Date(y,11,31,23,59,59)};
+  return null;
+}
+function fDate(rows,f){
+  if(!f||f==='all')return rows;
+  var r=getRange(f);if(!r)return rows;
+  return rows.filter(function(row){var d=new Date(row['Date']||'');return !isNaN(d)&&d>=r.start&&d<=r.end;});
+}
+function fEmp(rows,uid){
+  var name=currentUser?currentUser.name:'';
+  return rows.filter(function(r){
+    return (r['Employee ID']||'').trim()===uid.trim()||(r['Employee Name']||'').trim().toLowerCase()===name.trim().toLowerCase();
+  });
+}
+
+function login(){
+  var id=(document.getElementById('loginId').value||'').trim();
+  var pass=(document.getElementById('loginPass').value||'').trim();
+  document.getElementById('loginErr').style.display='none';
+  if(id===ADMIN_ID&&pass===ADMIN_PASS){currentUser={id:id,name:'Ravikant Sharma',branch:'Hisar',role:'admin',userId:id};startApp();return;}
+  var emp=employees.find(function(e){return (e['Employee ID']||'').trim()===id&&(e['Password']||'').trim()===pass&&(e['Status']||'Active')==='Active';});
+  if(emp){currentUser={id:emp['Employee ID'],name:emp['Name'],branch:emp['Branch'],role:emp['Role']||'employee',userId:emp['Employee ID']};startApp();return;}
+  document.getElementById('loginErr').style.display='block';
+}
+
+function startApp(){
+  document.getElementById('loginWrap').style.display='none';
+  document.getElementById('appWrap').style.display='block';
+  document.getElementById('sidebarName').textContent=currentUser.name;
+  document.getElementById('sidebarRole').textContent=currentUser.role.toUpperCase();
+  document.getElementById('sidebarBranch').textContent=currentUser.branch;
+  if(currentUser.role==='admin'){document.getElementById('adminNav').style.display='block';showPage('adminDash');}
+  else{document.getElementById('empNav').style.display='block';showPage('empDash');}
+  loadAll();
+}
+
+function logout(){
+  currentUser=null;allData={Brokerage:[],SIP:[],Insurance:[],Accounts:[],Leads:[]};
+  document.getElementById('loginWrap').style.display='flex';
+  document.getElementById('appWrap').style.display='none';
+  document.getElementById('adminNav').style.display='none';
+  document.getElementById('empNav').style.display='none';
+  document.getElementById('loginId').value='';document.getElementById('loginPass').value='';
+}
+
+function showPage(id){
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active');});
+  var pg=document.getElementById('page-'+id);if(pg)pg.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(function(n){if(n.getAttribute('onclick')&&n.getAttribute('onclick').indexOf("'"+id+"'")!==-1)n.classList.add('active');});
+  renderPage(id);
+}
+
+function setF(f,btn,key){
+  filters[key]=f;
+  btn.parentElement.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  renderPage(curPage());
+}
+function setDashF(f,btn){dashF=f;btn.parentElement.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');renderAdminDash();}
+function setAccStat(s,btn){accStat=s;btn.parentElement.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');renderAccTable();}
+function setMyAccStat(s,btn){myAccStat=s;btn.parentElement.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');renderMyAccTable();}
+function curPage(){var p=document.querySelector('.page.active');return p?p.id.replace('page-',''):'';}
+
+function loadAll(){
+  postData({action:'getData'}).then(function(r){
+    if(r&&r.success){
+      allData={
+        Brokerage: r.brokerage||r.Brokerage||[],
+        SIP:       r.sip||r.SIP||[],
+        Insurance: r.insurance||r.Insurance||[],
+        Accounts:  r.accounts||r.Accounts||[],
+        Leads:     r.leads||r.Leads||[]
+      };
+      renderPage(curPage());loadEmps();
+    }
+  }).catch(function(e){showToast('Load failed: '+e.message,'error');});
+}
+function loadEmps(){
+  postData({action:'getEmployees'}).then(function(r){if(r&&r.success){employees=r.employees||[];renderPage(curPage());}}).catch(function(){});
+}
+
+function renderPage(id){
+  if(!currentUser)return;
+  if(id==='adminDash')renderAdminDash();
+  else if(id==='adminEmps')renderEmpPerf(filters['empPerf']||'all');
+  else if(id==='adminBrok')renderBrok();
+  else if(id==='adminSIP')renderSIP();
+  else if(id==='adminIns')renderIns();
+  else if(id==='adminAcc')renderAccTable();
+  else if(id==='adminLeads')renderALeads();
+  else if(id==='manageEmps')renderManageEmps();
+  else if(id==='addBrok')initBrokForm();
+  else if(id==='addSIP'){var e=document.getElementById('s_date');if(e&&!e.value)e.value=td();}
+  else if(id==='addIns'){var e=document.getElementById('i_date');if(e&&!e.value)e.value=td();}
+  else if(id==='addAcc'){var e=document.getElementById('a_date');if(e&&!e.value)e.value=td();}
+  else if(id==='addLead'){var e=document.getElementById('l_date');if(e&&!e.value)e.value=td();}
+  else if(id==='empDash')renderEmpDash();
+  else if(id==='myBrok')renderMyBrok();
+  else if(id==='mySIP')renderMySIP();
+  else if(id==='myIns')renderMyIns();
+  else if(id==='myAcc')renderMyAccTable();
+  else if(id==='myLeads')renderMyLeads();
+}
+
+function mkStats(cards){var h='';cards.forEach(function(c){h+='<div class="stat-card '+(c.color||'green')+'"><div class="stat-label">'+c.label+'</div><div class="stat-value">'+c.value+'</div><div class="stat-sub">'+(c.sub||'')+'</div></div>';});return h;}
+
+function mkTable(rows,cols,sheet){
+  if(!rows||!rows.length)return '<div class="no-data">No records found</div>';
+  var h='<table><thead><tr>';
+  cols.forEach(function(c){h+='<th>'+c.l+'</th>';});
+  if(sheet)h+='<th>Actions</th>';
+  h+='</tr></thead><tbody>';
+  rows.slice().reverse().forEach(function(row){
+    h+='<tr>';
+    cols.forEach(function(c){
+      var v=row[c.k]!==undefined&&row[c.k]!==''?row[c.k]:'-';
+      if(c.money)h+='<td class="money">'+fmt(v)+'</td>';
+      else if(c.k==='Status'){var a=(v==='Active'||v==='-');h+='<td><span class="badge '+(a?'green':'red')+'">'+(a?'Active':'Inactive')+'</span></td>';}
+      else if(c.k==='Type'){var lp=v==='Lumpsum';h+='<td><span class="badge '+(lp?'lump':'sip')+'">'+v+'</span></td>';}
+      else if(c.k==='Meeting Done'||c.k==='MetDone'){h+='<td><span class="badge '+(v==='Yes'?'green':'amber')+'">'+v+'</span></td>';}
+      else h+='<td>'+v+'</td>';
+    });
+    if(sheet){var rn=row._rowNum||0;h+='<td><button class="btn-edit" onclick="openEdit(\''+sheet+'\','+rn+',this.closest(\'tr\'))">&#9998;</button><button class="btn-del" onclick="confirmDel(\''+sheet+'\','+rn+')">&#128465;</button></td>';}
+    h+='</tr>';
+  });
+  h+='</tbody></table>';return h;
+}
+
+function renderAdminDash(){
+  var brok=fDate(allData.Brokerage||[],dashF);
+  var sip=fDate(allData.SIP||[],dashF);
+  var ins=fDate(allData.Insurance||[],dashF);
+  var acc=fDate(allData.Accounts||[],dashF);
+  var leads=fDate(allData.Leads||[],dashF);
+  var tBrok=brok.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
+  var tSIP=sip.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
+  var tPrem=ins.reduce(function(s,r){return s+parseFloat(r['Premium']||0);},0);
+  var actAcc=acc.filter(function(r){return (r['Status']||'Active')==='Active';}).length;
+  document.getElementById('adminStats').innerHTML=mkStats([
+    {label:'Total Brokerage',value:fmt(tBrok),sub:brok.length+' entries',color:'green'},
+    {label:'SIP / MF Amount',value:fmt(tSIP),sub:sip.length+' clients',color:'blue'},
+    {label:'Insurance Premium',value:fmt(tPrem),sub:ins.length+' policies',color:'amber'},
+    {label:'Account Openings',value:acc.length,sub:actAcc+' active',color:'purple'},
+    {label:'Total Leads',value:leads.length,sub:'follow-ups',color:'pink'}
+  ]);
+  var em={};
+  function track(rows,key){rows.forEach(function(r){var id=r['Employee ID']||r['Employee Name']||'?';if(!em[id])em[id]={name:r['Employee Name']||id,branch:r['Branch']||'',brok:0,sip:0,ins:0,acc:0};if(key==='brok')em[id].brok+=parseFloat(r['Amount']||0);else if(key==='sip')em[id].sip+=parseFloat(r['Amount']||0);else if(key==='ins')em[id].ins++;else if(key==='acc')em[id].acc++;});}
+  track(brok,'brok');track(sip,'sip');track(ins,'ins');track(acc,'acc');
+  var html='<div class="emp-grid">';
+  Object.keys(em).forEach(function(id){var e=em[id];html+='<div class="emp-card"><div class="emp-name">'+e.name+'</div><div class="emp-meta">'+e.branch+'</div><div class="emp-stats"><div class="emp-stat"><div class="emp-stat-val">'+fmt(e.brok)+'</div><div class="emp-stat-lbl">Brokerage</div></div><div class="emp-stat"><div class="emp-stat-val">'+fmt(e.sip)+'</div><div class="emp-stat-lbl">SIP</div></div><div class="emp-stat"><div class="emp-stat-val">'+e.ins+'</div><div class="emp-stat-lbl">Insurance</div></div><div class="emp-stat"><div class="emp-stat-val">'+e.acc+'</div><div class="emp-stat-lbl">Accounts</div></div></div></div>';});
+  html+='</div>';
+  document.getElementById('adminEmpCards').innerHTML=html;
+}
+
+function renderEmpPerf(f){
+  var brok=fDate(allData.Brokerage||[],f),sip=fDate(allData.SIP||[],f),ins=fDate(allData.Insurance||[],f),acc=fDate(allData.Accounts||[],f);
+  var em={};
+  function t(rows,k){rows.forEach(function(r){var id=r['Employee ID']||r['Employee Name']||'?';if(!em[id])em[id]={name:r['Employee Name']||id,branch:r['Branch']||'',brok:0,sip:0,ins:0,acc:0};if(k==='brok')em[id].brok+=parseFloat(r['Amount']||0);else if(k==='sip')em[id].sip+=parseFloat(r['Amount']||0);else if(k==='ins')em[id].ins++;else if(k==='acc')em[id].acc++;});}
+  t(brok,'brok');t(sip,'sip');t(ins,'ins');t(acc,'acc');
+  var ks=Object.keys(em);
+  if(!ks.length){document.getElementById('empPerfCards').innerHTML='<div class="no-data">No data for this period</div>';return;}
+  var html='<div class="emp-grid">';
+  ks.forEach(function(id){var e=em[id];html+='<div class="emp-card"><div class="emp-name">'+e.name+'</div><div class="emp-meta" style="margin-bottom:8px;">'+e.branch+'</div><div class="emp-stats"><div class="emp-stat"><div class="emp-stat-val">'+fmt(e.brok)+'</div><div class="emp-stat-lbl">Brokerage</div></div><div class="emp-stat"><div class="emp-stat-val">'+fmt(e.sip)+'</div><div class="emp-stat-lbl">SIP Amt</div></div><div class="emp-stat"><div class="emp-stat-val">'+e.ins+'</div><div class="emp-stat-lbl">Insurance</div></div><div class="emp-stat"><div class="emp-stat-val">'+e.acc+'</div><div class="emp-stat-lbl">Accounts</div></div></div></div>';});
+  document.getElementById('empPerfCards').innerHTML=html+'</div>';
+}
+
+function renderBrok(){
+  var rows=fDate(allData.Brokerage||[],filters['brok']||'today');
+  var t=rows.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
+  document.getElementById('brokStats').innerHTML=mkStats([{label:'Total Brokerage',value:fmt(t),sub:rows.length+' entries',color:'green'},{label:'Records',value:rows.length,sub:'this period',color:'blue'}]);
+  document.getElementById('brokTable').innerHTML=mkTable(rows,[{k:'Date',l:'Date'},{k:'Employee Name',l:'Employee'},{k:'Branch',l:'Branch'},{k:'Amount',l:'Amount',money:true}],'Brokerage');
+}
+
+function renderSIP(){
+  var rows=fDate(allData.SIP||[],filters['sip']||'today');
+  var t=rows.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
+  var sipR=rows.filter(function(r){return (r['Type']||'SIP')==='SIP';});
+  var lumpR=rows.filter(function(r){return r['Type']==='Lumpsum';});
+  document.getElementById('sipStats').innerHTML=mkStats([{label:'Total Amount',value:fmt(t),sub:rows.length+' entries',color:'green'},{label:'SIP Clients',value:sipR.length,sub:'monthly',color:'blue'},{label:'Lumpsum',value:lumpR.length,sub:'one-time',color:'amber'}]);
+  document.getElementById('sipTable').innerHTML=mkTable(rows,[{k:'Date',l:'Date'},{k:'Employee Name',l:'Employee'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Client ID'},{k:'Client Phone',l:'Phone'},{k:'Type',l:'Type'},{k:'Amount',l:'Amount',money:true}],'SIP');
+}
+
+function renderIns(){
+  var rows=fDate(allData.Insurance||[],filters['ins']||'today');
+  var t=rows.reduce(function(s,r){return s+parseFloat(r['Premium']||0);},0);
+  document.getElementById('insStats').innerHTML=mkStats([{label:'Total Premium',value:fmt(t),sub:rows.length+' policies',color:'green'},{label:'Health',value:rows.filter(function(r){return (r['Type']||'').indexOf('Health')!==-1;}).length,sub:'ICICI Lombard',color:'blue'},{label:'Life',value:rows.filter(function(r){return (r['Type']||'').indexOf('Life')!==-1;}).length,sub:'Tata',color:'amber'}]);
+  document.getElementById('insTable').innerHTML=mkTable(rows,[{k:'Date',l:'Date'},{k:'Employee Name',l:'Employee'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Policy ID'},{k:'Client Phone',l:'Phone'},{k:'Type',l:'Type'},{k:'Premium',l:'Premium',money:true}],'Insurance');
+}
+
+function renderAccTable(){
+  var allAcc=allData.Accounts||[];
+  var rows=fDate(allAcc,filters['acc']||'all');
+  if(accStat==='active')rows=rows.filter(function(r){return (r['Status']||'Active')==='Active';});
+  if(accStat==='inactive')rows=rows.filter(function(r){return r['Status']==='Inactive';});
+
+  // Duplicate detection: same Client ID entered by 2+ different employees
+  var cidMap={};
+  allAcc.forEach(function(r){
+    var cid=(r['Client ID']||'').trim();
+    var eid=(r['Employee ID']||r['Employee Name']||'').trim();
+    if(!cid)return;
+    if(!cidMap[cid])cidMap[cid]=[];
+    if(cidMap[cid].indexOf(eid)===-1)cidMap[cid].push(eid);
+  });
+  var dupSet={};
+  Object.keys(cidMap).forEach(function(cid){if(cidMap[cid].length>1)dupSet[cid]=cidMap[cid];});
+  var dupCount=Object.keys(dupSet).length;
+
+  var active=rows.filter(function(r){return (r['Status']||'Active')==='Active';}).length;
+  document.getElementById('accStats').innerHTML=mkStats([
+    {label:'Total Accounts',value:rows.length,sub:'all entries',color:'green'},
+    {label:'Active',value:active,sub:'active accounts',color:'blue'},
+    {label:'Inactive',value:rows.length-active,sub:'inactive',color:'amber'},
+    {label:'Duplicate IDs',value:dupCount,sub:'same client ID',color:'red'}
+  ]);
+  document.getElementById('accTable').innerHTML=mkAccTable(rows,dupSet);
+}
+
+function mkAccTable(rows,dupSet){
+  if(!rows||!rows.length)return '<div class="no-data">No accounts found</div>';
+  var h='<table><thead><tr><th>Date</th><th>Employee</th><th>Client</th><th>Client ID/Demat</th><th>Phone</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+  rows.slice().reverse().forEach(function(r){
+    var cid=(r['Client ID']||'').trim();
+    var isDup=dupSet&&dupSet[cid];
+    var empList=isDup?dupSet[cid].join(' & '):'';
+    h+='<tr'+(isDup?' class="dup-row" title="Duplicate! Same Client ID added by: '+empList+'"':'')+' style="cursor:'+(isDup?'help':'default')+'">';
+    h+='<td>'+r['Date']+'</td>';
+    h+='<td>'+r['Employee Name']+'</td>';
+    h+='<td>'+r['Client Name']+'</td>';
+    h+='<td>'+(isDup?'<span class="dup-badge">&#9888;</span>':'')+cid+'</td>';
+    h+='<td>'+r['Client Phone']+'</td>';
+    var act=(r['Status']||'Active')==='Active';
+    h+='<td><span class="badge '+(act?'green':'red')+'">'+(act?'Active':'Inactive')+'</span></td>';
+    h+='<td><button class="btn-edit" onclick="openEdit(\'Accounts\','+r['_rowNum']+',this.closest(\'tr\'))">Edit</button> <button class="btn-del" onclick="confirmDel(\'Accounts\','+r['_rowNum']+')">Del</button></td>';
+    h+='</tr>';
+  });
+  h+='</tbody></table>';
+  return h;
+}
+
+function renderALeads(){
+  var rows=fDate(allData.Leads||[],filters['aleads']||'today');
+  var done=rows.filter(function(r){return r['Meeting Done']==='Yes';}).length;
+  document.getElementById('aleadsStats').innerHTML=mkStats([{label:'Total Leads',value:rows.length,sub:'all employees',color:'green'},{label:'Meeting Done',value:done,sub:'discussed',color:'blue'},{label:'Pending',value:rows.length-done,sub:'follow-up',color:'amber'}]);
+  document.getElementById('aleadsTable').innerHTML=mkLeads(rows,true);
+}
+
+function renderEmpDash(){
+  var f=filters['empDash']||'month',uid=currentUser.userId;
+  var sip=fDate(fEmp(allData.SIP||[],uid),f);
+  var ins=fDate(fEmp(allData.Insurance||[],uid),f);
+  var acc=fDate(fEmp(allData.Accounts||[],uid),f);
+  var leads=fDate(fEmp(allData.Leads||[],uid),f);
+  document.getElementById('empDashStats').innerHTML=mkStats([
+    {label:'SIP / MF Amount',value:fmt(sip.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0)),sub:sip.length+' clients',color:'green'},
+    {label:'Insurance',value:ins.length,sub:fmt(ins.reduce(function(s,r){return s+parseFloat(r['Premium']||0);},0))+' premium',color:'blue'},
+    {label:'Account Openings',value:acc.length,sub:acc.filter(function(r){return (r['Status']||'Active')==='Active';}).length+' active',color:'amber'},
+    {label:'My Leads',value:leads.length,sub:'follow-ups',color:'purple'}
+  ]);
+}
+
+function renderMyBrok(){
+  var uid=currentUser.userId;
+  var rows=fDate(fEmp(allData.Brokerage||[],uid),filters['myBrok']||'month');
+  var t=rows.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
+  document.getElementById('myBrokStats').innerHTML=mkStats([
+    {label:'My Brokerage',value:fmt(t),sub:rows.length+' entries',color:'green'},
+    {label:'This Month',value:fmt(fDate(fEmp(allData.Brokerage||[],uid),'month').reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0)),sub:'monthly total',color:'blue'}
+  ]);
+  document.getElementById('myBrokTable').innerHTML=mkTable(rows,[
+    {k:'Date',l:'Date'},
+    {k:'Branch',l:'Branch'},
+    {k:'Amount',l:'Amount',money:true}
+  ],null);
+}
+
+function renderMySIP(){
+  var uid=currentUser.userId;
+  var rows=fDate(fEmp(allData.SIP||[],uid),filters['mySIP']||'month');
+  var t=rows.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
+  document.getElementById('mySIPStats').innerHTML=mkStats([{label:'Total Amount',value:fmt(t),sub:rows.length+' entries',color:'green'},{label:'SIP',value:rows.filter(function(r){return (r['Type']||'SIP')==='SIP';}).length,sub:'monthly',color:'blue'},{label:'Lumpsum',value:rows.filter(function(r){return r['Type']==='Lumpsum';}).length,sub:'one-time',color:'amber'}]);
+  document.getElementById('mySIPTable').innerHTML=mkTable(rows,[{k:'Date',l:'Date'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Client ID'},{k:'Client Phone',l:'Phone'},{k:'Type',l:'Type'},{k:'Amount',l:'Amount',money:true}],'SIP');
+}
+
+function renderMyIns(){
+  var uid=currentUser.userId;
+  var rows=fDate(fEmp(allData.Insurance||[],uid),filters['myIns']||'month');
+  var t=rows.reduce(function(s,r){return s+parseFloat(r['Premium']||0);},0);
+  document.getElementById('myInsStats').innerHTML=mkStats([{label:'Total Premium',value:fmt(t),sub:rows.length+' policies',color:'green'},{label:'Health',value:rows.filter(function(r){return (r['Type']||'').indexOf('Health')!==-1;}).length,sub:'ICICI',color:'blue'},{label:'Life',value:rows.filter(function(r){return (r['Type']||'').indexOf('Life')!==-1;}).length,sub:'Tata',color:'amber'}]);
+  document.getElementById('myInsTable').innerHTML=mkTable(rows,[{k:'Date',l:'Date'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Policy ID'},{k:'Client Phone',l:'Phone'},{k:'Type',l:'Type'},{k:'Premium',l:'Premium',money:true}],'Insurance');
+}
+
+function renderMyAccTable(){
+  var uid=currentUser.userId;
+  var rows=fDate(fEmp(allData.Accounts||[],uid),filters['myAcc']||'all');
+  if(myAccStat==='active')rows=rows.filter(function(r){return (r['Status']||'Active')==='Active';});
+  if(myAccStat==='inactive')rows=rows.filter(function(r){return r['Status']==='Inactive';});
+  var active=rows.filter(function(r){return (r['Status']||'Active')==='Active';}).length;
+  document.getElementById('myAccStats').innerHTML=mkStats([{label:'Total',value:rows.length,sub:'your accounts',color:'green'},{label:'Active',value:active,sub:'active',color:'blue'},{label:'Inactive',value:rows.length-active,sub:'inactive',color:'amber'}]);
+  document.getElementById('myAccTable').innerHTML=mkTable(rows,[{k:'Date',l:'Date'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Client ID/Demat'},{k:'Client Phone',l:'Phone'},{k:'Status',l:'Status'}],'Accounts');
+}
+
+function renderMyLeads(){
+  var uid=currentUser.userId;
+  var rows=fDate(fEmp(allData.Leads||[],uid),filters['myLeads']||'all');
+  var done=rows.filter(function(r){return r['Meeting Done']==='Yes';}).length;
+  document.getElementById('myLeadsStats').innerHTML=mkStats([{label:'Total Leads',value:rows.length,sub:'your leads',color:'green'},{label:'Meeting Done',value:done,sub:'discussed',color:'blue'},{label:'Pending',value:rows.length-done,sub:'follow-up needed',color:'amber'}]);
+  document.getElementById('myLeadsTable').innerHTML=mkLeads(rows,false);
+}
+
+function mkLeads(rows,showEmp){
+  if(!rows||!rows.length)return '<div class="no-data">No leads found</div>';
+  var h='<table><thead><tr><th>Date</th>'+(showEmp?'<th>Employee</th>':'')+'<th>Client</th><th>Phone</th><th>Category</th><th>Contact</th><th>Meeting</th><th>Follow Up</th><th>Remarks</th></tr></thead><tbody>';
+  rows.slice().reverse().forEach(function(r){
+    var cat=r['Category']||'-';
+    var met=r['Meeting Done']||'No';
+    var catC={'SIP/MF':'green','Insurance':'blue','Account':'purple','Other':'amber'}[cat]||'blue';
+    h+='<tr><td>'+(r['Date']||'-')+'</td>'+(showEmp?'<td>'+(r['Employee Name']||'-')+'</td>':'')+'<td style="font-weight:600;">'+(r['Client Name']||'-')+'</td><td>'+(r['Client Phone']||'-')+'</td><td><span class="badge '+catC+'">'+cat+'</span></td><td>'+(r['Contact']||'-')+'</td><td><span class="badge '+(met==='Yes'?'green':'amber')+'">'+met+'</span></td><td>'+(r['Follow Up']||'-')+'</td><td style="max-width:120px;white-space:normal;font-size:12px;">'+(r['Remarks']||'-')+'</td></tr>';
+  });
+  return h+'</tbody></table>';
+}
+
+function updateSIPLabel(){var t=document.getElementById('s_type').value;document.getElementById('s_amt_label').textContent=t==='Lumpsum'?'Lumpsum Amount (₹ one-time)':'SIP Amount (₹/month)';}
+
+function doSubmit(payload,sheet,btnEl,btnTxt,clearFn){
+  btnEl.disabled=true;btnEl.textContent='Adding...';
+  postData(payload).then(function(r){
+    btnEl.disabled=false;btnEl.textContent=btnTxt;
+    if(r&&r.success){showToast('Added successfully!','success');allData[sheet].push(payload);if(clearFn)clearFn();}
+    else showToast('Failed: '+(r&&r.error||'Unknown'),'error');
+  }).catch(function(e){btnEl.disabled=false;btnEl.textContent=btnTxt;showToast('Error: '+e.message,'error');});
+}
+
+function submitBrokerage(){
+  var empSel=document.getElementById('b_emp');
+  var emp=employees.find(function(e){return e['Employee ID']===empSel.value;});
+  if(!empSel.value||!emp){showToast('Select an employee','error');return;}
+  var amt=document.getElementById('b_amount').value;
+  if(!amt){showToast('Enter amount','error');return;}
+  var p={action:'addBrokerage','Date':document.getElementById('b_date').value||td(),'Employee ID':emp['Employee ID'],'Employee Name':emp['Name'],'Branch':emp['Branch'],'Amount':parseFloat(amt)};
+  var btn=document.querySelector('#page-addBrok .btn-submit');
+  doSubmit(p,'Brokerage',btn,'Add Brokerage',function(){document.getElementById('b_amount').value='';});
+}
+
+function submitSIP(){
+  var cn=document.getElementById('s_cname').value.trim();
+  var cid=document.getElementById('s_cid').value.trim();
+  var amt=document.getElementById('s_amount').value;
+  if(!cn||!cid||!amt){showToast('Fill all required fields','error');return;}
+  var p={action:'addSIP','Date':document.getElementById('s_date').value||td(),'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch,'Client Name':cn,'Client ID':cid,'Client Phone':document.getElementById('s_cphone').value.trim(),'Type':document.getElementById('s_type').value,'Amount':parseFloat(amt)};
+  var btn=document.querySelector('#page-addSIP .btn-submit');
+  doSubmit(p,'SIP',btn,'Add Entry',function(){document.getElementById('s_cname').value='';document.getElementById('s_cid').value='';document.getElementById('s_cphone').value='';document.getElementById('s_amount').value='';});
+}
+
+function submitInsurance(){
+  var cn=document.getElementById('i_cname').value.trim();
+  var prem=document.getElementById('i_premium').value;
+  if(!cn||!prem){showToast('Fill required fields','error');return;}
+  var p={action:'addInsurance','Date':document.getElementById('i_date').value||td(),'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch,'Client Name':cn,'Client ID':document.getElementById('i_cid').value.trim(),'Client Phone':document.getElementById('i_cphone').value.trim(),'Type':document.getElementById('i_type').value,'Premium':parseFloat(prem)};
+  var btn=document.querySelector('#page-addIns .btn-submit');
+  doSubmit(p,'Insurance',btn,'Add Insurance',function(){document.getElementById('i_cname').value='';document.getElementById('i_cid').value='';document.getElementById('i_cphone').value='';document.getElementById('i_premium').value='';});
+}
+
+function submitAccount(){
+  var cn=document.getElementById('a_cname').value.trim();
+  var cid=document.getElementById('a_cid').value.trim();
+  if(!cn||!cid){showToast('Client Name and ID required','error');return;}
+  var p={action:'addAccount','Date':document.getElementById('a_date').value||td(),'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch,'Client Name':cn,'Client ID':cid,'Client Phone':document.getElementById('a_cphone').value.trim(),'Status':document.getElementById('a_status').value};
+  var btn=document.querySelector('#page-addAcc .btn-submit');
+  doSubmit(p,'Accounts',btn,'Add Account',function(){document.getElementById('a_cname').value='';document.getElementById('a_cid').value='';document.getElementById('a_cphone').value='';});
+}
+
+function submitLead(){
+  var cn=document.getElementById('l_cname').value.trim();
+  if(!cn){showToast('Client name required','error');return;}
+  var p={action:'addLead','Date':document.getElementById('l_date').value||td(),'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch,'Client Name':cn,'Client Phone':document.getElementById('l_cphone').value.trim(),'Category':document.getElementById('l_cat').value,'Contact':document.getElementById('l_contact').value,'Meeting Done':document.getElementById('l_met').value,'Follow Up':document.getElementById('l_followup').value,'Remarks':document.getElementById('l_remarks').value.trim()};
+  var btn=document.querySelector('#page-addLead .btn-submit');
+  doSubmit(p,'Leads',btn,'Add Lead',function(){document.getElementById('l_cname').value='';document.getElementById('l_cphone').value='';document.getElementById('l_remarks').value='';});
+}
+
+function initBrokForm(){
+  var e=document.getElementById('b_date');if(e&&!e.value)e.value=td();
+  var sel=document.getElementById('b_emp');sel.innerHTML='<option value="">Select Employee</option>';
+  employees.forEach(function(emp){if((emp['Status']||'Active')==='Active'){var o=document.createElement('option');o.value=emp['Employee ID'];o.textContent=emp['Name']+' ('+emp['Branch']+')';sel.appendChild(o);}});
+}
+
+var editSt={sheet:null,rowNum:null};
+function openEdit(sheet,rowNum,trEl){
+  editSt={sheet:sheet,rowNum:rowNum};
+  var colMap={Brokerage:['Date','Employee Name','Branch','Amount'],SIP:['Date','Employee Name','Client Name','Client ID','Client Phone','Type','Amount'],Insurance:['Date','Employee Name','Client Name','Client ID','Client Phone','Type','Premium'],Accounts:['Date','Employee Name','Client Name','Client ID','Client Phone','Status'],Leads:['Date','Employee Name','Client Name','Client Phone','Category','Contact','Meeting Done','Follow Up','Remarks']};
+  var editFields={Brokerage:['Date','Amount'],SIP:['Date','Client Name','Client ID','Client Phone','Type','Amount'],Insurance:['Date','Client Name','Client ID','Client Phone','Type','Premium'],Accounts:['Date','Client Name','Client ID','Client Phone','Status'],Leads:['Date','Client Name','Client Phone','Category','Contact','Meeting Done','Follow Up','Remarks']};
+  var selOpts={Type:sheet==='SIP'?['SIP','Lumpsum']:['Health - ICICI Lombard','Life - Tata'],Status:['Active','Inactive'],'Meeting Done':['Yes','No'],Contact:['Call','WhatsApp','Meeting'],Category:['SIP/MF','Insurance','Account','Other']};
+  var cols=colMap[sheet]||[];var fields=editFields[sheet]||[];
+  var cells=trEl.querySelectorAll('td');
+  var cur={};
+  cols.forEach(function(col,i){var cell=cells[i];if(cell){var sp=cell.querySelector('.badge');cur[col]=sp?sp.textContent.trim():cell.textContent.trim();}});
+  var html='<div class="modal-title">Edit '+sheet+' Entry</div>';
+  fields.forEach(function(f){
+    var val=cur[f]||'';
+    html+='<div class="form-group"><label>'+f+'</label>';
+    if(selOpts[f]){html+='<select id="ef_'+f.replace(/ /g,'_')+'">';selOpts[f].forEach(function(o){html+='<option value="'+o+'"'+(val===o?' selected':'')+'>'+o+'</option>';});html+='</select>';}
+    else if(f==='Date')html+='<input type="date" id="ef_'+f.replace(/ /g,'_')+'" value="'+val+'">';
+    else if(f==='Amount'||f==='Premium')html+='<input type="number" id="ef_'+f.replace(/ /g,'_')+'" value="'+val.replace(/[^\d.]/g,'')+'">';
+    else html+='<input type="text" id="ef_'+f.replace(/ /g,'_')+'" value="'+val+'">';
+    html+='</div>';
+  });
+  html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="saveEdit()">Save</button></div>';
+  document.getElementById('modalBox').innerHTML=html;
+  document.getElementById('modal').className='show';
+}
+
+function saveEdit(){
+  var sheet=editSt.sheet,rowNum=editSt.rowNum;
+  var editFields={Brokerage:['Date','Amount'],SIP:['Date','Client Name','Client ID','Client Phone','Type','Amount'],Insurance:['Date','Client Name','Client ID','Client Phone','Type','Premium'],Accounts:['Date','Client Name','Client ID','Client Phone','Status'],Leads:['Date','Client Name','Client Phone','Category','Contact','Meeting Done','Follow Up','Remarks']};
+  var fields=editFields[sheet]||[];
+  var vals={};
+  fields.forEach(function(f){var el=document.getElementById('ef_'+f.replace(/ /g,'_'));if(el)vals[f]=el.value;});
+  postData({action:'editRow',sheet:sheet,rowNum:rowNum,vals:vals}).then(function(r){
+    closeModal();
+    if(r&&r.success){showToast('Updated!','success');loadAll();}
+    else showToast('Update failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
+}
+
+function confirmDel(sheet,rowNum){
+  document.getElementById('modalBox').innerHTML='<div class="modal-title">Delete Entry?</div><p style="color:var(--muted);font-size:13px;margin-bottom:20px;">This cannot be undone.</p><div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-danger" onclick="doDel(\''+sheet+'\','+rowNum+')">Delete</button></div>';
+  document.getElementById('modal').className='show';
+}
+function doDel(sheet,rowNum){
+  postData({action:'deleteRow',sheet:sheet,rowNum:rowNum}).then(function(r){closeModal();if(r&&r.success){showToast('Deleted!','success');loadAll();}else showToast('Delete failed','error');}).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
+}
+
+function renderManageEmps(){
+  if(!employees.length){document.getElementById('manageEmpTable').innerHTML='<div class="no-data">No employees. Add your first employee.</div>';return;}
+  var h='<table><thead><tr><th>Employee ID</th><th>Name</th><th>Branch</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+  employees.forEach(function(e){
+    var isAct=(e['Status']||'Active')==='Active';
+    h+='<tr><td>'+(e['Employee ID']||'-')+'</td><td style="font-weight:600;">'+(e['Name']||'-')+'</td><td>'+(e['Branch']||'-')+'</td><td>'+(e['Role']||'employee')+'</td><td><span class="badge '+(isAct?'green':'red')+'">'+(isAct?'Active':'Inactive')+'</span></td><td>';
+    h+='<button class="btn-edit" onclick="editEmpModal(\''+e['Employee ID']+'\')">&#9998; Edit</button>';
+    h+='<button class="btn-del" onclick="toggleEmp(\''+e['Employee ID']+'\',\''+(isAct?'Inactive':'Active')+'\')">'+(isAct?'Deactivate':'Activate')+'</button>';
+    h+='</td></tr>';
+  });
+  document.getElementById('manageEmpTable').innerHTML=h+'</tbody></table>';
+}
+
+function showAddEmpModal(){
+  var h='<div class="modal-title">Add New Employee</div>';
+  h+='<div class="form-group"><label>Employee ID</label><input type="text" id="ne_id" placeholder="e.g. Ideal.name"></div>';
+  h+='<div class="form-group"><label>Full Name</label><input type="text" id="ne_name"></div>';
+  h+='<div class="form-group"><label>Branch</label><select id="ne_branch"><option>Hisar</option><option>Adampur</option><option>Rohtak</option><option>Tohana</option></select></div>';
+  h+='<div class="form-group"><label>Role</label><select id="ne_role"><option value="employee">Employee</option><option value="admin">Admin</option></select></div>';
+  h+='<div class="form-group"><label>Password</label><input type="text" id="ne_pass"></div>';
+  h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="addEmployee()">Add</button></div>';
+  document.getElementById('modalBox').innerHTML=h;document.getElementById('modal').className='show';
+}
+
+function addEmployee(){
+  var id=document.getElementById('ne_id').value.trim();
+  var name=document.getElementById('ne_name').value.trim();
+  var pass=document.getElementById('ne_pass').value.trim();
+  if(!id||!name||!pass){showToast('ID, Name and Password required','error');return;}
+  if(employees.find(function(e){return e['Employee ID']===id;})){showToast('ID already exists','error');return;}
+  var p={action:'addEmployee','Employee ID':id,'Name':name,'Branch':document.getElementById('ne_branch').value,'Role':document.getElementById('ne_role').value,'Password':pass,'Status':'Active'};
+  postData(p).then(function(r){closeModal();if(r&&r.success){showToast('Employee added!','success');loadEmps();}else showToast('Failed: '+(r&&r.error||''),'error');}).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
+}
+
+function editEmpModal(empId){
+  var emp=employees.find(function(e){return e['Employee ID']===empId;});if(!emp)return;
+  var h='<div class="modal-title">Edit Employee</div>';
+  h+='<div class="form-group"><label>Name</label><input type="text" id="ee_name" value="'+(emp['Name']||'')+'"></div>';
+  h+='<div class="form-group"><label>Branch</label><select id="ee_branch">';
+  ['Hisar','Adampur','Rohtak','Tohana'].forEach(function(b){h+='<option'+(emp['Branch']===b?' selected':'')+'>'+b+'</option>';});
+  h+='</select></div>';
+  h+='<div class="form-group"><label>New Password (blank = keep)</label><input type="text" id="ee_pass" placeholder="Leave blank to keep"></div>';
+  h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="saveEmp(\''+empId+'\')">Save</button></div>';
+  document.getElementById('modalBox').innerHTML=h;document.getElementById('modal').className='show';
+}
+
+function saveEmp(empId){
+  var emp=employees.find(function(e){return e['Employee ID']===empId;});if(!emp)return;
+  var p={action:'updateEmployee','Employee ID':empId,_rowNum:emp._rowNum,'Name':document.getElementById('ee_name').value.trim(),'Branch':document.getElementById('ee_branch').value,'Role':emp['Role']||'employee','Status':emp['Status']||'Active'};
+  var np=document.getElementById('ee_pass').value.trim();if(np)p['Password']=np;
+  postData(p).then(function(r){closeModal();if(r&&r.success){showToast('Updated!','success');loadEmps();}else showToast('Failed','error');}).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
+}
+
+function toggleEmp(empId,newStat){
+  var emp=employees.find(function(e){return e['Employee ID']===empId;});if(!emp)return;
+  var p={action:'updateEmployee','Employee ID':empId,_rowNum:emp._rowNum,'Name':emp['Name'],'Branch':emp['Branch'],'Role':emp['Role']||'employee','Password':emp['Password']||'','Status':newStat};
+  postData(p).then(function(r){if(r&&r.success){showToast('Status updated!','success');loadEmps();}}).catch(function(){});
+}
+
+(function(){
+  postData({action:'getEmployees'}).then(function(r){if(r&&r.success)employees=r.employees||[];}).catch(function(){});
+  document.getElementById('loginPass').addEventListener('keydown',function(e){if(e.key==='Enter')login();});
+})();
+</script>
+</body>
+</html>
