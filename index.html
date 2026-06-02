@@ -1300,8 +1300,8 @@ function renderManageEmps(){
   employees.forEach(function(e){
     var isAct=(e['Status']||'Active')==='Active';
     h+='<tr><td>'+(e['Employee ID']||'-')+'</td><td style="font-weight:600;">'+(e['Name']||'-')+'</td><td>'+(e['Branch']||'-')+'</td><td>'+(e['Role']||'employee')+'</td><td><span class="badge '+(isAct?'green':'red')+'">'+(isAct?'Active':'Inactive')+'</span></td><td>';
-    h+='<button class="btn-edit" onclick="editEmpModal(''+e['Employee ID']+'')">&#9998; Edit</button>';
-    h+='<button class="btn-del" onclick="toggleEmp(''+e['Employee ID']+'',''+(isAct?'Inactive':'Active')+'')">'+(isAct?'Deactivate':'Activate')+'</button>';
+    h+='<button class="btn-edit" data-id="'+e['Employee ID']+'" onclick="editEmpModal(this.dataset.id)">&#9998; Edit</button>';
+    h+='<button class="btn-del" data-id="'+e['Employee ID']+'" data-act="'+(isAct?'Inactive':'Active')+'" onclick="toggleEmpBtn(this)">'+( isAct?'Deactivate':'Activate')+'</button>';
     h+='</td></tr>';
   });
   document.getElementById('manageEmpTable').innerHTML=h+'</tbody></table>';
@@ -1347,6 +1347,7 @@ function saveEmp(empId){
 function toggleEmp(empId,newStat){
   var emp=employees.find(function(e){return e['Employee ID']===empId;});if(!emp)return;
   var p={action:'updateEmployee','Employee ID':empId,_rowNum:emp._rowNum,'Name':emp['Name'],'Branch':emp['Branch'],'Role':emp['Role']||'employee','Password':emp['Password']||'','Status':newStat};
+function toggleEmpBtn(btn){toggleEmp(btn.dataset.id, btn.dataset.act);}
   postData(p).then(function(r){if(r&&r.success){showToast('Status updated!','success');loadEmps();}}).catch(function(){});
 }
 
