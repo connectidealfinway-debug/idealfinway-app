@@ -817,19 +817,28 @@ function mkTable(rows,cols,sheet){
 }
 
 /* ===== BROKERAGE CALENDAR HEATMAP ===== */
-function prevCalMonth(k){calStates[k].month--;if(calStates[k].month<0){calStates[k].month=11;calStates[k].year--;}renderPage(curPage());}
-function nextCalMonth(k){calStates[k].month++;if(calStates[k].month>11){calStates[k].month=0;calStates[k].year++;}renderPage(curPage());}
+function prevCalMonth(k){calStates[k].nav=true;calStates[k].month--;if(calStates[k].month<0){calStates[k].month=11;calStates[k].year--;}renderPage(curPage());}
+function nextCalMonth(k){calStates[k].nav=true;calStates[k].month++;if(calStates[k].month>11){calStates[k].month=0;calStates[k].year++;}renderPage(curPage());}
 
 function mkBrokCalendar(allRows,calKey){
   var n=new Date();
   var st=calStates[calKey]||{year:n.getFullYear(),month:n.getMonth()};
+  /* Smart default: agar is calendar ko manually navigate nahi kiya gaya aur
+     current month me koi entry nahi hai, to latest data wale month par jump karo */
+  if(!st.nav){
+    var hasCur=allRows.some(function(r){var d=new Date(r['Date']||'');return !isNaN(d)&&d.getFullYear()===st.year&&d.getMonth()===st.month;});
+    if(!hasCur){
+      var latest=null;
+      allRows.forEach(function(r){var d=new Date(r['Date']||'');if(!isNaN(d)&&(!latest||d>latest))latest=d;});
+      if(latest){st.year=latest.getFullYear();st.month=latest.getMonth();calStates[calKey]=st;}
+    }
+  }
   var y=st.year,m=st.month;
   var dayMap={};
   allRows.forEach(function(r){
-    var d=(r['Date']||'').substring(0,10);if(!d)return;
-    var rd=new Date(d);
+    var rd=new Date(r['Date']||'');if(isNaN(rd))return;
     if(rd.getFullYear()===y&&rd.getMonth()===m){
-      dayMap[d]=(dayMap[d]||0)+parseFloat(r['Amount']||0);
+      dayMap[rd.getDate()]=(dayMap[rd.getDate()]||0)+parseFloat(r['Amount']||0);
     }
   });
   var amounts=Object.keys(dayMap).map(function(k){return dayMap[k];});
@@ -855,7 +864,7 @@ function mkBrokCalendar(allRows,calKey){
     var mm2=String(m+1).padStart?String(m+1).padStart(2,'0'):(m+1<10?'0'+(m+1):''+(m+1));
     var dd2=dd<10?'0'+dd:''+dd;
     var dateStr=y+'-'+mm2+'-'+dd2;
-    var amt=dayMap[dateStr]||0;
+    var amt=dayMap[dd]||0;
     var lvl=0;
     if(amt>0){lvl=Math.min(4,Math.max(1,Math.round((amt/maxAmt)*4)));if(lvl===0)lvl=1;}
     var isToday=td2.getFullYear()===y&&td2.getMonth()===m&&td2.getDate()===dd;
@@ -1346,15 +1355,4 @@ function saveEmp(empId){
 
 function toggleEmp(empId,newStat){
   var emp=employees.find(function(e){return e['Employee ID']===empId;});if(!emp)return;
-  var p={action:'updateEmployee','Employee ID':empId,_rowNum:emp._rowNum,'Name':emp['Name'],'Branch':emp['Branch'],'Role':emp['Role']||'employee','Password':emp['Password']||'','Status':newStat};
-function toggleEmpBtn(btn){toggleEmp(btn.dataset.id, btn.dataset.act);}
-  postData(p).then(function(r){if(r&&r.success){showToast('Status updated!','success');loadEmps();}}).catch(function(){});
-}
-
-(function(){
-  postData({action:'getEmployees'}).then(function(r){if(r&&r.success)employees=r.employees||[];}).catch(function(){});
-  document.getElementById('loginPass').addEventListener('keydown',function(e){if(e.key==='Enter')login();});
-})();
-</script>
-</body>
-</html>
+  var p={action:'updateEmployee','Employee ID':empId
