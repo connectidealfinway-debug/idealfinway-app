@@ -1355,4 +1355,15 @@ function saveEmp(empId){
 
 function toggleEmp(empId,newStat){
   var emp=employees.find(function(e){return e['Employee ID']===empId;});if(!emp)return;
-  var p={action:'updateEmployee','Employee ID':empId
+  var p={action:'updateEmployee','Employee ID':empId,_rowNum:emp._rowNum,'Name':emp['Name'],'Branch':emp['Branch'],'Role':emp['Role']||'employee','Password':emp['Password']||'','Status':newStat};
+function toggleEmpBtn(btn){toggleEmp(btn.dataset.id, btn.dataset.act);}
+  postData(p).then(function(r){if(r&&r.success){showToast('Status updated!','success');loadEmps();}}).catch(function(){});
+}
+
+(function(){
+  postData({action:'getEmployees'}).then(function(r){if(r&&r.success)employees=r.employees||[];}).catch(function(){});
+  document.getElementById('loginPass').addEventListener('keydown',function(e){if(e.key==='Enter')login();});
+})();
+</script>
+</body>
+</html>
