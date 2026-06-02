@@ -1295,4 +1295,65 @@ function doDel(sheet,rowNum){
 /* ===== EMPLOYEE MANAGEMENT ===== */
 
 function renderManageEmps(){
-  if(!employees.length){document.getEle
+  if(!employees.length){document.getElementById('manageEmpTable').innerHTML='<div class="no-data">No employees.</div>';return;}
+  var h='<table><thead><tr><th>Employee ID</th><th>Name</th><th>Branch</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+  employees.forEach(function(e){
+    var isAct=(e['Status']||'Active')==='Active';
+    h+='<tr><td>'+(e['Employee ID']||'-')+'</td><td style="font-weight:600;">'+(e['Name']||'-')+'</td><td>'+(e['Branch']||'-')+'</td><td>'+(e['Role']||'employee')+'</td><td><span class="badge '+(isAct?'green':'red')+'">'+(isAct?'Active':'Inactive')+'</span></td><td>';
+    h+='<button class="btn-edit" onclick="editEmpModal(''+e['Employee ID']+'')">&#9998; Edit</button>';
+    h+='<button class="btn-del" onclick="toggleEmp(''+e['Employee ID']+'',''+(isAct?'Inactive':'Active')+'')">'+(isAct?'Deactivate':'Activate')+'</button>';
+    h+='</td></tr>';
+  });
+  document.getElementById('manageEmpTable').innerHTML=h+'</tbody></table>';
+}
+
+function showAddEmpModal(){
+  var h='<div class="modal-title">Add New Employee</div>';
+  h+='<div class="form-group"><label>Employee ID</label><input type="text" id="ne_id" placeholder="e.g. Ideal.name"></div>';
+  h+='<div class="form-group"><label>Full Name</label><input type="text" id="ne_name"></div>';
+  h+='<div class="form-group"><label>Branch</label><select id="ne_branch"><option>Hisar</option><option>Adampur</option><option>Rohtak</option><option>Tohana</option></select></div>';
+  h+='<div class="form-group"><label>Role</label><select id="ne_role"><option value="employee">Employee</option><option value="admin">Admin</option></select></div>';
+  h+='<div class="form-group"><label>Password</label><input type="text" id="ne_pass"></div>';
+  h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="addEmployee()">Add</button></div>';
+  document.getElementById('modalBox').innerHTML=h;document.getElementById('modal').className='show';
+}
+
+function addEmployee(){
+  var id=document.getElementById('ne_id').value.trim(),name=document.getElementById('ne_name').value.trim(),pass=document.getElementById('ne_pass').value.trim();
+  if(!id||!name||!pass){showToast('ID, Name and Password required','error');return;}
+  if(employees.find(function(e){return e['Employee ID']===id;})){showToast('ID already exists','error');return;}
+  var p={action:'addEmployee','Employee ID':id,'Name':name,'Branch':document.getElementById('ne_branch').value,'Role':document.getElementById('ne_role').value,'Password':pass,'Status':'Active'};
+  postData(p).then(function(r){closeModal();if(r&&r.success){showToast('Employee added!','success');loadEmps();}else showToast('Failed: '+(r&&r.error||''),'error');}).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
+}
+
+function editEmpModal(empId){
+  var emp=employees.find(function(e){return e['Employee ID']===empId;});if(!emp)return;
+  var h='<div class="modal-title">Edit Employee</div>';
+  h+='<div class="form-group"><label>Name</label><input type="text" id="ee_name" value="'+(emp['Name']||'')+'"></div>';
+  h+='<div class="form-group"><label>Branch</label><select id="ee_branch">';
+  ['Hisar','Adampur','Rohtak','Tohana'].forEach(function(b){h+='<option'+(emp['Branch']===b?' selected':'')+'>'+b+'</option>';});
+  h+='</select></div><div class="form-group"><label>New Password (blank = keep)</label><input type="text" id="ee_pass" placeholder="Leave blank to keep"></div>';
+  h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="saveEmp(''+empId+'')">Save</button></div>';
+  document.getElementById('modalBox').innerHTML=h;document.getElementById('modal').className='show';
+}
+
+function saveEmp(empId){
+  var emp=employees.find(function(e){return e['Employee ID']===empId;});if(!emp)return;
+  var p={action:'updateEmployee','Employee ID':empId,_rowNum:emp._rowNum,'Name':document.getElementById('ee_name').value.trim(),'Branch':document.getElementById('ee_branch').value,'Role':emp['Role']||'employee','Status':emp['Status']||'Active'};
+  var np=document.getElementById('ee_pass').value.trim();if(np)p['Password']=np;
+  postData(p).then(function(r){closeModal();if(r&&r.success){showToast('Updated!','success');loadEmps();}else showToast('Failed','error');}).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
+}
+
+function toggleEmp(empId,newStat){
+  var emp=employees.find(function(e){return e['Employee ID']===empId;});if(!emp)return;
+  var p={action:'updateEmployee','Employee ID':empId,_rowNum:emp._rowNum,'Name':emp['Name'],'Branch':emp['Branch'],'Role':emp['Role']||'employee','Password':emp['Password']||'','Status':newStat};
+  postData(p).then(function(r){if(r&&r.success){showToast('Status updated!','success');loadEmps();}}).catch(function(){});
+}
+
+(function(){
+  postData({action:'getEmployees'}).then(function(r){if(r&&r.success)employees=r.employees||[];}).catch(function(){});
+  document.getElementById('loginPass').addEventListener('keydown',function(e){if(e.key==='Enter')login();});
+})();
+</script>
+</body>
+</html>
