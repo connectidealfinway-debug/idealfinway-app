@@ -1333,7 +1333,7 @@ function editEmpModal(empId){
   h+='<div class="form-group"><label>Branch</label><select id="ee_branch">';
   ['Hisar','Adampur','Rohtak','Tohana'].forEach(function(b){h+='<option'+(emp['Branch']===b?' selected':'')+'>'+b+'</option>';});
   h+='</select></div><div class="form-group"><label>New Password (blank = keep)</label><input type="text" id="ee_pass" placeholder="Leave blank to keep"></div>';
-  h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="saveEmp(''+empId+'')">Save</button></div>';
+  h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" data-eid="'+empId+'" onclick="saveEmp(this.dataset.eid)">Save</button></div>';
   document.getElementById('modalBox').innerHTML=h;document.getElementById('modal').className='show';
 }
 
