@@ -638,6 +638,10 @@ function fmt(n){var v=parseFloat(n)||0;return '₹'+v.toLocaleString('en-IN',{mi
 function showToast(m,t){var el=document.getElementById('toast');el.textContent=m;el.className='show '+(t||'success');setTimeout(function(){el.className='';},3000);}
 function closeModal(){document.getElementById('modal').className='';}
 function postData(p){return fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(p)}).then(function(r){return r.text();}).then(function(t){return JSON.parse(t);});}
+function getJSON(action){return fetch(API+'?action='+action+'&t='+Date.now()).then(function(r){return r.text();}).then(function(t){return JSON.parse(t);});}
+/* GET pehle try karo (bada response browser me POST-redirect me atak jata hai); fail ho to POST fallback */
+function fetchData(){return getJSON('getData').then(function(r){if(r&&r.success)return r;return postData({action:'getData'});}).catch(function(){return postData({action:'getData'});});}
+function fetchEmployees(){return getJSON('getEmployees').then(function(r){if(r&&r.success)return r;return postData({action:'getEmployees'});}).catch(function(){return postData({action:'getEmployees'});});}
 function getSrch(id){var el=document.getElementById(id);return el?(el.value||'').toLowerCase():'';}
 
 function getRange(f){
@@ -705,7 +709,7 @@ function login(){
   if(emp){currentUser={id:emp['Employee ID'],name:emp['Name'],branch:emp['Branch'],role:emp['Role']||'employee',userId:emp['Employee ID']};startApp();return;}
   /* employees list abhi load nahi hui (ya fail ho gayi) — abhi fetch karke dobara try karo */
   err.textContent='Connecting... please wait';err.style.color='var(--accent,#3fb27f)';err.style.display='block';
-  postData({action:'getEmployees'}).then(function(r){
+  fetchEmployees().then(function(r){
     if(r&&r.success)employees=r.employees||[];
     err.style.color='';
     var e2=findEmpLogin(id,pass);
@@ -754,7 +758,7 @@ function curPage(){var p=document.querySelector('.page.active');return p?p.id.re
 function loadAll(attempt){
   attempt=attempt||1;
   if(attempt===1)showToast('Loading data...','success');
-  postData({action:'getData'}).then(function(r){
+  fetchData().then(function(r){
     if(r&&r.success){
       allData={
         Brokerage:r.brokerage||r.Brokerage||[],
@@ -777,7 +781,7 @@ function loadAll(attempt){
   });
 }
 function loadEmps(){
-  postData({action:'getEmployees'}).then(function(r){
+  fetchEmployees().then(function(r){
     if(r&&r.success){
       employees=r.employees||[];
       var sel=document.getElementById('attEmpFilter');
@@ -1385,7 +1389,7 @@ function toggleEmpBtn(btn){toggleEmp(btn.dataset.id, btn.dataset.act);}
 
 function initEmpLoad(attempt){
   attempt=attempt||1;
-  postData({action:'getEmployees'}).then(function(r){
+  fetchEmployees().then(function(r){
     if(r&&r.success){employees=r.employees||[];}
     else if(attempt<5){setTimeout(function(){initEmpLoad(attempt+1);},3000);}
   }).catch(function(){if(attempt<5)setTimeout(function(){initEmpLoad(attempt+1);},3000);});
