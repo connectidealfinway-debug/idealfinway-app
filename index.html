@@ -167,9 +167,11 @@ tbody td{padding:10px 14px;vertical-align:middle;}
       <div class="nav-item" onclick="showPage('adminLeads')">&#128203; All Leads</div>
       <div class="nav-item" onclick="showPage('adminStudents')">&#127891; Students</div>
       <div class="nav-item" onclick="showPage('adminAttendance')">&#128197; Attendance</div>
+      <div class="nav-item" onclick="showPage('adminPoints')">&#11088; Points</div>
       <div class="nav-section">Manage</div>
       <div class="nav-item" onclick="showPage('manageEmps')">&#9998; Manage Employees</div>
       <div class="nav-item" onclick="showPage('addBrok')">&#43; Add Brokerage</div>
+      <div class="nav-item" onclick="showPage('addPoints')">&#43; Add Points</div>
     </div>
     <div id="empNav" style="display:none">
       <div class="nav-section">My Work</div>
@@ -188,6 +190,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
       <div class="nav-item" onclick="showPage('myAcc')">Accounts</div>
       <div class="nav-item" onclick="showPage('myLeads')">My Leads</div>
       <div class="nav-item" onclick="showPage('myStudents')">My Students</div>
+      <div class="nav-item" onclick="showPage('myPoints')">&#11088; My Points</div>
     </div>
     <div class="sidebar-bottom"><button class="btn-logout" onclick="logout()">&#8592; Logout</button></div>
   </nav>
@@ -220,6 +223,13 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <button class="filter-btn" onclick="setF('year',this,'empPerf')">This Year</button>
         <button class="filter-btn" onclick="setF('all',this,'empPerf')">All Time</button>
       </div>
+      <div class="filter-bar" style="margin-top:-8px;">
+        <span style="font-size:13px;align-self:center;opacity:.7;">Custom range:</span>
+        <input type="date" id="empFrom" class="srch" style="width:auto;">
+        <input type="date" id="empTo" class="srch" style="width:auto;">
+        <button class="filter-btn" onclick="applyEmpRange()">Apply</button>
+        <button class="filter-btn" onclick="clearEmpRange()">Clear</button>
+      </div>
       <div id="empPerfCards"></div>
     </div>
 
@@ -238,6 +248,19 @@ tbody td{padding:10px 14px;vertical-align:middle;}
       <div id="brokCalDiv"></div>
       <div class="stats-grid" id="brokStats"></div>
       <div class="table-wrap"><div class="table-inner" id="brokTable"></div></div>
+    </div>
+
+    <!-- ADMIN POINTS -->
+    <div class="page" id="page-adminPoints">
+      <div class="page-header"><h1>Points</h1><p>Employee points leaderboard &amp; history</p></div>
+      <div class="filter-bar">
+        <button class="filter-btn" onclick="setF('month',this,'points')">This Month</button>
+        <button class="filter-btn" onclick="setF('year',this,'points')">This Year</button>
+        <button class="filter-btn active" onclick="setF('all',this,'points')">All Time</button>
+        <input class="srch" id="srch-points" placeholder="&#128269; Search..." oninput="renderPoints()">
+      </div>
+      <div id="pointsCards"></div>
+      <div class="table-wrap" style="margin-top:16px;"><div class="table-inner" id="pointsTable"></div></div>
     </div>
 
     <!-- ADMIN SIP -->
@@ -364,6 +387,18 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <div class="form-group"><label>Employee</label><select id="b_emp"><option value="">Select Employee</option></select></div>
         <div class="form-group"><label>Amount (&#8377;)</label><input type="number" id="b_amount" placeholder="Enter amount"></div>
         <button class="btn-submit" onclick="submitBrokerage()">Add Brokerage</button>
+      </div>
+    </div>
+
+    <!-- ADD POINTS -->
+    <div class="page" id="page-addPoints">
+      <div class="page-header"><h1>Add Points</h1><p>Add monthly points for an employee</p></div>
+      <div class="form-card">
+        <div class="form-group"><label>Date / Month</label><input type="date" id="p_date"></div>
+        <div class="form-group"><label>Employee</label><select id="p_emp"><option value="">Select Employee</option></select></div>
+        <div class="form-group"><label>Points</label><input type="number" id="p_points" placeholder="Enter points"></div>
+        <div class="form-group"><label>Remarks (optional)</label><input type="text" id="p_remarks" placeholder="e.g. June 2026 target achieved"></div>
+        <button class="btn-submit" onclick="submitPoints()">Add Points</button>
       </div>
     </div>
 
@@ -615,6 +650,13 @@ tbody td{padding:10px 14px;vertical-align:middle;}
       <div class="table-wrap"><div class="table-inner" id="myStudTable"></div></div>
     </div>
 
+    <!-- MY POINTS -->
+    <div class="page" id="page-myPoints">
+      <div class="page-header"><h1>My Points</h1><p>Your total points and month-wise history</p></div>
+      <div class="stats-grid" id="myPointsStats"></div>
+      <div class="table-wrap"><div class="table-inner" id="myPointsTable"></div></div>
+    </div>
+
   </main>
 </div>
 
@@ -626,7 +668,7 @@ var API='https://script.google.com/macros/s/AKfycbwzCV6-slD3xxZGDrGCa80GAOfEX-JT
 var ADMIN_ID='directorravikant.idealfinway';
 var ADMIN_PASS='drrk@1401';
 var currentUser=null;
-var allData={Brokerage:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[]};
+var allData={Brokerage:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[]};
 var employees=[];
 var filters={};
 var accStat='all',myAccStat='all',dashF='today';
@@ -732,7 +774,7 @@ function startApp(){
 }
 
 function logout(){
-  currentUser=null;allData={Brokerage:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[]};
+  currentUser=null;allData={Brokerage:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[]};
   document.getElementById('loginWrap').style.display='flex';
   document.getElementById('appWrap').style.display='none';
   document.getElementById('adminNav').style.display='none';
@@ -748,7 +790,7 @@ function showPage(id){
   renderPage(id);
 }
 
-function setF(f,btn,key){filters[key]=f;btn.parentElement.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');renderPage(curPage());}
+function setF(f,btn,key){filters[key]=f;if(key==='empPerf')empRange=null;btn.parentElement.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');renderPage(curPage());}
 function setDashF(f,btn){dashF=f;btn.parentElement.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');renderAdminDash();}
 function setAccStat(s,btn){accStat=s;btn.parentElement.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');renderAccTable();}
 function setMyAccStat(s,btn){myAccStat=s;btn.parentElement.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');renderMyAccTable();}
@@ -767,7 +809,8 @@ function loadAll(attempt){
         Accounts:r.accounts||r.Accounts||[],
         Leads:r.leads||r.Leads||[],
         Students:r.students||r.Students||[],
-        Attendance:r.attendance||r.Attendance||[]
+        Attendance:r.attendance||r.Attendance||[],
+        Points:r.points||r.Points||[]
       };
       checkSIPAlerts();renderPage(curPage());loadEmps();
     }else if(attempt<3){
@@ -803,6 +846,8 @@ function renderPage(id){
   else if(id==='adminStudents')renderAdminStudents();
   else if(id==='adminAttendance')renderAdminAttendance();
   else if(id==='manageEmps')renderManageEmps();
+  else if(id==='adminPoints')renderPoints();
+  else if(id==='addPoints')initPointsForm();
   else if(id==='addBrok')initBrokForm();
   else if(id==='addSIP'){var e=document.getElementById('s_date');if(e&&!e.value)e.value=td();}
   else if(id==='addIns'){var e=document.getElementById('i_date');if(e&&!e.value)e.value=td();}
@@ -817,6 +862,7 @@ function renderPage(id){
   else if(id==='myAcc')renderMyAccTable();
   else if(id==='myLeads')renderMyLeads();
   else if(id==='myStudents')renderMyStudents();
+  else if(id==='myPoints')renderMyPoints();
 }
 
 function mkStats(cards){var h='';cards.forEach(function(c){h+='<div class="stat-card '+(c.color||'green')+'"><div class="stat-label">'+c.label+'</div><div class="stat-value">'+c.value+'</div><div class="stat-sub">'+(c.sub||'')+'</div></div>';});return h;}
@@ -946,14 +992,18 @@ function renderAdminDash(){
 }
 
 function renderEmpPerf(f){
-  var brok=fDate(allData.Brokerage||[],f),sip=fDate(allData.SIP||[],f),ins=fDate(allData.Insurance||[],f),acc=fDate(allData.Accounts||[],f),stud=fDate(allData.Students||[],f);
+  function fr(rows){return empRange?rows.filter(function(r){var d=new Date(r['Date']||'');return !isNaN(d)&&d>=empRange.start&&d<=empRange.end;}):fDate(rows,f);}
+  var brok=fr(allData.Brokerage||[]),sip=fr(allData.SIP||[]),ins=fr(allData.Insurance||[]),acc=fr(allData.Accounts||[]),stud=fr(allData.Students||[]),leads=fr(allData.Leads||[]);
   var em={};
-  function t(rows,k){rows.forEach(function(r){var id=r['Employee ID']||r['Employee Name']||'?';if(!em[id])em[id]={name:r['Employee Name']||id,branch:r['Branch']||'',brok:0,sip:0,ins:0,acc:0,stud:0};if(k==='brok')em[id].brok+=parseFloat(r['Amount']||0);else if(k==='sip')em[id].sip+=parseFloat(r['Amount']||0);else if(k==='ins')em[id].ins++;else if(k==='acc')em[id].acc++;else if(k==='stud')em[id].stud++;});}
-  t(brok,'brok');t(sip,'sip');t(ins,'ins');t(acc,'acc');t(stud,'stud');
+  function t(rows,k){rows.forEach(function(r){var id=r['Employee ID']||r['Employee Name']||'?';if(!em[id])em[id]={name:r['Employee Name']||id,branch:r['Branch']||'',brok:0,sip:0,ins:0,acc:0,stud:0,leads:0};if(k==='brok')em[id].brok+=parseFloat(r['Amount']||0);else if(k==='sip')em[id].sip+=parseFloat(r['Amount']||0);else if(k==='ins')em[id].ins++;else if(k==='acc')em[id].acc++;else if(k==='stud')em[id].stud++;else if(k==='leads')em[id].leads++;});}
+  t(brok,'brok');t(sip,'sip');t(ins,'ins');t(acc,'acc');t(stud,'stud');t(leads,'leads');
   var ks=Object.keys(em);
-  if(!ks.length){document.getElementById('empPerfCards').innerHTML='<div class="no-data">No data for this period</div>';return;}
-  var html='<div class="emp-grid">';
-  ks.forEach(function(id){var e=em[id];html+='<div class="emp-card"><div class="emp-name">'+e.name+'</div><div class="emp-meta" style="margin-bottom:8px;">'+e.branch+'</div><div class="emp-stats"><div class="emp-stat"><div class="emp-stat-val">'+fmt(e.brok)+'</div><div class="emp-stat-lbl">Brokerage</div></div><div class="emp-stat"><div class="emp-stat-val">'+fmt(e.sip)+'</div><div class="emp-stat-lbl">SIP Amt</div></div><div class="emp-stat"><div class="emp-stat-val">'+e.ins+'</div><div class="emp-stat-lbl">Insurance</div></div><div class="emp-stat"><div class="emp-stat-val">'+e.acc+'</div><div class="emp-stat-lbl">Accounts</div></div><div class="emp-stat"><div class="emp-stat-val">'+e.stud+'</div><div class="emp-stat-lbl">Students</div></div></div></div>';});
+  var lbl=empRange?('Custom: '+document.getElementById('empFrom').value+' \u2192 '+document.getElementById('empTo').value):periodLabel(f);
+  var head='<div style="padding:0 0 12px;color:var(--muted,#8a94a6);font-size:14px;">Showing: <b style="color:var(--accent);">'+lbl+'</b> \u00b7 ranked by brokerage</div>';
+  if(!ks.length){document.getElementById('empPerfCards').innerHTML=head+'<div class="no-data">No data for this period</div>';return;}
+  ks.sort(function(a,b){return em[b].brok-em[a].brok;});
+  var html=head+'<div class="emp-grid">';
+  ks.forEach(function(id,i){var e=em[id];html+='<div class="emp-card"><div class="emp-name">#'+(i+1)+' '+e.name+'</div><div class="emp-meta" style="margin-bottom:8px;">'+e.branch+'</div><div class="emp-stats"><div class="emp-stat"><div class="emp-stat-val">'+fmt(e.brok)+'</div><div class="emp-stat-lbl">Brokerage</div></div><div class="emp-stat"><div class="emp-stat-val">'+fmt(e.sip)+'</div><div class="emp-stat-lbl">SIP Amt</div></div><div class="emp-stat"><div class="emp-stat-val">'+e.ins+'</div><div class="emp-stat-lbl">Insurance</div></div><div class="emp-stat"><div class="emp-stat-val">'+e.acc+'</div><div class="emp-stat-lbl">Accounts</div></div><div class="emp-stat"><div class="emp-stat-val">'+e.stud+'</div><div class="emp-stat-lbl">Students</div></div><div class="emp-stat"><div class="emp-stat-val">'+e.leads+'</div><div class="emp-stat-lbl">Leads</div></div></div></div>';});
   document.getElementById('empPerfCards').innerHTML=html+'</div>';
 }
 
@@ -961,8 +1011,9 @@ function renderBrok(){
   var rows=fDate(allData.Brokerage||[],filters['brok']||'today');
   var q=getSrch('srch-brok');rows=srchFilter(rows,q,['Employee Name','Branch']);
   var t=rows.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
+  var life=(allData.Brokerage||[]).reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
   document.getElementById('brokCalDiv').innerHTML=mkBrokCalendar(allData.Brokerage||[],'brok');
-  document.getElementById('brokStats').innerHTML=mkStats([{label:'Total Brokerage',value:fmt(t),sub:rows.length+' entries',color:'green'},{label:'Records',value:rows.length,sub:'this period',color:'blue'}]);
+  document.getElementById('brokStats').innerHTML=mkStats([{label:'Lifetime Brokerage',value:fmt(life),sub:(allData.Brokerage||[]).length+' total entries',color:'green'},{label:periodLabel(filters['brok']||'today')+' Brokerage',value:fmt(t),sub:rows.length+' entries',color:'blue'}]);
   document.getElementById('brokTable').innerHTML=mkTable(rows,[{k:'Date',l:'Date'},{k:'Employee Name',l:'Employee'},{k:'Branch',l:'Branch'},{k:'Amount',l:'Amount',money:true}],'Brokerage');
 }
 
@@ -1097,13 +1148,15 @@ function renderEmpDash(){
   var gIns=calcGrowth(allData.Insurance||[],uid,'Premium',false);
   var gAcc=calcGrowth(allData.Accounts||[],uid,'',true);
   var gStud=calcGrowth(allData.Students||[],uid,'',true);
+  var myPts=fEmp(allData.Points||[],uid).reduce(function(s,r){return s+parseFloat(r['Points']||0);},0);
   document.getElementById('empDashStats').innerHTML=mkStats([
     {label:'SIP Amount',value:fmt(sipAmt),sub:sipR.length+' clients · '+gBadge(gSIP),color:'green'},
     {label:'Lumpsum',value:fmt(lumpAmt),sub:lumpR.length+' entries',color:'amber'},
     {label:'Insurance Premium',value:fmt(insAmt),sub:ins.length+' clients · '+gBadge(gIns),color:'blue'},
     {label:'Account Openings',value:acc.length,sub:acc.filter(function(r){return (r['Status']||'Active')==='Active';}).length+' active · '+gBadge(gAcc),color:'purple'},
     {label:'Students',value:stud.length,sub:stud.filter(function(r){return r['Status']==='Joined';}).length+' joined · '+gBadge(gStud),color:'pink'},
-    {label:'My Leads',value:leads.length,sub:'follow-ups',color:'amber'}
+    {label:'My Leads',value:leads.length,sub:'follow-ups',color:'amber'},
+    {label:'My Points',value:myPts,sub:'total points',color:'green'}
   ]);
   checkSIPAlerts();
 }
@@ -1113,8 +1166,9 @@ function renderMyBrok(){
   var myRows=fEmp(allData.Brokerage||[],uid);
   var rows=fDate(myRows,filters['myBrok']||'month');
   var t=rows.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
+  var life=myRows.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
   document.getElementById('myBrokCalDiv').innerHTML=mkBrokCalendar(myRows,'myBrok');
-  document.getElementById('myBrokStats').innerHTML=mkStats([{label:'My Brokerage',value:fmt(t),sub:rows.length+' entries',color:'green'}]);
+  document.getElementById('myBrokStats').innerHTML=mkStats([{label:'Lifetime Brokerage',value:fmt(life),sub:myRows.length+' total entries',color:'green'},{label:periodLabel(filters['myBrok']||'month')+' Brokerage',value:fmt(t),sub:rows.length+' entries',color:'blue'}]);
   document.getElementById('myBrokTable').innerHTML=mkTable(rows,[{k:'Date',l:'Date'},{k:'Branch',l:'Branch'},{k:'Amount',l:'Amount',money:true}],null);
 }
 
@@ -1230,6 +1284,54 @@ function doSubmit(payload,sheet,btnEl,btnTxt,clearFn){
     if(r&&r.success){showToast('Added successfully!','success');allData[sheet].push(payload);if(clearFn)clearFn();}
     else showToast('Failed: '+(r&&r.error||'Unknown'),'error');
   }).catch(function(e){btnEl.disabled=false;btnEl.textContent=btnTxt;showToast('Error: '+e.message,'error');});
+}
+
+var empRange=null;
+function periodLabel(f){return ({today:'Today',week:'This Week',month:'This Month',quarter:'This Quarter',year:'This Year',all:'All-Time'})[f]||'Selected';}
+function applyEmpRange(){
+  var f=document.getElementById('empFrom').value,t=document.getElementById('empTo').value;
+  if(!f||!t){showToast('Select both From and To dates','error');return;}
+  if(f>t){showToast('From date, To date se pehle honi chahiye','error');return;}
+  empRange={start:new Date(f+'T00:00:00'),end:new Date(t+'T23:59:59')};
+  document.querySelectorAll('#page-adminEmps .filter-btn').forEach(function(b){b.classList.remove('active');});
+  renderEmpPerf(null);
+}
+function clearEmpRange(){
+  empRange=null;document.getElementById('empFrom').value='';document.getElementById('empTo').value='';
+  var btns=document.querySelectorAll('#page-adminEmps .filter-bar:first-of-type .filter-btn');
+  btns.forEach(function(x){x.classList.remove('active');});if(btns[0])btns[0].classList.add('active');
+  filters['empPerf']='today';renderEmpPerf('today');
+}
+function initPointsForm(){
+  var e=document.getElementById('p_date');if(e&&!e.value)e.value=td();
+  var sel=document.getElementById('p_emp');sel.innerHTML='<option value="">Select Employee</option>';
+  employees.forEach(function(emp){if((emp['Status']||'Active')==='Active'){var o=document.createElement('option');o.value=emp['Employee ID'];o.textContent=emp['Name']+' ('+emp['Branch']+')';sel.appendChild(o);}});
+}
+function submitPoints(){
+  var empSel=document.getElementById('p_emp'),emp=employees.find(function(e){return e['Employee ID']===empSel.value;});
+  if(!empSel.value||!emp){showToast('Select an employee','error');return;}
+  var pts=document.getElementById('p_points').value;if(pts===''||isNaN(parseFloat(pts))){showToast('Enter points','error');return;}
+  var p={action:'addPoints','Date':document.getElementById('p_date').value||td(),'Employee ID':emp['Employee ID'],'Employee Name':emp['Name'],'Branch':emp['Branch'],'Points':parseFloat(pts),'Remarks':document.getElementById('p_remarks').value.trim()};
+  doSubmit(p,'Points',document.querySelector('#page-addPoints .btn-submit'),'Add Points',function(){document.getElementById('p_points').value='';document.getElementById('p_remarks').value='';});
+}
+function renderPoints(){
+  var rows=fDate(allData.Points||[],filters['points']||'all');
+  var q=getSrch('srch-points');rows=srchFilter(rows,q,['Employee Name','Branch','Remarks']);
+  var em={};
+  (allData.Points||[]).forEach(function(r){var id=r['Employee ID']||r['Employee Name']||'?';if(!em[id])em[id]={name:r['Employee Name']||id,branch:r['Branch']||'',pts:0};em[id].pts+=parseFloat(r['Points']||0);});
+  var ks=Object.keys(em).sort(function(a,b){return em[b].pts-em[a].pts;});
+  var cards='<div class="emp-grid">';
+  ks.forEach(function(id,i){var e=em[id];cards+='<div class="emp-card"><div class="emp-name">#'+(i+1)+' '+e.name+'</div><div class="emp-meta" style="margin-bottom:8px;">'+e.branch+'</div><div class="emp-stats"><div class="emp-stat"><div class="emp-stat-val">'+e.pts+'</div><div class="emp-stat-lbl">Total Points</div></div></div></div>';});
+  cards+='</div>';
+  document.getElementById('pointsCards').innerHTML=ks.length?cards:'<div class="no-data">No points added yet</div>';
+  document.getElementById('pointsTable').innerHTML=mkTable(rows,[{k:'Date',l:'Date'},{k:'Employee Name',l:'Employee'},{k:'Branch',l:'Branch'},{k:'Points',l:'Points'},{k:'Remarks',l:'Remarks'}],null);
+}
+function renderMyPoints(){
+  var uid=currentUser.userId;
+  var rows=fEmp(allData.Points||[],uid);
+  var total=rows.reduce(function(s,r){return s+parseFloat(r['Points']||0);},0);
+  document.getElementById('myPointsStats').innerHTML=mkStats([{label:'My Total Points',value:total,sub:rows.length+' entries',color:'green'}]);
+  document.getElementById('myPointsTable').innerHTML=mkTable(rows,[{k:'Date',l:'Month/Date'},{k:'Points',l:'Points'},{k:'Remarks',l:'Remarks'}],null);
 }
 
 function submitBrokerage(){
