@@ -165,6 +165,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
       <div class="nav-item" onclick="showPage('adminIns')">&#128737; Insurance</div>
       <div class="nav-item" onclick="showPage('adminAcc')">&#128100; Accounts</div>
       <div class="nav-item" onclick="showPage('adminLeads')">&#128203; All Leads</div>
+      <div class="nav-item" onclick="showPage('adminMeetings')">&#129309; Meetings</div>
       <div class="nav-item" onclick="showPage('adminStudents')">&#127891; Students</div>
       <div class="nav-item" onclick="showPage('adminAttendance')">&#128197; Attendance</div>
       <div class="nav-item" onclick="showPage('adminPoints')">&#11088; Points</div>
@@ -181,6 +182,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
       <div class="nav-item" onclick="showPage('addIns')">&#43; Insurance</div>
       <div class="nav-item" onclick="showPage('addAcc')">&#43; Account</div>
       <div class="nav-item" onclick="showPage('addLead')">&#43; Lead</div>
+      <div class="nav-item" onclick="showPage('addMeeting')">&#43; Meeting</div>
       <div class="nav-item" onclick="showPage('addStudent')">&#43; Student Ref</div>
       <div class="nav-item" onclick="showPage('markAttendance')">&#9711; Attendance</div>
       <div class="nav-section">My Records</div>
@@ -189,6 +191,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
       <div class="nav-item" onclick="showPage('myIns')">Insurance</div>
       <div class="nav-item" onclick="showPage('myAcc')">Accounts</div>
       <div class="nav-item" onclick="showPage('myLeads')">My Leads</div>
+      <div class="nav-item" onclick="showPage('myMeetings')">My Meetings</div>
       <div class="nav-item" onclick="showPage('myStudents')">My Students</div>
       <div class="nav-item" onclick="showPage('myPoints')">&#11088; My Points</div>
     </div>
@@ -263,6 +266,23 @@ tbody td{padding:10px 14px;vertical-align:middle;}
       <div class="table-wrap" style="margin-top:16px;"><div class="table-inner" id="pointsTable"></div></div>
     </div>
 
+    <!-- ADMIN MEETINGS -->
+    <div class="page" id="page-adminMeetings">
+      <div class="page-header"><h1>Meetings</h1><p>All client meetings</p></div>
+      <div class="filter-bar">
+        <button class="filter-btn active" onclick="setF('today',this,'meet')">Today</button>
+        <button class="filter-btn" onclick="setF('week',this,'meet')">This Week</button>
+        <button class="filter-btn" onclick="setF('month',this,'meet')">This Month</button>
+        <button class="filter-btn" onclick="setF('quarter',this,'meet')">Quarter</button>
+        <button class="filter-btn" onclick="setF('year',this,'meet')">This Year</button>
+        <button class="filter-btn" onclick="setF('all',this,'meet')">All Time</button>
+        <input class="srch" id="srch-meet" placeholder="&#128269; Search..." oninput="renderAdminMeetings()">
+      </div>
+      <div id="meetCalDiv"></div>
+      <div class="stats-grid" id="meetStats"></div>
+      <div class="table-wrap"><div class="table-inner" id="meetTable"></div></div>
+    </div>
+
     <!-- ADMIN SIP -->
     <div class="page" id="page-adminSIP">
       <div class="page-header"><h1>Mutual Fund / SIP Records</h1><p>All SIP and Lumpsum entries</p></div>
@@ -275,6 +295,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <button class="filter-btn" onclick="setF('all',this,'sip')">All Time</button>
         <input class="srch" id="srch-sip" placeholder="&#128269; Search client..." oninput="renderSIP()">
       </div>
+      <div id="sipCalDiv"></div>
       <div class="stats-grid" id="sipStats"></div>
       <div class="table-wrap"><div class="table-inner" id="sipTable"></div></div>
     </div>
@@ -519,6 +540,30 @@ tbody td{padding:10px 14px;vertical-align:middle;}
       </div>
     </div>
 
+    <!-- ADD MEETING -->
+    <div class="page" id="page-addMeeting">
+      <div class="page-header"><h1>Add Meeting</h1><p>Log a client meeting</p></div>
+      <div class="form-card">
+        <div class="form-group"><label>Date</label><input type="date" id="m_date"></div>
+        <div class="form-group"><label>Client / Person Name</label><input type="text" id="m_cname" placeholder="Kis se meeting hui"></div>
+        <div class="form-group"><label>Client Phone</label><input type="tel" id="m_cphone" placeholder="10-digit mobile"></div>
+        <div class="form-group"><label>Reference By</label><input type="text" id="m_ref" placeholder="Kiski reference se aaya"></div>
+        <div class="form-group"><label>Regarding</label>
+          <select id="m_regarding"><option value="SIP/MF">SIP / Mutual Fund</option><option value="Insurance">Insurance</option><option value="Demat">Demat / Account</option><option value="Other">Other</option></select>
+        </div>
+        <div class="form-group"><label>Kaun-kaun gaye (Attendees)</label><input type="text" id="m_attendees" placeholder="Names, comma se alag"></div>
+        <div class="form-group"><label>Remarks (kya baat hui)</label><textarea id="m_remarks" placeholder="Meeting ki details..."></textarea></div>
+        <div class="form-group"><label>Next Meeting Date</label><input type="date" id="m_next"></div>
+        <div class="form-group"><label>Converted?</label>
+          <select id="m_conv" onchange="toggleConvProduct()"><option value="No">No</option><option value="Yes">Yes</option></select>
+        </div>
+        <div class="form-group" id="m_prod_group"><label>Convert Product</label>
+          <select id="m_prod"><option value="">-</option><option value="SIP/MF">SIP / Mutual Fund</option><option value="Insurance">Insurance</option><option value="Demat">Demat / Account</option><option value="Other">Other</option></select>
+        </div>
+        <button class="btn-submit" onclick="submitMeeting()">Add Meeting</button>
+      </div>
+    </div>
+
     <!-- MARK ATTENDANCE -->
     <div class="page" id="page-markAttendance">
       <div class="page-header"><h1>My Attendance</h1><p>Mark and view your attendance</p></div>
@@ -534,7 +579,11 @@ tbody td{padding:10px 14px;vertical-align:middle;}
           </select>
         </div>
         <div class="form-group"><label>Remarks</label><input type="text" id="att_remarks" placeholder="Optional notes"></div>
-        <button class="btn-submit" onclick="submitAttendance()">Mark Attendance</button>
+        <div style="display:flex;gap:10px;">
+          <button class="btn-submit" id="punchInBtn" style="flex:1;" onclick="doPunch('In')">&#9200; Punch In</button>
+          <button class="btn-submit" id="punchOutBtn" style="flex:1;background:var(--amber,#e0a33e);" onclick="doPunch('Out')">&#128682; Punch Out</button>
+        </div>
+        <p style="opacity:.6;font-size:12px;margin-top:8px;">Punch In subah, Punch Out shaam ko. Time khaali chhodo to abhi ka time apne-aap lag jayega. Ek din ka ek hi record banega (in+out).</p>
       </div>
       <div class="sec-title">My Recent Attendance</div>
       <div class="table-wrap"><div class="table-inner" id="myAttTable"></div></div>
@@ -569,6 +618,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <button class="filter-btn" onclick="setF('all',this,'mySIP')">All Time</button>
         <input class="srch" id="srch-mySIP" placeholder="&#128269; Search client..." oninput="renderMySIP()">
       </div>
+      <div id="mySipCalDiv"></div>
       <div class="stats-grid" id="mySIPStats"></div>
       <div class="table-wrap"><div class="table-inner" id="mySIPTable"></div></div>
     </div>
@@ -657,6 +707,23 @@ tbody td{padding:10px 14px;vertical-align:middle;}
       <div class="table-wrap"><div class="table-inner" id="myPointsTable"></div></div>
     </div>
 
+    <!-- MY MEETINGS -->
+    <div class="page" id="page-myMeetings">
+      <div class="page-header"><h1>My Meetings</h1></div>
+      <div class="filter-bar">
+        <button class="filter-btn active" onclick="setF('today',this,'myMeet')">Today</button>
+        <button class="filter-btn" onclick="setF('week',this,'myMeet')">This Week</button>
+        <button class="filter-btn" onclick="setF('month',this,'myMeet')">This Month</button>
+        <button class="filter-btn" onclick="setF('quarter',this,'myMeet')">Quarter</button>
+        <button class="filter-btn" onclick="setF('year',this,'myMeet')">This Year</button>
+        <button class="filter-btn" onclick="setF('all',this,'myMeet')">All Time</button>
+        <input class="srch" id="srch-myMeet" placeholder="&#128269; Search..." oninput="renderMyMeetings()">
+      </div>
+      <div id="myMeetCalDiv"></div>
+      <div class="stats-grid" id="myMeetStats"></div>
+      <div class="table-wrap"><div class="table-inner" id="myMeetTable"></div></div>
+    </div>
+
   </main>
 </div>
 
@@ -668,12 +735,12 @@ var API='https://script.google.com/macros/s/AKfycbwzCV6-slD3xxZGDrGCa80GAOfEX-JT
 var ADMIN_ID='directorravikant.idealfinway';
 var ADMIN_PASS='drrk@1401';
 var currentUser=null;
-var allData={Brokerage:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[]};
+var allData={Brokerage:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[],Meetings:[]};
 var employees=[];
 var filters={};
 var accStat='all',myAccStat='all',dashF='today';
 var leadCatF='all',myLeadCatF='all';
-var calStates={brok:{year:new Date().getFullYear(),month:new Date().getMonth()},myBrok:{year:new Date().getFullYear(),month:new Date().getMonth()}};
+var calStates={};['brok','myBrok','sipCal','mySipCal','meetCal','myMeetCal'].forEach(function(k){calStates[k]={year:new Date().getFullYear(),month:new Date().getMonth()};});
 
 function td(){return new Date().toISOString().split('T')[0];}
 function fmt(n){var v=parseFloat(n)||0;return '₹'+v.toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:2});}
@@ -724,15 +791,20 @@ function gBadge(pct){
 function checkSIPAlerts(){
   if(!currentUser||currentUser.role==='admin')return;
   var uid=currentUser.userId;
-  var tom=new Date();tom.setDate(tom.getDate()+1);
-  var tStr=tom.toISOString().split('T')[0];
-  var due=allData.SIP.filter(function(r){
-    return (r['Employee ID']||'').trim()===uid.trim()&&(r['Type']||'SIP')==='SIP'&&(r['SIP Due Date']||'')=== tStr;
+  var today=new Date();today.setHours(0,0,0,0);
+  var limit=new Date(today);limit.setDate(limit.getDate()+3);
+  var due=(allData.SIP||[]).filter(function(r){
+    if((r['Employee ID']||'').trim().toLowerCase()!==uid.trim().toLowerCase())return false;
+    if((r['Type']||'SIP')!=='SIP')return false;
+    var dd=(r['SIP Due Date']||'').trim();if(!dd)return false;
+    var d=new Date(dd);if(isNaN(d))return false;d.setHours(0,0,0,0);
+    return d>=today&&d<limit;
   });
+  due.sort(function(a,b){return new Date(a['SIP Due Date'])-new Date(b['SIP Due Date']);});
   ['sipAlert','sipAlertSIP'].forEach(function(id){
     var el=document.getElementById(id);if(!el)return;
     if(due.length>0){
-      el.innerHTML='&#9888; <strong>Kal SIP Due:</strong> '+due.length+' clients — '+due.map(function(r){return r['Client Name']||'';}).join(', ');
+      el.innerHTML='&#9888; <strong>SIP Due (agle 3 din):</strong> '+due.map(function(r){var d=new Date(r['SIP Due Date']);var day=('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2);return (r['Client Name']||'')+' &#8212; '+day+' ('+fmt(r['Amount']||0)+')';}).join(' &nbsp;&#183;&nbsp; ');
       el.classList.add('show');
     } else {el.classList.remove('show');}
   });
@@ -774,7 +846,7 @@ function startApp(){
 }
 
 function logout(){
-  currentUser=null;allData={Brokerage:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[]};
+  currentUser=null;allData={Brokerage:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[],Meetings:[]};
   document.getElementById('loginWrap').style.display='flex';
   document.getElementById('appWrap').style.display='none';
   document.getElementById('adminNav').style.display='none';
@@ -810,7 +882,8 @@ function loadAll(attempt){
         Leads:r.leads||r.Leads||[],
         Students:r.students||r.Students||[],
         Attendance:r.attendance||r.Attendance||[],
-        Points:r.points||r.Points||[]
+        Points:r.points||r.Points||[],
+        Meetings:r.meetings||r.Meetings||[]
       };
       checkSIPAlerts();renderPage(curPage());loadEmps();
     }else if(attempt<3){
@@ -845,6 +918,7 @@ function renderPage(id){
   else if(id==='adminLeads')renderALeads();
   else if(id==='adminStudents')renderAdminStudents();
   else if(id==='adminAttendance')renderAdminAttendance();
+  else if(id==='adminMeetings')renderAdminMeetings();
   else if(id==='manageEmps')renderManageEmps();
   else if(id==='adminPoints')renderPoints();
   else if(id==='addPoints')initPointsForm();
@@ -853,6 +927,7 @@ function renderPage(id){
   else if(id==='addIns'){var e=document.getElementById('i_date');if(e&&!e.value)e.value=td();}
   else if(id==='addAcc'){var e=document.getElementById('a_date');if(e&&!e.value)e.value=td();}
   else if(id==='addLead'){var e=document.getElementById('l_date');if(e&&!e.value)e.value=td();}
+  else if(id==='addMeeting')initMeetingForm();
   else if(id==='addStudent'){var e=document.getElementById('st_date');if(e&&!e.value)e.value=td();}
   else if(id==='markAttendance'){var e=document.getElementById('att_date');if(e&&!e.value)e.value=td();renderMyAttendance();}
   else if(id==='empDash')renderEmpDash();
@@ -863,6 +938,7 @@ function renderPage(id){
   else if(id==='myLeads')renderMyLeads();
   else if(id==='myStudents')renderMyStudents();
   else if(id==='myPoints')renderMyPoints();
+  else if(id==='myMeetings')renderMyMeetings();
 }
 
 function mkStats(cards){var h='';cards.forEach(function(c){h+='<div class="stat-card '+(c.color||'green')+'"><div class="stat-label">'+c.label+'</div><div class="stat-value">'+c.value+'</div><div class="stat-sub">'+(c.sub||'')+'</div></div>';});return h;}
@@ -892,6 +968,51 @@ function mkTable(rows,cols,sheet){
 /* ===== BROKERAGE CALENDAR HEATMAP ===== */
 function prevCalMonth(k){calStates[k].nav=true;calStates[k].month--;if(calStates[k].month<0){calStates[k].month=11;calStates[k].year--;}renderPage(curPage());}
 function nextCalMonth(k){calStates[k].nav=true;calStates[k].month++;if(calStates[k].month>11){calStates[k].month=0;calStates[k].year++;}renderPage(curPage());}
+
+function mkCalendar(allRows,calKey,opts){
+  opts=opts||{};
+  var amtFn=opts.amt||null;
+  var n=new Date();
+  var st=calStates[calKey]||{year:n.getFullYear(),month:n.getMonth()};
+  if(!st.nav){
+    var hasCur=allRows.some(function(r){var d=new Date(r['Date']||'');return !isNaN(d)&&d.getFullYear()===st.year&&d.getMonth()===st.month;});
+    if(!hasCur){var latest=null;allRows.forEach(function(r){var d=new Date(r['Date']||'');if(!isNaN(d)&&(!latest||d>latest))latest=d;});if(latest){st.year=latest.getFullYear();st.month=latest.getMonth();calStates[calKey]=st;}}
+  }
+  var y=st.year,m=st.month;
+  var dayC={},dayA={};
+  allRows.forEach(function(r){var rd=new Date(r['Date']||'');if(isNaN(rd))return;if(rd.getFullYear()===y&&rd.getMonth()===m){var d=rd.getDate();dayC[d]=(dayC[d]||0)+1;if(amtFn)dayA[d]=(dayA[d]||0)+amtFn(r);}});
+  var counts=Object.keys(dayC).map(function(k){return dayC[k];});
+  var maxC=counts.length?Math.max.apply(null,counts):1;
+  var monthCount=counts.reduce(function(s,v){return s+v;},0);
+  var monthAmt=Object.keys(dayA).reduce(function(s,k){return s+dayA[k];},0);
+  var firstDay=new Date(y,m,1),lastDate=new Date(y,m+1,0).getDate(),startDow=firstDay.getDay();
+  var MN=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var td2=new Date();
+  var h='<div class="brok-cal">';
+  h+='<div class="cal-header">';
+  h+='<button class="cal-nav" onclick="prevCalMonth(\''+calKey+'\')">&#8592;</button>';
+  h+='<div style="text-align:center;"><div class="cal-title">'+MN[m]+' '+y+'</div>';
+  h+='<div class="cal-month-total">Month: <span style="color:var(--accent);font-weight:700;">'+monthCount+(monthCount===1?' entry':' entries')+(amtFn?' &#183; '+fmt(monthAmt):'')+'</span></div></div>';
+  h+='<button class="cal-nav" onclick="nextCalMonth(\''+calKey+'\')">&#8594;</button>';
+  h+='</div>';
+  h+='<div class="cal-grid">';
+  ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(function(d){h+='<div class="cal-dow">'+d+'</div>';});
+  for(var i=0;i<startDow;i++)h+='<div class="cal-day empty"></div>';
+  for(var dd=1;dd<=lastDate;dd++){
+    var c=dayC[dd]||0,a=dayA[dd]||0,lvl=0;
+    if(c>0){lvl=Math.min(4,Math.max(1,Math.round((c/maxC)*4)));}
+    var isToday=td2.getFullYear()===y&&td2.getMonth()===m&&td2.getDate()===dd;
+    var tip=c>0?(c+' entries'+(amtFn?' | '+fmt(a):'')):'';
+    h+='<div class="cal-day lvl-'+lvl+(isToday?' cal-today':'')+'" title="'+tip+'"><div>'+dd+'</div>';
+    if(c>0)h+='<div class="cal-amt">'+c+(amtFn?'<br>'+fmt(a):'')+'</div>';
+    h+='</div>';
+  }
+  h+='</div>';
+  h+='<div class="cal-legend"><span>Less</span>';
+  ['var(--card2)','rgba(63,191,127,0.18)','rgba(63,191,127,0.38)','rgba(63,191,127,0.64)','var(--accent)'].forEach(function(bg){h+='<span class="cal-legend-box" style="background:'+bg+';"></span>';});
+  h+='<span>'+(opts.moreLabel||'More')+'</span></div></div>';
+  return h;
+}
 
 function mkBrokCalendar(allRows,calKey){
   var n=new Date();
@@ -1025,6 +1146,7 @@ function renderSIP(){
   var sipAmt=sipR.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
   var lumpAmt=lumpR.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
   var gPct=calcGrowth(allData.SIP||[],null,'Amount',false);
+  document.getElementById('sipCalDiv').innerHTML=mkCalendar(allData.SIP||[],'sipCal',{amt:function(r){return parseFloat(r['Amount']||0);},moreLabel:'More SIP'});
   document.getElementById('sipStats').innerHTML=mkStats([
     {label:'SIP Total',value:fmt(sipAmt),sub:sipR.length+' clients · '+gBadge(gPct),color:'green'},
     {label:'Lumpsum Total',value:fmt(lumpAmt),sub:lumpR.length+' entries',color:'amber'},
@@ -1180,6 +1302,8 @@ function renderMySIP(){
   var lumpR=rows.filter(function(r){return r['Type']==='Lumpsum';});
   var sipAmt=sipR.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
   var lumpAmt=lumpR.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
+  document.getElementById('mySipCalDiv').innerHTML=mkCalendar(fEmp(allData.SIP||[],uid),'mySipCal',{amt:function(r){return parseFloat(r['Amount']||0);},moreLabel:'More SIP'});
+  checkSIPAlerts();
   document.getElementById('mySIPStats').innerHTML=mkStats([
     {label:'SIP Total',value:fmt(sipAmt),sub:sipR.length+' clients',color:'green'},
     {label:'Lumpsum Total',value:fmt(lumpAmt),sub:lumpR.length+' entries',color:'amber'},
@@ -1332,6 +1456,63 @@ function renderMyPoints(){
   var total=rows.reduce(function(s,r){return s+parseFloat(r['Points']||0);},0);
   document.getElementById('myPointsStats').innerHTML=mkStats([{label:'My Total Points',value:total,sub:rows.length+' entries',color:'green'}]);
   document.getElementById('myPointsTable').innerHTML=mkTable(rows,[{k:'Date',l:'Month/Date'},{k:'Points',l:'Points'},{k:'Remarks',l:'Remarks'}],null);
+}
+
+function initMeetingForm(){var e=document.getElementById('m_date');if(e&&!e.value)e.value=td();toggleConvProduct();}
+function toggleConvProduct(){var c=document.getElementById('m_conv'),g=document.getElementById('m_prod_group');if(c&&g)g.style.display=(c.value==='Yes')?'':'none';}
+function submitMeeting(){
+  var cn=document.getElementById('m_cname').value.trim();
+  if(!cn){showToast('Client/Person name daalo','error');return;}
+  var conv=document.getElementById('m_conv').value;
+  var p={action:'addMeeting','Date':document.getElementById('m_date').value||td(),'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch,'Client Name':cn,'Client Phone':document.getElementById('m_cphone').value.trim(),'Reference By':document.getElementById('m_ref').value.trim(),'Regarding':document.getElementById('m_regarding').value,'Attendees':document.getElementById('m_attendees').value.trim(),'Remarks':document.getElementById('m_remarks').value.trim(),'Next Meeting':document.getElementById('m_next').value||'','Converted':conv,'Convert Product':conv==='Yes'?document.getElementById('m_prod').value:''};
+  doSubmit(p,'Meetings',document.querySelector('#page-addMeeting .btn-submit'),'Add Meeting',function(){document.getElementById('m_cname').value='';document.getElementById('m_cphone').value='';document.getElementById('m_ref').value='';document.getElementById('m_attendees').value='';document.getElementById('m_remarks').value='';document.getElementById('m_next').value='';});
+}
+function mkMeetingTable(rows,showEmp){
+  if(!rows||!rows.length)return '<div class="no-data">No meetings found</div>';
+  var h='<table><thead><tr><th>Date</th>'+(showEmp?'<th>Employee</th>':'')+'<th>Client</th><th>Phone</th><th>Ref By</th><th>Regarding</th><th>Attendees</th><th>Next Mtg</th><th>Converted</th><th>Remarks</th><th>Actions</th></tr></thead><tbody>';
+  rows.slice().reverse().forEach(function(r){
+    var conv=r['Converted']||'No';var cc=conv==='Yes'?'green':'amber';
+    h+='<tr><td>'+(r['Date']||'-')+'</td>'+(showEmp?'<td>'+(r['Employee Name']||'-')+'</td>':'')+'<td>'+(r['Client Name']||'-')+'</td><td>'+(r['Client Phone']||'-')+'</td><td>'+(r['Reference By']||'-')+'</td><td>'+(r['Regarding']||'-')+'</td><td>'+(r['Attendees']||'-')+'</td><td>'+(r['Next Meeting']||'-')+'</td><td><span class="badge '+cc+'">'+conv+((conv==='Yes'&&r['Convert Product'])?' &#183; '+r['Convert Product']:'')+'</span></td><td>'+(r['Remarks']||'-')+'</td><td><button class="btn-del" onclick="confirmDel(\'Meetings\','+r['_rowNum']+')">&#128465;</button></td></tr>';
+  });
+  return h+'</tbody></table>';
+}
+function renderAdminMeetings(){
+  var rows=fDate(allData.Meetings||[],filters['meet']||'today');
+  var q=getSrch('srch-meet');rows=srchFilter(rows,q,['Client Name','Reference By','Regarding','Attendees','Employee Name']);
+  var conv=rows.filter(function(r){return r['Converted']==='Yes';}).length;
+  document.getElementById('meetCalDiv').innerHTML=mkCalendar(allData.Meetings||[],'meetCal',{moreLabel:'More Meetings'});
+  document.getElementById('meetStats').innerHTML=mkStats([{label:'Total Meetings',value:rows.length,sub:'this period',color:'green'},{label:'Converted',value:conv,sub:'closed deals',color:'blue'}]);
+  document.getElementById('meetTable').innerHTML=mkMeetingTable(rows,true);
+}
+function renderMyMeetings(){
+  var uid=currentUser.userId;
+  var my=fEmp(allData.Meetings||[],uid);
+  var rows=fDate(my,filters['myMeet']||'month');
+  var q=getSrch('srch-myMeet');rows=srchFilter(rows,q,['Client Name','Reference By','Regarding','Attendees']);
+  var conv=rows.filter(function(r){return r['Converted']==='Yes';}).length;
+  document.getElementById('myMeetCalDiv').innerHTML=mkCalendar(my,'myMeetCal',{moreLabel:'More Meetings'});
+  document.getElementById('myMeetStats').innerHTML=mkStats([{label:'Total Meetings',value:rows.length,sub:'this period',color:'green'},{label:'Converted',value:conv,sub:'closed deals',color:'blue'}]);
+  document.getElementById('myMeetTable').innerHTML=mkMeetingTable(rows,false);
+}
+function sameDayAtt(a,b){var da=new Date(a),db=new Date(b);return !isNaN(da)&&!isNaN(db)&&da.getFullYear()===db.getFullYear()&&da.getMonth()===db.getMonth()&&da.getDate()===db.getDate();}
+function doPunch(field){
+  var date=document.getElementById('att_date').value||td();
+  var now=new Date();var curT=('0'+now.getHours()).slice(-2)+':'+('0'+now.getMinutes()).slice(-2);
+  var time=field==='In'?(document.getElementById('att_in').value||curT):(document.getElementById('att_out').value||curT);
+  var status=document.getElementById('att_status').value;
+  var p={action:'punchAttendance','Date':date,'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch,'Status':status,'Remarks':document.getElementById('att_remarks').value.trim()};
+  if(field==='In')p['In Time']=time;else p['Out Time']=time;
+  var btn=document.getElementById(field==='In'?'punchInBtn':'punchOutBtn');btn.disabled=true;var ot=btn.innerHTML;btn.textContent='...';
+  postData(p).then(function(r){btn.disabled=false;btn.innerHTML=ot;
+    if(r&&r.success){
+      var rec=null;(allData.Attendance||[]).forEach(function(x){if((x['Employee ID']||'')===currentUser.userId&&sameDayAtt(x['Date'],date))rec=x;});
+      if(!rec){rec={'Date':date,'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch,'In Time':'','Out Time':'','Status':status,'Remarks':p['Remarks']};allData.Attendance.push(rec);}
+      if(field==='In')rec['In Time']=time;else rec['Out Time']=time;rec['Status']=status;
+      if(field==='In')document.getElementById('att_in').value=time;else document.getElementById('att_out').value=time;
+      showToast(field==='In'?'Punched IN \u2014 '+time:'Punched OUT \u2014 '+time,'success');
+      renderMyAttendance();
+    } else showToast('Failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){btn.disabled=false;btn.innerHTML=ot;showToast('Error: '+e.message,'error');});
 }
 
 function submitBrokerage(){
