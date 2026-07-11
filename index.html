@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>IdealFinway - Performance System</title>
-<!-- v23: v22 + client/employee filters + exact decimals + edit-sync fix -->
+<!-- v24: v23 + localStorage cache (instant login/data, background refresh) -->
 <style>
 :root{--bg:#0d1117;--card:#161b22;--card2:#1c2128;--border:#30363d;--text:#c9d1d9;--muted:#8b949e;--accent:#3fbf7f;--danger:#ef4444;--blue:#3b82f6;--amber:#f59e0b;--purple:#8b5cf6;--pink:#ec4899;}
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -963,6 +963,11 @@ function getJSON(action){return fetch(API+'?action='+action+'&t='+Date.now()).th
 function fetchData(){return getJSON('getData').then(function(r){if(r&&r.success)return r;return postData({action:'getData'});}).catch(function(){return postData({action:'getData'});});}
 function fetchEmployees(){return getJSON('getEmployees').then(function(r){if(r&&r.success)return r;return postData({action:'getEmployees'});}).catch(function(){return postData({action:'getEmployees'});});}
 function getSrch(id){var el=document.getElementById(id);return el?(el.value||'').toLowerCase():'';}
+/* v24: local cache — login hote hi turant data dikhe, fresh background me aaye */
+var CACHE_KEY='ifw_cache_v1';
+var hadCache=false;
+function saveCache(){try{localStorage.setItem(CACHE_KEY,JSON.stringify({t:Date.now(),d:allData,e:employees}));}catch(e){}}
+function loadCache(){try{var c=JSON.parse(localStorage.getItem(CACHE_KEY)||'null');if(c&&c.d)return c;}catch(e){}return null;}
 
 function getRange(f){
   var n=new Date(),y=n.getFullYear(),m=n.getMonth(),d=n.getDate();
@@ -1051,9 +1056,12 @@ function startApp(){
   document.getElementById('sidebarName').textContent=currentUser.name;
   document.getElementById('sidebarRole').textContent=currentUser.role.toUpperCase();
   document.getElementById('sidebarBranch').textContent=currentUser.branch;
+  var c=loadCache();
+  if(c&&c.d){allData=c.d;if(c.e&&c.e.length&&!employees.length)employees=c.e;hadCache=true;}
   if(currentUser.role==='admin'){document.getElementById('adminNav').style.display='block';showPage('adminDash');}
   else if(currentUser.role==='finance'){document.getElementById('finNav').style.display='block';showPage('finDash');}
   else{document.getElementById('empNav').style.display='block';showPage('empDash');}
+  if(hadCache)checkSIPAlerts();
   loadAll();
 }
 
@@ -1084,7 +1092,7 @@ function curPage(){var p=document.querySelector('.page.active');return p?p.id.re
 
 function loadAll(attempt){
   attempt=attempt||1;
-  if(attempt===1)showToast('Loading data...','success');
+  if(attempt===1&&!hadCache)showToast('Loading data...','success');
   fetchData().then(function(r){
     if(r&&r.success){
       allData={
@@ -1102,7 +1110,7 @@ function loadAll(attempt){
         Points:r.points||r.Points||[],
         Meetings:r.meetings||r.Meetings||[]
       };
-      checkSIPAlerts();renderPage(curPage());loadEmps();
+      saveCache();checkSIPAlerts();renderPage(curPage());loadEmps();
     }else if(attempt<3){
       setTimeout(function(){loadAll(attempt+1);},4000);
     }else{
@@ -1117,6 +1125,7 @@ function loadEmps(){
   fetchEmployees().then(function(r){
     if(r&&r.success){
       employees=r.employees||[];
+      saveCache();
       var sel=document.getElementById('attEmpFilter');
       if(sel){sel.innerHTML='<option value="">All Employees</option>';employees.forEach(function(e){var o=document.createElement('option');o.value=e['Employee ID'];o.textContent=e['Name'];sel.appendChild(o);});}
       renderPage(curPage());
@@ -2414,6 +2423,8 @@ function initEmpLoad(attempt){
   }).catch(function(){if(attempt<5)setTimeout(function(){initEmpLoad(attempt+1);},3000);});
 }
 (function(){
+  var c=loadCache();
+  if(c&&c.e&&c.e.length)employees=c.e; /* cached list se login turant — fresh list background me aa jayegi */
   initEmpLoad(1);
   document.getElementById('loginPass').addEventListener('keydown',function(e){if(e.key==='Enter')login();});
 })();
