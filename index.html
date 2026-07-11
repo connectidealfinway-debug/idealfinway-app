@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>IdealFinway - Performance System</title>
-<!-- v22: Choice upload + Client Brokerage + Income/Expense + Monthly Hisab + Finance role -->
+<!-- v23: v22 + client/employee filters + exact decimals + edit-sync fix -->
 <style>
 :root{--bg:#0d1117;--card:#161b22;--card2:#1c2128;--border:#30363d;--text:#c9d1d9;--muted:#8b949e;--accent:#3fbf7f;--danger:#ef4444;--blue:#3b82f6;--amber:#f59e0b;--purple:#8b5cf6;--pink:#ec4899;}
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -650,6 +650,10 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <button class="filter-btn" onclick="setF('year',this,'myBrok')">This Year</button>
         <button class="filter-btn" onclick="setF('all',this,'myBrok')">All Time</button>
       </div>
+      <div class="tab-btns">
+        <button class="tab-btn" id="myCBTabC" onclick="setMyCBView('clients')">&#128101; Client-wise Total</button>
+        <button class="tab-btn active" id="myCBTabE" onclick="setMyCBView('entries')">&#9776; All Entries</button>
+      </div>
       <div id="myBrokCalDiv"></div>
       <div class="stats-grid" id="myBrokStats"></div>
       <div class="table-wrap"><div class="table-inner" id="myBrokTable"></div></div>
@@ -797,7 +801,12 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <button class="filter-btn" onclick="setF('quarter',this,'cbrok')">Quarter</button>
         <button class="filter-btn" onclick="setF('year',this,'cbrok')">This Year</button>
         <button class="filter-btn" onclick="setF('all',this,'cbrok')">All Time</button>
+        <select class="srch" id="cbrokEmpF" onchange="renderCBrok()" style="min-width:170px;"><option value="">All Employees</option></select>
         <input class="srch" id="srch-cbrok" placeholder="&#128269; Client / employee..." oninput="renderCBrok()">
+      </div>
+      <div class="tab-btns">
+        <button class="tab-btn active" id="cbrokTabC" onclick="setCBrokView('clients')">&#128101; Client-wise Total</button>
+        <button class="tab-btn" id="cbrokTabE" onclick="setCBrokView('entries')">&#9776; All Entries</button>
       </div>
       <div id="cbrokCalDiv"></div>
       <div class="stats-grid" id="cbrokStats"></div>
@@ -1496,7 +1505,7 @@ function renderEmpDash(){
   var pct=getCommission(uid);
   var myCB=fDate(fEmp(allData.ClientBrokerage||[],uid),f).reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
   document.getElementById('empDashStats').innerHTML=mkStats([
-    {label:'Client Brokerage',value:fmt(myCB),sub:'My share ('+pct+'%): '+fmt(Math.round(myCB*pct/100)),color:'green'},
+    {label:'Client Brokerage',value:fmt(myCB),sub:'My share ('+pct+'%): '+fmt(r2(myCB*pct/100)),color:'green'},
     {label:'SIP Amount',value:fmt(sipAmt),sub:sipR.length+' clients · '+gBadge(gSIP),color:'green'},
     {label:'Lumpsum',value:fmt(lumpAmt),sub:lumpR.length+' entries',color:'amber'},
     {label:'Insurance Premium',value:fmt(insAmt),sub:ins.length+' clients · '+gBadge(gIns),color:'blue'},
@@ -1523,18 +1532,25 @@ function renderMyBrok(){
   document.getElementById('myBrokCalDiv').innerHTML=mkBrokCalendar(myC.concat(myRows),'myBrok');
   document.getElementById('myBrokStats').innerHTML=mkStats([
     {label:periodLabel(f)+' Client Brokerage',value:fmt(cT),sub:Object.keys(uniqC).length+' clients',color:'green'},
-    {label:'My Share ('+pct+'%)',value:fmt(Math.round(cT*pct/100)),sub:'aapka hissa',color:'blue'},
+    {label:'My Share ('+pct+'%)',value:fmt(r2(cT*pct/100)),sub:'aapka hissa',color:'blue'},
     {label:'Lifetime Client Brokerage',value:fmt(cLife),sub:myC.length+' entries',color:'purple'},
     {label:periodLabel(f)+' Manual Entries',value:fmt(t),sub:rows.length+' entries',color:'amber'}
   ]);
   var h='';
   if(cRows.length){
-    h+='<table><thead><tr><th>Date</th><th>Client ID</th><th>Client Name</th><th>Brokerage</th><th>My Share ('+pct+'%)</th></tr></thead><tbody>';
-    cRows.slice().sort(function(a,b){return new Date(b['Date'])-new Date(a['Date'])||parseFloat(b['Amount']||0)-parseFloat(a['Amount']||0);}).forEach(function(r){
-      var amt=parseFloat(r['Amount']||0);
-      h+='<tr><td>'+r['Date']+'</td><td>'+(r['Client ID']||'-')+'</td><td style="font-weight:600;">'+(r['Client Name']||'-')+'</td><td class="money">'+fmt(amt)+'</td><td class="money">'+fmt(Math.round(amt*pct/100))+'</td></tr>';
-    });
-    h+='</tbody></table>';
+    if(myCBView==='clients'){
+      var agg=aggByClient(cRows);
+      h+='<table><thead><tr><th>#</th><th>Client ID</th><th>Client Name</th><th>Entries</th><th>Brokerage</th><th>My Share ('+pct+'%)</th></tr></thead><tbody>';
+      agg.forEach(function(c,i){h+='<tr><td>'+(i+1)+'</td><td>'+(c.cid||'-')+'</td><td style="font-weight:600;">'+(c.name||'-')+'</td><td>'+c.n+'</td><td class="money">'+fmt(c.amt)+'</td><td class="money">'+fmt(r2(c.amt*pct/100))+'</td></tr>';});
+      h+='</tbody></table>';
+    }else{
+      h+='<table><thead><tr><th>Date</th><th>Client ID</th><th>Client Name</th><th>Brokerage</th><th>My Share ('+pct+'%)</th></tr></thead><tbody>';
+      cRows.slice().sort(function(a,b){return new Date(b['Date'])-new Date(a['Date'])||parseFloat(b['Amount']||0)-parseFloat(a['Amount']||0);}).forEach(function(r){
+        var amt=parseFloat(r['Amount']||0);
+        h+='<tr><td>'+r['Date']+'</td><td>'+(r['Client ID']||'-')+'</td><td style="font-weight:600;">'+(r['Client Name']||'-')+'</td><td class="money">'+fmt(amt)+'</td><td class="money">'+fmt(r2(amt*pct/100))+'</td></tr>';
+      });
+      h+='</tbody></table>';
+    }
   } else h='<div class="no-data">Is period me client brokerage nahi hai</div>';
   if(rows.length){
     h+='<div class="sec-title" style="padding:14px;">Manual Entries</div>';
@@ -1654,7 +1670,7 @@ function doSubmit(payload,sheet,btnEl,btnTxt,clearFn){
   btnEl.disabled=true;btnEl.textContent='Adding...';
   postData(payload).then(function(r){
     btnEl.disabled=false;btnEl.textContent=btnTxt;
-    if(r&&r.success){showToast('Added successfully!','success');allData[sheet].push(payload);if(clearFn)clearFn();}
+    if(r&&r.success){showToast('Added successfully!','success');allData[sheet].push(payload);if(clearFn)clearFn();setTimeout(function(){loadAll(2);},600);}
     else showToast('Failed: '+(r&&r.error||'Unknown'),'error');
   }).catch(function(e){btnEl.disabled=false;btnEl.textContent=btnTxt;showToast('Error: '+e.message,'error');});
 }
@@ -1830,6 +1846,15 @@ function getCommission(uid){
 function monthOf(dstr){var d=new Date(dstr||'');if(isNaN(d))return '';var m=d.getMonth()+1;return d.getFullYear()+'-'+(m<10?'0':'')+m;}
 function curMonth(){var n=new Date();var m=n.getMonth()+1;return n.getFullYear()+'-'+(m<10?'0':'')+m;}
 function fMonth(rows,mo){if(!mo)return rows;return rows.filter(function(r){return monthOf(r['Date'])===mo;});}
+function r2(x){return Math.round((parseFloat(x)||0)*100)/100;}
+var cbrokView='clients',myCBView='entries';
+function setCBrokView(v){cbrokView=v;document.getElementById('cbrokTabC').className='tab-btn'+(v==='clients'?' active':'');document.getElementById('cbrokTabE').className='tab-btn'+(v==='entries'?' active':'');renderCBrok();}
+function setMyCBView(v){myCBView=v;document.getElementById('myCBTabC').className='tab-btn'+(v==='clients'?' active':'');document.getElementById('myCBTabE').className='tab-btn'+(v==='entries'?' active':'');renderMyBrok();}
+function aggByClient(rows){
+  var m={};
+  rows.forEach(function(r){var k=(r['Client ID']||'').trim().toUpperCase();if(!m[k])m[k]={cid:r['Client ID'],name:r['Client Name']||'',emp:r['Employee Name']||'',amt:0,n:0};m[k].amt+=parseFloat(r['Amount']||0);m[k].n++;if(r['Client Name'])m[k].name=r['Client Name'];});
+  return Object.keys(m).map(function(k){return m[k];}).sort(function(a,b){return b.amt-a.amt;});
+}
 
 /* ===== v22: CHOICE SHEET UPLOAD ===== */
 var choiceParsed=null;
@@ -1948,7 +1973,7 @@ function buildChoicePreview(){
   h+='<div class="table-wrap" style="margin-bottom:16px;"><div class="table-inner"><table><thead><tr><th>Employee</th><th>Branch</th><th>Clients</th><th>Brokerage</th><th>Share</th></tr></thead><tbody>';
   Object.keys(empSum).sort(function(a,b){return empSum[b].amt-empSum[a].amt;}).forEach(function(k){
     var e=empSum[k];var pc=(k===ADMIN_ID)?0:getCommission(k);
-    h+='<tr><td style="font-weight:600;">'+e.name+(k===ADMIN_ID?' (Direct/Unmatched)':'')+'</td><td>'+e.branch+'</td><td>'+e.n+'</td><td class="money">'+fmt(e.amt)+'</td><td class="money">'+(pc?fmt(Math.round(e.amt*pc/100))+' ('+pc+'%)':'-')+'</td></tr>';
+    h+='<tr><td style="font-weight:600;">'+e.name+(k===ADMIN_ID?' (Direct/Unmatched)':'')+'</td><td>'+e.branch+'</td><td>'+e.n+'</td><td class="money">'+fmt(e.amt)+'</td><td class="money">'+(pc?fmt(r2(e.amt*pc/100))+' ('+pc+'%)':'-')+'</td></tr>';
   });
   h+='</tbody></table></div></div>';
   if(unmatched.length){
@@ -1997,7 +2022,14 @@ function confirmChoiceUpload(replace){
 /* ===== v22: ADMIN CLIENT BROKERAGE ===== */
 function renderCBrok(){
   var all=allData.ClientBrokerage||[];
+  var sel=document.getElementById('cbrokEmpF');
+  if(sel&&sel.options.length<=1&&employees.length){
+    employees.forEach(function(e){var o=document.createElement('option');o.value=e['Employee ID'];o.textContent=e['Name'];sel.appendChild(o);});
+    var oa=document.createElement('option');oa.value=ADMIN_ID;oa.textContent='Ravikant (Direct/Unmatched)';sel.appendChild(oa);
+  }
   var rows=fDate(all,filters['cbrok']||'month');
+  var empF=sel?sel.value:'';
+  if(empF)rows=rows.filter(function(r){return (r['Employee ID']||'').trim().toLowerCase()===empF.trim().toLowerCase();});
   var q=getSrch('srch-cbrok');rows=srchFilter(rows,q,['Client Name','Client ID','Employee Name','Branch']);
   var t=rows.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
   var life=all.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
@@ -2006,17 +2038,28 @@ function renderCBrok(){
   document.getElementById('cbrokStats').innerHTML=mkStats([
     {label:'Lifetime',value:fmt(life),sub:all.length+' entries',color:'green'},
     {label:periodLabel(filters['cbrok']||'month'),value:fmt(t),sub:rows.length+' entries',color:'blue'},
-    {label:'Unique Clients',value:Object.keys(uniq).length,sub:'is period me',color:'purple'}
+    {label:'Working Clients',value:Object.keys(uniq).length,sub:'jinhone kaam kiya (is period)',color:'purple'},
+    {label:'Avg / Client',value:fmt(Object.keys(uniq).length?r2(t/Object.keys(uniq).length):0),sub:'per client brokerage',color:'amber'}
   ]);
   var em={};
   rows.forEach(function(r){var id=r['Employee ID']||'?';if(!em[id])em[id]={name:r['Employee Name']||id,branch:r['Branch']||'',amt:0,n:0};em[id].amt+=parseFloat(r['Amount']||0);em[id].n++;});
   var ks=Object.keys(em).sort(function(a,b){return em[b].amt-em[a].amt;});
   var cards='<div class="emp-grid">';
   ks.forEach(function(id,i){var e=em[id];var pc=(id===ADMIN_ID)?0:getCommission(id);
-    cards+='<div class="emp-card"><div class="emp-name">#'+(i+1)+' '+e.name+'</div><div class="emp-meta">'+e.branch+' &#183; '+e.n+' clients</div><div class="emp-stats"><div class="emp-stat"><div class="emp-stat-val">'+fmt(e.amt)+'</div><div class="emp-stat-lbl">Brokerage</div></div><div class="emp-stat"><div class="emp-stat-val">'+(pc?fmt(Math.round(e.amt*pc/100)):'-')+'</div><div class="emp-stat-lbl">Share'+(pc?' ('+pc+'%)':'')+'</div></div></div></div>';});
+    cards+='<div class="emp-card"><div class="emp-name">#'+(i+1)+' '+e.name+'</div><div class="emp-meta">'+e.branch+' &#183; '+e.n+' clients</div><div class="emp-stats"><div class="emp-stat"><div class="emp-stat-val">'+fmt(e.amt)+'</div><div class="emp-stat-lbl">Brokerage</div></div><div class="emp-stat"><div class="emp-stat-val">'+(pc?fmt(r2(e.amt*pc/100)):'-')+'</div><div class="emp-stat-lbl">Share'+(pc?' ('+pc+'%)':'')+'</div></div></div></div>';});
   cards+='</div>';
   document.getElementById('cbrokEmpCards').innerHTML=ks.length?cards:'';
-  document.getElementById('cbrokTable').innerHTML=mkTable(rows,[{k:'Date',l:'Date'},{k:'Client ID',l:'Client ID'},{k:'Client Name',l:'Client'},{k:'Employee Name',l:'Employee'},{k:'Branch',l:'Branch'},{k:'Amount',l:'Brokerage',money:true},{k:'Total Brokerage',l:'Total Brok',money:true}],'ClientBrokerage');
+  if(cbrokView==='clients'){
+    var agg=aggByClient(rows);
+    if(!agg.length){document.getElementById('cbrokTable').innerHTML='<div class="no-data">No records found</div>';}
+    else{
+      var th='<table><thead><tr><th>#</th><th>Client ID</th><th>Client Name</th><th>Employee</th><th>Entries</th><th>Total Brokerage</th></tr></thead><tbody>';
+      agg.forEach(function(c,i){th+='<tr><td>'+(i+1)+'</td><td>'+(c.cid||'-')+'</td><td style="font-weight:600;">'+(c.name||'-')+'</td><td>'+(c.emp||'-')+'</td><td>'+c.n+'</td><td class="money">'+fmt(c.amt)+'</td></tr>';});
+      document.getElementById('cbrokTable').innerHTML=th+'</tbody></table>';
+    }
+  }else{
+    document.getElementById('cbrokTable').innerHTML=mkTable(rows,[{k:'Date',l:'Date'},{k:'Client ID',l:'Client ID'},{k:'Client Name',l:'Client'},{k:'Employee Name',l:'Employee'},{k:'Branch',l:'Branch'},{k:'Amount',l:'Brokerage',money:true},{k:'Total Brokerage',l:'Total Brok',money:true}],'ClientBrokerage');
+  }
 }
 
 /* ===== v22: INCOME / EXPENSE ===== */
@@ -2137,10 +2180,10 @@ function renderHisab(){
     var st=hisabSt.rows[eid]||(hisabSt.rows[eid]={lines:[],pct:getCommission(eid),status:'Pending',paidDate:'',saved:false});
     var brok=cbMonth.filter(function(r){return (r['Employee ID']||'').trim().toLowerCase()===eid.trim().toLowerCase();}).reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
     st.brok=brok;
-    var share=Math.round(brok*st.pct/100);
+    var share=r2(brok*st.pct/100);
     var adds=st.lines.filter(function(l){return l.t==='add';}).reduce(function(s,l){return s+(parseFloat(l.a)||0);},0);
     var deds=st.lines.filter(function(l){return l.t==='ded';}).reduce(function(s,l){return s+(parseFloat(l.a)||0);},0);
-    var net=share+adds-deds;
+    var net=r2(share+adds-deds);
     totPay+=net;
     if(st.status==='Paid'){paidAmt+=net;paidN++;}else pendAmt+=net;
     cardsH+='<div class="hisab-card">';
@@ -2206,10 +2249,10 @@ function rmHisabLine(eid,i){hisabSt.rows[eid].lines.splice(i,1);renderHisab();}
 function hisabPayload(eid,status,paidDate){
   var e=employees.find(function(x){return x['Employee ID']===eid;})||{};
   var st=hisabSt.rows[eid];
-  var share=Math.round((st.brok||0)*st.pct/100);
+  var share=r2((st.brok||0)*st.pct/100);
   var adds=st.lines.filter(function(l){return l.t==='add';}).reduce(function(s,l){return s+(parseFloat(l.a)||0);},0);
   var deds=st.lines.filter(function(l){return l.t==='ded';}).reduce(function(s,l){return s+(parseFloat(l.a)||0);},0);
-  return {action:'saveHisab','Month':hisabSt.month,'Employee ID':eid,'Employee Name':e['Name']||eid,'Branch':e['Branch']||'','Brokerage':st.brok||0,'Commission %':st.pct,'Brok Share':share,'Additions':adds,'Deductions':deds,'Net Payable':share+adds-deds,'Status':status||st.status||'Pending','Paid Date':paidDate!==undefined?paidDate:(st.paidDate||''),'Details':JSON.stringify(st.lines)};
+  return {action:'saveHisab','Month':hisabSt.month,'Employee ID':eid,'Employee Name':e['Name']||eid,'Branch':e['Branch']||'','Brokerage':st.brok||0,'Commission %':st.pct,'Brok Share':share,'Additions':adds,'Deductions':deds,'Net Payable':r2(share+adds-deds),'Status':status||st.status||'Pending','Paid Date':paidDate!==undefined?paidDate:(st.paidDate||''),'Details':JSON.stringify(st.lines)};
 }
 function upsertLocalHisab(p){
   var found=(allData.Hisab||[]).find(function(r){return r['Month']===p['Month']&&r['Employee ID']===p['Employee ID'];});
@@ -2259,20 +2302,21 @@ function renderMyHisab(){
 
 var editSt={sheet:null,rowNum:null};
 function openEdit(sheet,rowNum,trEl){
+  if(!rowNum||rowNum<2){showToast('Ye nayi entry abhi sync ho rahi hai — data reload ho raha hai, 2-3 second baad edit karo','error');loadAll(2);return;}
   editSt={sheet:sheet,rowNum:rowNum};
   var colMap={Brokerage:['Date','Employee Name','Branch','Amount'],SIP:['Date','Employee Name','Client Name','Client ID','Client Phone','Type','Amount','SIP Due Date'],Insurance:['Date','Employee Name','Client Name','Client ID','Client Phone','Type','Premium'],Accounts:['Date','Employee Name','Client Name','Client ID','Client Phone','Status'],Leads:['Date','Employee Name','Client Name','Client Phone','Category','Contact','Meeting Done','Follow Up','Remarks'],Students:['Date','Employee Name','Student Name','Student Phone','Batch','Reference By','Status'],ClientBrokerage:['Date','Client ID','Client Name','Employee Name','Branch','Amount','Total Brokerage'],Income:['Date','Category','Name','Course','Amount','Pending','Credited To','Remarks'],Expense:['Date','Category','Description','Amount','Paid By','Branch']};
   var editFields={Brokerage:['Date','Amount'],SIP:['Date','Client Name','Client ID','Client Phone','Type','Amount','SIP Due Date'],Insurance:['Date','Client Name','Client ID','Client Phone','Type','Premium'],Accounts:['Date','Client Name','Client ID','Client Phone','Status'],Leads:['Date','Client Name','Client Phone','Category','Contact','Meeting Done','Follow Up','Remarks'],Students:['Date','Student Name','Student Phone','Batch','Reference By','Status'],ClientBrokerage:['Date','Client ID','Client Name','Amount'],Income:['Date','Category','Name','Amount','Pending','Credited To','Remarks'],Expense:['Date','Category','Description','Amount','Paid By','Branch']};
   var selOpts={Type:sheet==='SIP'?['SIP','Lumpsum']:['Health - ICICI Lombard','Life - Tata'],Status:sheet==='Students'?['Joined','Interested','Not Interested']:['Active','Inactive'],'Meeting Done':['Yes','No'],Contact:['Call','WhatsApp','Meeting'],Category:sheet==='Income'?INCOME_CATS:(sheet==='Expense'?EXPENSE_CATS:['SIP/MF','Insurance','Account','Student','Other']),'Credited To':['Ravi Bank Account','Office Account','Cash','Other'],Branch:['Hisar','Adampur','Rohtak','Tohana']};
   var cols=colMap[sheet]||[],fields=editFields[sheet]||[];
   var cells=trEl.querySelectorAll('td'),cur={};
-  cols.forEach(function(col,i){var cell=cells[i];if(cell){var sp=cell.querySelector('.badge');cur[col]=sp?sp.textContent.trim():cell.textContent.trim();}});
+  cols.forEach(function(col,i){var cell=cells[i];if(cell){var sp=cell.querySelector('.badge');var v=sp?sp.textContent.trim():cell.textContent.trim();if(v==='-')v='';cur[col]=v;}});
   var html='<div class="modal-title">Edit '+sheet+' Entry</div>';
   fields.forEach(function(f){
     var val=cur[f]||'';
     html+='<div class="form-group"><label>'+f+'</label>';
     if(selOpts[f]){html+='<select id="ef_'+f.replace(/ /g,'_')+'">';selOpts[f].forEach(function(o){html+='<option value="'+o+'"'+(val===o?' selected':'')+'>'+o+'</option>';});html+='</select>';}
     else if(f==='Date'||f==='SIP Due Date')html+='<input type="date" id="ef_'+f.replace(/ /g,'_')+'" value="'+val+'">';
-    else if(f==='Amount'||f==='Premium')html+='<input type="number" id="ef_'+f.replace(/ /g,'_')+'" value="'+val.replace(/[^\d.]/g,'')+'">';
+    else if(f==='Amount'||f==='Premium'||f==='Pending'||f==='Total Fee')html+='<input type="number" id="ef_'+f.replace(/ /g,'_')+'" value="'+val.replace(/[^\d.]/g,'')+'">';
     else html+='<input type="text" id="ef_'+f.replace(/ /g,'_')+'" value="'+val+'">';
     html+='</div>';
   });
@@ -2289,6 +2333,7 @@ function saveEdit(){
 }
 
 function confirmDel(sheet,rowNum){
+  if(!rowNum||rowNum<2){showToast('Ye nayi entry abhi sync ho rahi hai — data reload ho raha hai, 2-3 second baad delete karo','error');loadAll(2);return;}
   document.getElementById('modalBox').innerHTML='<div class="modal-title">Delete Entry?</div><p style="color:var(--muted);font-size:13px;margin-bottom:20px;">This cannot be undone.</p><div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-danger" onclick="doDel(\''+sheet+'\','+rowNum+')">Delete</button></div>';
   document.getElementById('modal').className='show';
 }
