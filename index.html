@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>IdealFinway - Performance System</title>
-<!-- v25: sidebar groups + auto-attendance + calendar day-click + combined brokerage + recurring SIP due + hisab old-month entry -->
+<!-- v25.1: + late rule 9:30 -->
 <style>
 :root{--bg:#0d1117;--card:#161b22;--card2:#1c2128;--border:#30363d;--text:#c9d1d9;--muted:#8b949e;--accent:#3fbf7f;--danger:#ef4444;--blue:#3b82f6;--amber:#f59e0b;--purple:#8b5cf6;--pink:#ec4899;}
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -2408,12 +2408,14 @@ function autoPunchIn(){
   if(rec&&rec['In Time']){autoPunched=true;return;}
   autoPunched=true;
   var now=new Date();var curT=('0'+now.getHours()).slice(-2)+':'+('0'+now.getMinutes()).slice(-2);
-  postData({action:'punchAttendance','Date':t,'Employee ID':uid,'Employee Name':currentUser.name,'Branch':currentUser.branch,'Status':'Present','In Time':curT,'Remarks':'Auto (login)'}).then(function(r){
+  /* 9:30 ke baad login = Late */
+  var aStatus=(now.getHours()>9||(now.getHours()===9&&now.getMinutes()>30))?'Late':'Present';
+  postData({action:'punchAttendance','Date':t,'Employee ID':uid,'Employee Name':currentUser.name,'Branch':currentUser.branch,'Status':aStatus,'In Time':curT,'Remarks':'Auto (login)'}).then(function(r){
     if(r&&r.success){
-      if(!rec){rec={'Date':t,'Employee ID':uid,'Employee Name':currentUser.name,'Branch':currentUser.branch,'In Time':curT,'Out Time':'','Status':'Present','Remarks':'Auto (login)'};allData.Attendance.push(rec);}
-      else rec['In Time']=curT;
+      if(!rec){rec={'Date':t,'Employee ID':uid,'Employee Name':currentUser.name,'Branch':currentUser.branch,'In Time':curT,'Out Time':'','Status':aStatus,'Remarks':'Auto (login)'};allData.Attendance.push(rec);}
+      else{rec['In Time']=curT;rec['Status']=aStatus;}
       saveCache();
-      showToast('&#10003; Aaj ki attendance lag gayi &#8212; '+curT,'success');
+      showToast('&#10003; Attendance lag gayi &#8212; '+curT+(aStatus==='Late'?' (Late)':''),aStatus==='Late'?'error':'success');
     }
   }).catch(function(){autoPunched=false;});
 }
