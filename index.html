@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>IdealFinway - Performance System</title>
-<!-- v26: partners net-profit %, fixed salary, salary slip email, date-wise matrix, top-10 clients, daily chart, combined dashboard P&L, finance restrictions, picker icons -->
+<!-- v26.1: partners net-profit %, fixed salary, salary slip email, date-wise matrix, top-10 clients, daily chart, combined dashboard P&L, finance restrictions, picker icons -->
 <style>
 :root{--bg:#0d1117;--card:#161b22;--card2:#1c2128;--border:#30363d;--text:#c9d1d9;--muted:#8b949e;--accent:#3fbf7f;--danger:#ef4444;--blue:#3b82f6;--amber:#f59e0b;--purple:#8b5cf6;--pink:#ec4899;}
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -2326,7 +2326,7 @@ function renderHisab(){
   var tExp=r2(exp.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0));
   function empBrok(eid){return r2(cbMonth.filter(function(r){return (r['Employee ID']||'').trim().toLowerCase()===String(eid).trim().toLowerCase();}).reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0));}
   /* shared IDs: in IDs ke clients ka % kisi aur employee ke hisab me auto-add hota hai */
-  var SHARED=[{from:'jai_himanshu',to:'ideal.himanshu',pct:25,label:'Jai_Himanshu clients (25%)'}];
+  var SHARED=[{from:'jh_hansi',to:'ideal.himanshu',pct:25,label:'JH_HANSI (Jai Himanshu) clients (25%)'}];
   var emps=employees.filter(function(e){
     var role=(e['Role']||'employee').toLowerCase();
     if((e['Status']||'Active')!=='Active'||role==='admin')return false;
