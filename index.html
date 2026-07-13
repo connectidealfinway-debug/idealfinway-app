@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>IdealFinway - Performance System</title>
-<!-- v24: v23 + localStorage cache (instant login/data, background refresh) -->
+<!-- v25: sidebar groups + auto-attendance + calendar day-click + combined brokerage + recurring SIP due + hisab old-month entry -->
 <style>
 :root{--bg:#0d1117;--card:#161b22;--card2:#1c2128;--border:#30363d;--text:#c9d1d9;--muted:#8b949e;--accent:#3fbf7f;--danger:#ef4444;--blue:#3b82f6;--amber:#f59e0b;--purple:#8b5cf6;--pink:#ec4899;}
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -164,6 +164,17 @@ tbody td{padding:10px 14px;vertical-align:middle;}
 .tab-btns{display:flex;gap:8px;margin-bottom:16px;}
 .tab-btn{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:8px 22px;font-size:13px;font-weight:700;cursor:pointer;}
 .tab-btn.active{background:var(--accent);border-color:var(--accent);color:#000;}
+/* v25 */
+.nav-sec{padding:9px 16px;font-size:11px;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;gap:7px;border-radius:6px;margin:3px 6px 1px;transition:background .15s;}
+.nav-sec:hover{background:var(--card2);color:var(--text);}
+.nav-sec .arr{color:var(--accent);font-size:10px;width:10px;display:inline-block;}
+.nav-grp{margin-left:8px;border-left:1px solid var(--border);}
+.cal-day.clickable{cursor:pointer;}
+.cal-day.clickable:hover{outline:2px solid var(--accent);outline-offset:1px;}
+.day-detail{background:var(--card);border:1px solid var(--accent);border-radius:12px;padding:16px;margin-bottom:20px;}
+.day-detail h3{font-size:14px;color:var(--accent);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;}
+.day-close{cursor:pointer;color:var(--muted);font-size:13px;border:1px solid var(--border);border-radius:6px;padding:3px 10px;}
+.day-close:hover{color:var(--danger);border-color:var(--danger);}
 </style>
 </head>
 <body>
@@ -187,31 +198,37 @@ tbody td{padding:10px 14px;vertical-align:middle;}
       <div class="ubranch" id="sidebarBranch">-</div>
     </div>
     <div id="adminNav" style="display:none">
-      <div class="nav-section">Admin</div>
-      <div class="nav-item" onclick="showPage('adminDash')">&#9632; Dashboard</div>
-      <div class="nav-item" onclick="showPage('adminEmps')">&#128101; Employees</div>
-      <div class="nav-section">Reports</div>
-      <div class="nav-item" onclick="showPage('adminBrok')">&#36; Brokerage</div>
-      <div class="nav-item" onclick="showPage('adminCBrok')">&#128202; Client Brokerage</div>
-      <div class="nav-item" onclick="showPage('adminSIP')">&#128200; Mutual Fund</div>
-      <div class="nav-item" onclick="showPage('adminIns')">&#128737; Insurance</div>
-      <div class="nav-item" onclick="showPage('adminAcc')">&#128100; Accounts</div>
-      <div class="nav-item" onclick="showPage('adminLeads')">&#128203; All Leads</div>
-      <div class="nav-item" onclick="showPage('adminMeetings')">&#129309; Meetings</div>
-      <div class="nav-item" onclick="showPage('adminStudents')">&#127891; Students</div>
-      <div class="nav-item" onclick="showPage('adminAttendance')">&#128197; Attendance</div>
-      <div class="nav-item" onclick="showPage('adminPoints')">&#11088; Points</div>
-      <div class="nav-section">Finance</div>
+      <div class="nav-section">Dashboards</div>
+      <div class="nav-item" onclick="showPage('adminDash')">&#9632; Main Dashboard</div>
+      <div class="nav-item" onclick="showPage('adminEmps')">&#128101; Employee Performance</div>
       <div class="nav-item" onclick="showPage('finDash')">&#128176; Finance Dashboard</div>
-      <div class="nav-item" onclick="showPage('finRecords')">&#8377; Income &amp; Expense</div>
-      <div class="nav-item" onclick="showPage('hisab')">&#9878; Monthly Hisab</div>
-      <div class="nav-section">Manage</div>
-      <div class="nav-item" onclick="showPage('manageEmps')">&#9998; Manage Employees</div>
-      <div class="nav-item" onclick="showPage('uploadChoice')">&#11014; Upload Choice Sheet</div>
-      <div class="nav-item" onclick="showPage('addIncome')">&#43; Add Income</div>
-      <div class="nav-item" onclick="showPage('addExpense')">&#43; Add Expense</div>
-      <div class="nav-item" onclick="showPage('addBrok')">&#43; Add Brokerage</div>
-      <div class="nav-item" onclick="showPage('addPoints')">&#43; Add Points</div>
+      <div class="nav-sec" onclick="toggleGrp('gRep',this)"><span class="arr">&#9656;</span>Reports</div>
+      <div class="nav-grp" id="gRep" style="display:none">
+        <div class="nav-item" onclick="showPage('adminBrok')">&#36; Brokerage</div>
+        <div class="nav-item" onclick="showPage('adminCBrok')">&#128202; Client Brokerage</div>
+        <div class="nav-item" onclick="showPage('adminSIP')">&#128200; Mutual Fund</div>
+        <div class="nav-item" onclick="showPage('adminIns')">&#128737; Insurance</div>
+        <div class="nav-item" onclick="showPage('adminAcc')">&#128100; Accounts</div>
+        <div class="nav-item" onclick="showPage('adminLeads')">&#128203; All Leads</div>
+        <div class="nav-item" onclick="showPage('adminMeetings')">&#129309; Meetings</div>
+        <div class="nav-item" onclick="showPage('adminStudents')">&#127891; Students</div>
+        <div class="nav-item" onclick="showPage('adminAttendance')">&#128197; Attendance</div>
+        <div class="nav-item" onclick="showPage('adminPoints')">&#11088; Points</div>
+      </div>
+      <div class="nav-sec" onclick="toggleGrp('gFin',this)"><span class="arr">&#9656;</span>Finance</div>
+      <div class="nav-grp" id="gFin" style="display:none">
+        <div class="nav-item" onclick="showPage('finRecords')">&#8377; Income &amp; Expense</div>
+        <div class="nav-item" onclick="showPage('hisab')">&#9878; Monthly Hisab</div>
+        <div class="nav-item" onclick="showPage('addIncome')">&#43; Add Income</div>
+        <div class="nav-item" onclick="showPage('addExpense')">&#43; Add Expense</div>
+      </div>
+      <div class="nav-sec" onclick="toggleGrp('gMan',this)"><span class="arr">&#9656;</span>Manage</div>
+      <div class="nav-grp" id="gMan" style="display:none">
+        <div class="nav-item" onclick="showPage('manageEmps')">&#9998; Manage Employees</div>
+        <div class="nav-item" onclick="showPage('uploadChoice')">&#11014; Upload Choice Sheet</div>
+        <div class="nav-item" onclick="showPage('addBrok')">&#43; Add Brokerage</div>
+        <div class="nav-item" onclick="showPage('addPoints')">&#43; Add Points</div>
+      </div>
     </div>
     <div id="finNav" style="display:none">
       <div class="nav-section">Finance</div>
@@ -226,24 +243,28 @@ tbody td{padding:10px 14px;vertical-align:middle;}
     <div id="empNav" style="display:none">
       <div class="nav-section">My Work</div>
       <div class="nav-item" onclick="showPage('empDash')">&#9632; Dashboard</div>
-      <div class="nav-section">Add Entry</div>
-      <div class="nav-item" onclick="showPage('addSIP')">&#43; Mutual Fund</div>
-      <div class="nav-item" onclick="showPage('addIns')">&#43; Insurance</div>
-      <div class="nav-item" onclick="showPage('addAcc')">&#43; Account</div>
-      <div class="nav-item" onclick="showPage('addLead')">&#43; Lead</div>
-      <div class="nav-item" onclick="showPage('addMeeting')">&#43; Meeting</div>
-      <div class="nav-item" onclick="showPage('addStudent')">&#43; Student Ref</div>
       <div class="nav-item" onclick="showPage('markAttendance')">&#9711; Attendance</div>
-      <div class="nav-section">My Records</div>
-      <div class="nav-item" onclick="showPage('myBrok')">&#36; Brokerage</div>
-      <div class="nav-item" onclick="showPage('myHisab')">&#9878; My Hisab</div>
-      <div class="nav-item" onclick="showPage('mySIP')">SIP / MF</div>
-      <div class="nav-item" onclick="showPage('myIns')">Insurance</div>
-      <div class="nav-item" onclick="showPage('myAcc')">Accounts</div>
-      <div class="nav-item" onclick="showPage('myLeads')">My Leads</div>
-      <div class="nav-item" onclick="showPage('myMeetings')">My Meetings</div>
-      <div class="nav-item" onclick="showPage('myStudents')">My Students</div>
-      <div class="nav-item" onclick="showPage('myPoints')">&#11088; My Points</div>
+      <div class="nav-sec" onclick="toggleGrp('gAdd',this)"><span class="arr">&#9656;</span>Add Entry</div>
+      <div class="nav-grp" id="gAdd" style="display:none">
+        <div class="nav-item" onclick="showPage('addSIP')">&#43; Mutual Fund</div>
+        <div class="nav-item" onclick="showPage('addIns')">&#43; Insurance</div>
+        <div class="nav-item" onclick="showPage('addAcc')">&#43; Account</div>
+        <div class="nav-item" onclick="showPage('addLead')">&#43; Lead</div>
+        <div class="nav-item" onclick="showPage('addMeeting')">&#43; Meeting</div>
+        <div class="nav-item" onclick="showPage('addStudent')">&#43; Student Ref</div>
+      </div>
+      <div class="nav-sec" onclick="toggleGrp('gMy',this)"><span class="arr">&#9656;</span>My Records</div>
+      <div class="nav-grp" id="gMy" style="display:none">
+        <div class="nav-item" onclick="showPage('myBrok')">&#36; Brokerage</div>
+        <div class="nav-item" onclick="showPage('myHisab')">&#9878; My Hisab</div>
+        <div class="nav-item" onclick="showPage('mySIP')">SIP / MF</div>
+        <div class="nav-item" onclick="showPage('myIns')">Insurance</div>
+        <div class="nav-item" onclick="showPage('myAcc')">Accounts</div>
+        <div class="nav-item" onclick="showPage('myLeads')">My Leads</div>
+        <div class="nav-item" onclick="showPage('myMeetings')">My Meetings</div>
+        <div class="nav-item" onclick="showPage('myStudents')">My Students</div>
+        <div class="nav-item" onclick="showPage('myPoints')">&#11088; My Points</div>
+      </div>
     </div>
     <div class="sidebar-bottom"><button class="btn-logout" onclick="logout()">&#8592; Logout</button></div>
   </nav>
@@ -655,6 +676,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <button class="tab-btn active" id="myCBTabE" onclick="setMyCBView('entries')">&#9776; All Entries</button>
       </div>
       <div id="myBrokCalDiv"></div>
+      <div id="myBrokDayDiv"></div>
       <div class="stats-grid" id="myBrokStats"></div>
       <div class="table-wrap"><div class="table-inner" id="myBrokTable"></div></div>
     </div>
@@ -809,6 +831,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <button class="tab-btn" id="cbrokTabE" onclick="setCBrokView('entries')">&#9776; All Entries</button>
       </div>
       <div id="cbrokCalDiv"></div>
+      <div id="cbrokDayDiv"></div>
       <div class="stats-grid" id="cbrokStats"></div>
       <div id="cbrokEmpCards"></div>
       <div class="table-wrap"><div class="table-inner" id="cbrokTable"></div></div>
@@ -1004,6 +1027,16 @@ function gBadge(pct){
   return '<span style="color:var(--muted);font-size:11px;">&#8594; Same as last month</span>';
 }
 
+function nextDue(dd){
+  /* SIP due date har month repeat hoti hai — stored date ka din use karke agli due date nikalo */
+  var d=new Date(dd);if(isNaN(d))return null;
+  var day=d.getDate();
+  var n=new Date();n.setHours(0,0,0,0);
+  function mk(y,m){return new Date(y,m,Math.min(day,new Date(y,m+1,0).getDate()));}
+  var c=mk(n.getFullYear(),n.getMonth());
+  if(c<n)c=mk(n.getFullYear(),n.getMonth()+1);
+  return c;
+}
 function checkSIPAlerts(){
   if(!currentUser||currentUser.role==='admin')return;
   var uid=currentUser.userId;
@@ -1013,14 +1046,14 @@ function checkSIPAlerts(){
     if((r['Employee ID']||'').trim().toLowerCase()!==uid.trim().toLowerCase())return false;
     if((r['Type']||'SIP')!=='SIP')return false;
     var dd=(r['SIP Due Date']||'').trim();if(!dd)return false;
-    var d=new Date(dd);if(isNaN(d))return false;d.setHours(0,0,0,0);
-    return d>=today&&d<limit;
+    var d2=nextDue(dd);
+    return d2&&d2>=today&&d2<limit;
   });
-  due.sort(function(a,b){return new Date(a['SIP Due Date'])-new Date(b['SIP Due Date']);});
+  due.sort(function(a,b){return nextDue(a['SIP Due Date'])-nextDue(b['SIP Due Date']);});
   ['sipAlert','sipAlertSIP'].forEach(function(id){
     var el=document.getElementById(id);if(!el)return;
     if(due.length>0){
-      el.innerHTML='&#9888; <strong>SIP Due (agle 3 din):</strong> '+due.map(function(r){var d=new Date(r['SIP Due Date']);var day=('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2);return (r['Client Name']||'')+' &#8212; '+day+' ('+fmt(r['Amount']||0)+')';}).join(' &nbsp;&#183;&nbsp; ');
+      el.innerHTML='&#9888; <strong>SIP Due (agle 3 din, har month repeat):</strong> '+due.map(function(r){var d=nextDue(r['SIP Due Date']);var day=('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2);return (r['Client Name']||'')+' &#8212; '+day+' ('+fmt(r['Amount']||0)+')';}).join(' &nbsp;&#183;&nbsp; ');
       el.classList.add('show');
     } else {el.classList.remove('show');}
   });
@@ -1066,7 +1099,7 @@ function startApp(){
 }
 
 function logout(){
-  currentUser=null;allData={Brokerage:[],ClientBrokerage:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[],Meetings:[],Income:[],Expense:[],Hisab:[]};
+  currentUser=null;autoPunched=false;allData={Brokerage:[],ClientBrokerage:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[],Meetings:[],Income:[],Expense:[],Hisab:[]};
   document.getElementById('loginWrap').style.display='flex';
   document.getElementById('appWrap').style.display='none';
   document.getElementById('adminNav').style.display='none';
@@ -1080,7 +1113,15 @@ function showPage(id){
   document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active');});
   var pg=document.getElementById('page-'+id);if(pg)pg.classList.add('active');
   document.querySelectorAll('.nav-item').forEach(function(n){if(n.getAttribute('onclick')&&n.getAttribute('onclick').indexOf("'"+id+"'")!==-1)n.classList.add('active');});
+  var act=document.querySelector('.nav-item.active');
+  if(act){var grp=act.closest('.nav-grp');if(grp&&grp.style.display==='none'){grp.style.display='block';var hd=grp.previousElementSibling;if(hd){var a=hd.querySelector('.arr');if(a)a.innerHTML='&#9662;';}}}
   renderPage(id);
+}
+function toggleGrp(id,hd){
+  var el=document.getElementById(id);if(!el)return;
+  var open=el.style.display==='none';
+  el.style.display=open?'block':'none';
+  if(hd){var a=hd.querySelector('.arr');if(a)a.innerHTML=open?'&#9662;':'&#9656;';}
 }
 
 function setF(f,btn,key){filters[key]=f;if(key==='empPerf')empRange=null;btn.parentElement.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');renderPage(curPage());}
@@ -1110,7 +1151,7 @@ function loadAll(attempt){
         Points:r.points||r.Points||[],
         Meetings:r.meetings||r.Meetings||[]
       };
-      saveCache();checkSIPAlerts();renderPage(curPage());loadEmps();
+      saveCache();checkSIPAlerts();autoPunchIn();renderPage(curPage());loadEmps();
     }else if(attempt<3){
       setTimeout(function(){loadAll(attempt+1);},4000);
     }else{
@@ -1248,7 +1289,7 @@ function mkCalendar(allRows,calKey,opts){
   return h;
 }
 
-function mkBrokCalendar(allRows,calKey){
+function mkBrokCalendar(allRows,calKey,clickFn){
   var n=new Date();
   var st=calStates[calKey]||{year:n.getFullYear(),month:n.getMonth()};
   /* Smart default: agar is calendar ko manually navigate nahi kiya gaya aur
@@ -1297,7 +1338,8 @@ function mkBrokCalendar(allRows,calKey){
     if(amt>0){lvl=Math.min(4,Math.max(1,Math.round((amt/maxAmt)*4)));if(lvl===0)lvl=1;}
     var isToday=td2.getFullYear()===y&&td2.getMonth()===m&&td2.getDate()===dd;
     var tipAmt=amt>0?' | ₹'+Math.round(amt).toLocaleString('en-IN'):'';
-    h+='<div class="cal-day lvl-'+lvl+(isToday?' cal-today':'')+'" title="'+dateStr+tipAmt+'"><div>'+dd+'</div>';
+    var clk=(clickFn&&amt>0)?' clickable" onclick="'+clickFn+'(\''+dateStr+'\')':'';
+    h+='<div class="cal-day lvl-'+lvl+(isToday?' cal-today':'')+clk+'" title="'+dateStr+tipAmt+'"><div>'+dd+'</div>';
     if(amt>0)h+='<div class="cal-amt">'+fmt(amt)+'</div>';
     h+='</div>';
   }
@@ -1513,8 +1555,11 @@ function renderEmpDash(){
   var myPts=fEmp(allData.Points||[],uid).reduce(function(s,r){return s+parseFloat(r['Points']||0);},0);
   var pct=getCommission(uid);
   var myCB=fDate(fEmp(allData.ClientBrokerage||[],uid),f).reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
+  var myMan=fDate(fEmp(allData.Brokerage||[],uid),f).reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
+  var myTot=r2(myCB+myMan);
   document.getElementById('empDashStats').innerHTML=mkStats([
-    {label:'Client Brokerage',value:fmt(myCB),sub:'My share ('+pct+'%): '+fmt(r2(myCB*pct/100)),color:'green'},
+    {label:'Total Brokerage',value:fmt(myTot),sub:'client: '+fmt(r2(myCB))+' &#183; manual: '+fmt(r2(myMan)),color:'green'},
+    {label:'My Share ('+pct+'%)',value:fmt(r2(myTot*pct/100)),sub:'total brokerage ka '+pct+'%',color:'blue'},
     {label:'SIP Amount',value:fmt(sipAmt),sub:sipR.length+' clients · '+gBadge(gSIP),color:'green'},
     {label:'Lumpsum',value:fmt(lumpAmt),sub:lumpR.length+' entries',color:'amber'},
     {label:'Insurance Premium',value:fmt(insAmt),sub:ins.length+' clients · '+gBadge(gIns),color:'blue'},
@@ -1538,12 +1583,14 @@ function renderMyBrok(){
   var rows=fDate(myRows,f);
   var t=rows.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
   var uniqC={};cRows.forEach(function(r){uniqC[(r['Client ID']||'').trim()]=1;});
-  document.getElementById('myBrokCalDiv').innerHTML=mkBrokCalendar(myC.concat(myRows),'myBrok');
+  document.getElementById('myBrokCalDiv').innerHTML=mkBrokCalendar(myC.concat(myRows),'myBrok','showMyBrokDay');
+  var lifeMan=myRows.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
+  var comb=r2(cT+t);
   document.getElementById('myBrokStats').innerHTML=mkStats([
-    {label:periodLabel(f)+' Client Brokerage',value:fmt(cT),sub:Object.keys(uniqC).length+' clients',color:'green'},
-    {label:'My Share ('+pct+'%)',value:fmt(r2(cT*pct/100)),sub:'aapka hissa',color:'blue'},
-    {label:'Lifetime Client Brokerage',value:fmt(cLife),sub:myC.length+' entries',color:'purple'},
-    {label:periodLabel(f)+' Manual Entries',value:fmt(t),sub:rows.length+' entries',color:'amber'}
+    {label:periodLabel(f)+' Total Brokerage',value:fmt(comb),sub:'client: '+fmt(r2(cT))+' &#183; manual: '+fmt(r2(t)),color:'green'},
+    {label:'My Share ('+pct+'%)',value:fmt(r2(comb*pct/100)),sub:'total ka '+pct+'%',color:'blue'},
+    {label:'Working Clients',value:Object.keys(uniqC).length,sub:'Avg/Client: '+fmt(Object.keys(uniqC).length?r2(cT/Object.keys(uniqC).length):0),color:'purple'},
+    {label:'Lifetime Total',value:fmt(r2(cLife+lifeMan)),sub:'ab tak ki total brokerage',color:'amber'}
   ]);
   var h='';
   if(cRows.length){
@@ -2043,7 +2090,7 @@ function renderCBrok(){
   var t=rows.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
   var life=all.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
   var uniq={};rows.forEach(function(r){uniq[(r['Client ID']||'').trim()]=1;});
-  document.getElementById('cbrokCalDiv').innerHTML=mkBrokCalendar(all,'cbrok');
+  document.getElementById('cbrokCalDiv').innerHTML=mkBrokCalendar(all,'cbrok','showCBrokDay');
   document.getElementById('cbrokStats').innerHTML=mkStats([
     {label:'Lifetime',value:fmt(life),sub:all.length+' entries',color:'green'},
     {label:periodLabel(filters['cbrok']||'month'),value:fmt(t),sub:rows.length+' entries',color:'blue'},
@@ -2176,7 +2223,7 @@ function renderHisab(){
     (allData.Hisab||[]).forEach(function(r){
       if(r['Month']!==mo)return;
       var lines=[];try{lines=JSON.parse(r['Details']||'[]');}catch(e){lines=[];}
-      hisabSt.rows[r['Employee ID']]={lines:lines,pct:parseFloat(r['Commission %'])||getCommission(r['Employee ID']),status:r['Status']||'Pending',paidDate:r['Paid Date']||'',saved:true};
+      hisabSt.rows[r['Employee ID']]={lines:lines,pct:parseFloat(r['Commission %'])||getCommission(r['Employee ID']),status:r['Status']||'Pending',paidDate:r['Paid Date']||'',saved:true,savedBrok:parseFloat(r['Brokerage'])||0};
     });
   }
   var emps=employees.filter(function(e){return (e['Status']||'Active')==='Active'&&(e['Role']||'employee')!=='admin';});
@@ -2187,8 +2234,9 @@ function renderHisab(){
   emps.forEach(function(e){
     var eid=e['Employee ID'];
     var st=hisabSt.rows[eid]||(hisabSt.rows[eid]={lines:[],pct:getCommission(eid),status:'Pending',paidDate:'',saved:false});
-    var brok=cbMonth.filter(function(r){return (r['Employee ID']||'').trim().toLowerCase()===eid.trim().toLowerCase();}).reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
-    st.brok=brok;
+    var auto=r2(cbMonth.filter(function(r){return (r['Employee ID']||'').trim().toLowerCase()===eid.trim().toLowerCase();}).reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0));
+    if(!st.manual)st.brok=auto>0?auto:(st.savedBrok||0);
+    var brok=r2(st.brok||0);
     var share=r2(brok*st.pct/100);
     var adds=st.lines.filter(function(l){return l.t==='add';}).reduce(function(s,l){return s+(parseFloat(l.a)||0);},0);
     var deds=st.lines.filter(function(l){return l.t==='ded';}).reduce(function(s,l){return s+(parseFloat(l.a)||0);},0);
@@ -2199,7 +2247,7 @@ function renderHisab(){
     cardsH+='<div class="hisab-head"><div><span class="emp-name">'+e['Name']+'</span> <span class="emp-meta">'+(e['Branch']||'')+'</span></div>';
     cardsH+='<span class="badge '+(st.status==='Paid'?'green':'amber')+'">'+st.status+(st.paidDate?' &#183; '+st.paidDate:'')+'</span></div>';
     cardsH+='<div class="hisab-grid">';
-    cardsH+='<div class="hisab-cell"><div class="lbl">Brokerage (auto)</div><div class="val">'+fmt(brok)+'</div></div>';
+    cardsH+='<div class="hisab-cell"><div class="lbl">Brokerage (auto &#183; edit ho sakti hai)</div><div class="val"><input type="number" step="0.01" style="width:110px;" value="'+brok+'" onchange="setHisabBrok(\''+eid+'\',this.value)"></div></div>';
     cardsH+='<div class="hisab-cell"><div class="lbl">Commission %</div><div class="val"><input type="number" min="0" max="100" value="'+st.pct+'" onchange="setHisabPct(\''+eid+'\',this.value)"></div></div>';
     cardsH+='<div class="hisab-cell"><div class="lbl">Brok Share</div><div class="val">'+fmt(share)+'</div></div>';
     cardsH+='<div class="hisab-cell"><div class="lbl">Additions</div><div class="val" style="color:var(--accent);">+'+fmt(adds)+'</div></div>';
@@ -2237,6 +2285,7 @@ function renderHisab(){
     ])+'</div></div>';
 }
 function setHisabPct(eid,v){var st=hisabSt.rows[eid];if(!st)return;st.pct=parseFloat(v)||0;renderHisab();}
+function setHisabBrok(eid,v){var st=hisabSt.rows[eid];if(!st)return;st.brok=r2(v);st.manual=true;renderHisab();}
 function addHisabLine(eid,type){
   var sug=type==='add'?['Policy Commission','SIP Incentive','Contest Bonus','Fixed Salary','Referral','Other']:['Sub-staff Salary','Advance','Card/Personal','Office Deduction','Other'];
   var h='<div class="modal-title">'+(type==='add'?'Addition (paisa jodo)':'Deduction (paisa kaato)')+'</div>';
@@ -2305,6 +2354,68 @@ function renderMyHisab(){
     h+='</div>';
   });
   document.getElementById('myHisabCards').innerHTML=h;
+}
+
+/* ===== v25: CALENDAR DAY DETAIL ===== */
+function showMyBrokDay(ds){
+  var uid=currentUser.userId,pct=getCommission(uid);
+  var rows=fEmp(allData.ClientBrokerage||[],uid).filter(function(r){return r['Date']===ds;});
+  var man=fEmp(allData.Brokerage||[],uid).filter(function(r){return r['Date']===ds;});
+  var cT=rows.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
+  var mT=man.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
+  var h='<div class="day-detail"><h3><span>&#128197; '+ds+' &#8212; '+rows.length+' traded clients &#183; Total: '+fmt(r2(cT+mT))+' &#183; My Share: '+fmt(r2((cT+mT)*pct/100))+'</span><span class="day-close" onclick="document.getElementById(\'myBrokDayDiv\').innerHTML=\'\'">&#10005; Close</span></h3>';
+  if(rows.length){
+    h+='<div class="table-inner"><table><thead><tr><th>#</th><th>Client ID</th><th>Client Name</th><th>Brokerage</th><th>My Share ('+pct+'%)</th></tr></thead><tbody>';
+    rows.slice().sort(function(a,b){return parseFloat(b['Amount']||0)-parseFloat(a['Amount']||0);}).forEach(function(r,i){
+      var amt=parseFloat(r['Amount']||0);
+      h+='<tr><td>'+(i+1)+'</td><td>'+(r['Client ID']||'-')+'</td><td style="font-weight:600;">'+(r['Client Name']||'-')+'</td><td class="money">'+fmt(amt)+'</td><td class="money">'+fmt(r2(amt*pct/100))+'</td></tr>';
+    });
+    h+='</tbody></table></div>';
+  }
+  if(man.length)h+='<div style="margin-top:8px;font-size:13px;color:var(--muted);">Manual entries: '+fmt(r2(mT))+'</div>';
+  if(!rows.length&&!man.length)h+='<div class="no-data">Is din koi brokerage nahi</div>';
+  h+='</div>';
+  var el=document.getElementById('myBrokDayDiv');el.innerHTML=h;el.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function showCBrokDay(ds){
+  var rows=(allData.ClientBrokerage||[]).filter(function(r){return r['Date']===ds;});
+  var t=rows.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
+  var uniq={};rows.forEach(function(r){uniq[(r['Client ID']||'').trim().toUpperCase()]=1;});
+  var em={};
+  rows.forEach(function(r){var id=r['Employee ID']||'?';if(!em[id])em[id]={name:r['Employee Name']||id,cl:{},amt:0};em[id].amt+=parseFloat(r['Amount']||0);em[id].cl[(r['Client ID']||'').trim().toUpperCase()]=1;});
+  var ks=Object.keys(em).sort(function(a,b){return em[b].amt-em[a].amt;});
+  var h='<div class="day-detail"><h3><span>&#128197; '+ds+' &#8212; Total Traded Clients: '+Object.keys(uniq).length+' &#183; Total Brokerage: '+fmt(r2(t))+'</span><span class="day-close" onclick="document.getElementById(\'cbrokDayDiv\').innerHTML=\'\'">&#10005; Close</span></h3>';
+  if(ks.length){
+    h+='<div class="table-inner"><table><thead><tr><th>#</th><th>Employee</th><th>Traded Clients</th><th>Total Brokerage</th><th>Share</th></tr></thead><tbody>';
+    ks.forEach(function(id,i){
+      var e=em[id];var pc=(id===ADMIN_ID)?0:getCommission(id);
+      h+='<tr><td>'+(i+1)+'</td><td style="font-weight:600;">'+e.name+'</td><td>'+Object.keys(e.cl).length+'</td><td class="money">'+fmt(r2(e.amt))+'</td><td class="money">'+(pc?fmt(r2(e.amt*pc/100))+' ('+pc+'%)':'-')+'</td></tr>';
+    });
+    h+='</tbody></table></div>';
+    h+='<div style="margin-top:10px;font-size:12px;color:var(--muted);">Avg per client: <b style="color:var(--accent);">'+fmt(Object.keys(uniq).length?r2(t/Object.keys(uniq).length):0)+'</b></div>';
+  } else h+='<div class="no-data">Is din koi entry nahi</div>';
+  h+='</div>';
+  var el=document.getElementById('cbrokDayDiv');el.innerHTML=h;el.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+/* ===== v25: AUTO ATTENDANCE ON LOGIN ===== */
+var autoPunched=false;
+function autoPunchIn(){
+  if(!currentUser||currentUser.role==='admin'||autoPunched)return;
+  var t=td();
+  var uid=currentUser.userId;
+  var rec=(allData.Attendance||[]).find(function(r){return (r['Employee ID']||'').trim().toLowerCase()===uid.trim().toLowerCase()&&sameDayAtt(r['Date'],t);});
+  if(rec&&rec['In Time']){autoPunched=true;return;}
+  autoPunched=true;
+  var now=new Date();var curT=('0'+now.getHours()).slice(-2)+':'+('0'+now.getMinutes()).slice(-2);
+  postData({action:'punchAttendance','Date':t,'Employee ID':uid,'Employee Name':currentUser.name,'Branch':currentUser.branch,'Status':'Present','In Time':curT,'Remarks':'Auto (login)'}).then(function(r){
+    if(r&&r.success){
+      if(!rec){rec={'Date':t,'Employee ID':uid,'Employee Name':currentUser.name,'Branch':currentUser.branch,'In Time':curT,'Out Time':'','Status':'Present','Remarks':'Auto (login)'};allData.Attendance.push(rec);}
+      else rec['In Time']=curT;
+      saveCache();
+      showToast('&#10003; Aaj ki attendance lag gayi &#8212; '+curT,'success');
+    }
+  }).catch(function(){autoPunched=false;});
 }
 
 /* ===== EDIT / DELETE ===== */
