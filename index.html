@@ -528,6 +528,8 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         </div>
       </div>
       <div class="stats-grid" id="teamStats"></div>
+      <h3 style="margin:24px 0 10px;">Brokerage (Client-wise)</h3>
+      <div id="teamBrokTable"></div>
       <h3 style="margin:24px 0 10px;">Accounts</h3>
       <div id="teamAccTable"></div>
       <h3 style="margin:24px 0 10px;">SIP / Mutual Fund</h3>
@@ -1353,17 +1355,33 @@ function renderMyTeamData(){
   var uid=sel?sel.value:'';
   if(!uid){
     document.getElementById('teamStats').innerHTML='<div class="no-data">Upar se team member select karein</div>';
-    document.getElementById('teamAccTable').innerHTML='';document.getElementById('teamSIPTable').innerHTML='';
+    document.getElementById('teamBrokTable').innerHTML='';document.getElementById('teamAccTable').innerHTML='';document.getElementById('teamSIPTable').innerHTML='';
     document.getElementById('teamInsTable').innerHTML='';document.getElementById('teamStudTable').innerHTML='';
     return;
   }
   var acc=fEmpStrict(allData.Accounts||[],uid),sip=fEmpStrict(allData.SIP||[],uid),ins=fEmpStrict(allData.Insurance||[],uid),stud=fEmpStrict(allData.Students||[],uid);
+  var cbrok=fEmpStrict(allData.ClientBrokerage||[],uid),manBrok=fEmpStrict(allData.Brokerage||[],uid);
+  var pct=getCommission(uid);
+  var cbrokT=cbrok.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
+  var manBrokT=manBrok.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
+  var totBrok=r2(cbrokT+manBrokT);
+  var uniqC={};cbrok.forEach(function(r){uniqC[(r['Client ID']||'').trim()]=1;});
   document.getElementById('teamStats').innerHTML=mkStats([
+    {label:'Total Brokerage',value:fmt(totBrok),sub:'lifetime, sabhi clients',color:'red'},
+    {label:'Working Clients',value:Object.keys(uniqC).length,sub:'brokerage wale',color:'purple'},
     {label:'Accounts',value:acc.length,sub:'clients',color:'green'},
     {label:'SIP/MF',value:sip.length,sub:'entries',color:'blue'},
     {label:'Insurance',value:ins.length,sub:'policies',color:'amber'},
     {label:'Students',value:stud.length,sub:'referred',color:'purple'}
   ]);
+  var agg=aggByClient(cbrok);
+  var bh='';
+  if(agg.length){
+    bh='<table><thead><tr><th>#</th><th>Client ID</th><th>Client Name</th><th>Entries</th><th>Brokerage</th></tr></thead><tbody>';
+    agg.forEach(function(c,i){bh+='<tr><td>'+(i+1)+'</td><td>'+(c.cid||'-')+'</td><td style="font-weight:600;">'+(c.name||'-')+'</td><td>'+c.n+'</td><td class="money">'+fmt(c.amt)+'</td></tr>';});
+    bh+='</tbody></table>';
+  } else bh='<div class="no-data">Abhi tak koi client brokerage nahi hai</div>';
+  document.getElementById('teamBrokTable').innerHTML=bh;
   document.getElementById('teamAccTable').innerHTML=mkTable(acc,[{k:'Date',l:'Date'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Client ID'},{k:'Client Phone',l:'Phone'},{k:'Status',l:'Status'}],'Accounts');
   document.getElementById('teamSIPTable').innerHTML=mkTable(sip,[{k:'Date',l:'Date'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Client ID'},{k:'Client Phone',l:'Phone'},{k:'Type',l:'Type'},{k:'Amount',l:'Amount',money:true},{k:'SIP Due Date',l:'Due Date'}],'SIP');
   document.getElementById('teamInsTable').innerHTML=mkTable(ins,[{k:'Date',l:'Date'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Policy ID'},{k:'Client Phone',l:'Phone'},{k:'Type',l:'Type'},{k:'Premium',l:'Premium',money:true}],'Insurance');
