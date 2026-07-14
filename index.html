@@ -32,6 +32,12 @@ input::-webkit-calendar-picker-indicator{filter:invert(0.8);cursor:pointer;opaci
 .sidebar-user .uname{font-size:13px;font-weight:700;}
 .sidebar-user .urole{font-size:11px;color:var(--accent);font-weight:600;}
 .sidebar-user .ubranch{font-size:11px;color:var(--muted);}
+.notif-bell{display:none;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;padding:7px 10px;background:var(--card2);border:1px solid var(--border);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;color:var(--text);}
+.notif-bell:hover{border-color:var(--accent);}
+.notif-bell.has-alert{border-color:var(--danger);animation:notifPulse 2s infinite;}
+@keyframes notifPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.35);}50%{box-shadow:0 0 0 4px rgba(239,68,68,0);}}
+.notif-badge{background:var(--border);color:var(--muted);border-radius:20px;padding:1px 8px;font-size:11px;font-weight:700;min-width:18px;text-align:center;}
+.notif-bell.has-alert .notif-badge{background:var(--danger);color:#fff;}
 .nav-section{padding:8px 12px 2px;font-size:10px;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase;}
 .nav-item{padding:9px 16px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:8px;transition:background 0.15s;border-radius:6px;margin:1px 6px;color:var(--muted);}
 .nav-item:hover{background:var(--card2);color:var(--text);}
@@ -197,6 +203,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
       <div class="uname" id="sidebarName">-</div>
       <div class="urole" id="sidebarRole">-</div>
       <div class="ubranch" id="sidebarBranch">-</div>
+      <div id="notifBell" class="notif-bell" onclick="showReminderModal()" style="display:none">&#128276;&nbsp;Reminders <span id="notifCount" class="notif-badge">0</span></div>
     </div>
     <div id="adminNav" style="display:none">
       <div class="nav-section">Dashboards</div>
@@ -1054,6 +1061,7 @@ function nextDue(dd){
   return c;
 }
 function checkSIPAlerts(){
+  renderNotifBell();
   if(!currentUser||currentUser.role==='admin')return;
   var uid=currentUser.userId;
   var today=new Date();today.setHours(0,0,0,0);
@@ -1099,47 +1107,91 @@ function login(){
   });
 }
 
-/* ===== v27: DAILY REMINDER POPUP — kal SIP due (client ko call karo) + student fees pending, calendar (nextDue) se juda hua, din me ek baar dikhta h ===== */
-function checkDueTomorrowPopup(){
-  if(!currentUser)return;
-  var key='ifw_popup_'+currentUser.userId+'_'+td();
-  if(localStorage.getItem(key))return;
-  var tomorrow=new Date();tomorrow.setHours(0,0,0,0);tomorrow.setDate(tomorrow.getDate()+1);
+/* ===== v28: NOTIFICATION SYSTEM — bell icon sidebar me hamesha visible (badge count), + din me ek baar auto-popup ===== */
+/* SIP due tomorrow + aaj ki meeting (Meetings sheet 'Next Meeting') + student fees pending, calendar (nextDue) se juda hua */
+function computeReminders(){
+  if(!currentUser)return {sipTomorrow:[],meetToday:[],pendStud:[],tomorrow:new Date()};
   var isAdm=currentUser.role==='admin';
+  var tomorrow=new Date();tomorrow.setHours(0,0,0,0);tomorrow.setDate(tomorrow.getDate()+1);
   var sipRows=isAdm?(allData.SIP||[]):fEmp(allData.SIP||[],currentUser.userId);
-  var dueTom=sipRows.filter(function(r){
+  var sipTomorrow=sipRows.filter(function(r){
     if((r['Type']||'SIP')!=='SIP')return false;
     var dd=(r['SIP Due Date']||'').trim();if(!dd)return false;
     var d2=nextDue(dd);
     return d2&&d2.getFullYear()===tomorrow.getFullYear()&&d2.getMonth()===tomorrow.getMonth()&&d2.getDate()===tomorrow.getDate();
   });
+  var meetRows=isAdm?(allData.Meetings||[]):fEmp(allData.Meetings||[],currentUser.userId);
+  var today=td();
+  var meetToday=meetRows.filter(function(r){return (r['Next Meeting']||'').trim()===today&&(r['Converted']||'No')!=='Yes';});
   var studRows=isAdm?(allData.Students||[]):fEmp(allData.Students||[],currentUser.userId);
   var pendStud=(studRows||[]).filter(function(r){return studentPending(r)>0;});
-  if(!dueTom.length&&!pendStud.length){localStorage.setItem(key,'1');return;}
+  return {sipTomorrow:sipTomorrow,meetToday:meetToday,pendStud:pendStud,tomorrow:tomorrow};
+}
+function buildReminderHTML(r){
+  var isAdm=currentUser&&currentUser.role==='admin';
   var h='<div class="modal-title">&#128276; Aaj Ka Reminder &#8212; '+td()+'</div>';
-  if(dueTom.length){
-    h+='<div style="font-weight:700;color:var(--accent,#3fbf7f);margin:4px 0 8px;">&#128197; Kal ('+('0'+tomorrow.getDate()).slice(-2)+'/'+('0'+(tomorrow.getMonth()+1)).slice(-2)+') SIP due hai &#8212; client ko call karke yaad dilao:</div>';
-    h+='<div style="max-height:200px;overflow:auto;margin-bottom:14px;">'+dueTom.map(function(r){
-      var ph=(r['Client Phone']||'').replace(/[^\d+]/g,'');
+  if(r.meetToday.length){
+    h+='<div style="font-weight:700;color:var(--blue,#3b82f6);margin:4px 0 8px;">&#129309; Aaj Meeting Hai:</div>';
+    h+='<div style="max-height:170px;overflow:auto;margin-bottom:14px;">'+r.meetToday.map(function(m){
+      var ph=(m['Client Phone']||'').replace(/[^\d+]/g,'');
       return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 4px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:13px;">'
-        +'<span>'+(r['Client Name']||'-')+' &#183; <b>'+fmt(r['Amount']||0)+'</b>'+(isAdm?' <span style="color:var(--muted,#8a94a6);font-size:11px;">('+(r['Employee Name']||'')+')</span>':'')+'</span>'
+        +'<span>'+(m['Client Name']||'-')+(m['Regarding']?' &#183; '+m['Regarding']:'')+(isAdm?' <span style="color:var(--muted,#8a94a6);font-size:11px;">('+(m['Employee Name']||'')+')</span>':'')+'</span>'
+        +(ph?'<a href="tel:'+ph+'" style="color:var(--blue,#3b82f6);font-weight:700;text-decoration:none;">&#128222; Call</a>':'')
+        +'</div>';
+    }).join('')+'</div>';
+  }
+  if(r.sipTomorrow.length){
+    var tm=r.tomorrow;
+    h+='<div style="font-weight:700;color:var(--accent,#3fbf7f);margin:4px 0 8px;">&#128197; Kal ('+('0'+tm.getDate()).slice(-2)+'/'+('0'+(tm.getMonth()+1)).slice(-2)+') SIP due hai &#8212; client ko call karke yaad dilao:</div>';
+    h+='<div style="max-height:200px;overflow:auto;margin-bottom:14px;">'+r.sipTomorrow.map(function(row){
+      var ph=(row['Client Phone']||'').replace(/[^\d+]/g,'');
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 4px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:13px;">'
+        +'<span>'+(row['Client Name']||'-')+' &#183; <b>'+fmt(row['Amount']||0)+'</b>'+(isAdm?' <span style="color:var(--muted,#8a94a6);font-size:11px;">('+(row['Employee Name']||'')+')</span>':'')+'</span>'
         +(ph?'<a href="tel:'+ph+'" style="color:var(--accent,#3fbf7f);font-weight:700;text-decoration:none;">&#128222; Call</a>':'')
         +'</div>';
     }).join('')+'</div>';
   }
-  if(pendStud.length){
+  if(r.pendStud.length){
     h+='<div style="font-weight:700;color:var(--danger,#ef4444);margin:4px 0 8px;">&#9200; Student fees pending:</div>';
-    h+='<div style="max-height:170px;overflow:auto;margin-bottom:14px;">'+pendStud.map(function(r){
-      var ph=(r['Student Phone']||'').replace(/[^\d+]/g,'');
+    h+='<div style="max-height:170px;overflow:auto;margin-bottom:14px;">'+r.pendStud.map(function(row){
+      var ph=(row['Student Phone']||'').replace(/[^\d+]/g,'');
       return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 4px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:13px;">'
-        +'<span>'+(r['Student Name']||'-')+' &#183; pending <b>'+fmt(studentPending(r))+'</b></span>'
+        +'<span>'+(row['Student Name']||'-')+' &#183; pending <b>'+fmt(studentPending(row))+'</b></span>'
         +(ph?'<a href="tel:'+ph+'" style="color:var(--accent,#3fbf7f);font-weight:700;text-decoration:none;">&#128222; Call</a>':'')
         +'</div>';
     }).join('')+'</div>';
+  }
+  if(!r.meetToday.length&&!r.sipTomorrow.length&&!r.pendStud.length){
+    h+='<div style="color:var(--muted,#8a94a6);padding:14px 0;">Koi pending reminder nahi hai. Sab clear hai! &#9989;</div>';
   }
   h+='<div class="modal-actions"><button class="btn-save" onclick="closeModal()">Theek hai, dekh liya</button></div>';
-  document.getElementById('modalBox').innerHTML=h;document.getElementById('modal').className='show';
+  return h;
+}
+/* Sidebar me hamesha visible bell + badge — kabhi bhi click karke dekh sakte h, sirf ek baar dismiss hone wala popup nahi */
+function renderNotifBell(){
+  var el=document.getElementById('notifBell');if(!el||!currentUser)return;
+  var r=computeReminders();
+  var n=r.sipTomorrow.length+r.meetToday.length+r.pendStud.length;
+  el.style.display='flex';
+  el.classList.toggle('has-alert',n>0);
+  var badge=document.getElementById('notifCount');
+  if(badge)badge.textContent=n;
+}
+function showReminderModal(){
+  var r=computeReminders();
+  document.getElementById('modalBox').innerHTML=buildReminderHTML(r);
+  document.getElementById('modal').className='show';
+}
+/* Din me ek baar auto-popup (localStorage se gate) — bell hamesha available rehta h agar ye miss ho jae */
+function checkDueTomorrowPopup(){
+  if(!currentUser)return;
+  var key='ifw_popup_'+currentUser.userId+'_'+td();
+  if(localStorage.getItem(key))return;
   localStorage.setItem(key,'1');
+  var r=computeReminders();
+  if(!r.sipTomorrow.length&&!r.meetToday.length&&!r.pendStud.length)return;
+  document.getElementById('modalBox').innerHTML=buildReminderHTML(r);
+  document.getElementById('modal').className='show';
 }
 function startApp(){
   document.getElementById('loginWrap').style.display='none';
@@ -1724,9 +1776,12 @@ function renderEmpDash(){
   var myCB=fDate(fEmp(allData.ClientBrokerage||[],uid),f).reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
   var myMan=fDate(fEmp(allData.Brokerage||[],uid),f).reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
   var myTot=r2(myCB+myMan);
+  var isPtnr=isPartnerRole(uid);
+  var shareVal=isPtnr?myPoolShare(uid,f):r2(myTot*pct/100);
+  var shareSub=isPtnr?'profit pool ka '+pct+'% (income - expense - staff payout ke baad)':'total brokerage ka '+pct+'%';
   document.getElementById('empDashStats').innerHTML=mkStats([
     {label:'Total Brokerage',value:fmt(myTot),sub:'client: '+fmt(r2(myCB))+' &#183; manual: '+fmt(r2(myMan)),color:'green'},
-    {label:'My Share ('+pct+'%)',value:fmt(r2(myTot*pct/100)),sub:'total brokerage ka '+pct+'%',color:'blue'},
+    {label:'My Share ('+pct+'%)',value:fmt(shareVal),sub:shareSub,color:'blue'},
     {label:'SIP Amount',value:fmt(sipAmt),sub:sipR.length+' clients · '+gBadge(gSIP),color:'green'},
     {label:'Lumpsum',value:fmt(lumpAmt),sub:lumpR.length+' entries',color:'amber'},
     {label:'Insurance Premium',value:fmt(insAmt),sub:ins.length+' clients · '+gBadge(gIns),color:'blue'},
@@ -1753,9 +1808,12 @@ function renderMyBrok(){
   document.getElementById('myBrokCalDiv').innerHTML=mkBrokCalendar(myC.concat(myRows),'myBrok','showMyBrokDay');
   var lifeMan=myRows.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
   var comb=r2(cT+t);
+  var isPtnr=isPartnerRole(uid);
+  var shareVal2=isPtnr?myPoolShare(uid,f):r2(comb*pct/100);
+  var shareSub2=isPtnr?'profit pool ka '+pct+'% (income - expense - staff payout ke baad)':'total ka '+pct+'%';
   document.getElementById('myBrokStats').innerHTML=mkStats([
     {label:periodLabel(f)+' Total Brokerage',value:fmt(comb),sub:'client: '+fmt(r2(cT))+' &#183; manual: '+fmt(r2(t)),color:'green'},
-    {label:'My Share ('+pct+'%)',value:fmt(r2(comb*pct/100)),sub:'total ka '+pct+'%',color:'blue'},
+    {label:'My Share ('+pct+'%)',value:fmt(shareVal2),sub:shareSub2,color:'blue'},
     {label:'Working Clients',value:Object.keys(uniqC).length,sub:'Avg/Client: '+fmt(Object.keys(uniqC).length?r2(cT/Object.keys(uniqC).length):0),color:'purple'},
     {label:'Lifetime Total',value:fmt(r2(cLife+lifeMan)),sub:'ab tak ki total brokerage',color:'amber'}
   ]);
@@ -2070,6 +2128,22 @@ function getCommission(uid){
   var e=employees.find(function(x){return (x['Employee ID']||'').trim().toLowerCase()===String(uid).trim().toLowerCase();});
   var c=e?parseFloat(e['Commission']):NaN;
   return isNaN(c)?50:c;
+}
+/* ===== v28: partner ka "My Share" ab pool-based net profit share h, sirf raw brokerage ka % nahi — Monthly Hisab/Finance Dashboard jaisa hi ===== */
+function getEmpRole(uid){
+  var e=employees.find(function(x){return (x['Employee ID']||'').trim().toLowerCase()===String(uid).trim().toLowerCase();});
+  return e?(e['Role']||'employee').toLowerCase():'employee';
+}
+function isPartnerRole(uid){return getEmpRole(uid)==='partner';}
+function myPoolShare(uid,f){
+  var mos=hisabMonthsInRange(f);
+  var tot=0;
+  mos.forEach(function(mo){
+    var ht=computeHisabTotals(mo);
+    var e=ht.byEmp[uid];
+    if(e)tot+=e.net;
+  });
+  return r2(tot);
 }
 function monthOf(dstr){var d=new Date(dstr||'');if(isNaN(d))return '';var m=d.getMonth()+1;return d.getFullYear()+'-'+(m<10?'0':'')+m;}
 function curMonth(){var n=new Date();var m=n.getMonth()+1;return n.getFullYear()+'-'+(m<10?'0':'')+m;}
