@@ -252,6 +252,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
       <div class="nav-section">My Work</div>
       <div class="nav-item" onclick="showPage('empDash')">&#9632; Dashboard</div>
       <div class="nav-item" onclick="showPage('markAttendance')">&#9711; Attendance</div>
+      <div class="nav-item" id="navMyTeam" style="display:none" onclick="showPage('myTeam')">&#128101; My Team</div>
       <div class="nav-sec" onclick="toggleGrp('gAdd',this)"><span class="arr">&#9656;</span>Add Entry</div>
       <div class="nav-grp" id="gAdd" style="display:none">
         <div class="nav-item" onclick="showPage('addSIP')">&#43; Mutual Fund</div>
@@ -518,10 +519,30 @@ tbody td{padding:10px 14px;vertical-align:middle;}
       <div class="stats-grid" id="empDashStats"></div>
     </div>
 
+    <!-- MY TEAM -->
+    <div class="page" id="page-myTeam">
+      <div class="page-header"><h1>My Team</h1><p>Sub-employees ke Accounts/SIP/Insurance/Students dekhein aur edit karein</p></div>
+      <div class="form-card" style="margin-bottom:20px;">
+        <div class="form-group"><label>Team Member Select Karein</label>
+          <select id="team_emp" onchange="renderMyTeamData()"><option value="">-- Select --</option></select>
+        </div>
+      </div>
+      <div class="stats-grid" id="teamStats"></div>
+      <h3 style="margin:24px 0 10px;">Accounts</h3>
+      <div id="teamAccTable"></div>
+      <h3 style="margin:24px 0 10px;">SIP / Mutual Fund</h3>
+      <div id="teamSIPTable"></div>
+      <h3 style="margin:24px 0 10px;">Insurance</h3>
+      <div id="teamInsTable"></div>
+      <h3 style="margin:24px 0 10px;">Students</h3>
+      <div id="teamStudTable"></div>
+    </div>
+
     <!-- ADD SIP -->
     <div class="page" id="page-addSIP">
       <div class="page-header"><h1>Add Mutual Fund</h1><p>Enter SIP or Lumpsum details</p></div>
       <div class="form-card">
+        <div class="form-group" id="s_forEmpGroup" style="display:none"><label>Entry Kiske Liye Hai?</label><select id="s_forEmp"></select></div>
         <div class="form-group"><label>Date</label><input type="date" id="s_date"></div>
         <div class="form-group"><label>Investment Type</label>
           <select id="s_type" onchange="updateSIPLabel()">
@@ -542,6 +563,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
     <div class="page" id="page-addIns">
       <div class="page-header"><h1>Add Insurance</h1></div>
       <div class="form-card">
+        <div class="form-group" id="i_forEmpGroup" style="display:none"><label>Entry Kiske Liye Hai?</label><select id="i_forEmp"></select></div>
         <div class="form-group"><label>Date</label><input type="date" id="i_date"></div>
         <div class="form-group"><label>Insurance Type</label>
           <select id="i_type">
@@ -561,6 +583,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
     <div class="page" id="page-addAcc">
       <div class="page-header"><h1>Add Account Opening</h1></div>
       <div class="form-card">
+        <div class="form-group" id="a_forEmpGroup" style="display:none"><label>Entry Kiske Liye Hai?</label><select id="a_forEmp"></select></div>
         <div class="form-group"><label>Date</label><input type="date" id="a_date"></div>
         <div class="form-group"><label>Client Name</label><input type="text" id="a_cname" placeholder="Enter client name"></div>
         <div class="form-group"><label>Client ID / Demat No</label><input type="text" id="a_cid" placeholder="e.g. FBO1234"></div>
@@ -604,6 +627,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
     <div class="page" id="page-addStudent">
       <div class="page-header"><h1>Add Student Referral</h1><p>Track students referred to IdealFinway batch</p></div>
       <div class="form-card">
+        <div class="form-group" id="st_forEmpGroup" style="display:none"><label>Entry Kiske Liye Hai?</label><select id="st_forEmp"></select></div>
         <div class="form-group"><label>Date</label><input type="date" id="st_date"></div>
         <div class="form-group"><label>Student Name</label><input type="text" id="st_name" placeholder="Enter student name"></div>
         <div class="form-group"><label>Student Phone</label><input type="tel" id="st_phone" placeholder="10-digit mobile"></div>
@@ -1279,9 +1303,67 @@ function loadEmps(){
       saveCache();
       var sel=document.getElementById('attEmpFilter');
       if(sel){sel.innerHTML='<option value="">All Employees</option>';employees.forEach(function(e){var o=document.createElement('option');o.value=e['Employee ID'];o.textContent=e['Name'];sel.appendChild(o);});}
+      var navTeam=document.getElementById('navMyTeam');if(navTeam)navTeam.style.display=isTeamParent()?'flex':'none';
+      populateForEmpPickers();
       renderPage(curPage());
     }
   }).catch(function(){});
+}
+function teamMembersOf(uid){
+  if(!uid)return [];
+  return employees.filter(function(e){return (e['Parent ID']||'').trim()===String(uid).trim()&&(e['Status']||'Active')==='Active';});
+}
+function isTeamParent(){return !!(currentUser&&teamMembersOf(currentUser.userId).length>0);}
+function forEmpObj(selId){
+  var sel=document.getElementById(selId);
+  var v=sel?sel.value:'';
+  if(!v||v===currentUser.userId)return {id:currentUser.userId,name:currentUser.name,branch:currentUser.branch};
+  var e=employees.find(function(x){return x['Employee ID']===v;});
+  return e?{id:e['Employee ID'],name:e['Name'],branch:e['Branch']}:{id:currentUser.userId,name:currentUser.name,branch:currentUser.branch};
+}
+function populateForEmpPickers(){
+  if(!currentUser)return;
+  var team=teamMembersOf(currentUser.userId);
+  ['s_forEmp','i_forEmp','a_forEmp','st_forEmp'].forEach(function(id){
+    var sel=document.getElementById(id);if(!sel)return;
+    var grp=document.getElementById(id+'Group');
+    if(!team.length){if(grp)grp.style.display='none';return;}
+    if(grp)grp.style.display='block';
+    var cur=sel.value;
+    sel.innerHTML='<option value="'+currentUser.userId+'">'+currentUser.name+' (Myself)</option>';
+    team.forEach(function(e){var o=document.createElement('option');o.value=e['Employee ID'];o.textContent=e['Name'];sel.appendChild(o);});
+    if(cur)sel.value=cur;
+  });
+}
+function populateTeamEmpSelect(){
+  var sel=document.getElementById('team_emp');if(!sel)return;
+  var team=teamMembersOf(currentUser.userId);
+  var cur=sel.value;
+  sel.innerHTML='<option value="">-- Select --</option>';
+  team.forEach(function(e){var o=document.createElement('option');o.value=e['Employee ID'];o.textContent=e['Name'];sel.appendChild(o);});
+  if(cur&&team.some(function(e){return e['Employee ID']===cur;}))sel.value=cur;
+}
+function renderMyTeamPage(){populateTeamEmpSelect();renderMyTeamData();}
+function renderMyTeamData(){
+  var sel=document.getElementById('team_emp');
+  var uid=sel?sel.value:'';
+  if(!uid){
+    document.getElementById('teamStats').innerHTML='<div class="no-data">Upar se team member select karein</div>';
+    document.getElementById('teamAccTable').innerHTML='';document.getElementById('teamSIPTable').innerHTML='';
+    document.getElementById('teamInsTable').innerHTML='';document.getElementById('teamStudTable').innerHTML='';
+    return;
+  }
+  var acc=fEmp(allData.Accounts||[],uid),sip=fEmp(allData.SIP||[],uid),ins=fEmp(allData.Insurance||[],uid),stud=fEmp(allData.Students||[],uid);
+  document.getElementById('teamStats').innerHTML=mkStats([
+    {label:'Accounts',value:acc.length,sub:'clients',color:'green'},
+    {label:'SIP/MF',value:sip.length,sub:'entries',color:'blue'},
+    {label:'Insurance',value:ins.length,sub:'policies',color:'amber'},
+    {label:'Students',value:stud.length,sub:'referred',color:'purple'}
+  ]);
+  document.getElementById('teamAccTable').innerHTML=mkTable(acc,[{k:'Date',l:'Date'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Client ID'},{k:'Client Phone',l:'Phone'},{k:'Status',l:'Status'}],'Accounts');
+  document.getElementById('teamSIPTable').innerHTML=mkTable(sip,[{k:'Date',l:'Date'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Client ID'},{k:'Client Phone',l:'Phone'},{k:'Type',l:'Type'},{k:'Amount',l:'Amount',money:true},{k:'SIP Due Date',l:'Due Date'}],'SIP');
+  document.getElementById('teamInsTable').innerHTML=mkTable(ins,[{k:'Date',l:'Date'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Policy ID'},{k:'Client Phone',l:'Phone'},{k:'Type',l:'Type'},{k:'Premium',l:'Premium',money:true}],'Insurance');
+  document.getElementById('teamStudTable').innerHTML=mkStudentTable(stud,true);
 }
 
 function renderPage(id){
@@ -1316,6 +1398,7 @@ function renderPage(id){
   else if(id==='myStudents')renderMyStudents();
   else if(id==='myPoints')renderMyPoints();
   else if(id==='myMeetings')renderMyMeetings();
+  else if(id==='myTeam')renderMyTeamPage();
   else if(id==='uploadChoice')initChoiceUpload();
   else if(id==='adminCBrok')renderCBrok();
   else if(id==='finDash')renderFinDash();
@@ -2078,21 +2161,24 @@ function submitSIP(){
   var cn=document.getElementById('s_cname').value.trim(),cid=document.getElementById('s_cid').value.trim(),amt=document.getElementById('s_amount').value;
   if(!cn||!cid||!amt){showToast('Fill all required fields','error');return;}
   var tp=document.getElementById('s_type').value;
-  var p={action:'addSIP','Date':document.getElementById('s_date').value||td(),'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch,'Client Name':cn,'Client ID':cid,'Client Phone':document.getElementById('s_cphone').value.trim(),'Type':tp,'Amount':parseFloat(amt),'SIP Due Date':tp==='SIP'?(document.getElementById('s_duedate').value||''):''};
+  var fe=forEmpObj('s_forEmp');
+  var p={action:'addSIP','Date':document.getElementById('s_date').value||td(),'Employee ID':fe.id,'Employee Name':fe.name,'Branch':fe.branch,'Client Name':cn,'Client ID':cid,'Client Phone':document.getElementById('s_cphone').value.trim(),'Type':tp,'Amount':parseFloat(amt),'SIP Due Date':tp==='SIP'?(document.getElementById('s_duedate').value||''):''};
   doSubmit(p,'SIP',document.querySelector('#page-addSIP .btn-submit'),'Add Entry',function(){document.getElementById('s_cname').value='';document.getElementById('s_cid').value='';document.getElementById('s_cphone').value='';document.getElementById('s_amount').value='';document.getElementById('s_duedate').value='';});
 }
 
 function submitInsurance(){
   var cn=document.getElementById('i_cname').value.trim(),prem=document.getElementById('i_premium').value;
   if(!cn||!prem){showToast('Fill required fields','error');return;}
-  var p={action:'addInsurance','Date':document.getElementById('i_date').value||td(),'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch,'Client Name':cn,'Client ID':document.getElementById('i_cid').value.trim(),'Client Phone':document.getElementById('i_cphone').value.trim(),'Type':document.getElementById('i_type').value,'Premium':parseFloat(prem)};
+  var fe=forEmpObj('i_forEmp');
+  var p={action:'addInsurance','Date':document.getElementById('i_date').value||td(),'Employee ID':fe.id,'Employee Name':fe.name,'Branch':fe.branch,'Client Name':cn,'Client ID':document.getElementById('i_cid').value.trim(),'Client Phone':document.getElementById('i_cphone').value.trim(),'Type':document.getElementById('i_type').value,'Premium':parseFloat(prem)};
   doSubmit(p,'Insurance',document.querySelector('#page-addIns .btn-submit'),'Add Insurance',function(){document.getElementById('i_cname').value='';document.getElementById('i_cid').value='';document.getElementById('i_cphone').value='';document.getElementById('i_premium').value='';});
 }
 
 function submitAccount(){
   var cn=document.getElementById('a_cname').value.trim(),cid=document.getElementById('a_cid').value.trim();
   if(!cn||!cid){showToast('Client Name and ID required','error');return;}
-  var p={action:'addAccount','Date':document.getElementById('a_date').value||td(),'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch,'Client Name':cn,'Client ID':cid,'Client Phone':document.getElementById('a_cphone').value.trim(),'Status':document.getElementById('a_status').value};
+  var fe=forEmpObj('a_forEmp');
+  var p={action:'addAccount','Date':document.getElementById('a_date').value||td(),'Employee ID':fe.id,'Employee Name':fe.name,'Branch':fe.branch,'Client Name':cn,'Client ID':cid,'Client Phone':document.getElementById('a_cphone').value.trim(),'Status':document.getElementById('a_status').value};
   doSubmit(p,'Accounts',document.querySelector('#page-addAcc .btn-submit'),'Add Account',function(){document.getElementById('a_cname').value='';document.getElementById('a_cid').value='';document.getElementById('a_cphone').value='';});
 }
 
@@ -2104,7 +2190,8 @@ function submitLead(){
 
 function submitStudent(){
   var sn=document.getElementById('st_name').value.trim();if(!sn){showToast('Student name required','error');return;}
-  var p={action:'addStudent','Date':document.getElementById('st_date').value||td(),'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch,'Student Name':sn,'Student Phone':document.getElementById('st_phone').value.trim(),'Batch':document.getElementById('st_batch').value.trim(),'Reference By':document.getElementById('st_ref').value.trim(),'Status':document.getElementById('st_status').value,'Total Fee':parseFloat(document.getElementById('st_totfee').value)||'','Demat Opened':document.getElementById('st_demat').value};
+  var fe=forEmpObj('st_forEmp');
+  var p={action:'addStudent','Date':document.getElementById('st_date').value||td(),'Employee ID':fe.id,'Employee Name':fe.name,'Branch':fe.branch,'Student Name':sn,'Student Phone':document.getElementById('st_phone').value.trim(),'Batch':document.getElementById('st_batch').value.trim(),'Reference By':document.getElementById('st_ref').value.trim(),'Status':document.getElementById('st_status').value,'Total Fee':parseFloat(document.getElementById('st_totfee').value)||'','Demat Opened':document.getElementById('st_demat').value};
   doSubmit(p,'Students',document.querySelector('#page-addStudent .btn-submit'),'Add Student',function(){document.getElementById('st_name').value='';document.getElementById('st_phone').value='';document.getElementById('st_batch').value='';document.getElementById('st_ref').value='';document.getElementById('st_totfee').value='';document.getElementById('st_demat').value='';});
 }
 
