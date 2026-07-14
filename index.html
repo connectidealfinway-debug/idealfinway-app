@@ -1018,7 +1018,7 @@ var currentUser=null;
 var allData={Brokerage:[],ClientBrokerage:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[],Meetings:[],Income:[],Expense:[],Hisab:[]};
 var employees=[];
 var filters={};
-var accStat='all',myAccStat='all',dashF='today';
+var accStat='all',myAccStat='all',dashF='today',accDupOnly=false;
 var leadCatF='all',myLeadCatF='all';
 var finTab='income';
 var calStates={};['brok','myBrok','sipCal','mySipCal','meetCal','myMeetCal','cbrok'].forEach(function(k){calStates[k]={year:new Date().getFullYear(),month:new Date().getMonth()};});
@@ -1056,6 +1056,9 @@ function fDate(rows,f){
 function fEmp(rows,uid){
   var name=currentUser?currentUser.name:'';
   return rows.filter(function(r){return (r['Employee ID']||'').trim()===uid.trim()||(r['Employee Name']||'').trim().toLowerCase()===name.trim().toLowerCase();});
+}
+function fEmpStrict(rows,uid){
+  return rows.filter(function(r){return (r['Employee ID']||'').trim()===String(uid).trim();});
 }
 function calcGrowth(allRows,uid,valueField,isCount){
   var n=new Date(),y=n.getFullYear(),m=n.getMonth();
@@ -1261,6 +1264,7 @@ function toggleGrp(id,hd){
 function setF(f,btn,key){filters[key]=f;if(key==='empPerf')empRange=null;btn.parentElement.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');renderPage(curPage());}
 function setDashF(f,btn){dashF=f;btn.parentElement.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');renderAdminDash();}
 function setAccStat(s,btn){accStat=s;btn.parentElement.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');renderAccTable();}
+function toggleAccDup(){accDupOnly=!accDupOnly;renderAccTable();}
 function setMyAccStat(s,btn){myAccStat=s;btn.parentElement.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');renderMyAccTable();}
 function setLeadCat(v,btn,varName){if(varName==='leadCatF')leadCatF=v;else myLeadCatF=v;btn.parentElement.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');renderPage(curPage());}
 function curPage(){var p=document.querySelector('.page.active');return p?p.id.replace('page-',''):'';}
@@ -1353,7 +1357,7 @@ function renderMyTeamData(){
     document.getElementById('teamInsTable').innerHTML='';document.getElementById('teamStudTable').innerHTML='';
     return;
   }
-  var acc=fEmp(allData.Accounts||[],uid),sip=fEmp(allData.SIP||[],uid),ins=fEmp(allData.Insurance||[],uid),stud=fEmp(allData.Students||[],uid);
+  var acc=fEmpStrict(allData.Accounts||[],uid),sip=fEmpStrict(allData.SIP||[],uid),ins=fEmpStrict(allData.Insurance||[],uid),stud=fEmpStrict(allData.Students||[],uid);
   document.getElementById('teamStats').innerHTML=mkStats([
     {label:'Accounts',value:acc.length,sub:'clients',color:'green'},
     {label:'SIP/MF',value:sip.length,sub:'entries',color:'blue'},
@@ -1409,7 +1413,7 @@ function renderPage(id){
   else if(id==='myHisab')renderMyHisab();
 }
 
-function mkStats(cards){var h='';cards.forEach(function(c){h+='<div class="stat-card '+(c.color||'green')+'"><div class="stat-label">'+c.label+'</div><div class="stat-value">'+c.value+'</div><div class="stat-sub">'+(c.sub||'')+'</div></div>';});return h;}
+function mkStats(cards){var h='';cards.forEach(function(c){h+='<div class="stat-card '+(c.color||'green')+'"'+(c.onclick?' style="cursor:pointer" onclick="'+c.onclick+'"':'')+'><div class="stat-label">'+c.label+'</div><div class="stat-value">'+c.value+'</div><div class="stat-sub">'+(c.sub||'')+'</div></div>';});return h;}
 
 function mkTable(rows,cols,sheet){
   if(!rows||!rows.length)return '<div class="no-data">No records found</div>';
@@ -1660,13 +1664,14 @@ function renderAccTable(){
   var cidMap={};
   allAcc.forEach(function(r){var cid=(r['Client ID']||'').trim(),eid=(r['Employee ID']||r['Employee Name']||'').trim();if(!cid)return;if(!cidMap[cid])cidMap[cid]=[];if(cidMap[cid].indexOf(eid)===-1)cidMap[cid].push(eid);});
   var dupSet={};Object.keys(cidMap).forEach(function(cid){if(cidMap[cid].length>1)dupSet[cid]=cidMap[cid];});
+  if(accDupOnly)rows=rows.filter(function(r){return dupSet[(r['Client ID']||'').trim()];});
   var gPct=calcGrowth(allAcc,null,'',true);
   var active=rows.filter(function(r){return (r['Status']||'Active')==='Active';}).length;
   document.getElementById('accStats').innerHTML=mkStats([
     {label:'Total Accounts',value:rows.length,sub:'all entries · '+gBadge(gPct),color:'green'},
     {label:'Active',value:active,sub:'active accounts',color:'blue'},
     {label:'Inactive',value:rows.length-active,sub:'inactive',color:'amber'},
-    {label:'Duplicate IDs',value:Object.keys(dupSet).length,sub:'same client ID',color:'red'}
+    {label:'Duplicate IDs',value:Object.keys(dupSet).length,sub:(accDupOnly?'showing duplicates only, click to show all':'same client ID, click to view')+' &#128064;',color:'red',onclick:'toggleAccDup()'}
   ]);
   document.getElementById('accTable').innerHTML=mkAccTable(rows,dupSet);
 }
@@ -1674,7 +1679,13 @@ function renderAccTable(){
 function mkAccTable(rows,dupSet){
   if(!rows||!rows.length)return '<div class="no-data">No accounts found</div>';
   var h='<table><thead><tr><th>Date</th><th>Employee</th><th>Client</th><th>Client ID</th><th>Phone</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
-  rows.slice().reverse().forEach(function(r){
+  var ordered=rows.slice().reverse();
+  ordered.sort(function(a,b){
+    var da=dupSet&&dupSet[(a['Client ID']||'').trim()]?1:0;
+    var db=dupSet&&dupSet[(b['Client ID']||'').trim()]?1:0;
+    return db-da;
+  });
+  ordered.forEach(function(r){
     var cid=(r['Client ID']||'').trim(),isDup=dupSet&&dupSet[cid];
     h+='<tr'+(isDup?' class="dup-row"':'')+'>'+
       '<td>'+r['Date']+'</td><td>'+r['Employee Name']+'</td><td>'+r['Client Name']+'</td>'+
@@ -3032,11 +3043,14 @@ function renderManageEmps(){
   var missing=employees.filter(function(e){return (e['Status']||'Active')==='Active'&&!(e['Email']||'').trim();});
   var h='';
   if(missing.length)h+='<div class="prev-err" style="margin-bottom:10px;">&#9888; <b>'+missing.length+' employee(s) ka Email set nahi hai</b> &#8212; inko Mark Paid karne par salary slip mail NAHI jayegi: '+missing.map(function(e){return e['Name']||e['Employee ID'];}).join(', ')+'</div>';
-  h+='<table><thead><tr><th>Employee ID</th><th>Name</th><th>Branch</th><th>Role</th><th>Commission %</th><th>Salary</th><th>Email</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+  h+='<table><thead><tr><th>Employee ID</th><th>Name</th><th>Branch</th><th>Role</th><th>Sub-team Of</th><th>Commission %</th><th>Salary</th><th>Email</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
   employees.forEach(function(e){
     var isAct=(e['Status']||'Active')==='Active';
     var em=(e['Email']||'').trim();
-    h+='<tr><td>'+(e['Employee ID']||'-')+'</td><td style="font-weight:600;">'+(e['Name']||'-')+'</td><td>'+(e['Branch']||'-')+'</td><td>'+(e['Role']||'employee')+'</td><td style="font-weight:700;color:var(--accent);">'+(e['Commission']!==''&&e['Commission']!==undefined?e['Commission']+'%':'50%')+'</td><td>'+(parseFloat(e['Salary'])>0?fmt(e['Salary']):'-')+'</td><td>'+(em?em:'<span class="badge red" title="Email missing — salary slip mail nahi jayegi">&#9888; missing</span>')+'</td><td><span class="badge '+(isAct?'green':'red')+'">'+(isAct?'Active':'Inactive')+'</span></td><td>';
+    var pid=(e['Parent ID']||'').trim();
+    var pEmp=pid?employees.find(function(x){return x['Employee ID']===pid;}):null;
+    var pLabel=pid?(pEmp?pEmp['Name']:pid):'<span style="color:var(--muted);">&#8212;</span>';
+    h+='<tr><td>'+(e['Employee ID']||'-')+'</td><td style="font-weight:600;">'+(e['Name']||'-')+'</td><td>'+(e['Branch']||'-')+'</td><td>'+(e['Role']||'employee')+'</td><td>'+pLabel+'</td><td style="font-weight:700;color:var(--accent);">'+(e['Commission']!==''&&e['Commission']!==undefined?e['Commission']+'%':'50%')+'</td><td>'+(parseFloat(e['Salary'])>0?fmt(e['Salary']):'-')+'</td><td>'+(em?em:'<span class="badge red" title="Email missing — salary slip mail nahi jayegi">&#9888; missing</span>')+'</td><td><span class="badge '+(isAct?'green':'red')+'">'+(isAct?'Active':'Inactive')+'</span></td><td>';
     h+='<button class="btn-edit" data-id="'+e['Employee ID']+'" onclick="editEmpModal(this.dataset.id)">&#9998; Edit</button>';
     h+='<button class="btn-del" data-id="'+e['Employee ID']+'" data-act="'+(isAct?'Inactive':'Active')+'" onclick="toggleEmpBtn(this)">'+( isAct?'Deactivate':'Activate')+'</button>';
     h+='</td></tr>';
@@ -3054,6 +3068,9 @@ function showAddEmpModal(){
   h+='<div class="form-group"><label>Fixed Salary (&#8377;/month, nahi h to 0)</label><input type="number" id="ne_sal" value="0"></div>';
   h+='<div class="form-group"><label>Email (salary slip ke liye)</label><input type="email" id="ne_email" placeholder="employee@gmail.com"></div>';
   h+='<div class="form-group"><label>Password</label><input type="text" id="ne_pass"></div>';
+  h+='<div class="form-group"><label>Sub-team Of (Parent) — agar ye referral/sub-employee hai</label><select id="ne_parent"><option value="">-- Koi nahi (independent) --</option>';
+  employees.forEach(function(e){h+='<option value="'+e['Employee ID']+'">'+e['Name']+' ('+e['Employee ID']+')</option>';});
+  h+='</select></div>';
   h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="addEmployee()">Add</button></div>';
   document.getElementById('modalBox').innerHTML=h;document.getElementById('modal').className='show';
 }
@@ -3062,7 +3079,7 @@ function addEmployee(){
   var id=document.getElementById('ne_id').value.trim(),name=document.getElementById('ne_name').value.trim(),pass=document.getElementById('ne_pass').value.trim();
   if(!id||!name||!pass){showToast('ID, Name and Password required','error');return;}
   if(employees.find(function(e){return e['Employee ID']===id;})){showToast('ID already exists','error');return;}
-  var p={action:'addEmployee','Employee ID':id,'Name':name,'Branch':document.getElementById('ne_branch').value,'Role':document.getElementById('ne_role').value,'Password':pass,'Status':'Active','Commission':parseFloat(document.getElementById('ne_comm').value)||50,'Email':document.getElementById('ne_email').value.trim(),'Salary':parseFloat(document.getElementById('ne_sal').value)||0};
+  var p={action:'addEmployee','Employee ID':id,'Name':name,'Branch':document.getElementById('ne_branch').value,'Role':document.getElementById('ne_role').value,'Password':pass,'Status':'Active','Commission':parseFloat(document.getElementById('ne_comm').value)||50,'Email':document.getElementById('ne_email').value.trim(),'Salary':parseFloat(document.getElementById('ne_sal').value)||0,'Parent ID':document.getElementById('ne_parent').value||''};
   postData(p).then(function(r){closeModal();if(r&&r.success){showToast('Employee added!','success');loadEmps();}else showToast('Failed: '+(r&&r.error||''),'error');}).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
 }
 
@@ -3080,13 +3097,16 @@ function editEmpModal(empId){
   h+='<div class="form-group"><label>Fixed Salary (&#8377;/month)</label><input type="number" id="ee_sal" value="'+(parseFloat(emp['Salary'])||0)+'"></div>';
   h+='<div class="form-group"><label>Email (salary slip ke liye)</label><input type="email" id="ee_email" value="'+(emp['Email']||'')+'" placeholder="employee@gmail.com"></div>';
   h+='<div class="form-group"><label>New Password (blank = keep)</label><input type="text" id="ee_pass" placeholder="Leave blank to keep"></div>';
+  h+='<div class="form-group"><label>Sub-team Of (Parent) — agar ye referral/sub-employee hai</label><select id="ee_parent"><option value="">-- Koi nahi (independent) --</option>';
+  employees.forEach(function(e){if(e['Employee ID']===empId)return;h+='<option value="'+e['Employee ID']+'"'+((emp['Parent ID']||'')===e['Employee ID']?' selected':'')+'>'+e['Name']+' ('+e['Employee ID']+')</option>';});
+  h+='</select></div>';
   h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" data-eid="'+empId+'" onclick="saveEmp(this.dataset.eid)">Save</button></div>';
   document.getElementById('modalBox').innerHTML=h;document.getElementById('modal').className='show';
 }
 
 function saveEmp(empId){
   var emp=employees.find(function(e){return e['Employee ID']===empId;});if(!emp)return;
-  var p={action:'updateEmployee','Employee ID':empId,_rowNum:emp._rowNum,'Name':document.getElementById('ee_name').value.trim(),'Branch':document.getElementById('ee_branch').value,'Role':document.getElementById('ee_role').value||'employee','Status':emp['Status']||'Active','Commission':parseFloat(document.getElementById('ee_comm').value)||50,'Email':document.getElementById('ee_email').value.trim(),'Salary':parseFloat(document.getElementById('ee_sal').value)||0};
+  var p={action:'updateEmployee','Employee ID':empId,_rowNum:emp._rowNum,'Name':document.getElementById('ee_name').value.trim(),'Branch':document.getElementById('ee_branch').value,'Role':document.getElementById('ee_role').value||'employee','Status':emp['Status']||'Active','Commission':parseFloat(document.getElementById('ee_comm').value)||50,'Email':document.getElementById('ee_email').value.trim(),'Salary':parseFloat(document.getElementById('ee_sal').value)||0,'Parent ID':document.getElementById('ee_parent').value||''};
   var np=document.getElementById('ee_pass').value.trim();if(np)p['Password']=np;
   postData(p).then(function(r){closeModal();if(r&&r.success){showToast('Updated!','success');loadEmps();}else showToast('Failed','error');}).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
 }
