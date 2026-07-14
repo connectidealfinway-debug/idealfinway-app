@@ -435,14 +435,15 @@ tbody td{padding:10px 14px;vertical-align:middle;}
 
     <!-- ADMIN STUDENTS -->
     <div class="page" id="page-adminStudents">
-      <div class="page-header"><h1>Student Referrals</h1><p>Students referred to IdealFinway batch</p></div>
+      <div class="page-header"><h1>Student Portal</h1><p>Naam, admission date, fees, pending, demat status &#8212; sab ek jagah</p></div>
+      <button class="btn-mini" style="border-color:var(--blue);color:var(--blue);margin-bottom:12px;" onclick="migrateStudentFees()">&#8635; Purana Fee Data Migrate Karo</button>
       <div class="filter-bar">
-        <button class="filter-btn active" onclick="setF('today',this,'astud')">Today</button>
+        <button class="filter-btn" onclick="setF('today',this,'astud')">Today</button>
         <button class="filter-btn" onclick="setF('week',this,'astud')">This Week</button>
         <button class="filter-btn" onclick="setF('month',this,'astud')">This Month</button>
         <button class="filter-btn" onclick="setF('quarter',this,'astud')">Quarter</button>
         <button class="filter-btn" onclick="setF('year',this,'astud')">This Year</button>
-        <button class="filter-btn" onclick="setF('all',this,'astud')">All Time</button>
+        <button class="filter-btn active" onclick="setF('all',this,'astud')">All Time</button>
         <input class="srch" id="srch-astud" placeholder="&#128269; Search student..." oninput="renderAdminStudents()">
       </div>
       <div class="stats-grid" id="astudStats"></div>
@@ -601,6 +602,14 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <div class="form-group"><label>Student Phone</label><input type="tel" id="st_phone" placeholder="10-digit mobile"></div>
         <div class="form-group"><label>Batch / Course</label><input type="text" id="st_batch" placeholder="e.g. Technical Analysis Batch 3"></div>
         <div class="form-group"><label>Referred By (Client Name)</label><input type="text" id="st_ref" placeholder="Who referred this student?"></div>
+        <div class="form-group"><label>Total Course Fee (&#8377;)</label><input type="number" id="st_totfee" placeholder="e.g. 35000"></div>
+        <div class="form-group"><label>Demat Account Opened?</label>
+          <select id="st_demat">
+            <option value="">-- pata nahi / abhi tak nahi --</option>
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+          </select>
+        </div>
         <div class="form-group"><label>Status</label>
           <select id="st_status">
             <option value="Joined">Joined Batch</option>
@@ -1090,6 +1099,48 @@ function login(){
   });
 }
 
+/* ===== v27: DAILY REMINDER POPUP — kal SIP due (client ko call karo) + student fees pending, calendar (nextDue) se juda hua, din me ek baar dikhta h ===== */
+function checkDueTomorrowPopup(){
+  if(!currentUser)return;
+  var key='ifw_popup_'+currentUser.userId+'_'+td();
+  if(localStorage.getItem(key))return;
+  var tomorrow=new Date();tomorrow.setHours(0,0,0,0);tomorrow.setDate(tomorrow.getDate()+1);
+  var isAdm=currentUser.role==='admin';
+  var sipRows=isAdm?(allData.SIP||[]):fEmp(allData.SIP||[],currentUser.userId);
+  var dueTom=sipRows.filter(function(r){
+    if((r['Type']||'SIP')!=='SIP')return false;
+    var dd=(r['SIP Due Date']||'').trim();if(!dd)return false;
+    var d2=nextDue(dd);
+    return d2&&d2.getFullYear()===tomorrow.getFullYear()&&d2.getMonth()===tomorrow.getMonth()&&d2.getDate()===tomorrow.getDate();
+  });
+  var studRows=isAdm?(allData.Students||[]):fEmp(allData.Students||[],currentUser.userId);
+  var pendStud=(studRows||[]).filter(function(r){return studentPending(r)>0;});
+  if(!dueTom.length&&!pendStud.length){localStorage.setItem(key,'1');return;}
+  var h='<div class="modal-title">&#128276; Aaj Ka Reminder &#8212; '+td()+'</div>';
+  if(dueTom.length){
+    h+='<div style="font-weight:700;color:var(--accent,#3fbf7f);margin:4px 0 8px;">&#128197; Kal ('+('0'+tomorrow.getDate()).slice(-2)+'/'+('0'+(tomorrow.getMonth()+1)).slice(-2)+') SIP due hai &#8212; client ko call karke yaad dilao:</div>';
+    h+='<div style="max-height:200px;overflow:auto;margin-bottom:14px;">'+dueTom.map(function(r){
+      var ph=(r['Client Phone']||'').replace(/[^\d+]/g,'');
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 4px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:13px;">'
+        +'<span>'+(r['Client Name']||'-')+' &#183; <b>'+fmt(r['Amount']||0)+'</b>'+(isAdm?' <span style="color:var(--muted,#8a94a6);font-size:11px;">('+(r['Employee Name']||'')+')</span>':'')+'</span>'
+        +(ph?'<a href="tel:'+ph+'" style="color:var(--accent,#3fbf7f);font-weight:700;text-decoration:none;">&#128222; Call</a>':'')
+        +'</div>';
+    }).join('')+'</div>';
+  }
+  if(pendStud.length){
+    h+='<div style="font-weight:700;color:var(--danger,#ef4444);margin:4px 0 8px;">&#9200; Student fees pending:</div>';
+    h+='<div style="max-height:170px;overflow:auto;margin-bottom:14px;">'+pendStud.map(function(r){
+      var ph=(r['Student Phone']||'').replace(/[^\d+]/g,'');
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 4px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:13px;">'
+        +'<span>'+(r['Student Name']||'-')+' &#183; pending <b>'+fmt(studentPending(r))+'</b></span>'
+        +(ph?'<a href="tel:'+ph+'" style="color:var(--accent,#3fbf7f);font-weight:700;text-decoration:none;">&#128222; Call</a>':'')
+        +'</div>';
+    }).join('')+'</div>';
+  }
+  h+='<div class="modal-actions"><button class="btn-save" onclick="closeModal()">Theek hai, dekh liya</button></div>';
+  document.getElementById('modalBox').innerHTML=h;document.getElementById('modal').className='show';
+  localStorage.setItem(key,'1');
+}
 function startApp(){
   document.getElementById('loginWrap').style.display='none';
   document.getElementById('appWrap').style.display='block';
@@ -1158,7 +1209,7 @@ function loadAll(attempt){
         Points:r.points||r.Points||[],
         Meetings:r.meetings||r.Meetings||[]
       };
-      saveCache();checkSIPAlerts();autoPunchIn();renderPage(curPage());loadEmps();
+      saveCache();checkSIPAlerts();autoPunchIn();renderPage(curPage());loadEmps();setTimeout(checkDueTomorrowPopup,600);
     }else if(attempt<3){
       setTimeout(function(){loadAll(attempt+1);},4000);
     }else{
@@ -1382,7 +1433,7 @@ function renderAdminDash(){
   var tCBrok=cbrok.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
   var inc=fDate(allData.Income||[],dashF).reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
   var exp=fDate(allData.Expense||[],dashF).reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
-  var teamPay=r2(hisabInRange(dashF).reduce(function(s,r){return s+parseFloat(r['Net Payable']||0);},0));
+  var teamPay=r2(hisabMonthsInRange(dashF).reduce(function(s,mo){return s+computeHisabTotals(mo).totPay;},0));
   var totalBrokAll=r2(tCBrok+tBrok);
   var totalInc=r2(totalBrokAll+inc);
   var totalExp=r2(exp+teamPay);
@@ -1401,7 +1452,8 @@ function renderAdminDash(){
   ]);
   var em={};
   function track(rows,key){rows.forEach(function(r){var id=r['Employee ID']||r['Employee Name']||'?';if(!em[id])em[id]={name:r['Employee Name']||id,branch:r['Branch']||'',brok:0,sip:0,ins:0,acc:0,stud:0};if(key==='brok')em[id].brok+=parseFloat(r['Amount']||0);else if(key==='sip')em[id].sip+=parseFloat(r['Amount']||0);else if(key==='ins')em[id].ins++;else if(key==='acc')em[id].acc++;else if(key==='stud')em[id].stud++;});}
-  track(brok,'brok');track(sip,'sip');track(ins,'ins');track(acc,'acc');track(stud,'stud');
+  /* brokerage = manual Brokerage sheet + ClientBrokerage (Choice uploads, jaha se asli income aati hai) */
+  track(brok,'brok');track(cbrok,'brok');track(sip,'sip');track(ins,'ins');track(acc,'acc');track(stud,'stud');
   var html='<div class="emp-grid">';
   Object.keys(em).forEach(function(id){var e=em[id];html+='<div class="emp-card"><div class="emp-name">'+e.name+'</div><div class="emp-meta">'+e.branch+'</div><div class="emp-stats"><div class="emp-stat"><div class="emp-stat-val">'+fmt(e.brok)+'</div><div class="emp-stat-lbl">Brokerage</div></div><div class="emp-stat"><div class="emp-stat-val">'+fmt(e.sip)+'</div><div class="emp-stat-lbl">SIP Amt</div></div><div class="emp-stat"><div class="emp-stat-val">'+e.ins+'</div><div class="emp-stat-lbl">Insurance</div></div><div class="emp-stat"><div class="emp-stat-val">'+e.acc+'</div><div class="emp-stat-lbl">Accounts</div></div><div class="emp-stat"><div class="emp-stat-val">'+e.stud+'</div><div class="emp-stat-lbl">Students</div></div></div></div>';});
   document.getElementById('adminEmpCards').innerHTML=html+'</div>';
@@ -1409,10 +1461,11 @@ function renderAdminDash(){
 
 function renderEmpPerf(f){
   function fr(rows){return empRange?rows.filter(function(r){var d=new Date(r['Date']||'');return !isNaN(d)&&d>=empRange.start&&d<=empRange.end;}):fDate(rows,f);}
-  var brok=fr(allData.Brokerage||[]),sip=fr(allData.SIP||[]),ins=fr(allData.Insurance||[]),acc=fr(allData.Accounts||[]),stud=fr(allData.Students||[]),leads=fr(allData.Leads||[]);
+  var brok=fr(allData.Brokerage||[]),cbrok=fr(allData.ClientBrokerage||[]),sip=fr(allData.SIP||[]),ins=fr(allData.Insurance||[]),acc=fr(allData.Accounts||[]),stud=fr(allData.Students||[]),leads=fr(allData.Leads||[]);
   var em={};
   function t(rows,k){rows.forEach(function(r){var id=r['Employee ID']||r['Employee Name']||'?';if(!em[id])em[id]={name:r['Employee Name']||id,branch:r['Branch']||'',brok:0,sip:0,ins:0,acc:0,stud:0,leads:0};if(k==='brok')em[id].brok+=parseFloat(r['Amount']||0);else if(k==='sip')em[id].sip+=parseFloat(r['Amount']||0);else if(k==='ins')em[id].ins++;else if(k==='acc')em[id].acc++;else if(k==='stud')em[id].stud++;else if(k==='leads')em[id].leads++;});}
-  t(brok,'brok');t(sip,'sip');t(ins,'ins');t(acc,'acc');t(stud,'stud');t(leads,'leads');
+  /* brokerage = manual Brokerage sheet + ClientBrokerage (Choice uploads, jaha se asli income aati hai) */
+  t(brok,'brok');t(cbrok,'brok');t(sip,'sip');t(ins,'ins');t(acc,'acc');t(stud,'stud');t(leads,'leads');
   var ks=Object.keys(em);
   var lbl=empRange?('Custom: '+document.getElementById('empFrom').value+' \u2192 '+document.getElementById('empTo').value):periodLabel(f);
   var head='<div style="padding:0 0 12px;color:var(--muted,#8a94a6);font-size:14px;">Showing: <b style="color:var(--accent);">'+lbl+'</b> \u00b7 ranked by brokerage</div>';
@@ -1508,20 +1561,121 @@ function renderALeads(){
   document.getElementById('aleadsTable').innerHTML=mkLeads(rows,true,true);
 }
 
+/* ===== v27: STUDENT PORTAL — unified student record (name, admission date, fees, pending, reminder, demat status) ===== */
+function studentFeeInfo(phone){
+  var p=(phone||'').trim();
+  if(!p)return {received:0,count:0};
+  var rows=(allData.Income||[]).filter(function(r){return r['Category']==='Student Fee'&&(r['Phone']||'').trim()===p;});
+  var received=rows.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
+  return {received:r2(received),count:rows.length};
+}
+function studentPending(r){
+  var tf=parseFloat(r['Total Fee'])||0;
+  if(!tf)return 0;
+  var fi=studentFeeInfo(r['Student Phone']);
+  return r2(Math.max(0,tf-fi.received));
+}
+function dematGuess(phone){
+  var p=(phone||'').trim();if(!p)return null;
+  var acc=(allData.Accounts||[]).find(function(a){return (a['Client Phone']||'').trim()===p;});
+  return acc?acc['Client ID']:null;
+}
+function getStudentReminders(uid){
+  var rows=allData.Students||[];
+  if(uid)rows=fEmp(rows,uid);
+  return rows.filter(function(r){return studentPending(r)>0;}).map(function(r){return {name:r['Student Name'],phone:r['Student Phone'],pending:studentPending(r),employee:r['Employee Name']};});
+}
+function mkStudentTable(rows,canEdit){
+  if(!rows||!rows.length)return '<div class="no-data">No students found</div>';
+  var h='<table><thead><tr><th>Admission Date</th><th>Student</th><th>Phone</th><th>Course</th><th>Employee</th><th>Total Fee</th><th>Received</th><th>Pending</th><th>Demat</th><th>Status</th>'+(canEdit?'<th>Actions</th>':'')+'</tr></thead><tbody>';
+  rows.slice().reverse().forEach(function(r){
+    var tf=parseFloat(r['Total Fee'])||0;
+    var fi=studentFeeInfo(r['Student Phone']);
+    var pend=studentPending(r);
+    var demat=(r['Demat Opened']||'').trim();
+    var guess=!demat?dematGuess(r['Student Phone']):null;
+    var dematBadge=demat==='Yes'?'<span class="badge green">Yes</span>':(demat==='No'?'<span class="badge red">No</span>':(guess?'<span class="badge amber" title="Account mila Client ID '+guess+' se — confirm karo">? shayad Yes</span>':'<span class="badge amber">-</span>'));
+    h+='<tr'+(pend>0?' class="dup-row"':'')+'>';
+    h+='<td>'+(r['Date']||'-')+'</td><td style="font-weight:600;">'+(r['Student Name']||'-')+'</td><td>'+(r['Student Phone']||'-')+'</td><td>'+(r['Batch']||'-')+'</td><td>'+(r['Employee Name']||'-')+'</td>';
+    h+='<td class="money">'+(tf?fmt(tf):'-')+'</td><td class="money">'+fmt(fi.received)+'</td>';
+    h+='<td>'+(pend>0?'<span class="badge red">&#9200; '+fmt(pend)+'</span>':(tf?'<span class="badge green">Clear</span>':'-'))+'</td>';
+    h+='<td>'+dematBadge+'</td>';
+    h+='<td><span class="badge '+(r['Status']==='Joined'?'green':(r['Status']==='Not Interested'?'red':'amber'))+'">'+(r['Status']||'-')+'</span></td>';
+    if(canEdit){var rn=r._rowNum||0;h+='<td><button class="btn-edit" onclick="editStudentModal('+rn+')">&#9998;</button><button class="btn-del" onclick="confirmDel(\'Students\','+rn+')">&#128465;</button></td>';}
+    h+='</tr>';
+  });
+  return h+'</tbody></table>';
+}
+function editStudentModal(rowNum){
+  var r=(allData.Students||[]).find(function(x){return String(x._rowNum)===String(rowNum);});
+  if(!r){showToast('Student record nahi mila','error');return;}
+  var h='<div class="modal-title">Edit Student</div>';
+  h+='<div class="form-group"><label>Admission Date</label><input type="date" id="es_date" value="'+(r['Date']||'')+'"></div>';
+  h+='<div class="form-group"><label>Student Name</label><input type="text" id="es_name" value="'+(r['Student Name']||'')+'"></div>';
+  h+='<div class="form-group"><label>Phone</label><input type="tel" id="es_phone" value="'+(r['Student Phone']||'')+'"></div>';
+  h+='<div class="form-group"><label>Course / Batch</label><input type="text" id="es_batch" value="'+(r['Batch']||'')+'"></div>';
+  h+='<div class="form-group"><label>Referred By</label><input type="text" id="es_ref" value="'+(r['Reference By']||'')+'"></div>';
+  h+='<div class="form-group"><label>Total Fee (&#8377;)</label><input type="number" id="es_totfee" value="'+(r['Total Fee']||0)+'"></div>';
+  h+='<div class="form-group"><label>Status</label><select id="es_status">'+['Joined','Interested','Not Interested'].map(function(s){return '<option'+(r['Status']===s?' selected':'')+'>'+s+'</option>';}).join('')+'</select></div>';
+  h+='<div class="form-group"><label>Demat Account Opened?</label><select id="es_demat"><option value=""'+(!r['Demat Opened']?' selected':'')+'>-- set karo --</option><option value="Yes"'+(r['Demat Opened']==='Yes'?' selected':'')+'>Yes</option><option value="No"'+(r['Demat Opened']==='No'?' selected':'')+'>No</option></select></div>';
+  h+='<div class="form-group"><label>Demat Client ID (agar Yes)</label><input type="text" id="es_dcid" value="'+(r['Demat Client ID']||'')+'"></div>';
+  h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" data-rn="'+rowNum+'" onclick="saveStudentEdit(this.dataset.rn)">Save</button></div>';
+  document.getElementById('modalBox').innerHTML=h;document.getElementById('modal').className='show';
+}
+function saveStudentEdit(rowNum){
+  var vals={'Date':document.getElementById('es_date').value,'Student Name':document.getElementById('es_name').value.trim(),'Student Phone':document.getElementById('es_phone').value.trim(),'Batch':document.getElementById('es_batch').value.trim(),'Reference By':document.getElementById('es_ref').value.trim(),'Total Fee':parseFloat(document.getElementById('es_totfee').value)||0,'Status':document.getElementById('es_status').value,'Demat Opened':document.getElementById('es_demat').value,'Demat Client ID':document.getElementById('es_dcid').value.trim()};
+  postData({action:'editRow',sheet:'Students',rowNum:rowNum,vals:vals}).then(function(r){closeModal();if(r&&r.success){showToast('Student updated!','success');loadAll();}else showToast('Update failed: '+(r&&r.error||''),'error');}).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
+}
+function migrateStudentFees(){
+  var known={};
+  (allData.Students||[]).forEach(function(r){var p=(r['Student Phone']||'').trim();if(p)known[p]=true;});
+  var inc=(allData.Income||[]).filter(function(r){return r['Category']==='Student Fee'&&(r['Phone']||'').trim();});
+  var byPhone={};
+  inc.forEach(function(r){
+    var p=r['Phone'].trim();
+    if(known[p])return;
+    if(!byPhone[p])byPhone[p]={name:r['Name']||'',phone:p,course:r['Course']||'',date:r['Date']||'',totFee:0,ref:r['Reference']||'',credit:r['Credited To']||''};
+    var tf=parseFloat(r['Total Fee'])||0;
+    if(tf>byPhone[p].totFee)byPhone[p].totFee=tf;
+    if(r['Date']&&(!byPhone[p].date||r['Date']<byPhone[p].date))byPhone[p].date=r['Date'];
+  });
+  var list=Object.keys(byPhone).map(function(p){return byPhone[p];});
+  if(!list.length){showToast('Migrate karne layak koi purana data nahi mila — sab already Student Portal me hai','success');return;}
+  var h='<div class="modal-title">Purana Student Fee Data Migrate Karein?</div>';
+  h+='<p style="color:var(--muted);font-size:13px;margin-bottom:12px;">Income entries (Student Fee category) me '+list.length+' aise students mile jo Student Portal me nahi hain. Inko naye student record ke roop me add kar diya jayega (Total Fee un entries se liya jayega). Purana Income data waisa hi rahega, kuch delete nahi hoga.</p>';
+  h+='<div style="max-height:220px;overflow:auto;font-size:12px;color:var(--muted);margin-bottom:12px;">'+list.map(function(s){return (s.name||'(no name)')+' &#183; '+s.phone+' &#183; Fee '+fmt(s.totFee);}).join('<br>')+'</div>';
+  h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="runMigrateStudentFees()">Migrate '+list.length+' students</button></div>';
+  document.getElementById('modalBox').innerHTML=h;document.getElementById('modal').className='show';
+  window._migList=list;
+}
+function runMigrateStudentFees(){
+  var list=window._migList||[];
+  closeModal();
+  if(!list.length)return;
+  showToast('Migrating '+list.length+' students...','success');
+  var i=0;
+  function next(){
+    if(i>=list.length){showToast('Migration complete! Student Portal refresh ho raha hai.','success');loadAll();return;}
+    var s=list[i++];
+    postData({action:'addStudent','Date':s.date||td(),'Employee ID':'','Employee Name':s.credit||'Office','Branch':'','Student Name':s.name,'Student Phone':s.phone,'Batch':s.course,'Reference By':s.ref,'Status':'Joined','Total Fee':s.totFee||''}).then(next).catch(next);
+  }
+  next();
+}
 function renderAdminStudents(){
-  var rows=fDate(allData.Students||[],filters['astud']||'today');
-  var q=getSrch('srch-astud');rows=srchFilter(rows,q,['Student Name','Employee Name','Batch']);
+  var rows=fDate(allData.Students||[],filters['astud']||'all');
+  var q=getSrch('srch-astud');rows=srchFilter(rows,q,['Student Name','Employee Name','Batch','Student Phone']);
   var joined=rows.filter(function(r){return r['Status']==='Joined';}).length;
   var interested=rows.filter(function(r){return r['Status']==='Interested';}).length;
+  var pendRows=rows.filter(function(r){return studentPending(r)>0;});
+  var pendTotal=r2(pendRows.reduce(function(s,r){return s+studentPending(r);},0));
+  var dematNo=rows.filter(function(r){return (r['Demat Opened']||'')!=='Yes';}).length;
   document.getElementById('astudStats').innerHTML=mkStats([
-    {label:'Total Referrals',value:rows.length,sub:'all employees',color:'green'},
+    {label:'Total Students',value:rows.length,sub:'all employees',color:'green'},
     {label:'Joined Batch',value:joined,sub:'confirmed',color:'blue'},
-    {label:'Interested',value:interested,sub:'follow-up',color:'amber'},
-    {label:'Not Interested',value:rows.length-joined-interested,sub:'',color:'red'}
+    {label:'Fees Pending',value:fmt(pendTotal),sub:pendRows.length+' students &#8212; reminder chal rahi hai',color:'red'},
+    {label:'Demat Not Opened',value:dematNo,sub:'follow-up karo',color:'amber'}
   ]);
-  document.getElementById('astudTable').innerHTML=mkTable(rows,[
-    {k:'Date',l:'Date'},{k:'Employee Name',l:'Employee'},{k:'Student Name',l:'Student'},{k:'Student Phone',l:'Phone'},{k:'Batch',l:'Batch'},{k:'Reference By',l:'Referred By'},{k:'Status',l:'Status'}
-  ],'Students');
+  document.getElementById('astudTable').innerHTML=mkStudentTable(rows,true);
 }
 
 function renderAdminAttendance(){
@@ -1687,16 +1841,17 @@ function renderMyLeads(){
 function renderMyStudents(){
   var uid=currentUser.userId;
   var rows=fDate(fEmp(allData.Students||[],uid),filters['myStud']||'all');
-  var q=getSrch('srch-myStud');rows=srchFilter(rows,q,['Student Name','Batch']);
+  var q=getSrch('srch-myStud');rows=srchFilter(rows,q,['Student Name','Batch','Student Phone']);
   var joined=rows.filter(function(r){return r['Status']==='Joined';}).length;
+  var pendRows=rows.filter(function(r){return studentPending(r)>0;});
+  var pendTotal=r2(pendRows.reduce(function(s,r){return s+studentPending(r);},0));
   document.getElementById('myStudStats').innerHTML=mkStats([
     {label:'Total Students',value:rows.length,sub:'referred by you',color:'green'},
     {label:'Joined',value:joined,sub:'in batch',color:'blue'},
-    {label:'Interested',value:rows.filter(function(r){return r['Status']==='Interested';}).length,sub:'follow-up',color:'amber'}
+    {label:'Interested',value:rows.filter(function(r){return r['Status']==='Interested';}).length,sub:'follow-up',color:'amber'},
+    {label:'Fees Pending',value:fmt(pendTotal),sub:pendRows.length+' students',color:'red'}
   ]);
-  document.getElementById('myStudTable').innerHTML=mkTable(rows,[
-    {k:'Date',l:'Date'},{k:'Student Name',l:'Student'},{k:'Student Phone',l:'Phone'},{k:'Batch',l:'Batch'},{k:'Reference By',l:'Referred By'},{k:'Status',l:'Status'}
-  ],'Students');
+  document.getElementById('myStudTable').innerHTML=mkStudentTable(rows,true);
 }
 
 function renderMyAttendance(){
@@ -1891,8 +2046,8 @@ function submitLead(){
 
 function submitStudent(){
   var sn=document.getElementById('st_name').value.trim();if(!sn){showToast('Student name required','error');return;}
-  var p={action:'addStudent','Date':document.getElementById('st_date').value||td(),'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch,'Student Name':sn,'Student Phone':document.getElementById('st_phone').value.trim(),'Batch':document.getElementById('st_batch').value.trim(),'Reference By':document.getElementById('st_ref').value.trim(),'Status':document.getElementById('st_status').value};
-  doSubmit(p,'Students',document.querySelector('#page-addStudent .btn-submit'),'Add Student',function(){document.getElementById('st_name').value='';document.getElementById('st_phone').value='';document.getElementById('st_batch').value='';document.getElementById('st_ref').value='';});
+  var p={action:'addStudent','Date':document.getElementById('st_date').value||td(),'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch,'Student Name':sn,'Student Phone':document.getElementById('st_phone').value.trim(),'Batch':document.getElementById('st_batch').value.trim(),'Reference By':document.getElementById('st_ref').value.trim(),'Status':document.getElementById('st_status').value,'Total Fee':parseFloat(document.getElementById('st_totfee').value)||'','Demat Opened':document.getElementById('st_demat').value};
+  doSubmit(p,'Students',document.querySelector('#page-addStudent .btn-submit'),'Add Student',function(){document.getElementById('st_name').value='';document.getElementById('st_phone').value='';document.getElementById('st_batch').value='';document.getElementById('st_ref').value='';document.getElementById('st_totfee').value='';document.getElementById('st_demat').value='';});
 }
 
 function submitAttendance(){
@@ -1930,6 +2085,92 @@ function hisabInRange(f){
     var d2=new Date(d1.getFullYear(),d1.getMonth()+1,0,23,59,59);
     return d2>=r.start&&d1<=r.end;
   });
+}
+/* ===== v27: SHARED HISAB CALC — ek hi function jo Monthly Hisab, Finance Dashboard aur Admin Dashboard teeno use karte h, taki Team Payable kabhi mismatch na ho ===== */
+function computeHisabTotals(mo){
+  var savedRows={};
+  (allData.Hisab||[]).forEach(function(r){
+    if(r['Month']!==mo)return;
+    var lines=[];try{lines=JSON.parse(r['Details']||'[]');}catch(e){lines=[];}
+    savedRows[r['Employee ID']]={lines:lines,pct:parseFloat(r['Commission %'])||getCommission(r['Employee ID']),status:r['Status']||'Pending',savedBrok:parseFloat(r['Brokerage'])||0};
+  });
+  var cbMonth=fMonth(allData.ClientBrokerage||[],mo);
+  var totBrok=r2(cbMonth.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0));
+  var inc=fMonth(allData.Income||[],mo),exp=fMonth(allData.Expense||[],mo);
+  var tInc=r2(inc.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0));
+  var tExp=r2(exp.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0));
+  function empBrok(eid){return r2(cbMonth.filter(function(r){return (r['Employee ID']||'').trim().toLowerCase()===String(eid).trim().toLowerCase();}).reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0));}
+  var SHARED=[{from:'jh_hansi',to:'ideal.himanshu',pct:25,label:'JH_HANSI (Jai Himanshu) clients (25%)'}];
+  var emps=employees.filter(function(e){
+    var role=(e['Role']||'employee').toLowerCase();
+    if((e['Status']||'Active')!=='Active'||role==='admin')return false;
+    var id=(e['Employee ID']||'').trim().toLowerCase();
+    return !SHARED.some(function(s){return s.from===id;});
+  });
+  function getRow(e){
+    var eid=e['Employee ID'];
+    if(savedRows[eid])return savedRows[eid];
+    var st={lines:[],pct:getCommission(eid),status:'Pending',savedBrok:0};
+    var sal=parseFloat(e['Salary'])||0;
+    if(sal>0)st.lines.push({t:'add',l:'Fixed Salary',a:sal});
+    SHARED.forEach(function(s){
+      if(s.to===(eid||'').trim().toLowerCase()){
+        var b=empBrok(s.from);
+        if(b>0)st.lines.push({t:'add',l:s.label,a:r2(b*s.pct/100)});
+      }
+    });
+    return st;
+  }
+  function calc(base,st){
+    var share=r2(base*st.pct/100);
+    var adds=st.lines.filter(function(l){return l.t==='add';}).reduce(function(s,l){return s+(parseFloat(l.a)||0);},0);
+    var deds=st.lines.filter(function(l){return l.t==='ded';}).reduce(function(s,l){return s+(parseFloat(l.a)||0);},0);
+    return {share:share,adds:r2(adds),deds:r2(deds),net:r2(share+adds-deds)};
+  }
+  var partners=emps.filter(function(e){return (e['Role']||'').toLowerCase()==='partner';});
+  var staff=emps.filter(function(e){return (e['Role']||'').toLowerCase()!=='partner';});
+  var staffPay=0,byEmp={};
+  staff.forEach(function(e){
+    var eid=e['Employee ID'];
+    var st=getRow(e);
+    var auto=empBrok(eid);
+    var brok=auto>0?auto:(st.savedBrok||0);
+    var c=calc(brok,st);
+    byEmp[eid]={net:c.net,status:st.status,isPartner:false};
+    staffPay+=c.net;
+  });
+  staffPay=r2(staffPay);
+  var pool=r2(totBrok+tInc-tExp-staffPay);
+  var totPay=0,paidAmt=0,pendAmt=0,paidN=0;
+  staff.forEach(function(e){var c=byEmp[e['Employee ID']];totPay+=c.net;if(c.status==='Paid'){paidAmt+=c.net;paidN++;}else pendAmt+=c.net;});
+  partners.forEach(function(e){
+    var eid=e['Employee ID'];
+    var st=getRow(e);
+    var c=calc(pool,st);
+    byEmp[eid]={net:c.net,status:st.status,isPartner:true};
+    totPay+=c.net;
+    if(st.status==='Paid'){paidAmt+=c.net;paidN++;}else pendAmt+=c.net;
+  });
+  totPay=r2(totPay);paidAmt=r2(paidAmt);pendAmt=r2(pendAmt);
+  var netProfit=r2(totBrok+tInc-tExp-totPay);
+  return {mo:mo,totBrok:totBrok,tInc:tInc,tExp:tExp,staffPay:staffPay,pool:pool,totPay:totPay,paidAmt:paidAmt,pendAmt:pendAmt,paidN:paidN,empCount:emps.length,netProfit:netProfit,byEmp:byEmp};
+}
+function hisabMonthsInRange(f){
+  var r=(!f||f==='all')?null:getRange(f);
+  var months={};
+  ['ClientBrokerage','Income','Expense','Hisab'].forEach(function(sheetName){
+    (allData[sheetName]||[]).forEach(function(row){
+      var mo=sheetName==='Hisab'?row['Month']:monthOf(row['Date']);
+      if(!mo)return;
+      if(r){
+        var d1=new Date(mo+'-01T00:00:00');if(isNaN(d1))return;
+        var d2=new Date(d1.getFullYear(),d1.getMonth()+1,0,23,59,59);
+        if(!(d2>=r.start&&d1<=r.end))return;
+      }
+      months[mo]=true;
+    });
+  });
+  return Object.keys(months);
 }
 var cbrokView='clients',myCBView='entries';
 function setCBrokView(v){cbrokView=v;var mp={cbrokTabC:'clients',cbrokTabM:'matrix',cbrokTabE:'entries'};Object.keys(mp).forEach(function(id){var el=document.getElementById(id);if(el)el.className='tab-btn'+(mp[id]===v?' active':'');});renderCBrok();}
@@ -2288,13 +2529,13 @@ function renderFinDash(){
   var tInc=inc.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
   var tExp=exp.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
   var tCB=cb.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
-  var his=(allData.Hisab||[]).filter(function(r){return !mo||r['Month']===mo;});
-  var payable=his.reduce(function(s,r){return s+parseFloat(r['Net Payable']||0);},0);
+  var ht=mo?computeHisabTotals(mo):{totPay:hisabMonthsInRange('all').reduce(function(s,m){return s+computeHisabTotals(m).totPay;},0),empCount:0};
+  var payable=ht.totPay;
   var fdCards=[
     {label:'Income (entries)',value:fmt(tInc),sub:inc.length+' entries',color:'green'},
     {label:'Client Brokerage',value:fmt(tCB),sub:'Choice uploads se',color:'blue'},
     {label:'Expense',value:fmt(tExp),sub:exp.length+' entries',color:'red'},
-    {label:'Team Payable (Hisab)',value:fmt(payable),sub:his.length+' hisab entries',color:'amber'}
+    {label:'Team Payable (Hisab)',value:fmt(payable),sub:mo?(ht.empCount+' employees (Monthly Hisab se match)'):'sabhi months',color:'amber'}
   ];
   if(currentUser&&currentUser.role==='admin')fdCards.push({label:'Net Profit',value:fmt(r2(tInc+tCB-tExp-payable)),sub:'income - expense - payable',color:'purple'});
   document.getElementById('finDashStats').innerHTML=mkStats(fdCards);
@@ -2627,10 +2868,14 @@ function doDel(sheet,rowNum){
 
 function renderManageEmps(){
   if(!employees.length){document.getElementById('manageEmpTable').innerHTML='<div class="no-data">No employees.</div>';return;}
-  var h='<table><thead><tr><th>Employee ID</th><th>Name</th><th>Branch</th><th>Role</th><th>Commission %</th><th>Salary</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+  var missing=employees.filter(function(e){return (e['Status']||'Active')==='Active'&&!(e['Email']||'').trim();});
+  var h='';
+  if(missing.length)h+='<div class="prev-err" style="margin-bottom:10px;">&#9888; <b>'+missing.length+' employee(s) ka Email set nahi hai</b> &#8212; inko Mark Paid karne par salary slip mail NAHI jayegi: '+missing.map(function(e){return e['Name']||e['Employee ID'];}).join(', ')+'</div>';
+  h+='<table><thead><tr><th>Employee ID</th><th>Name</th><th>Branch</th><th>Role</th><th>Commission %</th><th>Salary</th><th>Email</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
   employees.forEach(function(e){
     var isAct=(e['Status']||'Active')==='Active';
-    h+='<tr><td>'+(e['Employee ID']||'-')+'</td><td style="font-weight:600;">'+(e['Name']||'-')+'</td><td>'+(e['Branch']||'-')+'</td><td>'+(e['Role']||'employee')+'</td><td style="font-weight:700;color:var(--accent);">'+(e['Commission']!==''&&e['Commission']!==undefined?e['Commission']+'%':'50%')+'</td><td>'+(parseFloat(e['Salary'])>0?fmt(e['Salary']):'-')+'</td><td><span class="badge '+(isAct?'green':'red')+'">'+(isAct?'Active':'Inactive')+'</span></td><td>';
+    var em=(e['Email']||'').trim();
+    h+='<tr><td>'+(e['Employee ID']||'-')+'</td><td style="font-weight:600;">'+(e['Name']||'-')+'</td><td>'+(e['Branch']||'-')+'</td><td>'+(e['Role']||'employee')+'</td><td style="font-weight:700;color:var(--accent);">'+(e['Commission']!==''&&e['Commission']!==undefined?e['Commission']+'%':'50%')+'</td><td>'+(parseFloat(e['Salary'])>0?fmt(e['Salary']):'-')+'</td><td>'+(em?em:'<span class="badge red" title="Email missing — salary slip mail nahi jayegi">&#9888; missing</span>')+'</td><td><span class="badge '+(isAct?'green':'red')+'">'+(isAct?'Active':'Inactive')+'</span></td><td>';
     h+='<button class="btn-edit" data-id="'+e['Employee ID']+'" onclick="editEmpModal(this.dataset.id)">&#9998; Edit</button>';
     h+='<button class="btn-del" data-id="'+e['Employee ID']+'" data-act="'+(isAct?'Inactive':'Active')+'" onclick="toggleEmpBtn(this)">'+( isAct?'Deactivate':'Activate')+'</button>';
     h+='</td></tr>';
