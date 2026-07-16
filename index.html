@@ -336,6 +336,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <input class="srch" id="srch-brok" placeholder="&#128269; Search..." oninput="renderBrok()">
       </div>
       <div id="brokCalDiv"></div>
+      <div id="brokDayDiv"></div>
       <div class="stats-grid" id="brokStats"></div>
       <div class="table-wrap"><div class="table-inner" id="brokTable"></div></div>
     </div>
@@ -366,6 +367,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <input class="srch" id="srch-meet" placeholder="&#128269; Search..." oninput="renderAdminMeetings()">
       </div>
       <div id="meetCalDiv"></div>
+      <div id="meetDayDiv"></div>
       <div class="stats-grid" id="meetStats"></div>
       <div class="table-wrap"><div class="table-inner" id="meetTable"></div></div>
     </div>
@@ -383,6 +385,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <input class="srch" id="srch-sip" placeholder="&#128269; Search client..." oninput="renderSIP()">
       </div>
       <div id="sipCalDiv"></div>
+      <div id="sipDayDiv"></div>
       <div class="stats-grid" id="sipStats"></div>
       <div class="table-wrap"><div class="table-inner" id="sipTable"></div></div>
     </div>
@@ -444,6 +447,8 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <button class="filter-btn" onclick="setLeadCat('Student',this,'leadCatF')">Student</button>
         <button class="filter-btn" onclick="setLeadCat('Other',this,'leadCatF')">Other</button>
       </div>
+      <div id="aleadsCalDiv"></div>
+      <div id="aleadsDayDiv"></div>
       <div class="stats-grid" id="aleadsStats"></div>
       <div class="table-wrap"><div class="table-inner" id="aleadsTable"></div></div>
     </div>
@@ -840,6 +845,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <input class="srch" id="srch-mySIP" placeholder="&#128269; Search client..." oninput="renderMySIP()">
       </div>
       <div id="mySipCalDiv"></div>
+      <div id="mySipDayDiv"></div>
       <div class="stats-grid" id="mySIPStats"></div>
       <div class="table-wrap"><div class="table-inner" id="mySIPTable"></div></div>
     </div>
@@ -901,6 +907,8 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <button class="filter-btn" onclick="setLeadCat('Student',this,'myLeadCatF')">Student</button>
         <button class="filter-btn" onclick="setLeadCat('Other',this,'myLeadCatF')">Other</button>
       </div>
+      <div id="myLeadsCalDiv"></div>
+      <div id="myLeadsDayDiv"></div>
       <div class="stats-grid" id="myLeadsStats"></div>
       <div class="table-wrap"><div class="table-inner" id="myLeadsTable"></div></div>
     </div>
@@ -941,6 +949,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <input class="srch" id="srch-myMeet" placeholder="&#128269; Search..." oninput="renderMyMeetings()">
       </div>
       <div id="myMeetCalDiv"></div>
+      <div id="myMeetDayDiv"></div>
       <div class="stats-grid" id="myMeetStats"></div>
       <div class="table-wrap"><div class="table-inner" id="myMeetTable"></div></div>
     </div>
@@ -1121,8 +1130,11 @@ var employees=[];
 var filters={};
 var accStat='all',myAccStat='all',dashF='today',accDupOnly=false,teamWorkingOnly=false;
 var leadCatF='all',myLeadCatF='all';
+var leadConvF='all',myLeadConvF='all',meetConvF='all',myMeetConvF='all';
+function setLeadConv(v,varName){if(varName==='leadConvF')leadConvF=v;else myLeadConvF=v;renderPage(curPage());}
+function setMeetConv(v,varName){if(varName==='meetConvF')meetConvF=v;else myMeetConvF=v;renderPage(curPage());}
 var finTab='income';
-var calStates={};['brok','myBrok','sipCal','mySipCal','meetCal','myMeetCal','cbrok'].forEach(function(k){calStates[k]={year:new Date().getFullYear(),month:new Date().getMonth()};});
+var calStates={};['brok','myBrok','sipCal','mySipCal','meetCal','myMeetCal','cbrok','aleadsCal','myLeadsCal'].forEach(function(k){calStates[k]={year:new Date().getFullYear(),month:new Date().getMonth()};});
 
 function td(){return new Date().toISOString().split('T')[0];}
 function fmt(n){var v=parseFloat(n)||0;return '₹'+v.toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:2});}
@@ -1699,6 +1711,31 @@ function mkBrokCalendar(allRows,calKey,clickFn){
   return h;
 }
 
+function showBrokDay(ds){
+  var rows=(allData.Brokerage||[]).filter(function(r){return r['Date']===ds;});
+  var t=rows.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
+  var h='<div class="day-detail"><h3><span>&#128197; '+ds+' &#8212; '+rows.length+' entries &#183; Total: '+fmt(t)+'</span><span class="day-close" onclick="document.getElementById(\'brokDayDiv\').innerHTML=\'\'">&#10005; Close</span></h3>';
+  h+=mkTable(rows,[{k:'Employee Name',l:'Employee'},{k:'Branch',l:'Branch'},{k:'Amount',l:'Amount',money:true}]);
+  h+='</div>';
+  var el=document.getElementById('brokDayDiv');el.innerHTML=h;el.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function showSIPDay(ds){
+  var rows=(allData.SIP||[]).filter(function(r){return r['Date']===ds;});
+  var t=rows.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
+  var h='<div class="day-detail"><h3><span>&#128197; '+ds+' &#8212; '+rows.length+' entries &#183; '+fmt(t)+'</span><span class="day-close" onclick="document.getElementById(\'sipDayDiv\').innerHTML=\'\'">&#10005; Close</span></h3>';
+  h+=mkTable(rows,[{k:'Employee Name',l:'Employee'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Client ID'},{k:'Client Phone',l:'Phone'},{k:'Type',l:'Type'},{k:'Amount',l:'Amount',money:true}]);
+  h+='</div>';
+  var el=document.getElementById('sipDayDiv');el.innerHTML=h;el.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function showMySIPDay(ds){
+  var uid=currentUser.userId;
+  var rows=fEmp(allData.SIP||[],uid).filter(function(r){return r['Date']===ds;});
+  var t=rows.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
+  var h='<div class="day-detail"><h3><span>&#128197; '+ds+' &#8212; '+rows.length+' entries &#183; '+fmt(t)+'</span><span class="day-close" onclick="document.getElementById(\'mySipDayDiv\').innerHTML=\'\'">&#10005; Close</span></h3>';
+  h+=mkTable(rows,[{k:'Client Name',l:'Client'},{k:'Client ID',l:'Client ID'},{k:'Client Phone',l:'Phone'},{k:'Type',l:'Type'},{k:'Amount',l:'Amount',money:true}]);
+  h+='</div>';
+  var el=document.getElementById('mySipDayDiv');el.innerHTML=h;el.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
 function srchFilter(rows,q,fields){
   if(!q)return rows;
   return rows.filter(function(r){return fields.some(function(f){return (r[f]||'').toLowerCase().indexOf(q)!==-1;});});
@@ -1770,7 +1807,7 @@ function renderBrok(){
   var q=getSrch('srch-brok');rows=srchFilter(rows,q,['Employee Name','Branch']);
   var t=rows.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
   var life=(allData.Brokerage||[]).reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
-  document.getElementById('brokCalDiv').innerHTML=mkBrokCalendar(allData.Brokerage||[],'brok');
+  document.getElementById('brokCalDiv').innerHTML=mkBrokCalendar(allData.Brokerage||[],'brok','showBrokDay');
   document.getElementById('brokStats').innerHTML=mkStats([{label:'Lifetime Brokerage',value:fmt(life),sub:(allData.Brokerage||[]).length+' total entries',color:'green'},{label:periodLabel(filters['brok']||'today')+' Brokerage',value:fmt(t),sub:rows.length+' entries',color:'blue'}]);
   document.getElementById('brokTable').innerHTML=mkTable(rows,[{k:'Date',l:'Date'},{k:'Employee Name',l:'Employee'},{k:'Branch',l:'Branch'},{k:'Amount',l:'Amount',money:true}],'Brokerage');
 }
@@ -1783,7 +1820,7 @@ function renderSIP(){
   var sipAmt=sipR.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
   var lumpAmt=lumpR.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
   var gPct=calcGrowth(allData.SIP||[],null,'Amount',false);
-  document.getElementById('sipCalDiv').innerHTML=mkCalendar(allData.SIP||[],'sipCal',{amt:function(r){return parseFloat(r['Amount']||0);},moreLabel:'More SIP'});
+  document.getElementById('sipCalDiv').innerHTML=mkCalendar(allData.SIP||[],'sipCal',{amt:function(r){return parseFloat(r['Amount']||0);},moreLabel:'More SIP',clickFn:'showSIPDay'});
   document.getElementById('sipStats').innerHTML=mkStats([
     {label:'SIP Total',value:fmt(sipAmt),sub:sipR.length+' clients · '+gBadge(gPct),color:'green'},
     {label:'Lumpsum Total',value:fmt(lumpAmt),sub:lumpR.length+' entries',color:'amber'},
@@ -1852,9 +1889,16 @@ function renderALeads(){
   var rows=fDate(allData.Leads||[],filters['aleads']||'today');
   var q=getSrch('srch-aleads');rows=srchFilter(rows,q,['Client Name','Client Phone','Employee Name']);
   if(leadCatF!=='all')rows=rows.filter(function(r){return (r['Category']||'')=== leadCatF;});
-  var done=rows.filter(function(r){return r['Meeting Done']==='Yes';}).length;
-  document.getElementById('aleadsStats').innerHTML=mkStats([{label:'Total Leads',value:rows.length,sub:'all employees',color:'green'},{label:'Meeting Done',value:done,sub:'discussed',color:'blue'},{label:'Pending',value:rows.length-done,sub:'follow-up',color:'amber'}]);
-  document.getElementById('aleadsTable').innerHTML=mkLeads(rows,true,true);
+  var convertedRows=rows.filter(function(r){return r['Converted']==='Yes';});
+  var pendingRows=rows.filter(function(r){return r['Converted']!=='Yes';});
+  var shown=leadConvF==='converted'?convertedRows:(leadConvF==='pending'?pendingRows:rows);
+  document.getElementById('aleadsCalDiv').innerHTML=mkCalendar(allData.Leads||[],'aleadsCal',{moreLabel:'More Leads',clickFn:'showALeadsDay'});
+  document.getElementById('aleadsStats').innerHTML=mkStats([
+    {label:'Total Leads',value:rows.length,sub:'click to view all',color:'green',onclick:"setLeadConv('all','leadConvF')"},
+    {label:'Converted',value:convertedRows.length,sub:'click to view converted',color:'blue',onclick:"setLeadConv('converted','leadConvF')"},
+    {label:'Pending',value:pendingRows.length,sub:'click to view pending',color:'amber',onclick:"setLeadConv('pending','leadConvF')"}
+  ]);
+  document.getElementById('aleadsTable').innerHTML=mkLeads(shown,true,true);
 }
 
 /* ===== v27: STUDENT PORTAL — unified student record (name, admission date, fees, pending, reminder, demat status) ===== */
@@ -2096,7 +2140,7 @@ function renderMySIP(){
   var lumpR=rows.filter(function(r){return r['Type']==='Lumpsum';});
   var sipAmt=sipR.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
   var lumpAmt=lumpR.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
-  document.getElementById('mySipCalDiv').innerHTML=mkCalendar(fEmp(allData.SIP||[],uid),'mySipCal',{amt:function(r){return parseFloat(r['Amount']||0);},moreLabel:'More SIP'});
+  document.getElementById('mySipCalDiv').innerHTML=mkCalendar(fEmp(allData.SIP||[],uid),'mySipCal',{amt:function(r){return parseFloat(r['Amount']||0);},moreLabel:'More SIP',clickFn:'showMySIPDay'});
   checkSIPAlerts();
   document.getElementById('mySIPStats').innerHTML=mkStats([
     {label:'SIP Total',value:fmt(sipAmt),sub:sipR.length+' clients',color:'green'},
@@ -2132,12 +2176,20 @@ function renderMyAccTable(){
 
 function renderMyLeads(){
   var uid=currentUser.userId;
-  var rows=fDate(fEmp(allData.Leads||[],uid),filters['myLeads']||'all');
+  var myAll=fEmp(allData.Leads||[],uid);
+  var rows=fDate(myAll,filters['myLeads']||'all');
   var q=getSrch('srch-myLeads');rows=srchFilter(rows,q,['Client Name','Client Phone']);
   if(myLeadCatF!=='all')rows=rows.filter(function(r){return (r['Category']||'')=== myLeadCatF;});
-  var done=rows.filter(function(r){return r['Meeting Done']==='Yes';}).length;
-  document.getElementById('myLeadsStats').innerHTML=mkStats([{label:'Total Leads',value:rows.length,sub:'your leads',color:'green'},{label:'Meeting Done',value:done,sub:'discussed',color:'blue'},{label:'Pending',value:rows.length-done,sub:'follow-up',color:'amber'}]);
-  document.getElementById('myLeadsTable').innerHTML=mkLeads(rows,false,true);
+  var convertedRows=rows.filter(function(r){return r['Converted']==='Yes';});
+  var pendingRows=rows.filter(function(r){return r['Converted']!=='Yes';});
+  var shown=myLeadConvF==='converted'?convertedRows:(myLeadConvF==='pending'?pendingRows:rows);
+  document.getElementById('myLeadsCalDiv').innerHTML=mkCalendar(myAll,'myLeadsCal',{moreLabel:'More Leads',clickFn:'showMyLeadsDay'});
+  document.getElementById('myLeadsStats').innerHTML=mkStats([
+    {label:'Total Leads',value:rows.length,sub:'click to view all',color:'green',onclick:"setLeadConv('all','myLeadConvF')"},
+    {label:'Converted',value:convertedRows.length,sub:'click to view converted',color:'blue',onclick:"setLeadConv('converted','myLeadConvF')"},
+    {label:'Pending',value:pendingRows.length,sub:'click to view pending',color:'amber',onclick:"setLeadConv('pending','myLeadConvF')"}
+  ]);
+  document.getElementById('myLeadsTable').innerHTML=mkLeads(shown,false,true);
 }
 
 function renderMyStudents(){
@@ -2171,20 +2223,47 @@ function renderMyAttendance(){
 
 function mkLeads(rows,showEmp,canDel){
   if(!rows||!rows.length)return '<div class="no-data">No leads found</div>';
-  var h='<table><thead><tr><th>Date</th>'+(showEmp?'<th>Employee</th>':'')+'<th>Client</th><th>Phone</th><th>Category</th><th>Contact</th><th>Meeting</th><th>Follow Up</th><th>Remarks</th><th>Actions</th></tr></thead><tbody>';
+  var h='<table><thead><tr><th>Date</th>'+(showEmp?'<th>Employee</th>':'')+'<th>Client</th><th>Phone</th><th>Category</th><th>Contact</th><th>Meeting</th><th>Follow Up</th><th>Remarks</th><th>Converted</th><th>Actions</th></tr></thead><tbody>';
   rows.slice().reverse().forEach(function(r){
     var cat=r['Category']||'-',met=r['Meeting Done']||'No';
     var catC={'SIP/MF':'green','Insurance':'blue','Account':'purple','Student':'pink','Other':'amber'}[cat]||'blue';
+    var conv=r['Converted']==='Yes';
     h+='<tr><td>'+(r['Date']||'-')+'</td>'+(showEmp?'<td>'+(r['Employee Name']||'-')+'</td>':'')+
       '<td style="font-weight:600;">'+(r['Client Name']||'-')+'</td><td>'+(r['Client Phone']||'-')+'</td>'+
       '<td><span class="badge '+catC+'">'+cat+'</span></td><td>'+(r['Contact']||'-')+'</td>'+
       '<td><span class="badge '+(met==='Yes'?'green':'amber')+'">'+met+'</span></td>'+
       '<td>'+(r['Follow Up']||'-')+'</td>'+
       '<td style="max-width:120px;white-space:normal;font-size:12px;">'+(r['Remarks']||'-')+'</td>'+
-      '<td>'+(canDel&&r._rowNum?'<button class="btn-edit" onclick="openEdit(\'Leads\','+r._rowNum+',this.closest(\'tr\'))">&#9998;</button> <button class="btn-del" onclick="confirmDel(\'Leads\','+r._rowNum+')">&#128465;</button>':'-')+'</td>'+
+      '<td><span class="badge '+(conv?'green':'amber')+'">'+(conv?'Yes':'No')+'</span></td>'+
+      '<td>'+(canDel&&r._rowNum?'<button class="btn-edit" onclick="openEdit(\'Leads\','+r._rowNum+',this.closest(\'tr\'))">&#9998;</button> <button class="btn-del" onclick="confirmDel(\'Leads\','+r._rowNum+')">&#128465;</button>':'-')+
+      (!conv&&r._rowNum?' <button class="btn-edit" style="background:rgba(63,191,127,0.15);color:var(--accent);" onclick="markLeadConverted('+r._rowNum+')">&#10003; Converted</button>':'')+
+      '</td>'+
       '</tr>';
   });
   return h+'</tbody></table>';
+}
+function markLeadConverted(rowNum){
+  postData({action:'editRow',sheet:'Leads',rowNum:rowNum,vals:{'Converted':'Yes'}}).then(function(r){
+    if(r&&r.success){showToast('Lead marked as Converted!','success');loadAll();}
+    else showToast('Update failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+function showALeadsDay(ds){
+  var rows=(allData.Leads||[]).filter(function(r){return r['Date']===ds;});
+  var conv=rows.filter(function(r){return r['Converted']==='Yes';}).length;
+  var h='<div class="day-detail"><h3><span>&#128197; '+ds+' &#8212; '+rows.length+' leads &#183; '+conv+' converted</span><span class="day-close" onclick="document.getElementById(\'aleadsDayDiv\').innerHTML=\'\'">&#10005; Close</span></h3>';
+  h+=mkLeads(rows,true,true);
+  h+='</div>';
+  var el=document.getElementById('aleadsDayDiv');el.innerHTML=h;el.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function showMyLeadsDay(ds){
+  var uid=currentUser.userId;
+  var rows=fEmp(allData.Leads||[],uid).filter(function(r){return r['Date']===ds;});
+  var conv=rows.filter(function(r){return r['Converted']==='Yes';}).length;
+  var h='<div class="day-detail"><h3><span>&#128197; '+ds+' &#8212; '+rows.length+' leads &#183; '+conv+' converted</span><span class="day-close" onclick="document.getElementById(\'myLeadsDayDiv\').innerHTML=\'\'">&#10005; Close</span></h3>';
+  h+=mkLeads(rows,false,true);
+  h+='</div>';
+  var el=document.getElementById('myLeadsDayDiv');el.innerHTML=h;el.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
 function updateSIPLabel(){
@@ -2267,27 +2346,62 @@ function mkMeetingTable(rows,showEmp){
   var h='<table><thead><tr><th>Date</th>'+(showEmp?'<th>Employee</th>':'')+'<th>Client</th><th>Phone</th><th>Ref By</th><th>Regarding</th><th>Attendees</th><th>Next Mtg</th><th>Converted</th><th>Remarks</th><th>Actions</th></tr></thead><tbody>';
   rows.slice().reverse().forEach(function(r){
     var conv=r['Converted']||'No';var cc=conv==='Yes'?'green':'amber';
-    h+='<tr><td>'+(r['Date']||'-')+'</td>'+(showEmp?'<td>'+(r['Employee Name']||'-')+'</td>':'')+'<td>'+(r['Client Name']||'-')+'</td><td>'+(r['Client Phone']||'-')+'</td><td>'+(r['Reference By']||'-')+'</td><td>'+(r['Regarding']||'-')+'</td><td>'+(r['Attendees']||'-')+'</td><td>'+(r['Next Meeting']||'-')+'</td><td><span class="badge '+cc+'">'+conv+((conv==='Yes'&&r['Convert Product'])?' &#183; '+r['Convert Product']:'')+'</span></td><td>'+(r['Remarks']||'-')+'</td><td><button class="btn-del" onclick="confirmDel(\'Meetings\','+r['_rowNum']+')">&#128465;</button></td></tr>';
+    h+='<tr><td>'+(r['Date']||'-')+'</td>'+(showEmp?'<td>'+(r['Employee Name']||'-')+'</td>':'')+'<td>'+(r['Client Name']||'-')+'</td><td>'+(r['Client Phone']||'-')+'</td><td>'+(r['Reference By']||'-')+'</td><td>'+(r['Regarding']||'-')+'</td><td>'+(r['Attendees']||'-')+'</td><td>'+(r['Next Meeting']||'-')+'</td><td><span class="badge '+cc+'">'+conv+((conv==='Yes'&&r['Convert Product'])?' &#183; '+r['Convert Product']:'')+'</span></td><td>'+(r['Remarks']||'-')+'</td><td><button class="btn-del" onclick="confirmDel(\'Meetings\','+r['_rowNum']+')">&#128465;</button>'+(conv!=='Yes'&&r['_rowNum']?' <button class="btn-edit" style="background:rgba(63,191,127,0.15);color:var(--accent);" onclick="markMeetingConverted('+r['_rowNum']+')">&#10003; Converted</button>':'')+'</td></tr>';
   });
   return h+'</tbody></table>';
+}
+function markMeetingConverted(rowNum){
+  postData({action:'editRow',sheet:'Meetings',rowNum:rowNum,vals:{'Converted':'Yes'}}).then(function(r){
+    if(r&&r.success){showToast('Meeting marked as Converted!','success');loadAll();}
+    else showToast('Update failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+function showMeetDay(ds){
+  var rows=(allData.Meetings||[]).filter(function(r){return r['Date']===ds;});
+  var conv=rows.filter(function(r){return r['Converted']==='Yes';}).length;
+  var h='<div class="day-detail"><h3><span>&#128197; '+ds+' &#8212; '+rows.length+' meetings &#183; '+conv+' converted</span><span class="day-close" onclick="document.getElementById(\'meetDayDiv\').innerHTML=\'\'">&#10005; Close</span></h3>';
+  h+=mkMeetingTable(rows,true);
+  h+='</div>';
+  var el=document.getElementById('meetDayDiv');el.innerHTML=h;el.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function showMyMeetDay(ds){
+  var uid=currentUser.userId;
+  var rows=fEmp(allData.Meetings||[],uid).filter(function(r){return r['Date']===ds;});
+  var conv=rows.filter(function(r){return r['Converted']==='Yes';}).length;
+  var h='<div class="day-detail"><h3><span>&#128197; '+ds+' &#8212; '+rows.length+' meetings &#183; '+conv+' converted</span><span class="day-close" onclick="document.getElementById(\'myMeetDayDiv\').innerHTML=\'\'">&#10005; Close</span></h3>';
+  h+=mkMeetingTable(rows,false);
+  h+='</div>';
+  var el=document.getElementById('myMeetDayDiv');el.innerHTML=h;el.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 function renderAdminMeetings(){
   var rows=fDate(allData.Meetings||[],filters['meet']||'today');
   var q=getSrch('srch-meet');rows=srchFilter(rows,q,['Client Name','Reference By','Regarding','Attendees','Employee Name']);
-  var conv=rows.filter(function(r){return r['Converted']==='Yes';}).length;
-  document.getElementById('meetCalDiv').innerHTML=mkCalendar(allData.Meetings||[],'meetCal',{moreLabel:'More Meetings'});
-  document.getElementById('meetStats').innerHTML=mkStats([{label:'Total Meetings',value:rows.length,sub:'this period',color:'green'},{label:'Converted',value:conv,sub:'closed deals',color:'blue'}]);
-  document.getElementById('meetTable').innerHTML=mkMeetingTable(rows,true);
+  var convertedRows=rows.filter(function(r){return r['Converted']==='Yes';});
+  var pendingRows=rows.filter(function(r){return r['Converted']!=='Yes';});
+  var shown=meetConvF==='converted'?convertedRows:(meetConvF==='pending'?pendingRows:rows);
+  document.getElementById('meetCalDiv').innerHTML=mkCalendar(allData.Meetings||[],'meetCal',{moreLabel:'More Meetings',clickFn:'showMeetDay'});
+  document.getElementById('meetStats').innerHTML=mkStats([
+    {label:'Total Meetings',value:rows.length,sub:'click to view all',color:'green',onclick:"setMeetConv('all','meetConvF')"},
+    {label:'Converted',value:convertedRows.length,sub:'click to view converted',color:'blue',onclick:"setMeetConv('converted','meetConvF')"},
+    {label:'Pending',value:pendingRows.length,sub:'click to view pending',color:'amber',onclick:"setMeetConv('pending','meetConvF')"}
+  ]);
+  document.getElementById('meetTable').innerHTML=mkMeetingTable(shown,true);
 }
 function renderMyMeetings(){
   var uid=currentUser.userId;
   var my=fEmp(allData.Meetings||[],uid);
   var rows=fDate(my,filters['myMeet']||'month');
   var q=getSrch('srch-myMeet');rows=srchFilter(rows,q,['Client Name','Reference By','Regarding','Attendees']);
-  var conv=rows.filter(function(r){return r['Converted']==='Yes';}).length;
-  document.getElementById('myMeetCalDiv').innerHTML=mkCalendar(my,'myMeetCal',{moreLabel:'More Meetings'});
-  document.getElementById('myMeetStats').innerHTML=mkStats([{label:'Total Meetings',value:rows.length,sub:'this period',color:'green'},{label:'Converted',value:conv,sub:'closed deals',color:'blue'}]);
-  document.getElementById('myMeetTable').innerHTML=mkMeetingTable(rows,false);
+  var convertedRows=rows.filter(function(r){return r['Converted']==='Yes';});
+  var pendingRows=rows.filter(function(r){return r['Converted']!=='Yes';});
+  var shown=myMeetConvF==='converted'?convertedRows:(myMeetConvF==='pending'?pendingRows:rows);
+  document.getElementById('myMeetCalDiv').innerHTML=mkCalendar(my,'myMeetCal',{moreLabel:'More Meetings',clickFn:'showMyMeetDay'});
+  document.getElementById('myMeetStats').innerHTML=mkStats([
+    {label:'Total Meetings',value:rows.length,sub:'click to view all',color:'green',onclick:"setMeetConv('all','myMeetConvF')"},
+    {label:'Converted',value:convertedRows.length,sub:'click to view converted',color:'blue',onclick:"setMeetConv('converted','myMeetConvF')"},
+    {label:'Pending',value:pendingRows.length,sub:'click to view pending',color:'amber',onclick:"setMeetConv('pending','myMeetConvF')"}
+  ]);
+  document.getElementById('myMeetTable').innerHTML=mkMeetingTable(shown,false);
 }
 function sameDayAtt(a,b){var da=new Date(a),db=new Date(b);return !isNaN(da)&&!isNaN(db)&&da.getFullYear()===db.getFullYear()&&da.getMonth()===db.getMonth()&&da.getDate()===db.getDate();}
 function doPunch(field){
