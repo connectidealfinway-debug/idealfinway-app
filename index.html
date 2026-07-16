@@ -87,6 +87,9 @@ tbody td{padding:10px 14px;vertical-align:middle;}
 .btn-del{background:rgba(239,68,68,0.15);color:var(--danger);border:1px solid rgba(239,68,68,0.3);border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer;font-weight:600;}
 .form-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;max-width:520px;}
 .form-card .form-group textarea{min-height:70px;resize:vertical;}
+.form-card.form-grid{max-width:960px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:6px 20px;align-items:start;}
+.form-card.form-grid .form-group{margin-bottom:10px;}
+.form-card.form-grid .form-group.full,.form-card.form-grid textarea,.form-card.form-grid .btn-submit{grid-column:1/-1;}
 .btn-submit{background:var(--accent);color:#000;border:none;border-radius:8px;padding:11px 28px;font-size:14px;font-weight:700;cursor:pointer;}
 .btn-submit:disabled{opacity:0.5;cursor:not-allowed;}
 #modal{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:999;display:none;align-items:center;justify-content:center;}
@@ -550,14 +553,17 @@ tbody td{padding:10px 14px;vertical-align:middle;}
           <select id="tj_empFilter" onchange="renderTradingJournalPage()"><option value="">All Employees</option></select>
         </div>
       </div>
-      <div class="form-card">
+      <div class="form-card form-grid">
         <div class="form-group"><label>Date</label><input type="date" id="tj_date"></div>
         <div class="form-group"><label>Stock Symbol</label><input type="text" id="tj_stock" placeholder="e.g. RELIANCE" style="text-transform:uppercase"></div>
         <div class="form-group"><label>Direction</label>
           <select id="tj_direction"><option value="Buy">Buy</option><option value="Sell">Sell</option></select>
         </div>
         <div class="form-group"><label>Trade Type</label>
-          <select id="tj_type"><option value="Intraday">Intraday</option><option value="Swing">Swing</option><option value="Positional">Positional</option></select>
+          <select id="tj_type" onchange="populateTJStrategy()"><option value="Intraday">Intraday</option><option value="Swing">Swing</option><option value="Positional">Positional</option></select>
+        </div>
+        <div class="form-group"><label>Strategy</label>
+          <select id="tj_strategy"></select>
         </div>
         <div class="form-group"><label>Trading For</label>
           <select id="tj_entryType" onchange="toggleTJGroupName()"><option value="Personal">Personal</option><option value="Client Group">Client Group</option></select>
@@ -568,7 +574,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <div class="form-group"><label>Target 1</label><input type="number" id="tj_t1" placeholder="First target price"></div>
         <div class="form-group"><label>Target 2 (optional)</label><input type="number" id="tj_t2" placeholder="Second target price"></div>
         <div class="form-group"><label>Quantity</label><input type="number" id="tj_qty" placeholder="Number of shares"></div>
-        <div class="form-group"><label>Remarks</label><textarea id="tj_remarks" placeholder="Strategy used, what went right or wrong..."></textarea></div>
+        <div class="form-group"><label>Remarks</label><textarea id="tj_remarks" placeholder="What went right or wrong in this trade..."></textarea></div>
         <button class="btn-submit" onclick="submitTrade()">Add Trade</button>
       </div>
       <div class="filter-bar">
@@ -3212,6 +3218,17 @@ function setTJStat(f,btn){
   btn.classList.add('active');
   renderTradingJournalPage();
 }
+var TJ_STRATEGIES_INTRADAY=['OD (Open Drive)','ODR (Open Drive Rejection)','PPT (Pivot Pressure Trade)','Evening Star','Morning Star','Gap-Up Rejection','Gap-Down Rejection','RCR (Red Candle Retracement)','GCR (Green Candle Retracement)','RCBO (Red Candle Breakout)','GCBO (Green Candle Breakout)','M Pattern Reversal','W Pattern Reversal','CPRBO (CPR Breakout)','Virgin CPR Reversal','Red Candle Reversal','Green Candle Reversal','CPR Reversal','Supply Zone / Demand Zone Breakout'];
+var TJ_STRATEGIES_SWING=['Rectangle','Base on Base (BOB)','Cup with Handle','Flag & Pole','PBC (Pre-Breakout Contractions)','Double Top (M)','Double Bottom (W)','Pushpa Double Top','Pushpa Double Bottom','Head & Shoulders - Reversal','Head & Shoulders - Continuation','Inverted Head & Shoulders - Reversal','Inverted Head & Shoulders - Continuation','Head & Shoulders Failure','Symmetrical Triangle','Ascending Triangle','Right-Angle Triangle','Channel','Golden Crossover','Bollinger Band Setup'];
+function populateTJStrategy(){
+  var typeSel=document.getElementById('tj_type');
+  var sel=document.getElementById('tj_strategy');
+  if(!typeSel||!sel)return;
+  var list=(typeSel.value==='Intraday')?TJ_STRATEGIES_INTRADAY:TJ_STRATEGIES_SWING;
+  var prev=sel.value;
+  sel.innerHTML=list.map(function(s){return '<option value="'+s+'">'+s+'</option>';}).join('');
+  if(list.indexOf(prev)!==-1)sel.value=prev;
+}
 function toggleTJGroupName(){
   var v=document.getElementById('tj_entryType').value;
   document.getElementById('tj_groupNameGroup').style.display=(v==='Client Group')?'block':'none';
@@ -3224,6 +3241,8 @@ function initTradingJournalForm(){
   if(sel&&currentUser&&currentUser.role==='admin'&&sel.options.length<=1&&employees.length){
     employees.forEach(function(emp){var o=document.createElement('option');o.value=emp['Employee ID'];o.textContent=emp['Name'];sel.appendChild(o);});
   }
+  var stratSel=document.getElementById('tj_strategy');
+  if(stratSel&&!stratSel.options.length)populateTJStrategy();
 }
 function submitTrade(){
   var stock=(document.getElementById('tj_stock').value||'').trim().toUpperCase();
@@ -3242,6 +3261,7 @@ function submitTrade(){
     'Entry Type':entryType,'Group Name':groupName,
     'Stock':stock,'Direction':document.getElementById('tj_direction').value,
     'Trade Type':document.getElementById('tj_type').value,
+    'Strategy':document.getElementById('tj_strategy').value||'',
     'Entry Price':entry,'SL':sl,'Target1':t1,
     'Target2':t2v?parseFloat(t2v):'',
     'Qty':qty,'Status':'Open','Remarks':(document.getElementById('tj_remarks').value||'').trim()
@@ -3301,7 +3321,7 @@ function statusBadgeColor(s){
 function mkTradeTable(rows){
   if(!rows||!rows.length)return '<div class="no-data">No trades found</div>';
   var isAdm=currentUser&&currentUser.role==='admin';
-  var h='<table><thead><tr><th>Date</th>'+(isAdm?'<th>Employee</th>':'')+'<th>Stock</th><th>Dir</th><th>Type</th><th>For</th><th>Entry</th><th>SL</th><th>T1/T2</th><th>Qty</th><th>Status</th><th>Exit</th><th>P&amp;L</th><th>Remarks</th><th>Actions</th></tr></thead><tbody>';
+  var h='<table><thead><tr><th>Date</th>'+(isAdm?'<th>Employee</th>':'')+'<th>Stock</th><th>Dir</th><th>Type</th><th>Strategy</th><th>For</th><th>Entry</th><th>SL</th><th>T1/T2</th><th>Qty</th><th>Status</th><th>Exit</th><th>P&amp;L</th><th>Remarks</th><th>Actions</th></tr></thead><tbody>';
   rows.slice().reverse().forEach(function(r){
     var pl=parseFloat(r['Result']);
     var plPct=parseFloat(r['Result %']);
@@ -3313,6 +3333,7 @@ function mkTradeTable(rows){
     h+='<td style="font-weight:600;">'+(r['Stock']||'-')+'</td>';
     h+='<td>'+(r['Direction']||'-')+'</td>';
     h+='<td>'+(r['Trade Type']||'-')+'</td>';
+    h+='<td style="font-size:11px;">'+(r['Strategy']||'-')+'</td>';
     h+='<td style="font-size:11px;color:var(--muted);">'+forLabel+'</td>';
     h+='<td>'+(r['Entry Price']||'-')+'</td>';
     h+='<td>'+(r['SL']||'-')+'</td>';
@@ -3338,6 +3359,8 @@ function openTradeModal(rowNum){
   html+='<div class="form-group"><label>Target 1</label><input type="number" id="tm_t1" value="'+(row['Target1']||'')+'"></div>';
   html+='<div class="form-group"><label>Target 2</label><input type="number" id="tm_t2" value="'+(row['Target2']||'')+'"></div>';
   html+='<div class="form-group"><label>Quantity</label><input type="number" id="tm_qty" value="'+(row['Qty']||'')+'"></div>';
+  var tmStratList=(row['Trade Type']==='Intraday')?TJ_STRATEGIES_INTRADAY:TJ_STRATEGIES_SWING;
+  html+='<div class="form-group"><label>Strategy</label><select id="tm_strategy">'+tmStratList.map(function(s){return '<option value="'+s+'"'+(row['Strategy']===s?' selected':'')+'>'+s+'</option>';}).join('')+'</select></div>';
   html+='<div class="form-group"><label>Status</label><select id="tm_status" onchange="toggleTMExit()">'+statuses.map(function(s){return '<option value="'+s+'"'+(row['Status']===s?' selected':'')+'>'+s+'</option>';}).join('')+'</select></div>';
   var showExit=(row['Status']!=='Open'&&row['Status']!=='1st Target Done');
   html+='<div class="form-group" id="tm_exitGroup" style="display:'+(showExit?'block':'none')+'"><label>Exit Price</label><input type="number" id="tm_exit" value="'+(row['Exit Price']||'')+'"></div>';
@@ -3354,11 +3377,12 @@ function saveTradeModal(rowNum,direction){
   var status=document.getElementById('tm_status').value;
   var entry=parseFloat(document.getElementById('tm_entry').value)||0;
   var qty=parseFloat(document.getElementById('tm_qty').value)||0;
+  var stratEl=document.getElementById('tm_strategy');
   var vals={
     'Stock':(document.getElementById('tm_stock').value||'').trim().toUpperCase(),
     'Entry Price':entry,'SL':document.getElementById('tm_sl').value,
     'Target1':document.getElementById('tm_t1').value,'Target2':document.getElementById('tm_t2').value,
-    'Qty':qty,'Status':status,'Remarks':(document.getElementById('tm_remarks').value||'').trim()
+    'Qty':qty,'Status':status,'Strategy':stratEl?stratEl.value:'','Remarks':(document.getElementById('tm_remarks').value||'').trim()
   };
   var exitEl=document.getElementById('tm_exit');
   if(status!=='Open'&&status!=='1st Target Done'&&exitEl&&exitEl.value!==''){
