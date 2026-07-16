@@ -573,7 +573,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <div class="form-group"><label>Stop Loss</label><input type="number" id="tj_sl" placeholder="Stop loss price"></div>
         <div class="form-group"><label>Target 1</label><input type="number" id="tj_t1" placeholder="First target price"></div>
         <div class="form-group"><label>Target 2 (optional)</label><input type="number" id="tj_t2" placeholder="Second target price"></div>
-        <div class="form-group"><label>Quantity</label><input type="number" id="tj_qty" placeholder="Number of shares"></div>
+        <div class="form-group" id="tj_qtyGroup"><label>Quantity</label><input type="number" id="tj_qty" placeholder="Number of shares"></div>
         <div class="form-group"><label>Remarks</label><textarea id="tj_remarks" placeholder="What went right or wrong in this trade..."></textarea></div>
         <button class="btn-submit" onclick="submitTrade()">Add Trade</button>
       </div>
@@ -1072,7 +1072,7 @@ var currentUser=null;
 var allData={Brokerage:[],ClientBrokerage:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[],Meetings:[],Income:[],Expense:[],Hisab:[],TradingJournal:[]};
 var employees=[];
 var filters={};
-var accStat='all',myAccStat='all',dashF='today',accDupOnly=false;
+var accStat='all',myAccStat='all',dashF='today',accDupOnly=false,teamWorkingOnly=false;
 var leadCatF='all',myLeadCatF='all';
 var finTab='income';
 var calStates={};['brok','myBrok','sipCal','mySipCal','meetCal','myMeetCal','cbrok'].forEach(function(k){calStates[k]={year:new Date().getFullYear(),month:new Date().getMonth()};});
@@ -1331,6 +1331,8 @@ function setF(f,btn,key){filters[key]=f;if(key==='empPerf')empRange=null;btn.par
 function setDashF(f,btn){dashF=f;btn.parentElement.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');renderAdminDash();}
 function setAccStat(s,btn){accStat=s;btn.parentElement.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');renderAccTable();}
 function toggleAccDup(){accDupOnly=!accDupOnly;renderAccTable();}
+function toggleTeamWorking(){teamWorkingOnly=!teamWorkingOnly;renderMyTeamData();}
+function showAllTeamClients(){teamWorkingOnly=false;renderMyTeamData();}
 function setMyAccStat(s,btn){myAccStat=s;btn.parentElement.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');renderMyAccTable();}
 function setLeadCat(v,btn,varName){if(varName==='leadCatF')leadCatF=v;else myLeadCatF=v;btn.parentElement.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');renderPage(curPage());}
 function curPage(){var p=document.querySelector('.page.active');return p?p.id.replace('page-',''):'';}
@@ -1431,14 +1433,25 @@ function renderMyTeamData(){
   var manBrokT=manBrok.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
   var totBrok=r2(cbrokT+manBrokT);
   var uniqC={};cbrok.forEach(function(r){uniqC[(r['Client ID']||'').trim()]=1;});
+  var teamWorkingAcc=acc.filter(function(r){return uniqC[(r['Client ID']||'').trim()];});
   document.getElementById('teamStats').innerHTML=mkStats([
     {label:'Total Brokerage',value:fmt(totBrok),sub:'lifetime, sabhi clients',color:'red'},
-    {label:'Working Clients',value:Object.keys(uniqC).length,sub:'brokerage wale',color:'purple'},
-    {label:'Accounts',value:acc.length,sub:'clients',color:'green'},
+    {label:'Working Clients',value:Object.keys(uniqC).length,sub:(teamWorkingOnly?'showing working clients only, click to show all':'brokerage wale, click to filter')+' &#128064;',color:'purple',onclick:'toggleTeamWorking()'},
+    {label:'Accounts',value:acc.length,sub:'clients, click to show all &#128064;',color:'green',onclick:'showAllTeamClients()'},
     {label:'SIP/MF',value:sip.length,sub:'entries',color:'blue'},
     {label:'Insurance',value:ins.length,sub:'policies',color:'amber'},
     {label:'Students',value:stud.length,sub:'referred',color:'purple'}
   ]);
+  var accDisplay;
+  if(teamWorkingOnly){
+    accDisplay=teamWorkingAcc;
+  } else {
+    var workIds={};teamWorkingAcc.forEach(function(r){workIds[(r['Client ID']||'').trim()]=1;});
+    accDisplay=acc.slice().sort(function(a,b){
+      var aw=workIds[(a['Client ID']||'').trim()]?1:0,bw=workIds[(b['Client ID']||'').trim()]?1:0;
+      return bw-aw;
+    });
+  }
   var agg=aggByClient(cbrok);
   var bh='';
   if(agg.length){
@@ -1447,7 +1460,7 @@ function renderMyTeamData(){
     bh+='</tbody></table>';
   } else bh='<div class="no-data">Abhi tak koi client brokerage nahi hai</div>';
   document.getElementById('teamBrokTable').innerHTML=bh;
-  document.getElementById('teamAccTable').innerHTML=mkTable(acc,[{k:'Date',l:'Date'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Client ID'},{k:'Client Phone',l:'Phone'},{k:'Status',l:'Status'}],'Accounts');
+  document.getElementById('teamAccTable').innerHTML=mkTable(accDisplay,[{k:'Date',l:'Date'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Client ID'},{k:'Client Phone',l:'Phone'},{k:'Status',l:'Status'}],'Accounts');
   document.getElementById('teamSIPTable').innerHTML=mkTable(sip,[{k:'Date',l:'Date'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Client ID'},{k:'Client Phone',l:'Phone'},{k:'Type',l:'Type'},{k:'Amount',l:'Amount',money:true},{k:'SIP Due Date',l:'Due Date'}],'SIP');
   document.getElementById('teamInsTable').innerHTML=mkTable(ins,[{k:'Date',l:'Date'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Policy ID'},{k:'Client Phone',l:'Phone'},{k:'Type',l:'Type'},{k:'Premium',l:'Premium',money:true}],'Insurance');
   document.getElementById('teamStudTable').innerHTML=mkStudentTable(stud,true);
@@ -3232,6 +3245,8 @@ function populateTJStrategy(){
 function toggleTJGroupName(){
   var v=document.getElementById('tj_entryType').value;
   document.getElementById('tj_groupNameGroup').style.display=(v==='Client Group')?'block':'none';
+  var qg=document.getElementById('tj_qtyGroup');
+  if(qg){qg.style.display=(v==='Client Group')?'none':'block';if(v==='Client Group')document.getElementById('tj_qty').value='';}
 }
 function initTradingJournalForm(){
   var e=document.getElementById('tj_date');if(e&&!e.value)e.value=td();
@@ -3249,10 +3264,12 @@ function submitTrade(){
   var entry=parseFloat(document.getElementById('tj_entry').value);
   var sl=parseFloat(document.getElementById('tj_sl').value);
   var t1=parseFloat(document.getElementById('tj_t1').value);
-  var qty=parseFloat(document.getElementById('tj_qty').value);
-  if(!stock||isNaN(entry)||isNaN(sl)||isNaN(t1)||isNaN(qty)){showToast('Please fill Stock, Entry Price, Stop Loss, Target 1 and Quantity','error');return;}
   var entryType=document.getElementById('tj_entryType').value;
-  var groupName=entryType==='Client Group'?(document.getElementById('tj_groupName').value||'').trim():'';
+  var isGroup=(entryType==='Client Group');
+  var qtyRaw=document.getElementById('tj_qty').value;
+  var qty=isGroup?'':parseFloat(qtyRaw);
+  if(!stock||isNaN(entry)||isNaN(sl)||isNaN(t1)||(!isGroup&&isNaN(qty))){showToast('Please fill Stock, Entry Price, Stop Loss, Target 1'+(isGroup?'':' and Quantity'),'error');return;}
+  var groupName=isGroup?(document.getElementById('tj_groupName').value||'').trim():'';
   var t2v=document.getElementById('tj_t2').value;
   var p={
     action:'addTrade',
