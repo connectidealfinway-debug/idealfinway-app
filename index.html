@@ -208,6 +208,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
     <div id="adminNav" style="display:none">
       <div class="nav-section">Dashboards</div>
       <div class="nav-item" onclick="showPage('adminDash')">&#9632; Main Dashboard</div>
+      <div class="nav-item" onclick="showPage('tradingJournal')">&#128200; Trading Journal</div>
       <div class="nav-item" onclick="showPage('adminEmps')">&#128101; Employee Performance</div>
       <div class="nav-item" onclick="showPage('finDash')">&#128176; Finance Dashboard</div>
       <div class="nav-sec" onclick="toggleGrp('gRep',this)"><span class="arr">&#9656;</span>Reports</div>
@@ -252,6 +253,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
       <div class="nav-section">My Work</div>
       <div class="nav-item" onclick="showPage('empDash')">&#9632; Dashboard</div>
       <div class="nav-item" onclick="showPage('markAttendance')">&#9711; Attendance</div>
+      <div class="nav-item" onclick="showPage('tradingJournal')">&#128200; Trading Journal</div>
       <div class="nav-item" id="navMyTeam" style="display:none" onclick="showPage('myTeam')">&#128101; My Team</div>
       <div class="nav-sec" onclick="toggleGrp('gAdd',this)"><span class="arr">&#9656;</span>Add Entry</div>
       <div class="nav-grp" id="gAdd" style="display:none">
@@ -538,6 +540,50 @@ tbody td{padding:10px 14px;vertical-align:middle;}
       <div id="teamInsTable"></div>
       <h3 style="margin:24px 0 10px;">Students</h3>
       <div id="teamStudTable"></div>
+    </div>
+
+    <!-- TRADING JOURNAL -->
+    <div class="page" id="page-tradingJournal">
+      <div class="page-header"><h1>Trading Journal</h1><p>Track intraday, swing and positional trades with automatic target/stop-loss detection</p></div>
+      <div class="form-card" id="tjEmpFilterCard" style="display:none;margin-bottom:16px;">
+        <div class="form-group"><label>Employee</label>
+          <select id="tj_empFilter" onchange="renderTradingJournalPage()"><option value="">All Employees</option></select>
+        </div>
+      </div>
+      <div class="form-card">
+        <div class="form-group"><label>Date</label><input type="date" id="tj_date"></div>
+        <div class="form-group"><label>Stock Symbol</label><input type="text" id="tj_stock" placeholder="e.g. RELIANCE" style="text-transform:uppercase"></div>
+        <div class="form-group"><label>Direction</label>
+          <select id="tj_direction"><option value="Buy">Buy</option><option value="Sell">Sell</option></select>
+        </div>
+        <div class="form-group"><label>Trade Type</label>
+          <select id="tj_type"><option value="Intraday">Intraday</option><option value="Swing">Swing</option><option value="Positional">Positional</option></select>
+        </div>
+        <div class="form-group"><label>Trading For</label>
+          <select id="tj_entryType" onchange="toggleTJGroupName()"><option value="Personal">Personal</option><option value="Client Group">Client Group</option></select>
+        </div>
+        <div class="form-group" id="tj_groupNameGroup" style="display:none"><label>Group Name</label><input type="text" id="tj_groupName" placeholder="e.g. Crown, Premium"></div>
+        <div class="form-group"><label>Entry Price</label><input type="number" id="tj_entry" placeholder="Entry price"></div>
+        <div class="form-group"><label>Stop Loss</label><input type="number" id="tj_sl" placeholder="Stop loss price"></div>
+        <div class="form-group"><label>Target 1</label><input type="number" id="tj_t1" placeholder="First target price"></div>
+        <div class="form-group"><label>Target 2 (optional)</label><input type="number" id="tj_t2" placeholder="Second target price"></div>
+        <div class="form-group"><label>Quantity</label><input type="number" id="tj_qty" placeholder="Number of shares"></div>
+        <div class="form-group"><label>Remarks</label><textarea id="tj_remarks" placeholder="Strategy used, what went right or wrong..."></textarea></div>
+        <button class="btn-submit" onclick="submitTrade()">Add Trade</button>
+      </div>
+      <div class="filter-bar">
+        <button class="filter-btn active" onclick="setF('all',this,'tj')">All Time</button>
+        <button class="filter-btn" onclick="setF('today',this,'tj')">Today</button>
+        <button class="filter-btn" onclick="setF('week',this,'tj')">This Week</button>
+        <button class="filter-btn" onclick="setF('month',this,'tj')">This Month</button>
+        <span style="color:var(--muted);font-size:12px;">Status:</span>
+        <button class="filter-btn active" onclick="setTJStat('all',this)">All</button>
+        <button class="filter-btn" onclick="setTJStat('open',this)">Open</button>
+        <button class="filter-btn" onclick="setTJStat('closed',this)">Closed</button>
+        <input class="srch" id="srch-tj" placeholder="&#128269; Search stock..." oninput="renderTradingJournalPage()">
+      </div>
+      <div class="stats-grid" id="tjStats"></div>
+      <div class="table-wrap"><div class="table-inner" id="tjTable"></div></div>
     </div>
 
     <!-- ADD SIP -->
@@ -1017,7 +1063,7 @@ var API='https://script.google.com/macros/s/AKfycbwzCV6-slD3xxZGDrGCa80GAOfEX-JT
 var ADMIN_ID='directorravikant.idealfinway';
 var ADMIN_PASS='drrk@1401';
 var currentUser=null;
-var allData={Brokerage:[],ClientBrokerage:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[],Meetings:[],Income:[],Expense:[],Hisab:[]};
+var allData={Brokerage:[],ClientBrokerage:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[],Meetings:[],Income:[],Expense:[],Hisab:[],TradingJournal:[]};
 var employees=[];
 var filters={};
 var accStat='all',myAccStat='all',dashF='today',accDupOnly=false;
@@ -1154,7 +1200,9 @@ function computeReminders(){
   var meetToday=meetRows.filter(function(r){return (r['Next Meeting']||'').trim()===today&&(r['Converted']||'No')!=='Yes';});
   var studRows=isAdm?(allData.Students||[]):fEmp(allData.Students||[],currentUser.userId);
   var pendStud=(studRows||[]).filter(function(r){return studentPending(r)>0;});
-  return {sipTomorrow:sipTomorrow,meetToday:meetToday,pendStud:pendStud,tomorrow:tomorrow};
+  var tjRowsAll=isAdm?(allData.TradingJournal||[]):fEmpStrict(allData.TradingJournal||[],currentUser.userId);
+  var tradeAlerts=tjRowsAll.filter(function(r){return (r['Exit Date']||'')===today && ['Target Done','2nd Target Done','SL Done'].indexOf(r['Status'])!==-1;});
+  return {sipTomorrow:sipTomorrow,meetToday:meetToday,pendStud:pendStud,tomorrow:tomorrow,tradeAlerts:tradeAlerts};
 }
 function buildReminderHTML(r){
   var isAdm=currentUser&&currentUser.role==='admin';
@@ -1190,7 +1238,17 @@ function buildReminderHTML(r){
         +'</div>';
     }).join('')+'</div>';
   }
-  if(!r.meetToday.length&&!r.sipTomorrow.length&&!r.pendStud.length){
+  if(r.tradeAlerts && r.tradeAlerts.length){
+    h+='<div style="font-weight:700;color:var(--purple,#8b5cf6);margin:4px 0 8px;">Trade Alerts:</div>';
+    h+='<div style="max-height:170px;overflow:auto;margin-bottom:14px;">'+r.tradeAlerts.map(function(t){
+      var pl=parseFloat(t['Result'])||0;
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 4px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:13px;">'
+        +'<span>'+(t['Stock']||'-')+' '+(t['Direction']||'')+' &#183; '+(t['Status']||'')+(isAdm?' <span style="color:var(--muted,#8a94a6);font-size:11px;">('+(t['Employee Name']||'')+')</span>':'')+'</span>'
+        +'<span style="font-weight:700;color:'+(pl>=0?'var(--accent,#3fbf7f)':'var(--danger,#ef4444)')+';">'+fmt(pl)+'</span>'
+        +'</div>';
+    }).join('')+'</div>';
+  }
+  if(!r.meetToday.length&&!r.sipTomorrow.length&&!r.pendStud.length&&!(r.tradeAlerts&&r.tradeAlerts.length)){
     h+='<div style="color:var(--muted,#8a94a6);padding:14px 0;">Koi pending reminder nahi hai. Sab clear hai! &#9989;</div>';
   }
   h+='<div class="modal-actions"><button class="btn-save" onclick="closeModal()">Theek hai, dekh liya</button></div>';
@@ -1200,7 +1258,7 @@ function buildReminderHTML(r){
 function renderNotifBell(){
   var el=document.getElementById('notifBell');if(!el||!currentUser)return;
   var r=computeReminders();
-  var n=r.sipTomorrow.length+r.meetToday.length+r.pendStud.length;
+  var n=r.sipTomorrow.length+r.meetToday.length+r.pendStud.length+(r.tradeAlerts?r.tradeAlerts.length:0);
   el.style.display='flex';
   el.classList.toggle('has-alert',n>0);
   var badge=document.getElementById('notifCount');
@@ -1238,7 +1296,7 @@ function startApp(){
 }
 
 function logout(){
-  currentUser=null;autoPunched=false;allData={Brokerage:[],ClientBrokerage:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[],Meetings:[],Income:[],Expense:[],Hisab:[]};
+  currentUser=null;autoPunched=false;allData={Brokerage:[],ClientBrokerage:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[],Meetings:[],Income:[],Expense:[],Hisab:[],TradingJournal:[]};
   document.getElementById('loginWrap').style.display='flex';
   document.getElementById('appWrap').style.display='none';
   document.getElementById('adminNav').style.display='none';
@@ -1289,7 +1347,8 @@ function loadAll(attempt){
         Students:r.students||r.Students||[],
         Attendance:r.attendance||r.Attendance||[],
         Points:r.points||r.Points||[],
-        Meetings:r.meetings||r.Meetings||[]
+        Meetings:r.meetings||r.Meetings||[],
+        TradingJournal:r.tradingJournal||r.TradingJournal||[]
       };
       saveCache();checkSIPAlerts();autoPunchIn();renderPage(curPage());loadEmps();setTimeout(checkDueTomorrowPopup,600);
     }else if(attempt<3){
@@ -1421,6 +1480,7 @@ function renderPage(id){
   else if(id==='myPoints')renderMyPoints();
   else if(id==='myMeetings')renderMyMeetings();
   else if(id==='myTeam')renderMyTeamPage();
+  else if(id==='tradingJournal')renderTradingJournalPage();
   else if(id==='uploadChoice')initChoiceUpload();
   else if(id==='adminCBrok')renderCBrok();
   else if(id==='finDash')renderFinDash();
@@ -3143,6 +3203,180 @@ function initEmpLoad(attempt){
     else if(attempt<5){setTimeout(function(){initEmpLoad(attempt+1);},3000);}
   }).catch(function(){if(attempt<5)setTimeout(function(){initEmpLoad(attempt+1);},3000);});
 }
+
+/* ===== TRADING JOURNAL (added Jul 16 2026) ===== */
+var tjStatF='all';
+function setTJStat(f,btn){
+  tjStatF=f;
+  btn.parentElement.querySelectorAll('.filter-btn').forEach(function(b){if(b.getAttribute('onclick')&&b.getAttribute('onclick').indexOf('setTJStat')!==-1)b.classList.remove('active');});
+  btn.classList.add('active');
+  renderTradingJournalPage();
+}
+function toggleTJGroupName(){
+  var v=document.getElementById('tj_entryType').value;
+  document.getElementById('tj_groupNameGroup').style.display=(v==='Client Group')?'block':'none';
+}
+function initTradingJournalForm(){
+  var e=document.getElementById('tj_date');if(e&&!e.value)e.value=td();
+  var card=document.getElementById('tjEmpFilterCard');
+  if(card)card.style.display=(currentUser&&currentUser.role==='admin')?'block':'none';
+  var sel=document.getElementById('tj_empFilter');
+  if(sel&&currentUser&&currentUser.role==='admin'&&sel.options.length<=1&&employees.length){
+    employees.forEach(function(emp){var o=document.createElement('option');o.value=emp['Employee ID'];o.textContent=emp['Name'];sel.appendChild(o);});
+  }
+}
+function submitTrade(){
+  var stock=(document.getElementById('tj_stock').value||'').trim().toUpperCase();
+  var entry=parseFloat(document.getElementById('tj_entry').value);
+  var sl=parseFloat(document.getElementById('tj_sl').value);
+  var t1=parseFloat(document.getElementById('tj_t1').value);
+  var qty=parseFloat(document.getElementById('tj_qty').value);
+  if(!stock||isNaN(entry)||isNaN(sl)||isNaN(t1)||isNaN(qty)){showToast('Please fill Stock, Entry Price, Stop Loss, Target 1 and Quantity','error');return;}
+  var entryType=document.getElementById('tj_entryType').value;
+  var groupName=entryType==='Client Group'?(document.getElementById('tj_groupName').value||'').trim():'';
+  var t2v=document.getElementById('tj_t2').value;
+  var p={
+    action:'addTrade',
+    'Date':document.getElementById('tj_date').value||td(),
+    'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch,
+    'Entry Type':entryType,'Group Name':groupName,
+    'Stock':stock,'Direction':document.getElementById('tj_direction').value,
+    'Trade Type':document.getElementById('tj_type').value,
+    'Entry Price':entry,'SL':sl,'Target1':t1,
+    'Target2':t2v?parseFloat(t2v):'',
+    'Qty':qty,'Status':'Open','Remarks':(document.getElementById('tj_remarks').value||'').trim()
+  };
+  postData(p).then(function(r){
+    if(r&&r.success){
+      showToast('Trade added successfully','success');
+      ['tj_stock','tj_entry','tj_sl','tj_t1','tj_t2','tj_qty','tj_remarks'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+      loadAll();
+    } else showToast('Failed to add trade: '+(r&&r.error||''),'error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+function tjRows(){
+  var isAdm=currentUser&&currentUser.role==='admin';
+  var rows=allData.TradingJournal||[];
+  if(isAdm){
+    var sel=document.getElementById('tj_empFilter');
+    var v=sel?sel.value:'';
+    if(v)rows=rows.filter(function(r){return (r['Employee ID']||'').trim()===v;});
+  } else {
+    rows=fEmpStrict(rows,currentUser.userId);
+  }
+  return rows;
+}
+function renderTradingJournalPage(){
+  initTradingJournalForm();
+  var rows=tjRows();
+  rows=fDate(rows,filters['tj']||'all');
+  var openStatuses=['Open','1st Target Done'];
+  if(tjStatF==='open')rows=rows.filter(function(r){return openStatuses.indexOf(r['Status'])!==-1;});
+  else if(tjStatF==='closed')rows=rows.filter(function(r){return openStatuses.indexOf(r['Status'])===-1;});
+  var q=getSrch('srch-tj');rows=srchFilter(rows,q,['Stock','Group Name','Employee Name','Remarks']);
+
+  var closed=rows.filter(function(r){return openStatuses.indexOf(r['Status'])===-1;});
+  var wins=closed.filter(function(r){return parseFloat(r['Result']||0)>0;});
+  var totalPL=closed.reduce(function(s,r){return s+(parseFloat(r['Result'])||0);},0);
+  var winRate=closed.length?Math.round(wins.length/closed.length*100):0;
+  var intraday=rows.filter(function(r){return r['Trade Type']==='Intraday';}).length;
+  var swing=rows.filter(function(r){return r['Trade Type']==='Swing';}).length;
+  var positional=rows.filter(function(r){return r['Trade Type']==='Positional';}).length;
+
+  document.getElementById('tjStats').innerHTML=mkStats([
+    {label:'Total Trades',value:rows.length,sub:'Intraday '+intraday+' &#183; Swing '+swing+' &#183; Positional '+positional,color:'blue'},
+    {label:'Closed Trades',value:closed.length,sub:(rows.length-closed.length)+' still open',color:'purple'},
+    {label:'Win Rate',value:winRate+'%',sub:wins.length+' wins out of '+closed.length,color:winRate>=50?'green':'amber'},
+    {label:'Total P&L',value:fmt(totalPL),sub:totalPL>=0?'Net profit':'Net loss',color:totalPL>=0?'green':'red'}
+  ]);
+  document.getElementById('tjTable').innerHTML=mkTradeTable(rows);
+}
+function statusBadgeColor(s){
+  if(s==='Open')return 'blue';
+  if(s==='1st Target Done')return 'amber';
+  if(s==='Target Done'||s==='2nd Target Done')return 'green';
+  if(s==='SL Done')return 'red';
+  return 'purple';
+}
+function mkTradeTable(rows){
+  if(!rows||!rows.length)return '<div class="no-data">No trades found</div>';
+  var isAdm=currentUser&&currentUser.role==='admin';
+  var h='<table><thead><tr><th>Date</th>'+(isAdm?'<th>Employee</th>':'')+'<th>Stock</th><th>Dir</th><th>Type</th><th>For</th><th>Entry</th><th>SL</th><th>T1/T2</th><th>Qty</th><th>Status</th><th>Exit</th><th>P&amp;L</th><th>Remarks</th><th>Actions</th></tr></thead><tbody>';
+  rows.slice().reverse().forEach(function(r){
+    var pl=parseFloat(r['Result']);
+    var plPct=parseFloat(r['Result %']);
+    var hasPL=!isNaN(pl)&&r['Exit Price']!=='';
+    var forLabel=r['Entry Type']==='Client Group'?('Group: '+(r['Group Name']||'-')):'Personal';
+    h+='<tr>';
+    h+='<td>'+(r['Date']||'-')+'</td>';
+    if(isAdm)h+='<td>'+(r['Employee Name']||'-')+'</td>';
+    h+='<td style="font-weight:600;">'+(r['Stock']||'-')+'</td>';
+    h+='<td>'+(r['Direction']||'-')+'</td>';
+    h+='<td>'+(r['Trade Type']||'-')+'</td>';
+    h+='<td style="font-size:11px;color:var(--muted);">'+forLabel+'</td>';
+    h+='<td>'+(r['Entry Price']||'-')+'</td>';
+    h+='<td>'+(r['SL']||'-')+'</td>';
+    h+='<td>'+(r['Target1']||'-')+(r['Target2']?'/'+r['Target2']:'')+'</td>';
+    h+='<td>'+(r['Qty']||'-')+'</td>';
+    h+='<td><span class="badge '+statusBadgeColor(r['Status'])+'">'+(r['Status']||'Open')+'</span></td>';
+    h+='<td>'+(r['Exit Price']||'-')+'</td>';
+    h+='<td style="'+(hasPL?('color:'+(pl>=0?'var(--accent)':'var(--danger)')+';font-weight:700;'):'')+'">'+(hasPL?(fmt(pl)+' ('+(plPct>=0?'+':'')+plPct+'%)'):'-')+'</td>';
+    h+='<td style="max-width:150px;font-size:11px;color:var(--muted);white-space:normal;">'+(r['Remarks']||'-')+'</td>';
+    h+='<td><button class="btn-edit" onclick="openTradeModal('+r['_rowNum']+')">&#9998;</button> <button class="btn-del" onclick="confirmDel(\'TradingJournal\','+r['_rowNum']+')">&#128465;</button></td>';
+    h+='</tr>';
+  });
+  return h+'</tbody></table>';
+}
+function openTradeModal(rowNum){
+  var row=(allData.TradingJournal||[]).find(function(r){return String(r['_rowNum'])===String(rowNum);});
+  if(!row){showToast('Trade not found - reloading','error');loadAll();return;}
+  var statuses=['Open','1st Target Done','Target Done','2nd Target Done','SL Done','Manually Closed'];
+  var html='<div class="modal-title">Manage Trade &#8212; '+(row['Stock']||'')+'</div>';
+  html+='<div class="form-group"><label>Stock Symbol</label><input type="text" id="tm_stock" value="'+(row['Stock']||'')+'"></div>';
+  html+='<div class="form-group"><label>Entry Price</label><input type="number" id="tm_entry" value="'+(row['Entry Price']||'')+'"></div>';
+  html+='<div class="form-group"><label>Stop Loss</label><input type="number" id="tm_sl" value="'+(row['SL']||'')+'"></div>';
+  html+='<div class="form-group"><label>Target 1</label><input type="number" id="tm_t1" value="'+(row['Target1']||'')+'"></div>';
+  html+='<div class="form-group"><label>Target 2</label><input type="number" id="tm_t2" value="'+(row['Target2']||'')+'"></div>';
+  html+='<div class="form-group"><label>Quantity</label><input type="number" id="tm_qty" value="'+(row['Qty']||'')+'"></div>';
+  html+='<div class="form-group"><label>Status</label><select id="tm_status" onchange="toggleTMExit()">'+statuses.map(function(s){return '<option value="'+s+'"'+(row['Status']===s?' selected':'')+'>'+s+'</option>';}).join('')+'</select></div>';
+  var showExit=(row['Status']!=='Open'&&row['Status']!=='1st Target Done');
+  html+='<div class="form-group" id="tm_exitGroup" style="display:'+(showExit?'block':'none')+'"><label>Exit Price</label><input type="number" id="tm_exit" value="'+(row['Exit Price']||'')+'"></div>';
+  html+='<div class="form-group"><label>Remarks</label><textarea id="tm_remarks">'+(row['Remarks']||'')+'</textarea></div>';
+  html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="saveTradeModal('+rowNum+',\''+(row['Direction']||'Buy')+'\')">Save</button></div>';
+  document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
+}
+function toggleTMExit(){
+  var s=document.getElementById('tm_status').value;
+  var show=(s!=='Open'&&s!=='1st Target Done');
+  document.getElementById('tm_exitGroup').style.display=show?'block':'none';
+}
+function saveTradeModal(rowNum,direction){
+  var status=document.getElementById('tm_status').value;
+  var entry=parseFloat(document.getElementById('tm_entry').value)||0;
+  var qty=parseFloat(document.getElementById('tm_qty').value)||0;
+  var vals={
+    'Stock':(document.getElementById('tm_stock').value||'').trim().toUpperCase(),
+    'Entry Price':entry,'SL':document.getElementById('tm_sl').value,
+    'Target1':document.getElementById('tm_t1').value,'Target2':document.getElementById('tm_t2').value,
+    'Qty':qty,'Status':status,'Remarks':(document.getElementById('tm_remarks').value||'').trim()
+  };
+  var exitEl=document.getElementById('tm_exit');
+  if(status!=='Open'&&status!=='1st Target Done'&&exitEl&&exitEl.value!==''){
+    var exit=parseFloat(exitEl.value);
+    var result=(exit-entry)*qty*(direction==='Buy'?1:-1);
+    var resultPct=(entry&&qty)?(result/(entry*qty)*100):0;
+    vals['Exit Price']=exit;
+    vals['Exit Date']=td();
+    vals['Result']=Math.round(result*100)/100;
+    vals['Result %']=Math.round(resultPct*100)/100;
+  }
+  postData({action:'editRow',sheet:'TradingJournal',rowNum:rowNum,vals:vals}).then(function(r){
+    closeModal();
+    if(r&&r.success){showToast('Trade updated','success');loadAll();}
+    else showToast('Update failed','error');
+  }).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
+}
+
 (function(){
   var c=loadCache();
   if(c&&c.e&&c.e.length)employees=c.e; /* cached list se login turant — fresh list background me aa jayegi */
