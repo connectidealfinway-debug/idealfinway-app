@@ -213,6 +213,8 @@ tbody td{padding:10px 14px;vertical-align:middle;}
       <div class="nav-item" onclick="showPage('adminDash')">&#9632; Main Dashboard</div>
       <div class="nav-item" onclick="showPage('tradingJournal')">&#128200; Trading Journal</div>
       <div class="nav-item" onclick="showPage('callTrade')">&#128222; Call &amp; Trade</div>
+      <div class="nav-item" onclick="showPage('watchlist')">&#11088; Watchlist</div>
+      <div class="nav-item" onclick="showPage('reminders')">&#128276; Reminders</div>
       <div class="nav-item" onclick="showPage('adminEmps')">&#128101; Employee Performance</div>
       <div class="nav-item" onclick="showPage('finDash')">&#128176; Finance Dashboard</div>
       <div class="nav-sec" onclick="toggleGrp('gRep',this)"><span class="arr">&#9656;</span>Reports</div>
@@ -259,6 +261,8 @@ tbody td{padding:10px 14px;vertical-align:middle;}
       <div class="nav-item" onclick="showPage('markAttendance')">&#9711; Attendance</div>
       <div class="nav-item" onclick="showPage('tradingJournal')">&#128200; Trading Journal</div>
       <div class="nav-item" onclick="showPage('callTrade')">&#128222; Call &amp; Trade</div>
+      <div class="nav-item" onclick="showPage('watchlist')">&#11088; Watchlist</div>
+      <div class="nav-item" onclick="showPage('reminders')">&#128276; Reminders</div>
       <div class="nav-item" id="navMyTeam" style="display:none" onclick="showPage('myTeam')">&#128101; My Team</div>
       <div class="nav-sec" onclick="toggleGrp('gAdd',this)"><span class="arr">&#9656;</span>Add Entry</div>
       <div class="nav-grp" id="gAdd" style="display:none">
@@ -658,6 +662,37 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <input class="srch" id="srch-ct" placeholder="&#128269; Search log..." oninput="renderCallTradePage()">
       </div>
       <div class="table-wrap"><div class="table-inner" id="ctTable"></div></div>
+    </div>
+
+    <!-- WATCHLIST -->
+    <div class="page" id="page-watchlist">
+      <div class="page-header"><h1>Watchlist</h1><p>Next-day trade prep — stocks to watch, star the must-buy picks</p></div>
+      <div class="form-card form-grid">
+        <div class="form-group"><label>Stock</label><input type="text" id="wl_stock" placeholder="e.g. RELIANCE" style="text-transform:uppercase;"></div>
+        <div class="form-group" style="grid-column:1/-1;"><label>Notes</label><textarea id="wl_notes" placeholder="e.g. Breakout hua hai, Flag & Pole pattern bana hai" rows="2"></textarea></div>
+        <button class="btn-save" style="grid-column:1/-1;" onclick="submitWatchlist()">+ Add to Watchlist</button>
+      </div>
+      <div class="filter-bar">
+        <input class="srch" id="srch-wl" placeholder="&#128269; Search stock..." oninput="renderWatchlistPage()">
+      </div>
+      <div class="stats-grid" id="wlStats"></div><div id="wlStatDiv"></div>
+      <div class="table-wrap"><div class="table-inner" id="wlTable"></div></div>
+    </div>
+
+    <!-- REMINDERS -->
+    <div class="page" id="page-reminders">
+      <div class="page-header"><h1>Reminders</h1><p>Follow-up notes — set a date, get a popup+sound reminder on that day</p></div>
+      <div class="form-card form-grid">
+        <div class="form-group"><label>Client / Reference Name</label><input type="text" id="rem_client" placeholder="e.g. Rakesh Kumar"></div>
+        <div class="form-group"><label>Reminder Date</label><input type="date" id="rem_date"></div>
+        <div class="form-group" style="grid-column:1/-1;"><label>Note</label><textarea id="rem_note" placeholder="e.g. Client ne bola 1 mahine baad SIP start karvani hai" rows="2"></textarea></div>
+        <button class="btn-save" style="grid-column:1/-1;" onclick="submitReminder()">+ Add Reminder</button>
+      </div>
+      <div class="filter-bar">
+        <input class="srch" id="srch-rem" placeholder="&#128269; Search..." oninput="renderRemindersPage()">
+      </div>
+      <div class="stats-grid" id="remStats"></div><div id="remStatDiv"></div>
+      <div class="table-wrap"><div class="table-inner" id="remTable"></div></div>
     </div>
 
     <!-- ADD SIP -->
@@ -1141,7 +1176,7 @@ var API='https://script.google.com/macros/s/AKfycbwzCV6-slD3xxZGDrGCa80GAOfEX-JT
 var ADMIN_ID='directorravikant.idealfinway';
 var ADMIN_PASS='drrk@1401';
 var currentUser=null;
-var allData={Brokerage:[],ClientBrokerage:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[],Meetings:[],Income:[],Expense:[],Hisab:[],TradingJournal:[],CallTrade:[],CallClients:[]};
+var allData={Brokerage:[],ClientBrokerage:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[],Meetings:[],Income:[],Expense:[],Hisab:[],TradingJournal:[],CallTrade:[],CallClients:[],Watchlist:[],Reminders:[]};
 var employees=[];
 var filters={};
 var accStat='all',myAccStat='all',dashF='today',accDupOnly=false,teamWorkingOnly=false;
@@ -1302,7 +1337,11 @@ function computeReminders(){
   var pendStud=(studRows||[]).filter(function(r){return studentPending(r)>0;});
   var tjRowsAll=isAdm?(allData.TradingJournal||[]):fEmpStrict(allData.TradingJournal||[],currentUser.userId);
   var tradeAlerts=tjRowsAll.filter(function(r){return (r['Exit Date']||'')===today && ['Target Done','2nd Target Done','SL Done'].indexOf(r['Status'])!==-1;});
-  return {sipTomorrow:sipTomorrow,meetToday:meetToday,pendStud:pendStud,tomorrow:tomorrow,tradeAlerts:tradeAlerts};
+  var remRows=isAdm?(allData.Reminders||[]):fEmpStrict(allData.Reminders||[],currentUser.userId);
+  var dueReminders=remRows.filter(function(r){return r['Reminder Date']&&r['Reminder Date']<=today&&r['Status']!=='Done';});
+  var wlRows=fEmpStrict(allData.Watchlist||[],currentUser.userId);
+  var starredWatch=wlRows.filter(function(r){return r['Starred']==='Yes'&&(r['Status']||'Active')==='Active';});
+  return {sipTomorrow:sipTomorrow,meetToday:meetToday,pendStud:pendStud,tomorrow:tomorrow,tradeAlerts:tradeAlerts,dueReminders:dueReminders,starredWatch:starredWatch};
 }
 function buildReminderHTML(r){
   var isAdm=currentUser&&currentUser.role==='admin';
@@ -1348,7 +1387,23 @@ function buildReminderHTML(r){
         +'</div>';
     }).join('')+'</div>';
   }
-  if(!r.meetToday.length&&!r.sipTomorrow.length&&!r.pendStud.length&&!(r.tradeAlerts&&r.tradeAlerts.length)){
+  if(r.dueReminders&&r.dueReminders.length){
+    h+='<div style="font-weight:700;color:var(--danger,#ef4444);margin:4px 0 8px;">&#128276; Reminder Due:</div>';
+    h+='<div style="max-height:170px;overflow:auto;margin-bottom:14px;">'+r.dueReminders.map(function(rr){
+      return '<div style="padding:8px 4px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:13px;">'
+        +'<b>'+(rr['Client Name']||'-')+'</b> &#183; '+(rr['Note']||'')+' <span style="color:var(--muted,#8a94a6);font-size:11px;">('+(rr['Reminder Date']||'')+')</span>'
+        +'</div>';
+    }).join('')+'</div>';
+  }
+  if(r.starredWatch&&r.starredWatch.length){
+    h+='<div style="font-weight:700;color:#f59e0b;margin:4px 0 8px;">&#11088; Starred Watchlist &#8212; aaj yeh stocks zaroor dekhna hai:</div>';
+    h+='<div style="max-height:170px;overflow:auto;margin-bottom:14px;">'+r.starredWatch.map(function(w){
+      return '<div style="padding:8px 4px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:13px;">'
+        +'<b>'+(w['Stock']||'-')+'</b>'+(w['Notes']?' &#183; '+w['Notes']:'')
+        +'</div>';
+    }).join('')+'</div>';
+  }
+  if(!r.meetToday.length&&!r.sipTomorrow.length&&!r.pendStud.length&&!(r.tradeAlerts&&r.tradeAlerts.length)&&!(r.dueReminders&&r.dueReminders.length)&&!(r.starredWatch&&r.starredWatch.length)){
     h+='<div style="color:var(--muted,#8a94a6);padding:14px 0;">Koi pending reminder nahi hai. Sab clear hai! &#9989;</div>';
   }
   h+='<div class="modal-actions"><button class="btn-save" onclick="closeModal()">Theek hai, dekh liya</button></div>';
@@ -1358,7 +1413,7 @@ function buildReminderHTML(r){
 function renderNotifBell(){
   var el=document.getElementById('notifBell');if(!el||!currentUser)return;
   var r=computeReminders();
-  var n=r.sipTomorrow.length+r.meetToday.length+r.pendStud.length+(r.tradeAlerts?r.tradeAlerts.length:0);
+  var n=r.sipTomorrow.length+r.meetToday.length+r.pendStud.length+(r.tradeAlerts?r.tradeAlerts.length:0)+(r.dueReminders?r.dueReminders.length:0)+(r.starredWatch?r.starredWatch.length:0);
   el.style.display='flex';
   el.classList.toggle('has-alert',n>0);
   var badge=document.getElementById('notifCount');
@@ -1376,7 +1431,7 @@ function checkDueTomorrowPopup(){
   if(localStorage.getItem(key))return;
   localStorage.setItem(key,'1');
   var r=computeReminders();
-  if(!r.sipTomorrow.length&&!r.meetToday.length&&!r.pendStud.length&&!(r.tradeAlerts&&r.tradeAlerts.length))return;
+  if(!r.sipTomorrow.length&&!r.meetToday.length&&!r.pendStud.length&&!(r.tradeAlerts&&r.tradeAlerts.length)&&!(r.dueReminders&&r.dueReminders.length)&&!(r.starredWatch&&r.starredWatch.length))return;
   playAlertSound();
   document.getElementById('modalBox').innerHTML=buildReminderHTML(r);
   document.getElementById('modal').className='show';
@@ -1424,7 +1479,7 @@ function startApp(){
 }
 
 function logout(){
-  currentUser=null;autoPunched=false;allData={Brokerage:[],ClientBrokerage:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[],Meetings:[],Income:[],Expense:[],Hisab:[],TradingJournal:[],CallTrade:[],CallClients:[]};
+  currentUser=null;autoPunched=false;allData={Brokerage:[],ClientBrokerage:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[],Meetings:[],Income:[],Expense:[],Hisab:[],TradingJournal:[],CallTrade:[],CallClients:[],Watchlist:[],Reminders:[]};
   document.getElementById('loginWrap').style.display='flex';
   document.getElementById('appWrap').style.display='none';
   document.getElementById('adminNav').style.display='none';
@@ -1480,7 +1535,9 @@ function loadAll(attempt){
         Meetings:r.meetings||r.Meetings||[],
         TradingJournal:r.tradingJournal||r.TradingJournal||[],
         CallTrade:r.callTrade||r.CallTrade||[],
-        CallClients:r.callClients||r.CallClients||[]
+        CallClients:r.callClients||r.CallClients||[],
+        Watchlist:r.watchlist||r.Watchlist||[],
+        Reminders:r.reminders||r.Reminders||[]
       };
       saveCache();checkSIPAlerts();autoPunchIn();renderPage(curPage());loadEmps();setTimeout(checkDueTomorrowPopup,600);setTimeout(check315Reminder,900);
     }else if(attempt<3){
@@ -1625,6 +1682,8 @@ function renderPage(id){
   else if(id==='myTeam')renderMyTeamPage();
   else if(id==='tradingJournal')renderTradingJournalPage();
   else if(id==='callTrade')renderCallTradePage();
+  else if(id==='watchlist')renderWatchlistPage();
+  else if(id==='reminders')renderRemindersPage();
   else if(id==='uploadChoice')initChoiceUpload();
   else if(id==='adminCBrok')renderCBrok();
   else if(id==='finDash')renderFinDash();
@@ -1808,6 +1867,108 @@ function showMySIPDay(ds){
   h+=mkTable(rows,[{k:'Client Name',l:'Client'},{k:'Client ID',l:'Client ID'},{k:'Client Phone',l:'Phone'},{k:'Type',l:'Type'},{k:'Amount',l:'Amount',money:true}]);
   h+='</div>';
   var el=document.getElementById('mySipDayDiv');el.innerHTML=h;el.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function submitWatchlist(){
+  var stock=(document.getElementById('wl_stock').value||'').trim().toUpperCase();
+  var notes=(document.getElementById('wl_notes').value||'').trim();
+  if(!stock){showToast('Stock name daalo','error');return;}
+  var p={action:'addGeneric',sheet:'Watchlist',
+    'Date Added':td(),'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch,
+    'Stock':stock,'Notes':notes,'Starred':'No','Status':'Active'};
+  postData(p).then(function(r){
+    if(r&&r.success){showToast('Watchlist me add ho gaya','success');document.getElementById('wl_stock').value='';document.getElementById('wl_notes').value='';loadAll();}
+    else showToast('Failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+function toggleWatchlistStar(rowNum,current){
+  postData({action:'editRow',sheet:'Watchlist',rowNum:rowNum,vals:{'Starred':current==='Yes'?'No':'Yes'}}).then(function(r){
+    if(r&&r.success){loadAll();}
+    else showToast('Failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+function mkWatchlistTable(rows,showEmp){
+  if(!rows||!rows.length)return '<div class="no-data">Koi stock nahi hai watchlist mein</div>';
+  var sorted=rows.slice().sort(function(a,b){
+    var as=a['Starred']==='Yes'?1:0, bs=b['Starred']==='Yes'?1:0;
+    if(as!==bs)return bs-as;
+    return (b['Date Added']||'').localeCompare(a['Date Added']||'');
+  });
+  var h='<table><thead><tr><th></th><th>Date</th>'+(showEmp?'<th>Employee</th>':'')+'<th>Stock</th><th>Notes</th><th>Actions</th></tr></thead><tbody>';
+  sorted.forEach(function(r){
+    var starred=r['Starred']==='Yes';
+    h+='<tr'+(starred?' style="background:rgba(245,158,11,0.12);"':'')+'>';
+    h+='<td><span style="cursor:pointer;font-size:16px;color:'+(starred?'#f59e0b':'var(--muted)')+';" onclick="toggleWatchlistStar('+r['_rowNum']+',\''+(r['Starred']||'No')+'\')">'+(starred?'&#9733;':'&#9734;')+'</span></td>';
+    h+='<td>'+(r['Date Added']||'-')+'</td>';
+    if(showEmp)h+='<td>'+(r['Employee Name']||'-')+'</td>';
+    h+='<td style="font-weight:600;">'+(r['Stock']||'-')+'</td>';
+    h+='<td style="font-size:12px;color:var(--muted);white-space:normal;max-width:250px;">'+(r['Notes']||'-')+'</td>';
+    h+='<td><button class="btn-del" onclick="confirmDel(\'Watchlist\','+r['_rowNum']+')">&#128465;</button></td>';
+    h+='</tr>';
+  });
+  return h+'</tbody></table>';
+}
+function renderWatchlistPage(){
+  var isAdm=currentUser&&currentUser.role==='admin';
+  var rows=isAdm?(allData.Watchlist||[]):fEmpStrict(allData.Watchlist||[],currentUser.userId);
+  rows=rows.filter(function(r){return (r['Status']||'Active')==='Active';});
+  var q=getSrch('srch-wl');rows=srchFilter(rows,q,['Stock','Notes','Employee Name']);
+  var starredCount=rows.filter(function(r){return r['Starred']==='Yes';}).length;
+  document.getElementById('wlStats').innerHTML=mkStats([
+    {label:'Total Stocks',value:rows.length,sub:'watchlist',color:'blue'},
+    {label:'Starred (Must Watch)',value:starredCount,sub:'priority buys',color:'amber'}
+  ]);
+  document.getElementById('wlTable').innerHTML=mkWatchlistTable(rows,isAdm);
+}
+function submitReminder(){
+  var client=(document.getElementById('rem_client').value||'').trim();
+  var date=document.getElementById('rem_date').value;
+  var note=(document.getElementById('rem_note').value||'').trim();
+  if(!date||!note){showToast('Date aur Note dono zaroori hain','error');return;}
+  var p={action:'addGeneric',sheet:'Reminders',
+    'Date Added':td(),'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch,
+    'Client Name':client,'Note':note,'Reminder Date':date,'Status':'Pending'};
+  postData(p).then(function(r){
+    if(r&&r.success){showToast('Reminder set ho gaya','success');document.getElementById('rem_client').value='';document.getElementById('rem_note').value='';document.getElementById('rem_date').value='';loadAll();}
+    else showToast('Failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+function markReminderDone(rowNum){
+  postData({action:'editRow',sheet:'Reminders',rowNum:rowNum,vals:{'Status':'Done'}}).then(function(r){
+    if(r&&r.success){showToast('Reminder done!','success');loadAll();}
+    else showToast('Failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+function mkRemindersTable(rows,showEmp){
+  if(!rows||!rows.length)return '<div class="no-data">Koi reminder nahi hai</div>';
+  var todayStr=td();
+  var sorted=rows.slice().sort(function(a,b){return (a['Reminder Date']||'').localeCompare(b['Reminder Date']||'');});
+  var h='<table><thead><tr><th>Reminder Date</th>'+(showEmp?'<th>Employee</th>':'')+'<th>Client/Ref</th><th>Note</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+  sorted.forEach(function(r){
+    var due=r['Reminder Date']&&r['Reminder Date']<=todayStr&&r['Status']!=='Done';
+    h+='<tr'+(due?' style="background:rgba(239,68,68,0.1);"':'')+'>';
+    h+='<td>'+(r['Reminder Date']||'-')+'</td>';
+    if(showEmp)h+='<td>'+(r['Employee Name']||'-')+'</td>';
+    h+='<td>'+(r['Client Name']||'-')+'</td>';
+    h+='<td style="font-size:12px;color:var(--muted);white-space:normal;max-width:250px;">'+(r['Note']||'-')+'</td>';
+    h+='<td><span class="badge '+(r['Status']==='Done'?'green':(due?'red':'amber'))+'">'+(r['Status']==='Done'?'Done':(due?'Due':'Pending'))+'</span></td>';
+    h+='<td>'+(r['Status']!=='Done'?'<button class="btn-edit" onclick="markReminderDone('+r['_rowNum']+')">&#10003; Done</button> ':'')+'<button class="btn-del" onclick="confirmDel(\'Reminders\','+r['_rowNum']+')">&#128465;</button></td>';
+    h+='</tr>';
+  });
+  return h+'</tbody></table>';
+}
+function renderRemindersPage(){
+  var isAdm=currentUser&&currentUser.role==='admin';
+  var rows=isAdm?(allData.Reminders||[]):fEmpStrict(allData.Reminders||[],currentUser.userId);
+  var q=getSrch('srch-rem');rows=srchFilter(rows,q,['Client Name','Note','Employee Name']);
+  var todayStr=td();
+  var pending=rows.filter(function(r){return r['Status']!=='Done';});
+  var due=pending.filter(function(r){return r['Reminder Date']&&r['Reminder Date']<=todayStr;});
+  document.getElementById('remStats').innerHTML=mkStats([
+    {label:'Total',value:rows.length,sub:'all reminders',color:'blue'},
+    {label:'Pending',value:pending.length,sub:'not done yet',color:'amber'},
+    {label:'Due Today/Overdue',value:due.length,sub:'action needed',color:'red'}
+  ]);
+  document.getElementById('remTable').innerHTML=mkRemindersTable(rows,isAdm);
 }
 function srchFilter(rows,q,fields){
   if(!q)return rows;
