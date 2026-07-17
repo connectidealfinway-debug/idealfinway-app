@@ -1195,6 +1195,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
 <script>
 var API='https://script.google.com/macros/s/AKfycbwzCV6-slD3xxZGDrGCa80GAOfEX-JTpcjqAinWXHBuHTvb4sFTFkSSAK6RY6-UHFI/exec';
 var ADMIN_ID='directorravikant.idealfinway';
+var OFFICE_ID='ideal.office';
 var ADMIN_PASS='drrk@1401';
 var currentUser=null;
 var allData={Brokerage:[],ClientBrokerage:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[],Meetings:[],Income:[],Expense:[],Hisab:[],TradingJournal:[],CallTrade:[],CallClients:[],Watchlist:[],Reminders:[],Announcements:[]};
@@ -1586,9 +1587,13 @@ function loadEmps(){
     }
   }).catch(function(){});
 }
+function parentIdsOf(e){
+  return (e['Parent ID']||'').split(',').map(function(x){return x.trim();}).filter(Boolean);
+}
 function teamMembersOf(uid){
   if(!uid)return [];
-  return employees.filter(function(e){return (e['Parent ID']||'').trim()===String(uid).trim()&&(e['Status']||'Active')==='Active';});
+  var target=String(uid).trim();
+  return employees.filter(function(e){return parentIdsOf(e).indexOf(target)!==-1&&(e['Status']||'Active')==='Active';});
 }
 function isTeamParent(){return !!(currentUser&&teamMembersOf(currentUser.userId).length>0);}
 function forEmpObj(selId){
@@ -3206,7 +3211,7 @@ function buildChoicePreview(){
   var matched=0,unmatched=[],total=0,empSum={};
   p.assigned=p.rows.map(function(r){
     var hit=accMap[r.cid.toUpperCase()];
-    var emp=(hit&&hit.id)?hit:{id:ADMIN_ID,name:'Ravikant Sharma',branch:'Hisar'};
+    var emp=(hit&&hit.id)?hit:{id:OFFICE_ID,name:'Office client',branch:'Hisar'};
     if(hit&&hit.id)matched++;else unmatched.push(r);
     total+=r.amt;
     if(!empSum[emp.id])empSum[emp.id]={name:emp.name,branch:emp.branch,amt:0,n:0};
@@ -3222,7 +3227,7 @@ function buildChoicePreview(){
     {label:'Total Clients',value:p.rows.length,sub:'file me entries',color:'green'},
     {label:'Total Brokerage',value:fmt(total),sub:'REMESHIRE amount',color:'green'},
     {label:'Matched',value:matched,sub:'employees se match',color:'purple'},
-    {label:'Unmatched',value:unmatched.length,sub:'admin pe jayenge',color:unmatched.length?'amber':'green'}
+    {label:'Unmatched',value:unmatched.length,sub:'IDEAL.OFFICE pe jayenge',color:unmatched.length?'amber':'green'}
   ])+'</div>';
   h+='<div class="table-wrap" style="margin-bottom:16px;"><div class="table-inner"><table><thead><tr><th>Employee</th><th>Branch</th><th>Clients</th><th>Brokerage</th><th>Share</th></tr></thead><tbody>';
   Object.keys(empSum).sort(function(a,b){return empSum[b].amt-empSum[a].amt;}).forEach(function(k){
@@ -3231,7 +3236,7 @@ function buildChoicePreview(){
   });
   h+='</tbody></table></div></div>';
   if(unmatched.length){
-    h+='<div class="prev-warn"><b>Unmatched clients ('+unmatched.length+'):</b> '+unmatched.map(function(r){return r.cid;}).join(', ')+'<br><span style="font-size:12px;">Ye kisi employee ke Accounts me nahi mile &#8212; inki brokerage aapke naam pe count hogi. Chaaho to pehle in clients ke accounts sahi employee me add karke dobara upload karo.</span></div>';
+    h+='<div class="prev-warn"><b>Unmatched clients ('+unmatched.length+'):</b> '+unmatched.map(function(r){return r.cid;}).join(', ')+'<br><span style="font-size:12px;">Ye kisi employee ke Accounts me nahi mile &#8212; inki brokerage IDEAL.OFFICE (Office client) ke naam pe count hogi. Chaaho to pehle in clients ke accounts sahi employee me add karke dobara upload karo.</span></div>';
   }
   if(dup)h+='<div class="prev-err"><b>&#9888; Ye period ('+p.from+' se '+p.to+') pehle se uploaded hai!</b><br>Replace karne se purana data delete hoke naya save hoga &#8212; double counting nahi hogi.</div>';
   h+='<div style="display:flex;gap:10px;margin-top:6px;">';
@@ -3755,9 +3760,8 @@ function renderManageEmps(){
   employees.forEach(function(e){
     var isAct=(e['Status']||'Active')==='Active';
     var em=(e['Email']||'').trim();
-    var pid=(e['Parent ID']||'').trim();
-    var pEmp=pid?employees.find(function(x){return x['Employee ID']===pid;}):null;
-    var pLabel=pid?(pEmp?pEmp['Name']:pid):'<span style="color:var(--muted);">&#8212;</span>';
+    var pids=parentIdsOf(e);
+    var pLabel=pids.length?pids.map(function(pid){var pEmp=employees.find(function(x){return x['Employee ID']===pid;});return pEmp?pEmp['Name']:pid;}).join(', '):'<span style="color:var(--muted);">&#8212;</span>';
     h+='<tr><td>'+(e['Employee ID']||'-')+'</td><td style="font-weight:600;">'+(e['Name']||'-')+'</td><td>'+(e['Branch']||'-')+'</td><td>'+(e['Role']||'employee')+'</td><td>'+pLabel+'</td><td style="font-weight:700;color:var(--accent);">'+(e['Commission']!==''&&e['Commission']!==undefined?e['Commission']+'%':'50%')+'</td><td>'+(parseFloat(e['Salary'])>0?fmt(e['Salary']):'-')+'</td><td>'+(em?em:'<span class="badge red" title="Email missing — salary slip mail nahi jayegi">&#9888; missing</span>')+'</td><td><span class="badge '+(isAct?'green':'red')+'">'+(isAct?'Active':'Inactive')+'</span></td><td>';
     h+='<button class="btn-edit" data-id="'+e['Employee ID']+'" onclick="editEmpModal(this.dataset.id)">&#9998; Edit</button>';
     h+='<button class="btn-del" data-id="'+e['Employee ID']+'" data-act="'+(isAct?'Inactive':'Active')+'" onclick="toggleEmpBtn(this)">'+( isAct?'Deactivate':'Activate')+'</button>';
@@ -3776,9 +3780,9 @@ function showAddEmpModal(){
   h+='<div class="form-group"><label>Fixed Salary (&#8377;/month, nahi h to 0)</label><input type="number" id="ne_sal" value="0"></div>';
   h+='<div class="form-group"><label>Email (salary slip ke liye)</label><input type="email" id="ne_email" placeholder="employee@gmail.com"></div>';
   h+='<div class="form-group"><label>Password</label><input type="text" id="ne_pass"></div>';
-  h+='<div class="form-group"><label>Sub-team Of (Parent) — agar ye referral/sub-employee hai</label><select id="ne_parent"><option value="">-- Koi nahi (independent) --</option>';
-  employees.forEach(function(e){h+='<option value="'+e['Employee ID']+'">'+e['Name']+' ('+e['Employee ID']+')</option>';});
-  h+='</select></div>';
+  h+='<div class="form-group"><label>Sub-team Of (Parents) — multiple select kar sakte ho</label><div style="max-height:160px;overflow-y:auto;border:1px solid var(--border,rgba(255,255,255,.15));border-radius:8px;padding:8px;">';
+  employees.forEach(function(e){h+='<label style="display:flex;align-items:center;gap:6px;font-weight:400;font-size:13px;padding:3px 0;"><input type="checkbox" class="ne_parent_cb" value="'+e['Employee ID']+'" style="width:auto;"> '+e['Name']+' ('+e['Employee ID']+')</label>';});
+  h+='</div></div>';
   h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="addEmployee()">Add</button></div>';
   document.getElementById('modalBox').innerHTML=h;document.getElementById('modal').className='show';
 }
@@ -3787,7 +3791,7 @@ function addEmployee(){
   var id=document.getElementById('ne_id').value.trim(),name=document.getElementById('ne_name').value.trim(),pass=document.getElementById('ne_pass').value.trim();
   if(!id||!name||!pass){showToast('ID, Name and Password required','error');return;}
   if(employees.find(function(e){return e['Employee ID']===id;})){showToast('ID already exists','error');return;}
-  var p={action:'addEmployee','Employee ID':id,'Name':name,'Branch':document.getElementById('ne_branch').value,'Role':document.getElementById('ne_role').value,'Password':pass,'Status':'Active','Commission':parseFloat(document.getElementById('ne_comm').value)||50,'Email':document.getElementById('ne_email').value.trim(),'Salary':parseFloat(document.getElementById('ne_sal').value)||0,'Parent ID':document.getElementById('ne_parent').value||''};
+  var p={action:'addEmployee','Employee ID':id,'Name':name,'Branch':document.getElementById('ne_branch').value,'Role':document.getElementById('ne_role').value,'Password':pass,'Status':'Active','Commission':parseFloat(document.getElementById('ne_comm').value)||50,'Email':document.getElementById('ne_email').value.trim(),'Salary':parseFloat(document.getElementById('ne_sal').value)||0,'Parent ID':Array.prototype.slice.call(document.querySelectorAll('.ne_parent_cb:checked')).map(function(el){return el.value;}).join(',')};
   postData(p).then(function(r){closeModal();if(r&&r.success){showToast('Employee added!','success');loadEmps();}else showToast('Failed: '+(r&&r.error||''),'error');}).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
 }
 
@@ -3805,16 +3809,17 @@ function editEmpModal(empId){
   h+='<div class="form-group"><label>Fixed Salary (&#8377;/month)</label><input type="number" id="ee_sal" value="'+(parseFloat(emp['Salary'])||0)+'"></div>';
   h+='<div class="form-group"><label>Email (salary slip ke liye)</label><input type="email" id="ee_email" value="'+(emp['Email']||'')+'" placeholder="employee@gmail.com"></div>';
   h+='<div class="form-group"><label>New Password (blank = keep)</label><input type="text" id="ee_pass" placeholder="Leave blank to keep"></div>';
-  h+='<div class="form-group"><label>Sub-team Of (Parent) — agar ye referral/sub-employee hai</label><select id="ee_parent"><option value="">-- Koi nahi (independent) --</option>';
-  employees.forEach(function(e){if(e['Employee ID']===empId)return;h+='<option value="'+e['Employee ID']+'"'+((emp['Parent ID']||'')===e['Employee ID']?' selected':'')+'>'+e['Name']+' ('+e['Employee ID']+')</option>';});
-  h+='</select></div>';
+  h+='<div class="form-group"><label>Sub-team Of (Parents) — multiple select kar sakte ho</label><div style="max-height:160px;overflow-y:auto;border:1px solid var(--border,rgba(255,255,255,.15));border-radius:8px;padding:8px;">';
+  var curParentIds=parentIdsOf(emp);
+  employees.forEach(function(e){if(e['Employee ID']===empId)return;h+='<label style="display:flex;align-items:center;gap:6px;font-weight:400;font-size:13px;padding:3px 0;"><input type="checkbox" class="ee_parent_cb" value="'+e['Employee ID']+'" style="width:auto;"'+(curParentIds.indexOf(e['Employee ID'])!==-1?' checked':'')+'> '+e['Name']+' ('+e['Employee ID']+')</label>';});
+  h+='</div></div>';
   h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" data-eid="'+empId+'" onclick="saveEmp(this.dataset.eid)">Save</button></div>';
   document.getElementById('modalBox').innerHTML=h;document.getElementById('modal').className='show';
 }
 
 function saveEmp(empId){
   var emp=employees.find(function(e){return e['Employee ID']===empId;});if(!emp)return;
-  var p={action:'updateEmployee','Employee ID':empId,_rowNum:emp._rowNum,'Name':document.getElementById('ee_name').value.trim(),'Branch':document.getElementById('ee_branch').value,'Role':document.getElementById('ee_role').value||'employee','Status':emp['Status']||'Active','Commission':parseFloat(document.getElementById('ee_comm').value)||50,'Email':document.getElementById('ee_email').value.trim(),'Salary':parseFloat(document.getElementById('ee_sal').value)||0,'Parent ID':document.getElementById('ee_parent').value||''};
+  var p={action:'updateEmployee','Employee ID':empId,_rowNum:emp._rowNum,'Name':document.getElementById('ee_name').value.trim(),'Branch':document.getElementById('ee_branch').value,'Role':document.getElementById('ee_role').value||'employee','Status':emp['Status']||'Active','Commission':parseFloat(document.getElementById('ee_comm').value)||50,'Email':document.getElementById('ee_email').value.trim(),'Salary':parseFloat(document.getElementById('ee_sal').value)||0,'Parent ID':Array.prototype.slice.call(document.querySelectorAll('.ee_parent_cb:checked')).map(function(el){return el.value;}).join(',')};
   var np=document.getElementById('ee_pass').value.trim();if(np)p['Password']=np;
   postData(p).then(function(r){closeModal();if(r&&r.success){showToast('Updated!','success');loadEmps();}else showToast('Failed','error');}).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
 }
