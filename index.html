@@ -1501,7 +1501,7 @@ function startApp(){
   if(!window._ifwIntervalSet){
     window._ifwIntervalSet=true;
     setInterval(check315Reminder,60000);
-    setInterval(function(){ if(currentUser && !document.hidden) loadAll(2); },60000);
+    setInterval(checkForUpdates,5000);
   }
 }
 
@@ -1541,6 +1541,16 @@ function setMyAccStat(s,btn){myAccStat=s;btn.parentElement.querySelectorAll('.fi
 function setLeadCat(v,btn,varName){if(varName==='leadCatF')leadCatF=v;else myLeadCatF=v;btn.parentElement.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');renderPage(curPage());}
 function curPage(){var p=document.querySelector('.page.active');return p?p.id.replace('page-',''):'';}
 
+var _lastKnownUpdateTs=null;
+function checkForUpdates(){
+  if(!currentUser||document.hidden)return;
+  getJSON('lastUpdate').then(function(r){
+    if(!r||!r.success)return;
+    var ts=r.ts;
+    if(_lastKnownUpdateTs===null){_lastKnownUpdateTs=ts;return;}
+    if(ts!==_lastKnownUpdateTs){_lastKnownUpdateTs=ts;loadAll(2);}
+  }).catch(function(){});
+}
 function loadAll(attempt){
   attempt=attempt||1;
   if(attempt===1&&!hadCache)showToast('Loading data...','success');
