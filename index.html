@@ -337,7 +337,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
       </div>
       <div id="brokCalDiv"></div>
       <div id="brokDayDiv"></div>
-      <div class="stats-grid" id="brokStats"></div>
+      <div class="stats-grid" id="brokStats"></div><div id="brokStatDiv"></div>
       <div class="table-wrap"><div class="table-inner" id="brokTable"></div></div>
     </div>
 
@@ -386,7 +386,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
       </div>
       <div id="sipCalDiv"></div>
       <div id="sipDayDiv"></div>
-      <div class="stats-grid" id="sipStats"></div>
+      <div class="stats-grid" id="sipStats"></div><div id="sipStatDiv"></div>
       <div class="table-wrap"><div class="table-inner" id="sipTable"></div></div>
     </div>
 
@@ -402,7 +402,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <button class="filter-btn" onclick="setF('all',this,'ins')">All Time</button>
         <input class="srch" id="srch-ins" placeholder="&#128269; Search client..." oninput="renderIns()">
       </div>
-      <div class="stats-grid" id="insStats"></div>
+      <div class="stats-grid" id="insStats"></div><div id="insStatDiv"></div>
       <div class="table-wrap"><div class="table-inner" id="insTable"></div></div>
     </div>
 
@@ -422,7 +422,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <button class="filter-btn" onclick="setAccStat('inactive',this)">Inactive</button>
         <input class="srch" id="srch-acc" placeholder="&#128269; Search client/ID..." oninput="renderAccTable()">
       </div>
-      <div class="stats-grid" id="accStats"></div>
+      <div class="stats-grid" id="accStats"></div><div id="accStatDiv"></div>
       <div class="table-wrap"><div class="table-inner" id="accTable"></div></div>
     </div>
 
@@ -570,12 +570,26 @@ tbody td{padding:10px 14px;vertical-align:middle;}
           <select id="tj_type" onchange="populateTJStrategy()"><option value="Intraday">Intraday</option><option value="Swing">Swing</option><option value="Positional">Positional</option></select>
         </div>
         <div class="form-group"><label>Strategy</label>
-          <select id="tj_strategy"></select>
+          <select id="tj_strategy" onchange="toggleTJStrategyOther()"></select>
         </div>
+        <div class="form-group" id="tj_strategyOtherGroup" style="display:none"><label>Strategy (type)</label><input type="text" id="tj_strategyOther" placeholder="Custom pattern/strategy"></div>
         <div class="form-group"><label>Trading For</label>
           <select id="tj_entryType" onchange="toggleTJGroupName()"><option value="Personal">Personal</option><option value="Client Group">Client Group</option></select>
         </div>
-        <div class="form-group" id="tj_groupNameGroup" style="display:none"><label>Group Name</label><input type="text" id="tj_groupName" placeholder="e.g. Crown, Premium"></div>
+        <div class="form-group" id="tj_groupNameGroup" style="display:none"><label>Group Name</label>
+          <select id="tj_groupNameSel" onchange="toggleTJGroupOther()"><option value="">-- Select --</option><option value="__other__">+ Other (type new)</option></select>
+          <input type="text" id="tj_groupName" placeholder="e.g. Crown, Premium" style="display:none;margin-top:6px;">
+        </div>
+        <div class="form-group"><label>Instrument</label>
+          <select id="tj_instrument" onchange="toggleTJInstrument()"><option value="Stock">Stock</option><option value="Future &amp; Option">Future &amp; Option</option></select>
+        </div>
+        <div class="form-group" id="tj_foTypeGroup" style="display:none"><label>F&amp;O Type</label>
+          <select id="tj_foType" onchange="toggleTJInstrument()"><option value="Future">Future</option><option value="Option">Option</option></select>
+        </div>
+        <div class="form-group" id="tj_optTypeGroup" style="display:none"><label>Call / Put</label>
+          <select id="tj_optType"><option value="CE (Call)">CE (Call)</option><option value="PE (Put)">PE (Put)</option></select>
+        </div>
+        <div class="form-group" id="tj_strikeGroup" style="display:none"><label>Strike Price</label><input type="number" id="tj_strike" placeholder="e.g. 57400"></div>
         <div class="form-group"><label>Entry Price</label><input type="number" id="tj_entry" placeholder="Entry price"></div>
         <div class="form-group"><label>Stop Loss</label><input type="number" id="tj_sl" placeholder="Stop loss price"></div>
         <div class="form-group"><label>Target 1</label><input type="number" id="tj_t1" placeholder="First target price"></div>
@@ -595,7 +609,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <button class="filter-btn" onclick="setTJStat('closed',this)">Closed</button>
         <input class="srch" id="srch-tj" placeholder="&#128269; Search stock..." oninput="renderTradingJournalPage()">
       </div>
-      <div class="stats-grid" id="tjStats"></div>
+      <div class="stats-grid" id="tjStats"></div><div id="tjStatDiv"></div>
       <div class="table-wrap"><div class="table-inner" id="tjTable"></div></div>
     </div>
 
@@ -622,7 +636,9 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <button class="btn-submit" onclick="submitCallClient()">Add to List</button>
       </div>
 
-      <div class="stats-grid" id="ctStats"></div>
+      <div class="stats-grid" id="ctStats"></div><div id="ctStatDiv"></div>
+
+      <div id="ctOpenTradesDiv" style="margin:14px 0;"></div>
 
       <div class="filter-bar">
         <input class="srch" id="srch-ccl" placeholder="&#128269; Search client..." oninput="renderCallTradePage()">
@@ -825,7 +841,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
       </div>
       <div id="myBrokCalDiv"></div>
       <div id="myBrokDayDiv"></div>
-      <div class="stats-grid" id="myBrokStats"></div>
+      <div class="stats-grid" id="myBrokStats"></div><div id="myBrokStatDiv"></div>
       <div id="myBrokChart"></div>
       <div id="myBrokTop"></div>
       <div class="table-wrap"><div class="table-inner" id="myBrokTable"></div></div>
@@ -846,7 +862,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
       </div>
       <div id="mySipCalDiv"></div>
       <div id="mySipDayDiv"></div>
-      <div class="stats-grid" id="mySIPStats"></div>
+      <div class="stats-grid" id="mySIPStats"></div><div id="mySIPStatDiv"></div>
       <div class="table-wrap"><div class="table-inner" id="mySIPTable"></div></div>
     </div>
 
@@ -862,7 +878,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <button class="filter-btn" onclick="setF('all',this,'myIns')">All Time</button>
         <input class="srch" id="srch-myIns" placeholder="&#128269; Search client..." oninput="renderMyIns()">
       </div>
-      <div class="stats-grid" id="myInsStats"></div>
+      <div class="stats-grid" id="myInsStats"></div><div id="myInsStatDiv"></div>
       <div class="table-wrap"><div class="table-inner" id="myInsTable"></div></div>
     </div>
 
@@ -882,7 +898,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <button class="filter-btn" onclick="setMyAccStat('inactive',this)">Inactive</button>
         <input class="srch" id="srch-myAcc" placeholder="&#128269; Search client/ID..." oninput="renderMyAccTable()">
       </div>
-      <div class="stats-grid" id="myAccStats"></div>
+      <div class="stats-grid" id="myAccStats"></div><div id="myAccStatDiv"></div>
       <div class="table-wrap"><div class="table-inner" id="myAccTable"></div></div>
     </div>
 
@@ -987,7 +1003,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
       </div>
       <div id="cbrokCalDiv"></div>
       <div id="cbrokDayDiv"></div>
-      <div class="stats-grid" id="cbrokStats"></div>
+      <div class="stats-grid" id="cbrokStats"></div><div id="cbrokStatDiv"></div>
       <div id="cbrokChart"></div>
       <div id="cbrokTop"></div>
       <div id="cbrokEmpCards"></div>
@@ -1090,7 +1106,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <button class="filter-btn" onclick="setF('all',this,'finRec')">All Time</button>
         <input class="srch" id="srch-finRec" placeholder="&#128269; Search..." oninput="renderFinRecords()">
       </div>
-      <div class="stats-grid" id="finRecStats"></div>
+      <div class="stats-grid" id="finRecStats"></div><div id="finRecStatDiv"></div>
       <div class="table-wrap"><div class="table-inner" id="finRecTable"></div></div>
     </div>
 
@@ -1249,6 +1265,25 @@ function login(){
 
 /* ===== v28: NOTIFICATION SYSTEM — bell icon sidebar me hamesha visible (badge count), + din me ek baar auto-popup ===== */
 /* SIP due tomorrow + aaj ki meeting (Meetings sheet 'Next Meeting') + student fees pending, calendar (nextDue) se juda hua */
+function playAlertSound(){
+  try{
+    var Ctx=window.AudioContext||window.webkitAudioContext;
+    if(!Ctx)return;
+    var ctx=new Ctx();
+    var beep=function(delay,freq){
+      setTimeout(function(){
+        var o=ctx.createOscillator(),g=ctx.createGain();
+        o.type='sine';o.frequency.value=freq;
+        o.connect(g);g.connect(ctx.destination);
+        g.gain.setValueAtTime(0.0001,ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.3,ctx.currentTime+0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+0.35);
+        o.start();o.stop(ctx.currentTime+0.36);
+      },delay);
+    };
+    beep(0,880);beep(400,880);beep(800,1046);
+  }catch(e){}
+}
 function computeReminders(){
   if(!currentUser)return {sipTomorrow:[],meetToday:[],pendStud:[],tomorrow:new Date()};
   var isAdm=currentUser.role==='admin';
@@ -1341,8 +1376,35 @@ function checkDueTomorrowPopup(){
   if(localStorage.getItem(key))return;
   localStorage.setItem(key,'1');
   var r=computeReminders();
-  if(!r.sipTomorrow.length&&!r.meetToday.length&&!r.pendStud.length)return;
+  if(!r.sipTomorrow.length&&!r.meetToday.length&&!r.pendStud.length&&!(r.tradeAlerts&&r.tradeAlerts.length))return;
+  playAlertSound();
   document.getElementById('modalBox').innerHTML=buildReminderHTML(r);
+  document.getElementById('modal').className='show';
+}
+function check315Reminder(){
+  if(!currentUser)return;
+  var now=new Date();
+  var mins=now.getHours()*60+now.getMinutes();
+  if(mins<15*60+15)return;
+  var key='ifw_315_'+currentUser.userId+'_'+td();
+  if(localStorage.getItem(key))return;
+  var rows=fEmpStrict(allData.TradingJournal||[],currentUser.userId);
+  var openStatuses=['Open','1st Target Done'];
+  var todayStr=td();
+  var openIntraday=rows.filter(function(r){return r['Date']===todayStr&&r['Trade Type']==='Intraday'&&openStatuses.indexOf(r['Status'])!==-1;});
+  if(!openIntraday.length)return;
+  localStorage.setItem(key,'1');
+  playAlertSound();
+  var h2='<div class="modal-title">&#9200; 3:15 PM Reminder &#8212; Intraday Trade Close Karo!</div>';
+  h2+='<div style="color:var(--muted,#8a94a6);margin-bottom:10px;font-size:13px;">Yeh intraday trades abhi tak open hain, market band hone se pehle close karke client ko update karo:</div>';
+  h2+='<div style="max-height:220px;overflow:auto;margin-bottom:14px;">'+openIntraday.map(function(r){
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 4px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:13px;">'
+      +'<span>'+(r['Stock']||'-')+' &#183; '+(r['Direction']||'')+' &#183; Entry '+(r['Entry Price']||'-')+'</span>'
+      +'<span style="color:var(--amber,#f59e0b);font-weight:700;">'+(r['Status']||'Open')+'</span>'
+      +'</div>';
+  }).join('')+'</div>';
+  h2+='<div class="modal-actions"><button class="btn-save" onclick="closeModal()">Theek hai</button></div>';
+  document.getElementById('modalBox').innerHTML=h2;
   document.getElementById('modal').className='show';
 }
 function startApp(){
@@ -1358,6 +1420,7 @@ function startApp(){
   else{document.getElementById('empNav').style.display='block';showPage('empDash');}
   if(hadCache)checkSIPAlerts();
   loadAll();
+  if(!window._ifwIntervalSet){window._ifwIntervalSet=true;setInterval(check315Reminder,60000);}
 }
 
 function logout(){
@@ -1419,7 +1482,7 @@ function loadAll(attempt){
         CallTrade:r.callTrade||r.CallTrade||[],
         CallClients:r.callClients||r.CallClients||[]
       };
-      saveCache();checkSIPAlerts();autoPunchIn();renderPage(curPage());loadEmps();setTimeout(checkDueTomorrowPopup,600);
+      saveCache();checkSIPAlerts();autoPunchIn();renderPage(curPage());loadEmps();setTimeout(checkDueTomorrowPopup,600);setTimeout(check315Reminder,900);
     }else if(attempt<3){
       setTimeout(function(){loadAll(attempt+1);},4000);
     }else{
@@ -1573,6 +1636,16 @@ function renderPage(id){
 }
 
 function mkStats(cards){var h='';cards.forEach(function(c){h+='<div class="stat-card '+(c.color||'green')+'"'+(c.onclick?' style="cursor:pointer" onclick="'+c.onclick+'"':'')+'><div class="stat-label">'+c.label+'</div><div class="stat-value">'+c.value+'</div><div class="stat-sub">'+(c.sub||'')+'</div></div>';});return h;}
+function renderStatDetail(divId,title,rows,cols,sheet){
+  var el=document.getElementById(divId);
+  if(!el)return;
+  if(!rows||!rows.length){el.innerHTML='<div class="day-detail"><h3><span>'+title+' (0)</span><span class="day-close" onclick="document.getElementById(\''+divId+'\').innerHTML=\'\'">&#10005; Close</span></h3><div class="no-data">No records found</div></div>';el.scrollIntoView({behavior:'smooth',block:'nearest'});return;}
+  var h='<div class="day-detail"><h3><span>'+title+' ('+rows.length+')</span><span class="day-close" onclick="document.getElementById(\''+divId+'\').innerHTML=\'\'">&#10005; Close</span></h3>';
+  h+=mkTable(rows,cols,sheet);
+  h+='</div>';
+  el.innerHTML=h;
+  el.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
 
 function mkTable(rows,cols,sheet){
   if(!rows||!rows.length)return '<div class="no-data">No records found</div>';
@@ -1808,10 +1881,17 @@ function renderBrok(){
   var t=rows.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
   var life=(allData.Brokerage||[]).reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
   document.getElementById('brokCalDiv').innerHTML=mkBrokCalendar(allData.Brokerage||[],'brok','showBrokDay');
-  document.getElementById('brokStats').innerHTML=mkStats([{label:'Lifetime Brokerage',value:fmt(life),sub:(allData.Brokerage||[]).length+' total entries',color:'green'},{label:periodLabel(filters['brok']||'today')+' Brokerage',value:fmt(t),sub:rows.length+' entries',color:'blue'}]);
+  document.getElementById('brokStats').innerHTML=mkStats([{label:'Lifetime Brokerage',value:fmt(life),sub:(allData.Brokerage||[]).length+' total entries',color:'green',onclick:"showBrokStat('life')"},{label:periodLabel(filters['brok']||'today')+' Brokerage',value:fmt(t),sub:rows.length+' entries',color:'blue',onclick:"showBrokStat('period')"}]);
+  window._brokStatCache={life:allData.Brokerage||[],period:rows};
   document.getElementById('brokTable').innerHTML=mkTable(rows,[{k:'Date',l:'Date'},{k:'Employee Name',l:'Employee'},{k:'Branch',l:'Branch'},{k:'Amount',l:'Amount',money:true}],'Brokerage');
 }
 
+function showBrokStat(kind){
+  var c=window._brokStatCache||{life:[],period:[]};
+  var rows=kind==='life'?c.life:c.period;
+  var title=kind==='life'?'Lifetime Brokerage Entries':'Brokerage Entries';
+  renderStatDetail('brokStatDiv',title,rows,[{k:'Date',l:'Date'},{k:'Employee Name',l:'Employee'},{k:'Branch',l:'Branch'},{k:'Amount',l:'Amount',money:true}]);
+}
 function renderSIP(){
   var rows=fDate(allData.SIP||[],filters['sip']||'today');
   var q=getSrch('srch-sip');rows=srchFilter(rows,q,['Client Name','Client ID']);
@@ -1822,26 +1902,41 @@ function renderSIP(){
   var gPct=calcGrowth(allData.SIP||[],null,'Amount',false);
   document.getElementById('sipCalDiv').innerHTML=mkCalendar(allData.SIP||[],'sipCal',{amt:function(r){return parseFloat(r['Amount']||0);},moreLabel:'More SIP',clickFn:'showSIPDay'});
   document.getElementById('sipStats').innerHTML=mkStats([
-    {label:'SIP Total',value:fmt(sipAmt),sub:sipR.length+' clients · '+gBadge(gPct),color:'green'},
-    {label:'Lumpsum Total',value:fmt(lumpAmt),sub:lumpR.length+' entries',color:'amber'},
-    {label:'Combined Total',value:fmt(sipAmt+lumpAmt),sub:rows.length+' entries',color:'blue'}
+    {label:'SIP Total',value:fmt(sipAmt),sub:sipR.length+' clients · '+gBadge(gPct),color:'green',onclick:"showSIPStat('sip')"},
+    {label:'Lumpsum Total',value:fmt(lumpAmt),sub:lumpR.length+' entries',color:'amber',onclick:"showSIPStat('lump')"},
+    {label:'Combined Total',value:fmt(sipAmt+lumpAmt),sub:rows.length+' entries',color:'blue',onclick:"showSIPStat('all')"}
   ]);
+  window._sipStatCache={sip:sipR,lump:lumpR,all:rows};
   document.getElementById('sipTable').innerHTML=mkTable(rows,[{k:'Date',l:'Date'},{k:'Employee Name',l:'Employee'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Client ID'},{k:'Client Phone',l:'Phone'},{k:'Type',l:'Type'},{k:'Amount',l:'Amount',money:true},{k:'SIP Due Date',l:'Due Date'}],'SIP');
 }
 
+function showSIPStat(kind){
+  var c=window._sipStatCache||{sip:[],lump:[],all:[]};
+  var rows=c[kind]||[];
+  var title=kind==='sip'?'SIP Entries':(kind==='lump'?'Lumpsum Entries':'All SIP/Lumpsum Entries');
+  renderStatDetail('sipStatDiv',title,rows,[{k:'Date',l:'Date'},{k:'Employee Name',l:'Employee'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Client ID'},{k:'Type',l:'Type'},{k:'Amount',l:'Amount',money:true}]);
+}
 function renderIns(){
   var rows=fDate(allData.Insurance||[],filters['ins']||'today');
   var q=getSrch('srch-ins');rows=srchFilter(rows,q,['Client Name','Client ID']);
   var t=rows.reduce(function(s,r){return s+parseFloat(r['Premium']||0);},0);
   var gPct=calcGrowth(allData.Insurance||[],null,'Premium',false);
   document.getElementById('insStats').innerHTML=mkStats([
-    {label:'Total Premium',value:fmt(t),sub:rows.length+' policies · '+gBadge(gPct),color:'green'},
-    {label:'Health',value:rows.filter(function(r){return (r['Type']||'').indexOf('Health')!==-1;}).length,sub:'ICICI Lombard',color:'blue'},
-    {label:'Life',value:rows.filter(function(r){return (r['Type']||'').indexOf('Life')!==-1;}).length,sub:'Tata',color:'amber'}
+    {label:'Total Premium',value:fmt(t),sub:rows.length+' policies · '+gBadge(gPct),color:'green',onclick:"showInsStat('all')"},
+    {label:'Health',value:rows.filter(function(r){return (r['Type']||'').indexOf('Health')!==-1;}).length,sub:'ICICI Lombard',color:'blue',onclick:"showInsStat('health')"},
+    {label:'Life',value:rows.filter(function(r){return (r['Type']||'').indexOf('Life')!==-1;}).length,sub:'Tata',color:'amber',onclick:"showInsStat('life')"}
   ]);
+  window._insStatCache={rows:rows};
   document.getElementById('insTable').innerHTML=mkTable(rows,[{k:'Date',l:'Date'},{k:'Employee Name',l:'Employee'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Policy ID'},{k:'Client Phone',l:'Phone'},{k:'Type',l:'Type'},{k:'Premium',l:'Premium',money:true}],'Insurance');
 }
 
+function showInsStat(kind){
+  var rows=(window._insStatCache||{rows:[]}).rows;
+  if(kind==='health')rows=rows.filter(function(r){return (r['Type']||'').indexOf('Health')!==-1;});
+  else if(kind==='life')rows=rows.filter(function(r){return (r['Type']||'').indexOf('Life')!==-1;});
+  var title=kind==='health'?'Health Insurance Policies':(kind==='life'?'Life Insurance Policies':'All Insurance Policies');
+  renderStatDetail('insStatDiv',title,rows,[{k:'Date',l:'Date'},{k:'Employee Name',l:'Employee'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Policy ID'},{k:'Type',l:'Type'},{k:'Premium',l:'Premium',money:true}]);
+}
 function renderAccTable(){
   var allAcc=allData.Accounts||[];
   var rows=fDate(allAcc,filters['acc']||'all');
@@ -1855,9 +1950,9 @@ function renderAccTable(){
   var gPct=calcGrowth(allAcc,null,'',true);
   var active=rows.filter(function(r){return (r['Status']||'Active')==='Active';}).length;
   document.getElementById('accStats').innerHTML=mkStats([
-    {label:'Total Accounts',value:rows.length,sub:'all entries · '+gBadge(gPct),color:'green'},
-    {label:'Active',value:active,sub:'active accounts',color:'blue'},
-    {label:'Inactive',value:rows.length-active,sub:'inactive',color:'amber'},
+    {label:'Total Accounts',value:rows.length,sub:'all entries · '+gBadge(gPct),color:'green',onclick:"setAccStat('all',event.currentTarget);document.getElementById('accTable').scrollIntoView({behavior:'smooth'});"},
+    {label:'Active',value:active,sub:'active accounts',color:'blue',onclick:"setAccStat('active',event.currentTarget);document.getElementById('accTable').scrollIntoView({behavior:'smooth'});"},
+    {label:'Inactive',value:rows.length-active,sub:'inactive',color:'amber',onclick:"setAccStat('inactive',event.currentTarget);document.getElementById('accTable').scrollIntoView({behavior:'smooth'});"},
     {label:'Duplicate IDs',value:Object.keys(dupSet).length,sub:(accDupOnly?'showing duplicates only, click to show all':'same client ID, click to view')+' &#128064;',color:'red',onclick:'toggleAccDup()'}
   ]);
   document.getElementById('accTable').innerHTML=mkAccTable(rows,dupSet);
@@ -2100,11 +2195,12 @@ function renderMyBrok(){
   var shareVal2=isPtnr?myPoolShare(uid,f):r2(comb*pct/100);
   var shareSub2=isPtnr?'profit pool ka '+pct+'% (income - expense - staff payout ke baad)':'total ka '+pct+'%';
   document.getElementById('myBrokStats').innerHTML=mkStats([
-    {label:periodLabel(f)+' Total Brokerage',value:fmt(comb),sub:'client: '+fmt(r2(cT))+' &#183; manual: '+fmt(r2(t)),color:'green'},
+    {label:periodLabel(f)+' Total Brokerage',value:fmt(comb),sub:'client: '+fmt(r2(cT))+' &#183; manual: '+fmt(r2(t)),color:'green',onclick:"showMyBrokStat('period')"},
     {label:'My Share ('+pct+'%)',value:fmt(shareVal2),sub:shareSub2,color:'blue'},
-    {label:'Working Clients',value:Object.keys(uniqC).length,sub:'Avg/Client: '+fmt(Object.keys(uniqC).length?r2(cT/Object.keys(uniqC).length):0),color:'purple'},
-    {label:'Lifetime Total',value:fmt(r2(cLife+lifeMan)),sub:'ab tak ki total brokerage',color:'amber'}
+    {label:'Working Clients',value:Object.keys(uniqC).length,sub:'Avg/Client: '+fmt(Object.keys(uniqC).length?r2(cT/Object.keys(uniqC).length):0),color:'purple',onclick:"showMyBrokStat('working')"},
+    {label:'Lifetime Total',value:fmt(r2(cLife+lifeMan)),sub:'ab tak ki total brokerage',color:'amber',onclick:"showMyBrokStat('life')"}
   ]);
+  window._myBrokStatCache={period:cRows.concat(myRows),working:cRows,life:myC.concat(myRows)};
   document.getElementById('myBrokChart').innerHTML=mkDailyChart(cRows,'&#128200; Daily Brokerage');
   document.getElementById('myBrokTop').innerHTML=mkTopClients(cRows,'&#127942; Top 10 Clients ('+periodLabel(f)+')');
   var h='';
@@ -2132,6 +2228,15 @@ function renderMyBrok(){
   document.getElementById('myBrokTable').innerHTML=h;
 }
 
+function showMyBrokStat(kind){
+  var c=window._myBrokStatCache||{period:[],working:[],life:[]};
+  var rows=c[kind]||[];
+  if(kind==='working'){
+    var seen={};rows=rows.filter(function(r){var cid=(r['Client ID']||'').trim();if(seen[cid])return false;seen[cid]=1;return true;});
+  }
+  var title=kind==='period'?'Brokerage Entries':(kind==='working'?'Working Clients':'Lifetime Brokerage Entries');
+  renderStatDetail('myBrokStatDiv',title,rows,[{k:'Date',l:'Date'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Client ID'},{k:'Branch',l:'Branch'},{k:'Amount',l:'Amount',money:true}]);
+}
 function renderMySIP(){
   var uid=currentUser.userId;
   var rows=fDate(fEmp(allData.SIP||[],uid),filters['mySIP']||'month');
@@ -2143,26 +2248,41 @@ function renderMySIP(){
   document.getElementById('mySipCalDiv').innerHTML=mkCalendar(fEmp(allData.SIP||[],uid),'mySipCal',{amt:function(r){return parseFloat(r['Amount']||0);},moreLabel:'More SIP',clickFn:'showMySIPDay'});
   checkSIPAlerts();
   document.getElementById('mySIPStats').innerHTML=mkStats([
-    {label:'SIP Total',value:fmt(sipAmt),sub:sipR.length+' clients',color:'green'},
-    {label:'Lumpsum Total',value:fmt(lumpAmt),sub:lumpR.length+' entries',color:'amber'},
-    {label:'Combined',value:fmt(sipAmt+lumpAmt),sub:rows.length+' entries',color:'blue'}
+    {label:'SIP Total',value:fmt(sipAmt),sub:sipR.length+' clients',color:'green',onclick:"showMySIPStat('sip')"},
+    {label:'Lumpsum Total',value:fmt(lumpAmt),sub:lumpR.length+' entries',color:'amber',onclick:"showMySIPStat('lump')"},
+    {label:'Combined',value:fmt(sipAmt+lumpAmt),sub:rows.length+' entries',color:'blue',onclick:"showMySIPStat('all')"}
   ]);
+  window._mySIPStatCache={sip:sipR,lump:lumpR,all:rows};
   document.getElementById('mySIPTable').innerHTML=mkTable(rows,[{k:'Date',l:'Date'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Client ID'},{k:'Client Phone',l:'Phone'},{k:'Type',l:'Type'},{k:'Amount',l:'Amount',money:true},{k:'SIP Due Date',l:'Due Date'}],'SIP');
 }
 
+function showMySIPStat(kind){
+  var c=window._mySIPStatCache||{sip:[],lump:[],all:[]};
+  var rows=c[kind]||[];
+  var title=kind==='sip'?'SIP Entries':(kind==='lump'?'Lumpsum Entries':'All SIP/Lumpsum Entries');
+  renderStatDetail('mySIPStatDiv',title,rows,[{k:'Date',l:'Date'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Client ID'},{k:'Type',l:'Type'},{k:'Amount',l:'Amount',money:true},{k:'SIP Due Date',l:'Due Date'}]);
+}
 function renderMyIns(){
   var uid=currentUser.userId;
   var rows=fDate(fEmp(allData.Insurance||[],uid),filters['myIns']||'month');
   var q=getSrch('srch-myIns');rows=srchFilter(rows,q,['Client Name','Client ID']);
   var t=rows.reduce(function(s,r){return s+parseFloat(r['Premium']||0);},0);
   document.getElementById('myInsStats').innerHTML=mkStats([
-    {label:'Total Premium',value:fmt(t),sub:rows.length+' policies',color:'green'},
-    {label:'Health',value:rows.filter(function(r){return (r['Type']||'').indexOf('Health')!==-1;}).length,sub:'ICICI',color:'blue'},
-    {label:'Life',value:rows.filter(function(r){return (r['Type']||'').indexOf('Life')!==-1;}).length,sub:'Tata',color:'amber'}
+    {label:'Total Premium',value:fmt(t),sub:rows.length+' policies',color:'green',onclick:"showMyInsStat('all')"},
+    {label:'Health',value:rows.filter(function(r){return (r['Type']||'').indexOf('Health')!==-1;}).length,sub:'ICICI',color:'blue',onclick:"showMyInsStat('health')"},
+    {label:'Life',value:rows.filter(function(r){return (r['Type']||'').indexOf('Life')!==-1;}).length,sub:'Tata',color:'amber',onclick:"showMyInsStat('life')"}
   ]);
+  window._myInsStatCache={rows:rows};
   document.getElementById('myInsTable').innerHTML=mkTable(rows,[{k:'Date',l:'Date'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Policy ID'},{k:'Client Phone',l:'Phone'},{k:'Type',l:'Type'},{k:'Premium',l:'Premium',money:true}],'Insurance');
 }
 
+function showMyInsStat(kind){
+  var rows=(window._myInsStatCache||{rows:[]}).rows;
+  if(kind==='health')rows=rows.filter(function(r){return (r['Type']||'').indexOf('Health')!==-1;});
+  else if(kind==='life')rows=rows.filter(function(r){return (r['Type']||'').indexOf('Life')!==-1;});
+  var title=kind==='health'?'Health Insurance Policies':(kind==='life'?'Life Insurance Policies':'All My Insurance Policies');
+  renderStatDetail('myInsStatDiv',title,rows,[{k:'Date',l:'Date'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Policy ID'},{k:'Type',l:'Type'},{k:'Premium',l:'Premium',money:true}]);
+}
 function renderMyAccTable(){
   var uid=currentUser.userId;
   var rows=fDate(fEmp(allData.Accounts||[],uid),filters['myAcc']||'all');
@@ -2170,7 +2290,7 @@ function renderMyAccTable(){
   if(myAccStat==='inactive')rows=rows.filter(function(r){return r['Status']==='Inactive';});
   var q=getSrch('srch-myAcc');rows=srchFilter(rows,q,['Client Name','Client ID']);
   var active=rows.filter(function(r){return (r['Status']||'Active')==='Active';}).length;
-  document.getElementById('myAccStats').innerHTML=mkStats([{label:'Total',value:rows.length,sub:'your accounts',color:'green'},{label:'Active',value:active,sub:'active',color:'blue'},{label:'Inactive',value:rows.length-active,sub:'inactive',color:'amber'}]);
+  document.getElementById('myAccStats').innerHTML=mkStats([{label:'Total',value:rows.length,sub:'your accounts',color:'green',onclick:"setMyAccStat('all',event.currentTarget)"},{label:'Active',value:active,sub:'active',color:'blue',onclick:"setMyAccStat('active',event.currentTarget)"},{label:'Inactive',value:rows.length-active,sub:'inactive',color:'amber',onclick:"setMyAccStat('inactive',event.currentTarget)"}]);
   document.getElementById('myAccTable').innerHTML=mkTable(rows,[{k:'Date',l:'Date'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Client ID'},{k:'Client Phone',l:'Phone'},{k:'Status',l:'Status'}],'Accounts');
 }
 
@@ -2856,11 +2976,12 @@ function renderCBrok(){
   var uniq={};rows.forEach(function(r){uniq[(r['Client ID']||'').trim()]=1;});
   document.getElementById('cbrokCalDiv').innerHTML=mkBrokCalendar(all,'cbrok','showCBrokDay');
   document.getElementById('cbrokStats').innerHTML=mkStats([
-    {label:'Lifetime',value:fmt(life),sub:all.length+' entries',color:'green'},
-    {label:periodLabel(filters['cbrok']||'month'),value:fmt(t),sub:rows.length+' entries',color:'blue'},
-    {label:'Working Clients',value:Object.keys(uniq).length,sub:'jinhone kaam kiya (is period)',color:'purple'},
+    {label:'Lifetime',value:fmt(life),sub:all.length+' entries',color:'green',onclick:"showCBrokStat('life')"},
+    {label:periodLabel(filters['cbrok']||'month'),value:fmt(t),sub:rows.length+' entries',color:'blue',onclick:"showCBrokStat('period')"},
+    {label:'Working Clients',value:Object.keys(uniq).length,sub:'jinhone kaam kiya (is period)',color:'purple',onclick:"showCBrokStat('working')"},
     {label:'Avg / Client',value:fmt(Object.keys(uniq).length?r2(t/Object.keys(uniq).length):0),sub:'per client brokerage',color:'amber'}
   ]);
+  window._cbrokStatCache={life:all,period:rows,working:rows};
   var em={};
   rows.forEach(function(r){var id=r['Employee ID']||'?';if(!em[id])em[id]={name:r['Employee Name']||id,branch:r['Branch']||'',amt:0,n:0};em[id].amt+=parseFloat(r['Amount']||0);em[id].n++;});
   var ks=Object.keys(em).sort(function(a,b){return em[b].amt-em[a].amt;});
@@ -2931,6 +3052,15 @@ function submitExpense(){
   doSubmit(p,'Expense',document.querySelector('#page-addExpense .btn-submit'),'Add Expense',function(){document.getElementById('ex_amount').value='';document.getElementById('ex_desc').value='';document.getElementById('ex_remarks').value='';});
 }
 function setFinTab(t){finTab=t;document.getElementById('finTabInc').className='tab-btn'+(t==='income'?' active':'');document.getElementById('finTabExp').className='tab-btn'+(t==='expense'?' active':'');renderFinRecords();}
+function showCBrokStat(kind){
+  var c=window._cbrokStatCache||{life:[],period:[],working:[]};
+  var rows=c[kind]||[];
+  if(kind==='working'){
+    var seen={};rows=rows.filter(function(r){var cid=(r['Client ID']||'').trim();if(seen[cid])return false;seen[cid]=1;return true;});
+  }
+  var title=kind==='life'?'Lifetime Client Brokerage':(kind==='working'?'Working Clients':'Client Brokerage Entries');
+  renderStatDetail('cbrokStatDiv',title,rows,[{k:'Date',l:'Date'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Client ID'},{k:'Employee Name',l:'Employee'},{k:'Branch',l:'Branch'},{k:'Amount',l:'Amount',money:true}]);
+}
 function renderFinRecords(){
   var f=filters['finRec']||'month';
   var inc=fDate(allData.Income||[],f),exp=fDate(allData.Expense||[],f);
@@ -2938,8 +3068,8 @@ function renderFinRecords(){
   var tInc=inc.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
   var tExp=exp.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
   document.getElementById('finRecStats').innerHTML=mkStats([
-    {label:'Income',value:fmt(tInc),sub:inc.length+' entries',color:'green'},
-    {label:'Expense',value:fmt(tExp),sub:exp.length+' entries',color:'red'},
+    {label:'Income',value:fmt(tInc),sub:inc.length+' entries',color:'green',onclick:"setFinTab('income')"},
+    {label:'Expense',value:fmt(tExp),sub:exp.length+' entries',color:'red',onclick:"setFinTab('expense')"},
     {label:'Net',value:fmt(tInc-tExp),sub:(tInc-tExp)>=0?'profit':'loss',color:(tInc-tExp)>=0?'blue':'red'}
   ]);
   if(finTab==='income'){
@@ -3398,8 +3528,8 @@ function setTJStat(f,btn){
   btn.classList.add('active');
   renderTradingJournalPage();
 }
-var TJ_STRATEGIES_INTRADAY=['OD (Open Drive)','ODR (Open Drive Rejection)','PPT (Pivot Pressure Trade)','Evening Star','Morning Star','Gap-Up Rejection','Gap-Down Rejection','RCR (Red Candle Retracement)','GCR (Green Candle Retracement)','RCBO (Red Candle Breakout)','GCBO (Green Candle Breakout)','M Pattern Reversal','W Pattern Reversal','CPRBO (CPR Breakout)','Virgin CPR Reversal','Red Candle Reversal','Green Candle Reversal','CPR Reversal','Supply Zone / Demand Zone Breakout'];
-var TJ_STRATEGIES_SWING=['Rectangle','Base on Base (BOB)','Cup with Handle','Flag & Pole','PBC (Pre-Breakout Contractions)','Double Top (M)','Double Bottom (W)','Pushpa Double Top','Pushpa Double Bottom','Head & Shoulders - Reversal','Head & Shoulders - Continuation','Inverted Head & Shoulders - Reversal','Inverted Head & Shoulders - Continuation','Head & Shoulders Failure','Symmetrical Triangle','Ascending Triangle','Right-Angle Triangle','Channel','Golden Crossover','Bollinger Band Setup'];
+var TJ_STRATEGIES_INTRADAY=['OD (Open Drive)','ODR (Open Drive Rejection)','PPT (Pivot Pressure Trade)','Evening Star','Morning Star','Gap-Up Rejection','Gap-Down Rejection','RCR (Red Candle Retracement)','GCR (Green Candle Retracement)','RCBO (Red Candle Breakout)','GCBO (Green Candle Breakout)','M Pattern Reversal','W Pattern Reversal','CPRBO (CPR Breakout)','Virgin CPR Reversal','Red Candle Reversal','Green Candle Reversal','CPR Reversal','Supply Zone / Demand Zone Breakout','Pullback','Other'];
+var TJ_STRATEGIES_SWING=['Rectangle','Base on Base (BOB)','Cup with Handle','Flag & Pole','PBC (Pre-Breakout Contractions)','Double Top (M)','Double Bottom (W)','Pushpa Double Top','Pushpa Double Bottom','Head & Shoulders - Reversal','Head & Shoulders - Continuation','Inverted Head & Shoulders - Reversal','Inverted Head & Shoulders - Continuation','Head & Shoulders Failure','Symmetrical Triangle','Ascending Triangle','Right-Angle Triangle','Channel','Golden Crossover','Bollinger Band Setup','Pullback','Other'];
 function populateTJStrategy(){
   var typeSel=document.getElementById('tj_type');
   var sel=document.getElementById('tj_strategy');
@@ -3408,12 +3538,46 @@ function populateTJStrategy(){
   var prev=sel.value;
   sel.innerHTML=list.map(function(s){return '<option value="'+s+'">'+s+'</option>';}).join('');
   if(list.indexOf(prev)!==-1)sel.value=prev;
+  toggleTJStrategyOther();
+}
+function toggleTJStrategyOther(){
+  var sel=document.getElementById('tj_strategy');
+  var box=document.getElementById('tj_strategyOtherGroup');
+  if(!sel||!box)return;
+  box.style.display=(sel.value==='Other')?'block':'none';
 }
 function toggleTJGroupName(){
   var v=document.getElementById('tj_entryType').value;
   document.getElementById('tj_groupNameGroup').style.display=(v==='Client Group')?'block':'none';
+  if(v==='Client Group')populateTJGroupNames();
   var qg=document.getElementById('tj_qtyGroup');
   if(qg){qg.style.display=(v==='Client Group')?'none':'block';if(v==='Client Group')document.getElementById('tj_qty').value='';}
+}
+function populateTJGroupNames(){
+  var sel=document.getElementById('tj_groupNameSel');
+  if(!sel)return;
+  var names={};
+  (allData.TradingJournal||[]).forEach(function(r){var g=(r['Group Name']||'').trim();if(g)names[g]=1;});
+  var list=Object.keys(names).sort();
+  sel.innerHTML='<option value="">-- Select --</option>'+list.map(function(n){return '<option value="'+n+'">'+n+'</option>';}).join('')+'<option value="__other__">+ Other (naya likhein)</option>';
+}
+function toggleTJGroupOther(){
+  var sel=document.getElementById('tj_groupNameSel');
+  var box=document.getElementById('tj_groupName');
+  if(!sel||!box)return;
+  if(sel.value==='__other__'){box.style.display='block';box.value='';box.focus();}
+  else{box.style.display='none';box.value=sel.value;}
+}
+function toggleTJInstrument(){
+  var instr=document.getElementById('tj_instrument').value;
+  var isFO=(instr==='Future & Option');
+  var foGrp=document.getElementById('tj_foTypeGroup');
+  if(foGrp)foGrp.style.display=isFO?'block':'none';
+  var foType=document.getElementById('tj_foType')?document.getElementById('tj_foType').value:'Future';
+  var isOption=isFO&&foType==='Option';
+  var otG=document.getElementById('tj_optTypeGroup'),skG=document.getElementById('tj_strikeGroup');
+  if(otG)otG.style.display=isOption?'block':'none';
+  if(skG)skG.style.display=isOption?'block':'none';
 }
 function initTradingJournalForm(){
   var e=document.getElementById('tj_date');if(e&&!e.value)e.value=td();
@@ -3425,6 +3589,8 @@ function initTradingJournalForm(){
   }
   var stratSel=document.getElementById('tj_strategy');
   if(stratSel&&!stratSel.options.length)populateTJStrategy();
+  var instSel=document.getElementById('tj_instrument');
+  if(instSel)toggleTJInstrument();
 }
 function submitTrade(){
   var stock=(document.getElementById('tj_stock').value||'').trim().toUpperCase();
@@ -3438,6 +3604,16 @@ function submitTrade(){
   if(!stock||isNaN(entry)||isNaN(sl)||isNaN(t1)||(!isGroup&&isNaN(qty))){showToast('Please fill Stock, Entry Price, Stop Loss, Target 1'+(isGroup?'':' and Quantity'),'error');return;}
   var groupName=isGroup?(document.getElementById('tj_groupName').value||'').trim():'';
   var t2v=document.getElementById('tj_t2').value;
+  var stratSelEl=document.getElementById('tj_strategy');
+  var strategy=stratSelEl?stratSelEl.value:'';
+  if(strategy==='Other')strategy=(document.getElementById('tj_strategyOther').value||'').trim()||'Other';
+  var instrument=document.getElementById('tj_instrument')?document.getElementById('tj_instrument').value:'Stock';
+  var isFO=(instrument==='Future & Option');
+  var foType=isFO?(document.getElementById('tj_foType').value||''):'';
+  var isOption=isFO&&foType==='Option';
+  var optType=isOption?(document.getElementById('tj_optType').value||''):'';
+  var strikeV=isOption?document.getElementById('tj_strike').value:'';
+  if(isOption&&!strikeV){showToast('Please fill Strike Price','error');return;}
   var p={
     action:'addTrade',
     'Date':document.getElementById('tj_date').value||td(),
@@ -3445,7 +3621,8 @@ function submitTrade(){
     'Entry Type':entryType,'Group Name':groupName,
     'Stock':stock,'Direction':document.getElementById('tj_direction').value,
     'Trade Type':document.getElementById('tj_type').value,
-    'Strategy':document.getElementById('tj_strategy').value||'',
+    'Strategy':strategy,
+    'Instrument':instrument,'FO Type':foType,'Option Type':optType,'Strike Price':strikeV?parseFloat(strikeV):'',
     'Entry Price':entry,'SL':sl,'Target1':t1,
     'Target2':t2v?parseFloat(t2v):'',
     'Qty':qty,'Status':'Open','Remarks':(document.getElementById('tj_remarks').value||'').trim()
@@ -3453,7 +3630,7 @@ function submitTrade(){
   postData(p).then(function(r){
     if(r&&r.success){
       showToast('Trade added successfully','success');
-      ['tj_stock','tj_entry','tj_sl','tj_t1','tj_t2','tj_qty','tj_remarks'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+      ['tj_stock','tj_entry','tj_sl','tj_t1','tj_t2','tj_qty','tj_remarks','tj_strategyOther','tj_strike'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
       loadAll();
     } else showToast('Failed to add trade: '+(r&&r.error||''),'error');
   }).catch(function(e){showToast('Error: '+e.message,'error');});
@@ -3487,9 +3664,11 @@ function renderTradingJournalPage(){
   var swing=rows.filter(function(r){return r['Trade Type']==='Swing';}).length;
   var positional=rows.filter(function(r){return r['Trade Type']==='Positional';}).length;
 
+  var openRows=rows.filter(function(r){return openStatuses.indexOf(r['Status'])!==-1;});
   document.getElementById('tjStats').innerHTML=mkStats([
-    {label:'Total Trades',value:rows.length,sub:'Intraday '+intraday+' &#183; Swing '+swing+' &#183; Positional '+positional,color:'blue'},
-    {label:'Closed Trades',value:closed.length,sub:(rows.length-closed.length)+' still open',color:'purple'},
+    {label:'Total Trades',value:rows.length,sub:'Intraday '+intraday+' &#183; Swing '+swing+' &#183; Positional '+positional,color:'blue',onclick:"setTJStat('all',event.currentTarget)"},
+    {label:'Open / Pending',value:openRows.length,sub:'click to view running trades',color:'amber',onclick:"setTJStat('open',event.currentTarget)"},
+    {label:'Closed Trades',value:closed.length,sub:'click to view closed trades',color:'purple',onclick:"setTJStat('closed',event.currentTarget)"},
     {label:'Win Rate',value:winRate+'%',sub:wins.length+' wins out of '+closed.length,color:winRate>=50?'green':'amber'},
     {label:'Total P&L',value:fmt(totalPL),sub:totalPL>=0?'Net profit':'Net loss',color:totalPL>=0?'green':'red'}
   ]);
@@ -3511,10 +3690,11 @@ function mkTradeTable(rows){
     var plPct=parseFloat(r['Result %']);
     var hasPL=!isNaN(pl)&&r['Exit Price']!=='';
     var forLabel=r['Entry Type']==='Client Group'?('Group: '+(r['Group Name']||'-')):'Personal';
+    var instLabel=(r['Instrument']==='Future & Option')?(r['FO Type']==='Option'?(' '+(r['Option Type']||'')+' '+(r['Strike Price']||'')):' FUT'):'';
     h+='<tr>';
     h+='<td>'+(r['Date']||'-')+'</td>';
     if(isAdm)h+='<td>'+(r['Employee Name']||'-')+'</td>';
-    h+='<td style="font-weight:600;">'+(r['Stock']||'-')+'</td>';
+    h+='<td style="font-weight:600;">'+(r['Stock']||'-')+'<span style="color:var(--muted);font-weight:400;font-size:11px;">'+instLabel+'</span></td>';
     h+='<td>'+(r['Direction']||'-')+'</td>';
     h+='<td>'+(r['Trade Type']||'-')+'</td>';
     h+='<td style="font-size:11px;">'+(r['Strategy']||'-')+'</td>';
@@ -3875,13 +4055,55 @@ function renderCallTradePage(){
   var totalClients=cclRows().filter(function(r){return (r['Status']||'Active')==='Active';}).length;
   var calledCount=Object.keys(calledClientSet).length;
   document.getElementById('ctStats').innerHTML=mkStats([
-    {label:'Total Clients in List',value:totalClients,sub:'active calling list',color:'purple'},
-    {label:'Called Today',value:calledCount,sub:todayLogRows.length+' total entries today',color:'blue'},
-    {label:'Traded Today',value:Object.keys(tradedClientSet).length,sub:'unique clients traded today',color:'green'},
-    {label:'Not Called Yet',value:Math.max(totalClients-calledCount,0),sub:'still pending today',color:'amber'}
+    {label:'Total Clients in List',value:totalClients,sub:'active calling list',color:'purple',onclick:"showCTStat('total')"},
+    {label:'Called Today',value:calledCount,sub:todayLogRows.length+' total entries today',color:'blue',onclick:"showCTStat('called')"},
+    {label:'Traded Today',value:Object.keys(tradedClientSet).length,sub:'unique clients traded today',color:'green',onclick:"showCTStat('traded')"},
+    {label:'Not Called Yet',value:Math.max(totalClients-calledCount,0),sub:'still pending today',color:'amber',onclick:"showCTStat('notcalled')"}
   ]);
+  window._ctStatCache={roster:cclRows().filter(function(r){return (r['Status']||'Active')==='Active';}),todayLogRows:todayLogRows};
   document.getElementById('ctCalDiv').innerHTML=mkCalendar(allRows,'ctCal',{moreLabel:'More Calls',clickFn:'showCallDay'});
   document.getElementById('ctTable').innerHTML=mkCallTradeTable(rows);
+  renderCTOpenTrades();
+}
+function renderCTOpenTrades(){
+  var el=document.getElementById('ctOpenTradesDiv');
+  if(!el)return;
+  var openStatuses=['Open','1st Target Done'];
+  var todayStr=td();
+  var rows=(allData.TradingJournal||[]).filter(function(r){return r['Date']===todayStr&&openStatuses.indexOf(r['Status'])!==-1;});
+  if(!rows.length){el.innerHTML='';return;}
+  var h='<div class="day-detail" style="border-color:var(--accent,#3fbf7f);"><h3><span>&#128200; Aaj Ki Open Trades ('+rows.length+') &#8212; client ko yeh trade karwa sakte ho</span></h3>';
+  h+='<table><thead><tr><th>Stock</th><th>Dir</th><th>Type</th><th>Entry</th><th>SL</th><th>T1/T2</th><th>Status</th><th>Employee</th></tr></thead><tbody>';
+  rows.slice().reverse().forEach(function(r){
+    var instLabel=(r['Instrument']==='Future & Option')?(r['FO Type']==='Option'?(' '+(r['Option Type']||'')+' '+(r['Strike Price']||'')):' FUT'):'';
+    h+='<tr>';
+    h+='<td style="font-weight:600;">'+(r['Stock']||'-')+'<span style="color:var(--muted);font-weight:400;font-size:11px;">'+instLabel+'</span></td>';
+    h+='<td>'+(r['Direction']||'-')+'</td>';
+    h+='<td>'+(r['Trade Type']||'-')+'</td>';
+    h+='<td>'+(r['Entry Price']||'-')+'</td>';
+    h+='<td>'+(r['SL']||'-')+'</td>';
+    h+='<td>'+(r['Target1']||'-')+(r['Target2']?'/'+r['Target2']:'')+'</td>';
+    h+='<td><span class="badge '+statusBadgeColor(r['Status'])+'">'+(r['Status']||'Open')+'</span></td>';
+    h+='<td style="color:var(--muted);font-size:12px;">'+(r['Employee Name']||'-')+'</td>';
+    h+='</tr>';
+  });
+  h+='</tbody></table></div>';
+  el.innerHTML=h;
+}
+function showCTStat(kind){
+  var c=window._ctStatCache||{roster:[],todayLogRows:[]};
+  var roster=c.roster,todayLogRows=c.todayLogRows;
+  var rows,title;
+  var cols=[{k:'Client Name',l:'Client'},{k:'Client Phone',l:'Phone'},{k:'Trading Type',l:'Type'},{k:'Employee Name',l:'Employee'}];
+  if(kind==='total'){rows=roster;title='Total Clients in Calling List';}
+  else if(kind==='called'){rows=todayLogRows.filter(function(r){return r['Call Status']==='Called';});title='Called Today';cols=[{k:'Client Name',l:'Client'},{k:'Client Phone',l:'Phone'},{k:'Employee Name',l:'Employee'},{k:'Remarks',l:'Remarks'}];}
+  else if(kind==='traded'){rows=todayLogRows.filter(function(r){return r['Trade Done']==='Yes';});title='Traded Today';cols=[{k:'Client Name',l:'Client'},{k:'Client Phone',l:'Phone'},{k:'Employee Name',l:'Employee'},{k:'Traded In',l:'Traded In'}];}
+  else{
+    var calledIds={};todayLogRows.forEach(function(r){if(r['Call Status']==='Called')calledIds[(r['Client ID']||'').trim()]=1;});
+    rows=roster.filter(function(r){return !calledIds[(r['Client ID']||'').trim()];});
+    title='Not Called Yet';
+  }
+  renderStatDetail('ctStatDiv',title,rows,cols);
 }
 function showCallDay(ds){
   var rows=ctRows().filter(function(r){return r['Date']===ds;});
