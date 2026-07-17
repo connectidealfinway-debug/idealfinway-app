@@ -563,6 +563,13 @@ tbody td{padding:10px 14px;vertical-align:middle;}
       <div id="teamInsTable"></div>
       <h3 style="margin:24px 0 10px;">Students</h3>
       <div id="teamStudTable"></div>
+      <h3 style="margin:24px 0 10px;">Call & Trade Summary</h3>
+      <div class="stats-grid" id="teamCCLStats"></div>
+      <div class="stats-grid" id="teamCCLTypeStats" style="margin-top:10px;"></div>
+      <h3 style="margin:24px 0 10px;">Calling List (Clients)</h3>
+      <div id="teamCCLTable"></div>
+      <h3 style="margin:24px 0 10px;">Call & Trade Log</h3>
+      <div id="teamCTTable"></div>
     </div>
 
     <!-- TRADING JOURNAL -->
@@ -700,7 +707,9 @@ tbody td{padding:10px 14px;vertical-align:middle;}
       <div class="page-header"><h1>Reminders</h1><p>Follow-up notes — set a date, get a popup+sound reminder on that day</p></div>
       <div class="form-card form-grid">
         <div class="form-group"><label>Client / Reference Name</label><input type="text" id="rem_client" placeholder="e.g. Rakesh Kumar"></div>
+        <div class="form-group"><label>Client ID (optional)</label><input type="text" id="rem_cid" placeholder="e.g. FBO1234"></div>
         <div class="form-group"><label>Reminder Date</label><input type="date" id="rem_date"></div>
+        <div class="form-group"><label>Reminder Time (optional)</label><input type="time" id="rem_time"></div>
         <div class="form-group" style="grid-column:1/-1;"><label>Note</label><textarea id="rem_note" placeholder="e.g. Client ne bola 1 mahine baad SIP start karvani hai" rows="2"></textarea></div>
         <button class="btn-save" style="grid-column:1/-1;" onclick="submitReminder()">+ Add Reminder</button>
       </div>
@@ -1485,6 +1494,34 @@ function check315Reminder(){
   document.getElementById('modalBox').innerHTML=h2;
   document.getElementById('modal').className='show';
 }
+function checkReminderTimes(){
+  if(!currentUser)return;
+  var now=new Date();
+  var rows=fEmpStrict(allData.Reminders||[],currentUser.userId);
+  var todayStr=td();
+  var curMins=now.getHours()*60+now.getMinutes();
+  for(var i=0;i<rows.length;i++){
+    var r=rows[i];
+    if(r['Status']==='Done')continue;
+    if((r['Reminder Date']||'')!==todayStr)continue;
+    var t=(r['Reminder Time']||'').trim();
+    if(!t)continue;
+    var parts=t.split(':');
+    var remMins=parseInt(parts[0],10)*60+parseInt(parts[1],10);
+    if(isNaN(remMins)||curMins<remMins)continue;
+    var key='ifw_remtime_'+currentUser.userId+'_'+r['_rowNum']+'_'+todayStr;
+    if(localStorage.getItem(key))continue;
+    localStorage.setItem(key,'1');
+    playAlertSound();
+    var h2='<div class="modal-title">&#128276; Reminder &#8212; '+t+'</div>';
+    h2+='<div style="margin-bottom:6px;font-size:14px;font-weight:600;">'+(r['Client Name']||'-')+(r['Client ID']?' &#8212; '+r['Client ID']:'')+'</div>';
+    h2+='<div style="color:var(--muted,#8a94a6);margin-bottom:14px;font-size:13px;">'+(r['Note']||'')+'</div>';
+    h2+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Baad Mein</button><button class="btn-save" onclick="markReminderDone('+r['_rowNum']+');closeModal();">Done Kar Do</button></div>';
+    document.getElementById('modalBox').innerHTML=h2;
+    document.getElementById('modal').className='show';
+    break;
+  }
+}
 function startApp(){
   document.getElementById('loginWrap').style.display='none';
   document.getElementById('appWrap').style.display='block';
@@ -1502,6 +1539,8 @@ function startApp(){
     window._ifwIntervalSet=true;
     setInterval(check315Reminder,60000);
     setInterval(checkForUpdates,5000);
+    setInterval(checkReminderTimes,60000);
+    checkReminderTimes();
   }
 }
 
@@ -1647,6 +1686,8 @@ function renderMyTeamData(){
     document.getElementById('teamStats').innerHTML='<div class="no-data">Upar se team member select karein</div>';
     document.getElementById('teamBrokTable').innerHTML='';document.getElementById('teamAccTable').innerHTML='';document.getElementById('teamSIPTable').innerHTML='';
     document.getElementById('teamInsTable').innerHTML='';document.getElementById('teamStudTable').innerHTML='';
+    document.getElementById('teamCCLStats').innerHTML='';document.getElementById('teamCCLTypeStats').innerHTML='';
+    document.getElementById('teamCCLTable').innerHTML='';document.getElementById('teamCTTable').innerHTML='';
     return;
   }
   var acc=fEmpStrict(allData.Accounts||[],uid),sip=fEmpStrict(allData.SIP||[],uid),ins=fEmpStrict(allData.Insurance||[],uid),stud=fEmpStrict(allData.Students||[],uid);
@@ -1687,6 +1728,38 @@ function renderMyTeamData(){
   document.getElementById('teamSIPTable').innerHTML=mkTable(sip,[{k:'Date',l:'Date'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Client ID'},{k:'Client Phone',l:'Phone'},{k:'Type',l:'Type'},{k:'Amount',l:'Amount',money:true},{k:'SIP Due Date',l:'Due Date'}],'SIP');
   document.getElementById('teamInsTable').innerHTML=mkTable(ins,[{k:'Date',l:'Date'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Policy ID'},{k:'Client Phone',l:'Phone'},{k:'Type',l:'Type'},{k:'Premium',l:'Premium',money:true}],'Insurance');
   document.getElementById('teamStudTable').innerHTML=mkStudentTable(stud,true);
+
+  var cclAll=fEmpStrict(allData.CallClients||[],uid);
+  var ctAll=fEmpStrict(allData.CallTrade||[],uid);
+  var cclActive=cclAll.filter(function(r){return (r['Status']||'Active')==='Active';});
+  var todayStr2=td();
+  var todayLog2=ctAll.filter(function(r){return r['Date']===todayStr2;});
+  var calledSet2={},tradedSet2={};
+  todayLog2.forEach(function(r){
+    var cid=(r['Client ID']||'').trim();
+    if(r['Call Status']==='Called')calledSet2[cid]=1;
+    if(r['Trade Done']==='Yes')tradedSet2[cid]=1;
+  });
+  var totalActive2=cclActive.length;
+  var calledCount2=Object.keys(calledSet2).length;
+  document.getElementById('teamCCLStats').innerHTML=mkStats([
+    {label:'Total Clients in List',value:totalActive2,sub:'active calling list',color:'purple'},
+    {label:'Called Today',value:calledCount2,sub:todayLog2.length+' total entries today',color:'blue'},
+    {label:'Traded Today',value:Object.keys(tradedSet2).length,sub:'unique clients traded today',color:'green'},
+    {label:'Not Called Yet',value:Math.max(totalActive2-calledCount2,0),sub:'still pending today',color:'amber'}
+  ]);
+  var intradayN2=cclActive.filter(function(r){return (r['Trading Type']||'')==='Intraday';}).length;
+  var swingN2=cclActive.filter(function(r){return (r['Trading Type']||'')==='Swing Trading';}).length;
+  var selfN2=cclActive.filter(function(r){return (r['Trading Type']||'')==='Self Trade';}).length;
+  var breakN2=cclAll.filter(function(r){return (r['Status']||'Active')==='Break';}).length;
+  document.getElementById('teamCCLTypeStats').innerHTML=mkStats([
+    {label:'Intraday Clients',value:intradayN2,sub:'trading type',color:'blue'},
+    {label:'Swing Clients',value:swingN2,sub:'trading type',color:'purple'},
+    {label:'On Break',value:breakN2,sub:'trading se break par',color:'amber'},
+    {label:'Khud Trade Karte Hain',value:selfN2,sub:'call ki zaroorat nahi',color:'green'}
+  ]);
+  document.getElementById('teamCCLTable').innerHTML=mkCallClientTable(cclAll);
+  document.getElementById('teamCTTable').innerHTML=mkCallTradeTable(ctAll.slice().sort(function(a,b){return (a['Date']||'').localeCompare(b['Date']||'');}).slice(-100));
 }
 
 function renderPage(id){
@@ -1943,6 +2016,7 @@ function submitWatchlist(){
       allData.Watchlist.push(p);
       renderWatchlistPage();
       setTimeout(function(){loadAll(2);},600);
+      goToMainAfterSave();
     }
     else showToast('Failed: '+(r&&r.error||''),'error');
   }).catch(function(e){showToast('Error: '+e.message,'error');});
@@ -2015,20 +2089,23 @@ function renderWatchlistPage(){
 }
 function submitReminder(){
   var client=(document.getElementById('rem_client').value||'').trim();
+  var cid=(document.getElementById('rem_cid').value||'').trim();
   var date=document.getElementById('rem_date').value;
+  var time=document.getElementById('rem_time').value||'';
   var note=(document.getElementById('rem_note').value||'').trim();
   if(!date||!note){showToast('Date aur Note dono zaroori hain','error');return;}
   var p={action:'addGeneric',sheet:'Reminders',
     'Date Added':td(),'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch,
-    'Client Name':client,'Note':note,'Reminder Date':date,'Status':'Pending'};
+    'Client Name':client,'Client ID':cid,'Note':note,'Reminder Date':date,'Reminder Time':time,'Status':'Pending'};
   postData(p).then(function(r){
     if(r&&r.success){
       showToast('Reminder set ho gaya','success');
-      document.getElementById('rem_client').value='';document.getElementById('rem_note').value='';document.getElementById('rem_date').value='';
+      document.getElementById('rem_client').value='';document.getElementById('rem_cid').value='';document.getElementById('rem_note').value='';document.getElementById('rem_date').value='';document.getElementById('rem_time').value='';
       if(!allData.Reminders)allData.Reminders=[];
       allData.Reminders.push(p);
       renderRemindersPage();
       setTimeout(function(){loadAll(2);},600);
+      goToMainAfterSave();
     }
     else showToast('Failed: '+(r&&r.error||''),'error');
   }).catch(function(e){showToast('Error: '+e.message,'error');});
@@ -2045,19 +2122,54 @@ function mkRemindersTable(rows,showEmp){
   if(!rows||!rows.length)return '<div class="no-data">Koi reminder nahi hai</div>';
   var todayStr=td();
   var sorted=rows.slice().sort(function(a,b){return (a['Reminder Date']||'').localeCompare(b['Reminder Date']||'');});
-  var h='<table><thead><tr><th>Reminder Date</th>'+(showEmp?'<th>Employee</th>':'')+'<th>Client/Ref</th><th>Note</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+  var h='<table><thead><tr><th>Date</th><th>Time</th>'+(showEmp?'<th>Employee</th>':'')+'<th>Client ID</th><th>Client/Ref</th><th>Note</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
   sorted.forEach(function(r){
     var due=r['Reminder Date']&&r['Reminder Date']<=todayStr&&r['Status']!=='Done';
     h+='<tr'+(due?' style="background:rgba(239,68,68,0.1);"':'')+'>';
     h+='<td>'+(r['Reminder Date']||'-')+'</td>';
+    h+='<td>'+(r['Reminder Time']||'-')+'</td>';
     if(showEmp)h+='<td>'+(r['Employee Name']||'-')+'</td>';
+    h+='<td>'+(r['Client ID']||'-')+'</td>';
     h+='<td>'+(r['Client Name']||'-')+'</td>';
     h+='<td style="font-size:12px;color:var(--muted);white-space:normal;max-width:250px;">'+(r['Note']||'-')+'</td>';
     h+='<td><span class="badge '+(r['Status']==='Done'?'green':(due?'red':'amber'))+'">'+(r['Status']==='Done'?'Done':(due?'Due':'Pending'))+'</span></td>';
-    h+='<td>'+(r['Status']!=='Done'?'<button class="btn-edit" onclick="markReminderDone('+r['_rowNum']+')">&#10003; Done</button> ':'')+'<button class="btn-del" onclick="confirmDel(\'Reminders\','+r['_rowNum']+')">&#128465;</button></td>';
+    h+='<td>'+(r['Status']!=='Done'?'<button class="btn-edit" onclick="markReminderDone('+r['_rowNum']+')">&#10003; Done</button> ':'')+'<button class="btn-edit" onclick="openRemEditModal('+r['_rowNum']+')">&#9998;</button> <button class="btn-del" onclick="confirmDel(\'Reminders\','+r['_rowNum']+')">&#128465;</button></td>';
     h+='</tr>';
   });
   return h+'</tbody></table>';
+}
+function openRemEditModal(rowNum){
+  var row=(allData.Reminders||[]).find(function(r){return String(r['_rowNum'])===String(rowNum);});
+  if(!row){showToast('Reminder not found - reloading','error');loadAll();return;}
+  var html='<div class="modal-title">Edit Reminder</div>';
+  html+='<div class="form-group"><label>Client / Reference Name</label><input type="text" id="rem_e_client" value="'+(row['Client Name']||'')+'"></div>';
+  html+='<div class="form-group"><label>Client ID</label><input type="text" id="rem_e_cid" value="'+(row['Client ID']||'')+'"></div>';
+  html+='<div class="form-group"><label>Reminder Date</label><input type="date" id="rem_e_date" value="'+(row['Reminder Date']||'')+'"></div>';
+  html+='<div class="form-group"><label>Reminder Time</label><input type="time" id="rem_e_time" value="'+(row['Reminder Time']||'')+'"></div>';
+  html+='<div class="form-group"><label>Note</label><textarea id="rem_e_note" rows="2">'+(row['Note']||'')+'</textarea></div>';
+  html+='<div class="form-group"><label>Status</label><select id="rem_e_status"><option value="Pending"'+((row['Status']||'Pending')==='Pending'?' selected':'')+'>Pending</option><option value="Done"'+(row['Status']==='Done'?' selected':'')+'>Done</option></select></div>';
+  html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-danger" onclick="confirmDel(\'Reminders\','+rowNum+')">Delete</button><button class="btn-save" onclick="saveRemEditModal('+rowNum+')">Save</button></div>';
+  document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
+}
+function saveRemEditModal(rowNum){
+  var vals={
+    'Client Name':(document.getElementById('rem_e_client').value||'').trim(),
+    'Client ID':(document.getElementById('rem_e_cid').value||'').trim(),
+    'Reminder Date':document.getElementById('rem_e_date').value,
+    'Reminder Time':document.getElementById('rem_e_time').value||'',
+    'Note':(document.getElementById('rem_e_note').value||'').trim(),
+    'Status':document.getElementById('rem_e_status').value
+  };
+  postData({action:'editRow',sheet:'Reminders',rowNum:rowNum,vals:vals}).then(function(r){
+    closeModal();
+    if(r&&r.success){
+      showToast('Reminder updated','success');
+      patchRowLocal('Reminders',rowNum,vals);
+      renderRemindersPage();
+      setTimeout(function(){loadAll(2);},600);
+    }
+    else showToast('Update failed','error');
+  }).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
 }
 function renderRemindersPage(){
   var isAdm=currentUser&&currentUser.role==='admin';
@@ -2724,11 +2836,17 @@ function patchRowLocal(sheet,rowNum,vals){
     }
   }
 }
+function goToMainAfterSave(){
+  if(!currentUser)return;
+  if(currentUser.role==='admin')showPage('adminDash');
+  else if(currentUser.role==='finance')showPage('finDash');
+  else showPage('empDash');
+}
 function doSubmit(payload,sheet,btnEl,btnTxt,clearFn){
   btnEl.disabled=true;btnEl.textContent='Adding...';
   postData(payload).then(function(r){
     btnEl.disabled=false;btnEl.textContent=btnTxt;
-    if(r&&r.success){showToast('Added successfully!','success');allData[sheet].push(payload);if(clearFn)clearFn();renderPage(curPage());setTimeout(function(){loadAll(2);},600);}
+    if(r&&r.success){showToast('Added successfully!','success');allData[sheet].push(payload);if(clearFn)clearFn();setTimeout(function(){loadAll(2);},600);goToMainAfterSave();}
     else showToast('Failed: '+(r&&r.error||'Unknown'),'error');
   }).catch(function(e){btnEl.disabled=false;btnEl.textContent=btnTxt;showToast('Error: '+e.message,'error');});
 }
@@ -2927,7 +3045,7 @@ function submitAttendance(){
   var p={action:'addAttendance','Date':document.getElementById('att_date').value||td(),'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch,'In Time':document.getElementById('att_in').value||'','Out Time':document.getElementById('att_out').value||'','Status':document.getElementById('att_status').value,'Remarks':document.getElementById('att_remarks').value.trim()};
   var btn=document.querySelector('#page-markAttendance .btn-submit');
   btn.disabled=true;btn.textContent='Marking...';
-  postData(p).then(function(r){btn.disabled=false;btn.textContent='Mark Attendance';if(r&&r.success){showToast('Attendance marked!','success');allData.Attendance.push(p);renderMyAttendance();}else showToast('Failed: '+(r&&r.error||''),'error');}).catch(function(e){btn.disabled=false;btn.textContent='Mark Attendance';showToast('Error: '+e.message,'error');});
+  postData(p).then(function(r){btn.disabled=false;btn.textContent='Mark Attendance';if(r&&r.success){showToast('Attendance marked!','success');allData.Attendance.push(p);renderMyAttendance();goToMainAfterSave();}else showToast('Failed: '+(r&&r.error||''),'error');}).catch(function(e){btn.disabled=false;btn.textContent='Mark Attendance';showToast('Error: '+e.message,'error');});
 }
 
 function initBrokForm(){
@@ -3965,6 +4083,7 @@ function submitTrade(){
       showToast('Trade added successfully','success');
       ['tj_stock','tj_entry','tj_sl','tj_t1','tj_t2','tj_qty','tj_remarks','tj_strategyOther','tj_strike'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
       loadAll();
+      goToMainAfterSave();
     } else showToast('Failed to add trade: '+(r&&r.error||''),'error');
   }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
@@ -4195,6 +4314,7 @@ function submitCallClient(){
       ['ccl_cid','ccl_cname','ccl_cphone','ccl_remarks'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
       if(!allData.CallClients)allData.CallClients=[];
       allData.CallClients.push(p);
+      var cclCard=document.getElementById('cclFormCard');if(cclCard)cclCard.style.display='none';
       renderCallTradePage();
       setTimeout(function(){loadAll(2);},600);
     } else showToast('Failed to add client: '+(r&&r.error||''),'error');
@@ -4525,10 +4645,10 @@ function showCTStat(kind){
   var c=window._ctStatCache||{roster:[],todayLogRows:[]};
   var roster=c.roster,todayLogRows=c.todayLogRows;
   var rows,title;
-  var cols=[{k:'Client Name',l:'Client'},{k:'Client Phone',l:'Phone'},{k:'Trading Type',l:'Type'},{k:'Employee Name',l:'Employee'}];
+  var cols=[{k:'Client ID',l:'Client ID'},{k:'Client Name',l:'Client'},{k:'Client Phone',l:'Phone'},{k:'Trading Type',l:'Type'},{k:'Employee Name',l:'Employee'}];
   if(kind==='total'){rows=roster;title='Total Clients in Calling List';}
-  else if(kind==='called'){rows=todayLogRows.filter(function(r){return r['Call Status']==='Called';});title='Called Today';cols=[{k:'Client Name',l:'Client'},{k:'Client Phone',l:'Phone'},{k:'Employee Name',l:'Employee'},{k:'Remarks',l:'Remarks'}];}
-  else if(kind==='traded'){rows=todayLogRows.filter(function(r){return r['Trade Done']==='Yes';});title='Traded Today';cols=[{k:'Client Name',l:'Client'},{k:'Client Phone',l:'Phone'},{k:'Employee Name',l:'Employee'},{k:'Traded In',l:'Traded In'}];}
+  else if(kind==='called'){rows=todayLogRows.filter(function(r){return r['Call Status']==='Called';});title='Called Today';cols=[{k:'Client ID',l:'Client ID'},{k:'Client Name',l:'Client'},{k:'Client Phone',l:'Phone'},{k:'Employee Name',l:'Employee'},{k:'Remarks',l:'Remarks'}];}
+  else if(kind==='traded'){rows=todayLogRows.filter(function(r){return r['Trade Done']==='Yes';});title='Traded Today';cols=[{k:'Client ID',l:'Client ID'},{k:'Client Name',l:'Client'},{k:'Client Phone',l:'Phone'},{k:'Employee Name',l:'Employee'},{k:'Traded In',l:'Traded In'}];}
   else{
     var calledIds={};todayLogRows.forEach(function(r){if(r['Call Status']==='Called')calledIds[(r['Client ID']||'').trim()]=1;});
     rows=roster.filter(function(r){return !calledIds[(r['Client ID']||'').trim()];});
