@@ -645,12 +645,16 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <div class="form-group"><label>Client Name</label><input type="text" id="ccl_cname" placeholder="Enter client name"></div>
         <div class="form-group"><label>Client Phone</label><input type="tel" id="ccl_cphone" placeholder="10-digit mobile"></div>
         <div class="form-group"><label>Trading Type</label>
-          <select id="ccl_type"><option value="Intraday">Intraday</option><option value="Swing Trading">Swing Trading</option><option value="Long Term Investment">Long Term Investment</option><option value="F&amp;O">F&amp;O</option><option value="Commodity">Commodity</option></select>
+          <select id="ccl_type"><option value="Intraday">Intraday</option><option value="Swing Trading">Swing Trading</option><option value="Long Term Investment">Long Term Investment</option><option value="F&amp;O">F&amp;O</option><option value="Commodity">Commodity</option><option value="Self Trade">Self Trade (Khud Trade Karta Hai)</option></select>
         </div>
+        <div class="form-group"><label>Remarks (optional)</label><textarea id="ccl_remarks" rows="2" placeholder="Koi note ho to yahan likho"></textarea></div>
         <button class="btn-submit" onclick="submitCallClient()">Add to List</button>
       </div>
 
       <div class="stats-grid" id="ctStats"></div><div id="ctStatDiv"></div>
+
+      <div class="stats-grid" id="cclTypeStats" style="margin-top:10px;"></div>
+      <div id="cclFilterLabel" style="font-size:12px;color:var(--accent,#3fbf7f);margin:4px 0 10px;font-weight:600;"></div>
 
       <div class="filter-bar">
         <input class="srch" id="srch-ccl" placeholder="&#128269; Search client..." oninput="renderCallTradePage()">
@@ -757,8 +761,13 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <div class="form-group"><label>Client Name</label><input type="text" id="a_cname" placeholder="Enter client name"></div>
         <div class="form-group"><label>Client ID / Demat No</label><input type="text" id="a_cid" placeholder="e.g. FBO1234"></div>
         <div class="form-group"><label>Client Phone</label><input type="tel" id="a_cphone" placeholder="10-digit mobile"></div>
-        <div class="form-group"><label>Account Status</label>
-          <select id="a_status"><option value="Active">Active</option><option value="Inactive">Inactive</option></select>
+        <div class="form-group"><label>Active In (multiple select kar sakte ho)</label>
+          <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;">
+            <label style="display:flex;align-items:center;gap:5px;font-weight:400;font-size:13px;"><input type="checkbox" id="a_actTrading" style="width:auto;"> Trading</label>
+            <label style="display:flex;align-items:center;gap:5px;font-weight:400;font-size:13px;"><input type="checkbox" id="a_actSIP" style="width:auto;"> SIP</label>
+            <label style="display:flex;align-items:center;gap:5px;font-weight:400;font-size:13px;"><input type="checkbox" id="a_actInvestment" style="width:auto;"> Investment</label>
+          </div>
+          <div style="font-size:11px;color:var(--muted,#8a94a6);margin-top:4px;">Koi bhi select na kare to account Inactive maana jayega</div>
         </div>
         <button class="btn-submit" onclick="submitAccount()">Add Account</button>
       </div>
@@ -2262,8 +2271,12 @@ function mkAccTable(rows,dupSet){
       '<td>'+(isDup?'<span class="dup-badge">&#9888;</span>':'')+cid+'</td>'+
       '<td>'+r['Client Phone']+'</td>';
     var act=(r['Status']||'Active')==='Active';
-    h+='<td><span class="badge '+(act?'green':'red')+'">'+(act?'Active':'Inactive')+'</span></td>';
-    h+='<td><button class="btn-edit" onclick="openEdit(\'Accounts\','+r['_rowNum']+',this.closest(\'tr\'))">&#9998;</button> <button class="btn-del" onclick="confirmDel(\'Accounts\','+r['_rowNum']+')">&#128465;</button></td></tr>';
+    var chips='';
+    if((r['Trading Active']||'')==='Yes')chips+='<span class="badge blue" style="margin-left:3px;font-size:9px;padding:2px 5px;" title="Trading Active">T</span>';
+    if((r['SIP Active']||'')==='Yes')chips+='<span class="badge purple" style="margin-left:3px;font-size:9px;padding:2px 5px;" title="SIP Active">S</span>';
+    if((r['Investment Active']||'')==='Yes')chips+='<span class="badge amber" style="margin-left:3px;font-size:9px;padding:2px 5px;" title="Investment Active">I</span>';
+    h+='<td><span class="badge '+(act?'green':'red')+'">'+(act?'Active':'Inactive')+'</span>'+chips+'</td>';
+    h+='<td><button class="btn-edit" onclick="openAccEditModal('+r['_rowNum']+')">&#9998;</button> <button class="btn-del" onclick="confirmDel(\'Accounts\','+r['_rowNum']+')">&#128465;</button></td></tr>';
   });
   return h+'</tbody></table>';
 }
@@ -2870,8 +2883,12 @@ function submitAccount(){
   var cn=document.getElementById('a_cname').value.trim(),cid=document.getElementById('a_cid').value.trim();
   if(!cn||!cid){showToast('Client Name and ID required','error');return;}
   var fe=forEmpObj('a_forEmp');
-  var p={action:'addAccount','Date':document.getElementById('a_date').value||td(),'Employee ID':fe.id,'Employee Name':fe.name,'Branch':fe.branch,'Client Name':cn,'Client ID':cid,'Client Phone':document.getElementById('a_cphone').value.trim(),'Status':document.getElementById('a_status').value};
-  doSubmit(p,'Accounts',document.querySelector('#page-addAcc .btn-submit'),'Add Account',function(){document.getElementById('a_cname').value='';document.getElementById('a_cid').value='';document.getElementById('a_cphone').value='';});
+  var actTrading=document.getElementById('a_actTrading').checked?'Yes':'No';
+  var actSIP=document.getElementById('a_actSIP').checked?'Yes':'No';
+  var actInv=document.getElementById('a_actInvestment').checked?'Yes':'No';
+  var statusComputed=(actTrading==='Yes'||actSIP==='Yes'||actInv==='Yes')?'Active':'Inactive';
+  var p={action:'addAccount','Date':document.getElementById('a_date').value||td(),'Employee ID':fe.id,'Employee Name':fe.name,'Branch':fe.branch,'Client Name':cn,'Client ID':cid,'Client Phone':document.getElementById('a_cphone').value.trim(),'Status':statusComputed,'Trading Active':actTrading,'SIP Active':actSIP,'Investment Active':actInv};
+  doSubmit(p,'Accounts',document.querySelector('#page-addAcc .btn-submit'),'Add Account',function(){document.getElementById('a_cname').value='';document.getElementById('a_cid').value='';document.getElementById('a_cphone').value='';document.getElementById('a_actTrading').checked=false;document.getElementById('a_actSIP').checked=false;document.getElementById('a_actInvestment').checked=false;});
 }
 
 function submitLead(){
@@ -4096,11 +4113,48 @@ function toggleCCLForm(){
   if(show)initCCLForm();
 }
 var cclShowInactive=false;
+var cclTypeF='all';
 function toggleCCLInactive(){
   cclShowInactive=!cclShowInactive;
   var btn=document.getElementById('ccl_showInactiveBtn');
   if(btn)btn.classList.toggle('active');
   renderCallTradePage();
+}
+function setCCLType(v){
+  cclTypeF=(cclTypeF===v)?'all':v;
+  renderCallTradePage();
+}
+function cclRosterScoped(){
+  var isAdm=currentUser&&currentUser.role==='admin';
+  var rows=allData.CallClients||[];
+  if(isAdm){
+    var sel=document.getElementById('ct_empFilter');
+    var v=sel?sel.value:'';
+    if(v)rows=rows.filter(function(r){return (r['Employee ID']||'').trim()===v;});
+  } else {
+    rows=fEmpStrict(rows,currentUser.userId);
+  }
+  return rows;
+}
+function renderCCLTypeStats(){
+  var el=document.getElementById('cclTypeStats');
+  if(!el)return;
+  var all=cclRosterScoped();
+  var intradayN=all.filter(function(r){return (r['Trading Type']||'')==='Intraday'&&(r['Status']||'Active')==='Active';}).length;
+  var swingN=all.filter(function(r){return (r['Trading Type']||'')==='Swing Trading'&&(r['Status']||'Active')==='Active';}).length;
+  var breakN=all.filter(function(r){return (r['Status']||'Active')==='Break';}).length;
+  var selfN=all.filter(function(r){return (r['Trading Type']||'')==='Self Trade'&&(r['Status']||'Active')==='Active';}).length;
+  el.innerHTML=mkStats([
+    {label:'Intraday Clients',value:intradayN,sub:'calling ke liye click karo',color:'blue',onclick:"setCCLType('intraday')"},
+    {label:'Swing Clients',value:swingN,sub:'calling ke liye click karo',color:'purple',onclick:"setCCLType('swing')"},
+    {label:'On Break',value:breakN,sub:'trading se break par',color:'amber',onclick:"setCCLType('break')"},
+    {label:'Khud Trade Karte Hain',value:selfN,sub:'call ki zaroorat nahi',color:'green',onclick:"setCCLType('selftrade')"}
+  ]);
+  var lbl=document.getElementById('cclFilterLabel');
+  if(lbl){
+    var names={intraday:'Intraday',swing:'Swing',break:'On Break',selftrade:'Khud Trade Karne Wale'};
+    lbl.innerHTML=cclTypeF==='all'?'':('Showing: '+names[cclTypeF]+' &#8212; <span style="cursor:pointer;text-decoration:underline;" onclick="setCCLType(\''+cclTypeF+'\')">Clear Filter</span>');
+  }
 }
 function submitCallClient(){
   var cid=(document.getElementById('ccl_cid').value||'').trim();
@@ -4113,12 +4167,13 @@ function submitCallClient(){
     'Client ID':cid,'Client Name':cname,'Client Phone':cphone,
     'Trading Type':document.getElementById('ccl_type').value,
     'Employee ID':who.id,'Employee Name':who.name,'Branch':who.branch,
-    'Added Date':td(),'Status':'Active'
+    'Added Date':td(),'Status':'Active',
+    'Remarks':(document.getElementById('ccl_remarks').value||'').trim()
   };
   postData(p).then(function(r){
     if(r&&r.success){
       showToast('Client added to calling list','success');
-      ['ccl_cid','ccl_cname','ccl_cphone'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+      ['ccl_cid','ccl_cname','ccl_cphone','ccl_remarks'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
       if(!allData.CallClients)allData.CallClients=[];
       allData.CallClients.push(p);
       renderCallTradePage();
@@ -4127,16 +4182,18 @@ function submitCallClient(){
   }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
 function cclRows(){
-  var isAdm=currentUser&&currentUser.role==='admin';
-  var rows=allData.CallClients||[];
-  if(isAdm){
-    var sel=document.getElementById('ct_empFilter');
-    var v=sel?sel.value:'';
-    if(v)rows=rows.filter(function(r){return (r['Employee ID']||'').trim()===v;});
+  var rows=cclRosterScoped();
+  if(cclTypeF==='break'){
+    rows=rows.filter(function(r){return (r['Status']||'Active')==='Break';});
+  } else if(cclTypeF==='selftrade'){
+    rows=rows.filter(function(r){return (r['Trading Type']||'')==='Self Trade'&&(r['Status']||'Active')==='Active';});
+  } else if(cclTypeF==='intraday'){
+    rows=rows.filter(function(r){return (r['Trading Type']||'')==='Intraday'&&(r['Status']||'Active')==='Active';});
+  } else if(cclTypeF==='swing'){
+    rows=rows.filter(function(r){return (r['Trading Type']||'')==='Swing Trading'&&(r['Status']||'Active')==='Active';});
   } else {
-    rows=fEmpStrict(rows,currentUser.userId);
+    if(!cclShowInactive)rows=rows.filter(function(r){return (r['Status']||'Active')==='Active';});
   }
-  if(!cclShowInactive)rows=rows.filter(function(r){return (r['Status']||'Active')==='Active';});
   return rows;
 }
 function cclTodayStatus(cid){
@@ -4154,15 +4211,21 @@ function mkCallClientTable(rows){
   var h='<table><thead><tr><th>Client ID</th><th>Client Name</th><th>Phone</th><th>Type</th>'+(isAdm?'<th>Employee</th>':'')+'<th>Today Status</th><th>Manage</th></tr></thead><tbody>';
   rows.forEach(function(r){
     var cid=(r['Client ID']||'').trim();
-    var st=cclTodayStatus(cid);
-    var inactive=(r['Status']||'Active')!=='Active';
+    var status=r['Status']||'Active';
+    var onBreak=status==='Break';
+    var inactive=status==='Inactive';
     h+='<tr style="cursor:pointer;'+(inactive?'opacity:.5;':'')+'" onclick="openCallLogModal('+r['_rowNum']+')">';
     h+='<td style="font-weight:600;">'+(r['Client ID']||'-')+'</td>';
-    h+='<td>'+(r['Client Name']||'-')+'</td>';
+    h+='<td>'+(r['Client Name']||'-')+(r['Remarks']?'<br><span style="font-size:10px;color:var(--muted,#8a94a6);">'+r['Remarks']+'</span>':'')+'</td>';
     h+='<td>'+(r['Client Phone']||'-')+'</td>';
     h+='<td>'+(r['Trading Type']||'-')+'</td>';
     if(isAdm)h+='<td>'+(r['Employee Name']||'-')+'</td>';
-    h+='<td><span class="badge '+st.color+'">'+st.label+'</span>'+(st.count>1?' <span style="font-size:10px;color:var(--muted);">('+st.count+' entries)</span>':'')+'</td>';
+    if(onBreak){
+      h+='<td><span class="badge amber">&#9208; On Break</span></td>';
+    } else {
+      var st=cclTodayStatus(cid);
+      h+='<td><span class="badge '+st.color+'">'+st.label+'</span>'+(st.count>1?' <span style="font-size:10px;color:var(--muted);">('+st.count+' entries)</span>':'')+'</td>';
+    }
     h+='<td onclick="event.stopPropagation()">'+(canManage?'<button class="btn-edit" onclick="openCCLManageModal('+r['_rowNum']+')">&#9998;</button>':'&#8212;')+'</td>';
     h+='</tr>';
   });
@@ -4278,14 +4341,15 @@ function openCCLManageModal(rowNum){
   var html='<div class="modal-title">Manage Client &#8212; '+(row['Client Name']||'')+'</div>';
   html+='<div class="form-group"><label>Client Name</label><input type="text" id="ccm_cname" value="'+(row['Client Name']||'')+'"></div>';
   html+='<div class="form-group"><label>Client Phone</label><input type="text" id="ccm_cphone" value="'+(row['Client Phone']||'')+'"></div>';
-  html+='<div class="form-group"><label>Trading Type</label><select id="ccm_type">'+['Intraday','Swing Trading','Long Term Investment','F&O','Commodity'].map(function(t){return '<option value="'+t+'"'+(row['Trading Type']===t?' selected':'')+'>'+t+'</option>';}).join('')+'</select></div>';
+  html+='<div class="form-group"><label>Trading Type</label><select id="ccm_type">'+['Intraday','Swing Trading','Long Term Investment','F&O','Commodity','Self Trade'].map(function(t){return '<option value="'+t+'"'+(row['Trading Type']===t?' selected':'')+'>'+t+'</option>';}).join('')+'</select></div>';
   if(isAdm||team.length){
     var opts='<option value="'+currentUser.userId+'"'+(row['Employee ID']===currentUser.userId?' selected':'')+'>'+currentUser.name+' (Myself)</option>';
     var list=isAdm?employees:team;
     list.forEach(function(e){opts+='<option value="'+e['Employee ID']+'"'+(row['Employee ID']===e['Employee ID']?' selected':'')+'>'+e['Name']+'</option>';});
     html+='<div class="form-group"><label>Assigned Employee</label><select id="ccm_forEmp">'+opts+'</select></div>';
   }
-  html+='<div class="form-group"><label>Status</label><select id="ccm_status"><option value="Active"'+((row['Status']||'Active')==='Active'?' selected':'')+'>Active</option><option value="Inactive"'+(row['Status']==='Inactive'?' selected':'')+'>Inactive</option></select></div>';
+  html+='<div class="form-group"><label>Status</label><select id="ccm_status"><option value="Active"'+((row['Status']||'Active')==='Active'?' selected':'')+'>Active</option><option value="Break"'+(row['Status']==='Break'?' selected':'')+'>On Break</option><option value="Inactive"'+(row['Status']==='Inactive'?' selected':'')+'>Inactive</option></select></div>';
+  html+='<div class="form-group"><label>Remarks</label><textarea id="ccm_remarks" rows="2" placeholder="e.g. 1 month break, restart after Diwali">'+(row['Remarks']||'')+'</textarea></div>';
   html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-danger" onclick="confirmDel(\'CallClients\','+rowNum+')">Delete</button><button class="btn-save" onclick="saveCCLManageModal('+rowNum+')">Save</button></div>';
   document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
 }
@@ -4294,7 +4358,8 @@ function saveCCLManageModal(rowNum){
     'Client Name':(document.getElementById('ccm_cname').value||'').trim(),
     'Client Phone':(document.getElementById('ccm_cphone').value||'').trim(),
     'Trading Type':document.getElementById('ccm_type').value,
-    'Status':document.getElementById('ccm_status').value
+    'Status':document.getElementById('ccm_status').value,
+    'Remarks':(document.getElementById('ccm_remarks').value||'').trim()
   };
   var forSel=document.getElementById('ccm_forEmp');
   if(forSel){
@@ -4303,7 +4368,52 @@ function saveCCLManageModal(rowNum){
   }
   postData({action:'editRow',sheet:'CallClients',rowNum:rowNum,vals:vals}).then(function(r){
     closeModal();
-    if(r&&r.success){showToast('Client updated','success');loadAll();}
+    if(r&&r.success){
+      showToast('Client updated','success');
+      patchRowLocal('CallClients',rowNum,vals);
+      renderCallTradePage();
+      setTimeout(function(){loadAll(2);},600);
+    }
+    else showToast('Update failed','error');
+  }).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
+}
+function openAccEditModal(rowNum){
+  var row=(allData.Accounts||[]).find(function(r){return String(r['_rowNum'])===String(rowNum);});
+  if(!row){showToast('Account not found - reloading','error');loadAll();return;}
+  var html='<div class="modal-title">Edit Account &#8212; '+(row['Client Name']||'')+'</div>';
+  html+='<div class="form-group"><label>Date</label><input type="date" id="ae_date" value="'+(row['Date']||'')+'"></div>';
+  html+='<div class="form-group"><label>Client Name</label><input type="text" id="ae_cname" value="'+(row['Client Name']||'')+'"></div>';
+  html+='<div class="form-group"><label>Client ID / Demat No</label><input type="text" id="ae_cid" value="'+(row['Client ID']||'')+'"></div>';
+  html+='<div class="form-group"><label>Client Phone</label><input type="text" id="ae_cphone" value="'+(row['Client Phone']||'')+'"></div>';
+  html+='<div class="form-group"><label>Active In</label><div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;">';
+  html+='<label style="display:flex;align-items:center;gap:5px;font-weight:400;font-size:13px;"><input type="checkbox" id="ae_actTrading" style="width:auto;"'+((row['Trading Active']||'')==='Yes'?' checked':'')+'> Trading</label>';
+  html+='<label style="display:flex;align-items:center;gap:5px;font-weight:400;font-size:13px;"><input type="checkbox" id="ae_actSIP" style="width:auto;"'+((row['SIP Active']||'')==='Yes'?' checked':'')+'> SIP</label>';
+  html+='<label style="display:flex;align-items:center;gap:5px;font-weight:400;font-size:13px;"><input type="checkbox" id="ae_actInvestment" style="width:auto;"'+((row['Investment Active']||'')==='Yes'?' checked':'')+'> Investment</label>';
+  html+='</div><div style="font-size:11px;color:var(--muted,#8a94a6);margin-top:4px;">Koi bhi select na kare to account Inactive maana jayega</div></div>';
+  html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-danger" onclick="confirmDel(\'Accounts\','+rowNum+')">Delete</button><button class="btn-save" onclick="saveAccEditModal('+rowNum+')">Save</button></div>';
+  document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
+}
+function saveAccEditModal(rowNum){
+  var actTrading=document.getElementById('ae_actTrading').checked?'Yes':'No';
+  var actSIP=document.getElementById('ae_actSIP').checked?'Yes':'No';
+  var actInv=document.getElementById('ae_actInvestment').checked?'Yes':'No';
+  var statusComputed=(actTrading==='Yes'||actSIP==='Yes'||actInv==='Yes')?'Active':'Inactive';
+  var vals={
+    'Date':document.getElementById('ae_date').value,
+    'Client Name':(document.getElementById('ae_cname').value||'').trim(),
+    'Client ID':(document.getElementById('ae_cid').value||'').trim(),
+    'Client Phone':(document.getElementById('ae_cphone').value||'').trim(),
+    'Trading Active':actTrading,'SIP Active':actSIP,'Investment Active':actInv,
+    'Status':statusComputed
+  };
+  postData({action:'editRow',sheet:'Accounts',rowNum:rowNum,vals:vals}).then(function(r){
+    closeModal();
+    if(r&&r.success){
+      showToast('Account updated','success');
+      patchRowLocal('Accounts',rowNum,vals);
+      renderPage(curPage());
+      setTimeout(function(){loadAll(2);},600);
+    }
     else showToast('Update failed','error');
   }).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
 }
@@ -4334,6 +4444,7 @@ function ctStatusLabel(r){
 }
 function renderCallTradePage(){
   initCallTradeForm();
+  renderCCLTypeStats();
   var cRows=cclRows();
   var q2=getSrch('srch-ccl');
   var filteredRoster=srchFilter(cRows,q2,['Client ID','Client Name','Client Phone']);
@@ -4352,7 +4463,7 @@ function renderCallTradePage(){
     if(r['Call Status']==='Called')calledClientSet[cid]=1;
     if(r['Trade Done']==='Yes')tradedClientSet[cid]=1;
   });
-  var totalClients=cclRows().filter(function(r){return (r['Status']||'Active')==='Active';}).length;
+  var totalClients=cclRosterScoped().filter(function(r){return (r['Status']||'Active')==='Active';}).length;
   var calledCount=Object.keys(calledClientSet).length;
   document.getElementById('ctStats').innerHTML=mkStats([
     {label:'Total Clients in List',value:totalClients,sub:'active calling list',color:'purple',onclick:"showCTStat('total')"},
@@ -4360,7 +4471,7 @@ function renderCallTradePage(){
     {label:'Traded Today',value:Object.keys(tradedClientSet).length,sub:'unique clients traded today',color:'green',onclick:"showCTStat('traded')"},
     {label:'Not Called Yet',value:Math.max(totalClients-calledCount,0),sub:'still pending today',color:'amber',onclick:"showCTStat('notcalled')"}
   ]);
-  window._ctStatCache={roster:cclRows().filter(function(r){return (r['Status']||'Active')==='Active';}),todayLogRows:todayLogRows};
+  window._ctStatCache={roster:cclRosterScoped().filter(function(r){return (r['Status']||'Active')==='Active';}),todayLogRows:todayLogRows};
   document.getElementById('ctCalDiv').innerHTML=mkCalendar(allRows,'ctCal',{moreLabel:'More Calls',clickFn:'showCallDay'});
   document.getElementById('ctTable').innerHTML=mkCallTradeTable(rows);
   renderCTOpenTrades();
