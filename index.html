@@ -291,9 +291,18 @@ tbody td{padding:10px 14px;vertical-align:middle;}
 
   <main id="main">
 
+    <div id="announceBanner" style="display:none;background:linear-gradient(90deg,#f59e0b,#ef4444);color:#111;font-weight:700;padding:10px 16px;border-radius:8px;margin-bottom:14px;align-items:center;gap:10px;"></div>
+
     <!-- ADMIN DASHBOARD -->
     <div class="page" id="page-adminDash">
       <div class="page-header"><h1>Admin Dashboard</h1><p>Overall performance overview</p></div>
+      <div class="form-card" style="margin-bottom:16px;">
+        <div class="form-group"><label>&#128227; Send Announcement to All Employees</label>
+          <textarea id="ann_msg" placeholder="e.g. Aaj ka target hai... / RELIANCE pe focus karo aaj / Sabko motivate karna hai" rows="2"></textarea>
+        </div>
+        <button class="btn-save" onclick="sendAnnouncement()">&#128276; Send to Everyone</button>
+        <div id="announceAdminList" style="margin-top:10px;"></div>
+      </div>
       <div class="filter-bar">
         <button class="filter-btn active" onclick="setDashF('today',this)">Today</button>
         <button class="filter-btn" onclick="setDashF('week',this)">This Week</button>
@@ -626,8 +635,9 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         </div>
       </div>
 
-      <div style="margin-bottom:16px;">
+      <div style="margin-bottom:16px;display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;">
         <button class="btn-submit" style="width:auto;display:inline-block;padding:10px 20px;" onclick="toggleCCLForm()">&#10133; Add Client to Calling List</button>
+        <div id="ctOpenTradesDiv" style="flex:1;min-width:240px;"></div>
       </div>
       <div class="form-card form-grid" id="cclFormCard" style="display:none;">
         <div class="form-group" id="ccl_forEmpGroup" style="display:none"><label>Kis Employee Ke Liye?</label><select id="ccl_forEmp"></select></div>
@@ -641,8 +651,6 @@ tbody td{padding:10px 14px;vertical-align:middle;}
       </div>
 
       <div class="stats-grid" id="ctStats"></div><div id="ctStatDiv"></div>
-
-      <div id="ctOpenTradesDiv" style="margin:14px 0;"></div>
 
       <div class="filter-bar">
         <input class="srch" id="srch-ccl" placeholder="&#128269; Search client..." oninput="renderCallTradePage()">
@@ -669,12 +677,16 @@ tbody td{padding:10px 14px;vertical-align:middle;}
       <div class="page-header"><h1>Watchlist</h1><p>Next-day trade prep — stocks to watch, star the must-buy picks</p></div>
       <div class="form-card form-grid">
         <div class="form-group"><label>Stock</label><input type="text" id="wl_stock" placeholder="e.g. RELIANCE" style="text-transform:uppercase;"></div>
+        <div class="form-group"><label>Pattern</label><select id="wl_pattern" onchange="toggleWLPatternOther()"></select></div>
+        <div class="form-group" id="wl_patternOtherGroup" style="display:none;"><label>Pattern (type)</label><input type="text" id="wl_patternOther" placeholder="Custom pattern"></div>
         <div class="form-group" style="grid-column:1/-1;"><label>Notes</label><textarea id="wl_notes" placeholder="e.g. Breakout hua hai, Flag & Pole pattern bana hai" rows="2"></textarea></div>
+        <div class="form-group" style="display:flex;align-items:center;gap:8px;"><label style="margin:0;display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="wl_star" style="width:16px;height:16px;">&#11088; Must Watch (Star)</label></div>
         <button class="btn-save" style="grid-column:1/-1;" onclick="submitWatchlist()">+ Add to Watchlist</button>
       </div>
       <div class="filter-bar">
         <input class="srch" id="srch-wl" placeholder="&#128269; Search stock..." oninput="renderWatchlistPage()">
       </div>
+      <div id="wlCalDiv"></div><div id="wlDayDiv"></div>
       <div class="stats-grid" id="wlStats"></div><div id="wlStatDiv"></div>
       <div class="table-wrap"><div class="table-inner" id="wlTable"></div></div>
     </div>
@@ -1176,16 +1188,17 @@ var API='https://script.google.com/macros/s/AKfycbwzCV6-slD3xxZGDrGCa80GAOfEX-JT
 var ADMIN_ID='directorravikant.idealfinway';
 var ADMIN_PASS='drrk@1401';
 var currentUser=null;
-var allData={Brokerage:[],ClientBrokerage:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[],Meetings:[],Income:[],Expense:[],Hisab:[],TradingJournal:[],CallTrade:[],CallClients:[],Watchlist:[],Reminders:[]};
+var allData={Brokerage:[],ClientBrokerage:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[],Meetings:[],Income:[],Expense:[],Hisab:[],TradingJournal:[],CallTrade:[],CallClients:[],Watchlist:[],Reminders:[],Announcements:[]};
 var employees=[];
 var filters={};
 var accStat='all',myAccStat='all',dashF='today',accDupOnly=false,teamWorkingOnly=false;
 var leadCatF='all',myLeadCatF='all';
 var leadConvF='all',myLeadConvF='all',meetConvF='all',myMeetConvF='all';
+var wlStatF='all';
 function setLeadConv(v,varName){if(varName==='leadConvF')leadConvF=v;else myLeadConvF=v;renderPage(curPage());}
 function setMeetConv(v,varName){if(varName==='meetConvF')meetConvF=v;else myMeetConvF=v;renderPage(curPage());}
 var finTab='income';
-var calStates={};['brok','myBrok','sipCal','mySipCal','meetCal','myMeetCal','cbrok','aleadsCal','myLeadsCal'].forEach(function(k){calStates[k]={year:new Date().getFullYear(),month:new Date().getMonth()};});
+var calStates={};['brok','myBrok','sipCal','mySipCal','meetCal','myMeetCal','cbrok','aleadsCal','myLeadsCal','wlCal'].forEach(function(k){calStates[k]={year:new Date().getFullYear(),month:new Date().getMonth()};});
 
 function td(){return new Date().toISOString().split('T')[0];}
 function fmt(n){var v=parseFloat(n)||0;return '₹'+v.toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:2});}
@@ -1479,7 +1492,7 @@ function startApp(){
 }
 
 function logout(){
-  currentUser=null;autoPunched=false;allData={Brokerage:[],ClientBrokerage:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[],Meetings:[],Income:[],Expense:[],Hisab:[],TradingJournal:[],CallTrade:[],CallClients:[],Watchlist:[],Reminders:[]};
+  currentUser=null;autoPunched=false;allData={Brokerage:[],ClientBrokerage:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[],Meetings:[],Income:[],Expense:[],Hisab:[],TradingJournal:[],CallTrade:[],CallClients:[],Watchlist:[],Reminders:[],Announcements:[]};
   document.getElementById('loginWrap').style.display='flex';
   document.getElementById('appWrap').style.display='none';
   document.getElementById('adminNav').style.display='none';
@@ -1537,9 +1550,10 @@ function loadAll(attempt){
         CallTrade:r.callTrade||r.CallTrade||[],
         CallClients:r.callClients||r.CallClients||[],
         Watchlist:r.watchlist||r.Watchlist||[],
-        Reminders:r.reminders||r.Reminders||[]
+        Reminders:r.reminders||r.Reminders||[],
+        Announcements:r.announcements||r.Announcements||[]
       };
-      saveCache();checkSIPAlerts();autoPunchIn();renderPage(curPage());loadEmps();setTimeout(checkDueTomorrowPopup,600);setTimeout(check315Reminder,900);
+      saveCache();checkSIPAlerts();autoPunchIn();renderPage(curPage());loadEmps();setTimeout(checkDueTomorrowPopup,600);setTimeout(check315Reminder,900);renderAnnounceBanner();
     }else if(attempt<3){
       setTimeout(function(){loadAll(attempt+1);},4000);
     }else{
@@ -1868,22 +1882,58 @@ function showMySIPDay(ds){
   h+='</div>';
   var el=document.getElementById('mySipDayDiv');el.innerHTML=h;el.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
+function populateWLPattern(){
+  var sel=document.getElementById('wl_pattern');
+  if(!sel||sel.options.length)return;
+  var list=TJ_STRATEGIES_SWING;
+  sel.innerHTML=list.map(function(s){return '<option value="'+s+'">'+s+'</option>';}).join('');
+}
+function toggleWLPatternOther(){
+  var sel=document.getElementById('wl_pattern');
+  var box=document.getElementById('wl_patternOtherGroup');
+  if(!sel||!box)return;
+  box.style.display=(sel.value==='Other')?'block':'none';
+}
 function submitWatchlist(){
   var stock=(document.getElementById('wl_stock').value||'').trim().toUpperCase();
   var notes=(document.getElementById('wl_notes').value||'').trim();
+  var patSel=document.getElementById('wl_pattern');
+  var pattern=patSel?patSel.value:'';
+  if(pattern==='Other')pattern=(document.getElementById('wl_patternOther').value||'').trim()||'Other';
+  var starred=document.getElementById('wl_star').checked?'Yes':'No';
   if(!stock){showToast('Stock name daalo','error');return;}
   var p={action:'addGeneric',sheet:'Watchlist',
     'Date Added':td(),'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch,
-    'Stock':stock,'Notes':notes,'Starred':'No','Status':'Active'};
+    'Stock':stock,'Notes':notes,'Pattern':pattern,'Starred':starred,'Traded':'No','Status':'Active'};
   postData(p).then(function(r){
-    if(r&&r.success){showToast('Watchlist me add ho gaya','success');document.getElementById('wl_stock').value='';document.getElementById('wl_notes').value='';loadAll();}
+    if(r&&r.success){
+      showToast('Watchlist me add ho gaya','success');
+      document.getElementById('wl_stock').value='';document.getElementById('wl_notes').value='';
+      document.getElementById('wl_star').checked=false;
+      var po=document.getElementById('wl_patternOther');if(po)po.value='';
+      if(!allData.Watchlist)allData.Watchlist=[];
+      allData.Watchlist.push(p);
+      renderWatchlistPage();
+      setTimeout(function(){loadAll(2);},600);
+    }
     else showToast('Failed: '+(r&&r.error||''),'error');
   }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
 function toggleWatchlistStar(rowNum,current){
-  postData({action:'editRow',sheet:'Watchlist',rowNum:rowNum,vals:{'Starred':current==='Yes'?'No':'Yes'}}).then(function(r){
-    if(r&&r.success){loadAll();}
-    else showToast('Failed: '+(r&&r.error||''),'error');
+  var v=current==='Yes'?'No':'Yes';
+  patchRowLocal('Watchlist',rowNum,{'Starred':v});renderWatchlistPage();
+  postData({action:'editRow',sheet:'Watchlist',rowNum:rowNum,vals:{'Starred':v}}).then(function(r){
+    if(!r||!r.success){showToast('Failed: '+(r&&r.error||''),'error');patchRowLocal('Watchlist',rowNum,{'Starred':current});renderWatchlistPage();}
+    else setTimeout(function(){loadAll(2);},600);
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+function toggleWatchlistTraded(rowNum,current){
+  var v=current==='Yes'?'No':'Yes';
+  patchRowLocal('Watchlist',rowNum,{'Traded':v});renderWatchlistPage();
+  showToast(v==='Yes'?'Traded marked \u2713':'Not Traded marked','success');
+  postData({action:'editRow',sheet:'Watchlist',rowNum:rowNum,vals:{'Traded':v}}).then(function(r){
+    if(!r||!r.success){showToast('Failed: '+(r&&r.error||''),'error');patchRowLocal('Watchlist',rowNum,{'Traded':current});renderWatchlistPage();}
+    else setTimeout(function(){loadAll(2);},600);
   }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
 function mkWatchlistTable(rows,showEmp){
@@ -1893,31 +1943,47 @@ function mkWatchlistTable(rows,showEmp){
     if(as!==bs)return bs-as;
     return (b['Date Added']||'').localeCompare(a['Date Added']||'');
   });
-  var h='<table><thead><tr><th></th><th>Date</th>'+(showEmp?'<th>Employee</th>':'')+'<th>Stock</th><th>Notes</th><th>Actions</th></tr></thead><tbody>';
+  var h='<table><thead><tr><th></th><th>Date</th>'+(showEmp?'<th>Employee</th>':'')+'<th>Stock</th><th>Pattern</th><th>Notes</th><th>Traded?</th><th>Actions</th></tr></thead><tbody>';
   sorted.forEach(function(r){
     var starred=r['Starred']==='Yes';
+    var traded=r['Traded']==='Yes';
     h+='<tr'+(starred?' style="background:rgba(245,158,11,0.12);"':'')+'>';
     h+='<td><span style="cursor:pointer;font-size:16px;color:'+(starred?'#f59e0b':'var(--muted)')+';" onclick="toggleWatchlistStar('+r['_rowNum']+',\''+(r['Starred']||'No')+'\')">'+(starred?'&#9733;':'&#9734;')+'</span></td>';
     h+='<td>'+(r['Date Added']||'-')+'</td>';
     if(showEmp)h+='<td>'+(r['Employee Name']||'-')+'</td>';
     h+='<td style="font-weight:600;">'+(r['Stock']||'-')+'</td>';
-    h+='<td style="font-size:12px;color:var(--muted);white-space:normal;max-width:250px;">'+(r['Notes']||'-')+'</td>';
+    h+='<td style="font-size:11px;color:var(--muted);">'+(r['Pattern']||'-')+'</td>';
+    h+='<td style="font-size:12px;color:var(--muted);white-space:normal;max-width:220px;">'+(r['Notes']||'-')+'</td>';
+    h+='<td><span class="badge '+(traded?'green':'amber')+'" style="cursor:pointer;" onclick="toggleWatchlistTraded('+r['_rowNum']+',\''+(r['Traded']||'No')+'\')">'+(traded?'&#10003; Traded':'Not Traded')+'</span></td>';
     h+='<td><button class="btn-del" onclick="confirmDel(\'Watchlist\','+r['_rowNum']+')">&#128465;</button></td>';
     h+='</tr>';
   });
   return h+'</tbody></table>';
 }
+function showWLDay(ds){
+  var isAdm=currentUser&&currentUser.role==='admin';
+  var all=isAdm?(allData.Watchlist||[]):fEmpStrict(allData.Watchlist||[],currentUser.userId);
+  var rows=all.filter(function(r){return r['Date Added']===ds;});
+  var h='<div class="day-detail"><h3><span>&#128197; '+ds+' &#8212; '+rows.length+' stocks flagged</span><span class="day-close" onclick="document.getElementById(\'wlDayDiv\').innerHTML=\'\'">&#10005; Close</span></h3>';
+  h+=mkWatchlistTable(rows,isAdm);
+  h+='</div>';
+  var el=document.getElementById('wlDayDiv');el.innerHTML=h;el.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function setWLFilter(v){wlStatF=v;renderWatchlistPage();}
 function renderWatchlistPage(){
+  populateWLPattern();
   var isAdm=currentUser&&currentUser.role==='admin';
   var rows=isAdm?(allData.Watchlist||[]):fEmpStrict(allData.Watchlist||[],currentUser.userId);
   rows=rows.filter(function(r){return (r['Status']||'Active')==='Active';});
-  var q=getSrch('srch-wl');rows=srchFilter(rows,q,['Stock','Notes','Employee Name']);
-  var starredCount=rows.filter(function(r){return r['Starred']==='Yes';}).length;
+  var q=getSrch('srch-wl');rows=srchFilter(rows,q,['Stock','Notes','Employee Name','Pattern']);
+  var starredRows=rows.filter(function(r){return r['Starred']==='Yes';});
+  var shown=wlStatF==='starred'?starredRows:rows;
+  document.getElementById('wlCalDiv').innerHTML=mkCalendar(isAdm?(allData.Watchlist||[]):fEmpStrict(allData.Watchlist||[],currentUser.userId),'wlCal',{moreLabel:'More Stocks',clickFn:'showWLDay'});
   document.getElementById('wlStats').innerHTML=mkStats([
-    {label:'Total Stocks',value:rows.length,sub:'watchlist',color:'blue'},
-    {label:'Starred (Must Watch)',value:starredCount,sub:'priority buys',color:'amber'}
+    {label:'Total Stocks',value:rows.length,sub:'click to view all',color:'blue',onclick:"setWLFilter('all')"},
+    {label:'Starred (Must Watch)',value:starredRows.length,sub:'click to view starred',color:'amber',onclick:"setWLFilter('starred')"}
   ]);
-  document.getElementById('wlTable').innerHTML=mkWatchlistTable(rows,isAdm);
+  document.getElementById('wlTable').innerHTML=mkWatchlistTable(shown,isAdm);
 }
 function submitReminder(){
   var client=(document.getElementById('rem_client').value||'').trim();
@@ -1928,14 +1994,23 @@ function submitReminder(){
     'Date Added':td(),'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch,
     'Client Name':client,'Note':note,'Reminder Date':date,'Status':'Pending'};
   postData(p).then(function(r){
-    if(r&&r.success){showToast('Reminder set ho gaya','success');document.getElementById('rem_client').value='';document.getElementById('rem_note').value='';document.getElementById('rem_date').value='';loadAll();}
+    if(r&&r.success){
+      showToast('Reminder set ho gaya','success');
+      document.getElementById('rem_client').value='';document.getElementById('rem_note').value='';document.getElementById('rem_date').value='';
+      if(!allData.Reminders)allData.Reminders=[];
+      allData.Reminders.push(p);
+      renderRemindersPage();
+      setTimeout(function(){loadAll(2);},600);
+    }
     else showToast('Failed: '+(r&&r.error||''),'error');
   }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
 function markReminderDone(rowNum){
+  patchRowLocal('Reminders',rowNum,{'Status':'Done'});renderRemindersPage();
+  showToast('Reminder done!','success');
   postData({action:'editRow',sheet:'Reminders',rowNum:rowNum,vals:{'Status':'Done'}}).then(function(r){
-    if(r&&r.success){showToast('Reminder done!','success');loadAll();}
-    else showToast('Failed: '+(r&&r.error||''),'error');
+    if(!r||!r.success){showToast('Failed: '+(r&&r.error||''),'error');patchRowLocal('Reminders',rowNum,{'Status':'Pending'});renderRemindersPage();}
+    else setTimeout(function(){loadAll(2);},600);
   }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
 function mkRemindersTable(rows,showEmp){
@@ -1970,6 +2045,57 @@ function renderRemindersPage(){
   ]);
   document.getElementById('remTable').innerHTML=mkRemindersTable(rows,isAdm);
 }
+function sendAnnouncement(){
+  var msg=(document.getElementById('ann_msg').value||'').trim();
+  if(!msg){showToast('Message likho','error');return;}
+  var p={action:'addGeneric',sheet:'Announcements','Date':td(),'Message':msg,'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Active':'Yes'};
+  postData(p).then(function(r){
+    if(r&&r.success){
+      showToast('Announcement sabko bhej diya!','success');
+      document.getElementById('ann_msg').value='';
+      if(!allData.Announcements)allData.Announcements=[];
+      allData.Announcements.push(p);
+      renderAnnounceAdminBox();renderAnnounceBanner();
+      setTimeout(function(){loadAll(2);},600);
+    }
+    else showToast('Failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+function deactivateAnnouncement(rowNum){
+  patchRowLocal('Announcements',rowNum,{'Active':'No'});renderAnnounceAdminBox();renderAnnounceBanner();
+  postData({action:'editRow',sheet:'Announcements',rowNum:rowNum,vals:{'Active':'No'}}).then(function(r){
+    if(r&&r.success){showToast('Announcement hata diya','success');setTimeout(function(){loadAll(2);},600);}
+    else showToast('Failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+function renderAnnounceAdminBox(){
+  var el=document.getElementById('announceAdminList');
+  if(!el||!currentUser||currentUser.role!=='admin')return;
+  var rows=(allData.Announcements||[]).filter(function(r){return r['Active']==='Yes';});
+  if(!rows.length){el.innerHTML='<div style="font-size:12px;color:var(--muted);">Koi active announcement nahi hai abhi</div>';return;}
+  var h='';
+  rows.slice().reverse().forEach(function(r){
+    h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.08);font-size:12px;">'
+      +'<span>'+(r['Message']||'')+' <span style="color:var(--muted);">('+(r['Date']||'')+')</span></span>'
+      +'<button class="btn-del" onclick="deactivateAnnouncement('+r['_rowNum']+')" style="font-size:11px;">End</button>'
+      +'</div>';
+  });
+  el.innerHTML=h;
+}
+function renderAnnounceBanner(){
+  var el=document.getElementById('announceBanner');
+  if(!el||!currentUser)return;
+  var active=(allData.Announcements||[]).filter(function(r){return r['Active']==='Yes';});
+  if(!active.length){el.style.display='none';el.innerHTML='';return;}
+  var latest=active[active.length-1];
+  el.style.display='flex';
+  el.innerHTML='<span>&#128227;</span><span>'+(latest['Message']||'')+'</span><span style="margin-left:auto;font-size:11px;font-weight:400;opacity:0.8;">&#8212; '+(latest['Employee Name']||'Admin')+'</span>';
+  var key='ifw_ann_'+currentUser.userId+'_'+(latest['_rowNum']||latest['Date']);
+  if(!localStorage.getItem(key)){
+    localStorage.setItem(key,'1');
+    if(typeof playAlertSound==='function')playAlertSound();
+  }
+}
 function srchFilter(rows,q,fields){
   if(!q)return rows;
   return rows.filter(function(r){return fields.some(function(f){return (r[f]||'').toLowerCase().indexOf(q)!==-1;});});
@@ -1978,6 +2104,7 @@ function srchFilter(rows,q,fields){
 /* ===== RENDER FUNCTIONS ===== */
 
 function renderAdminDash(){
+  renderAnnounceAdminBox();
   var brok=fDate(allData.Brokerage||[],dashF);
   var sip=fDate(allData.SIP||[],dashF);
   var ins=fDate(allData.Insurance||[],dashF);
@@ -2556,11 +2683,20 @@ function updateSIPLabel(){
 
 /* ===== SUBMIT FUNCTIONS ===== */
 
+function patchRowLocal(sheet,rowNum,vals){
+  var rows=allData[sheet]||[];
+  for(var i=0;i<rows.length;i++){
+    if(String(rows[i]['_rowNum'])===String(rowNum)){
+      Object.keys(vals).forEach(function(k){rows[i][k]=vals[k];});
+      break;
+    }
+  }
+}
 function doSubmit(payload,sheet,btnEl,btnTxt,clearFn){
   btnEl.disabled=true;btnEl.textContent='Adding...';
   postData(payload).then(function(r){
     btnEl.disabled=false;btnEl.textContent=btnTxt;
-    if(r&&r.success){showToast('Added successfully!','success');allData[sheet].push(payload);if(clearFn)clearFn();setTimeout(function(){loadAll(2);},600);}
+    if(r&&r.success){showToast('Added successfully!','success');allData[sheet].push(payload);if(clearFn)clearFn();renderPage(curPage());setTimeout(function(){loadAll(2);},600);}
     else showToast('Failed: '+(r&&r.error||'Unknown'),'error');
   }).catch(function(e){btnEl.disabled=false;btnEl.textContent=btnTxt;showToast('Error: '+e.message,'error');});
 }
@@ -3983,7 +4119,10 @@ function submitCallClient(){
     if(r&&r.success){
       showToast('Client added to calling list','success');
       ['ccl_cid','ccl_cname','ccl_cphone'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
-      loadAll();
+      if(!allData.CallClients)allData.CallClients=[];
+      allData.CallClients.push(p);
+      renderCallTradePage();
+      setTimeout(function(){loadAll(2);},600);
     } else showToast('Failed to add client: '+(r&&r.error||''),'error');
   }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
@@ -4127,7 +4266,7 @@ function saveNewCallLog(){
       var ti=document.getElementById('lm_tradedIn');if(ti)ti.value='';
       renderLMHistory();
       renderCallTradePage();
-      loadAll();
+      setTimeout(function(){loadAll(2);},600);
     } else showToast('Failed to save: '+(r&&r.error||''),'error');
   }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
@@ -4232,24 +4371,25 @@ function renderCTOpenTrades(){
   var openStatuses=['Open','1st Target Done'];
   var todayStr=td();
   var rows=(allData.TradingJournal||[]).filter(function(r){return r['Date']===todayStr&&openStatuses.indexOf(r['Status'])!==-1;});
+  window._ctOpenRows=rows;
   if(!rows.length){el.innerHTML='';return;}
-  var h='<div class="day-detail" style="border-color:var(--accent,#3fbf7f);"><h3><span>&#128200; Aaj Ki Open Trades ('+rows.length+') &#8212; client ko yeh trade karwa sakte ho</span></h3>';
-  h+='<table><thead><tr><th>Stock</th><th>Dir</th><th>Type</th><th>Entry</th><th>SL</th><th>T1/T2</th><th>Status</th><th>Employee</th></tr></thead><tbody>';
-  rows.slice().reverse().forEach(function(r){
-    var instLabel=(r['Instrument']==='Future & Option')?(r['FO Type']==='Option'?(' '+(r['Option Type']||'')+' '+(r['Strike Price']||'')):' FUT'):'';
-    h+='<tr>';
-    h+='<td style="font-weight:600;">'+(r['Stock']||'-')+'<span style="color:var(--muted);font-weight:400;font-size:11px;">'+instLabel+'</span></td>';
-    h+='<td>'+(r['Direction']||'-')+'</td>';
-    h+='<td>'+(r['Trade Type']||'-')+'</td>';
-    h+='<td>'+(r['Entry Price']||'-')+'</td>';
-    h+='<td>'+(r['SL']||'-')+'</td>';
-    h+='<td>'+(r['Target1']||'-')+(r['Target2']?'/'+r['Target2']:'')+'</td>';
-    h+='<td><span class="badge '+statusBadgeColor(r['Status'])+'">'+(r['Status']||'Open')+'</span></td>';
-    h+='<td style="color:var(--muted);font-size:12px;">'+(r['Employee Name']||'-')+'</td>';
-    h+='</tr>';
+  var h='<div style="background:rgba(63,191,127,0.08);border:1px solid var(--accent,#3fbf7f);border-radius:10px;padding:10px 14px;">';
+  h+='<div style="font-size:12px;font-weight:700;color:var(--accent,#3fbf7f);margin-bottom:6px;">&#128200; Aaj Ki Open Trades ('+rows.length+') &#8212; client ko yeh trade karwa sakte ho</div>';
+  h+='<div style="display:flex;flex-wrap:wrap;gap:6px;">';
+  rows.forEach(function(r,idx){
+    h+='<span onclick="toggleCTOpenChip('+idx+')" style="cursor:pointer;background:var(--card2,rgba(255,255,255,0.08));border:1px solid var(--border,rgba(255,255,255,0.15));border-radius:14px;padding:4px 10px;font-size:12px;font-weight:600;">'+(r['Stock']||'-')+'</span>';
   });
-  h+='</tbody></table></div>';
+  h+='</div><div id="ctOpenChipDetail" style="margin-top:8px;font-size:12px;color:var(--muted,#8a94a6);"></div>';
+  h+='</div>';
   el.innerHTML=h;
+}
+function toggleCTOpenChip(idx){
+  var rows=window._ctOpenRows||[];
+  var r=rows[idx];
+  var el=document.getElementById('ctOpenChipDetail');
+  if(!el||!r)return;
+  var instLabel=(r['Instrument']==='Future & Option')?(r['FO Type']==='Option'?(' '+(r['Option Type']||'')+' '+(r['Strike Price']||'')):' FUT'):'';
+  el.innerHTML='<b>'+(r['Stock']||'-')+instLabel+'</b> &#183; '+(r['Direction']||'')+' &#183; '+(r['Trade Type']||'')+' &#183; Entry '+(r['Entry Price']||'-')+' &#183; SL '+(r['SL']||'-')+' &#183; Target '+(r['Target1']||'-')+(r['Target2']?'/'+r['Target2']:'')+' &#183; <span style="color:var(--accent,#3fbf7f);">('+(r['Employee Name']||'-')+')</span>';
 }
 function showCTStat(kind){
   var c=window._ctStatCache||{roster:[],todayLogRows:[]};
