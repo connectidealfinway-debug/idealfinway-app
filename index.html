@@ -1498,7 +1498,11 @@ function startApp(){
   else{document.getElementById('empNav').style.display='block';showPage('empDash');}
   if(hadCache)checkSIPAlerts();
   loadAll();
-  if(!window._ifwIntervalSet){window._ifwIntervalSet=true;setInterval(check315Reminder,60000);}
+  if(!window._ifwIntervalSet){
+    window._ifwIntervalSet=true;
+    setInterval(check315Reminder,60000);
+    setInterval(function(){ if(currentUser && !document.hidden) loadAll(2); },60000);
+  }
 }
 
 function logout(){
