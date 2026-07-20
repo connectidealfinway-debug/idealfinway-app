@@ -297,10 +297,18 @@ tbody td{padding:10px 14px;vertical-align:middle;}
     <div class="page" id="page-adminDash">
       <div class="page-header"><h1>Admin Dashboard</h1><p>Overall performance overview</p></div>
       <div class="form-card" style="margin-bottom:16px;">
-        <div class="form-group"><label>&#128227; Send Announcement to All Employees</label>
+        <div class="form-group"><label>&#128227; Send Announcement</label>
           <textarea id="ann_msg" placeholder="e.g. Aaj ka target hai... / RELIANCE pe focus karo aaj / Sabko motivate karna hai" rows="2"></textarea>
         </div>
-        <button class="btn-save" onclick="sendAnnouncement()">&#128276; Send to Everyone</button>
+        <div class="form-group">
+          <label>Kisko bhejni hai?</label>
+          <div style="display:flex;gap:16px;margin-bottom:8px;">
+            <label style="display:flex;align-items:center;gap:6px;font-weight:400;"><input type="radio" name="ann_target_mode" value="all" checked onchange="toggleAnnTargetMode()"> Sabhi Employees</label>
+            <label style="display:flex;align-items:center;gap:6px;font-weight:400;"><input type="radio" name="ann_target_mode" value="specific" onchange="toggleAnnTargetMode()"> Specific Employee(s)</label>
+          </div>
+          <div id="ann_specificBox" style="display:none;max-height:160px;overflow-y:auto;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px;"></div>
+        </div>
+        <button class="btn-save" onclick="sendAnnouncement()">&#128276; Send</button>
         <div id="announceAdminList" style="margin-top:10px;"></div>
       </div>
       <div class="filter-bar">
@@ -1052,6 +1060,12 @@ tbody td{padding:10px 14px;vertical-align:middle;}
     <!-- ===== v22: ADMIN CLIENT BROKERAGE ===== -->
     <div class="page" id="page-adminCBrok">
       <div class="page-header"><h1>Client Brokerage</h1><p>Client-wise brokerage (Choice uploads se) &#8212; REMESHIRE amount</p></div>
+      <div class="form-card" style="margin-bottom:14px;">
+        <div class="form-group"><label>&#128269; Client ID Lookup (Total Brokerage, Sabhi Dates Milaakar)</label>
+          <input class="srch" id="cbrokLookupBox" placeholder="Client ID likhein e.g. FBO0515..." oninput="renderCbrokLookup()" style="width:100%;">
+        </div>
+        <div id="cbrokLookupResult"></div>
+      </div>
       <div class="filter-bar">
         <button class="filter-btn" onclick="setF('today',this,'cbrok')">Today</button>
         <button class="filter-btn active" onclick="setF('month',this,'cbrok')">This Month</button>
@@ -1368,7 +1382,7 @@ function computeReminders(){
   var studRows=isAdm?(allData.Students||[]):fEmp(allData.Students||[],currentUser.userId);
   var pendStud=(studRows||[]).filter(function(r){return studentPending(r)>0;});
   var tjRowsAll=isAdm?(allData.TradingJournal||[]):fEmpStrict(allData.TradingJournal||[],currentUser.userId);
-  var tradeAlerts=tjRowsAll.filter(function(r){return (r['Exit Date']||'')===today && ['Target Done','2nd Target Done','SL Done'].indexOf(r['Status'])!==-1;});
+  var tradeAlerts=tjRowsAll.filter(function(r){return (r['Exit Date']||'')===today && ['Target Done','2nd Target Done','SL Done','BEP (Break Even)'].indexOf(r['Status'])!==-1;});
   var remRows=isAdm?(allData.Reminders||[]):fEmpStrict(allData.Reminders||[],currentUser.userId);
   var dueReminders=remRows.filter(function(r){return r['Reminder Date']&&r['Reminder Date']<=today&&r['Status']!=='Done';});
   var wlRows=fEmpStrict(allData.Watchlist||[],currentUser.userId);
@@ -2185,13 +2199,35 @@ function renderRemindersPage(){
   ]);
   document.getElementById('remTable').innerHTML=mkRemindersTable(rows,isAdm);
 }
+function toggleAnnTargetMode(){
+  var mode=(document.querySelector('input[name="ann_target_mode"]:checked')||{}).value;
+  var box=document.getElementById('ann_specificBox');
+  if(!box)return;
+  if(mode==='specific'){
+    box.style.display='block';
+    if(!box.innerHTML){
+      var h='';
+      employees.forEach(function(e){h+='<label style="display:flex;align-items:center;gap:6px;font-weight:400;padding:3px 0;"><input type="checkbox" class="ann_emp_cb" value="'+e['Employee ID']+'"> '+e['Name']+' <span style="color:var(--muted,#8a94a6);font-size:11px;">('+(e['Branch']||'')+')</span></label>';});
+      box.innerHTML=h;
+    }
+  } else {
+    box.style.display='none';
+  }
+}
 function sendAnnouncement(){
   var msg=(document.getElementById('ann_msg').value||'').trim();
   if(!msg){showToast('Message likho','error');return;}
-  var p={action:'addGeneric',sheet:'Announcements','Date':td(),'Message':msg,'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Active':'Yes'};
+  var mode=(document.querySelector('input[name="ann_target_mode"]:checked')||{}).value;
+  var target='ALL';
+  if(mode==='specific'){
+    var picked=Array.from(document.querySelectorAll('.ann_emp_cb:checked')).map(function(c){return c.value;});
+    if(!picked.length){showToast('Kam se kam ek employee select karo','error');return;}
+    target=picked.join(',');
+  }
+  var p={action:'addGeneric',sheet:'Announcements','Date':td(),'Message':msg,'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Active':'Yes','Target':target};
   postData(p).then(function(r){
     if(r&&r.success){
-      showToast('Announcement sabko bhej diya!','success');
+      showToast('Announcement bhej diya!','success');
       document.getElementById('ann_msg').value='';
       if(!allData.Announcements)allData.Announcements=[];
       allData.Announcements.push(p);
@@ -2208,6 +2244,13 @@ function deactivateAnnouncement(rowNum){
     else showToast('Failed: '+(r&&r.error||''),'error');
   }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
+function annTargetLabel(r){
+  var t=(r['Target']||'').trim();
+  if(!t||t==='ALL')return 'Sabhi Employees';
+  var ids=t.split(',').map(function(x){return x.trim();});
+  var names=ids.map(function(id){var e=employees.find(function(x){return x['Employee ID']===id;});return e?e['Name']:id;});
+  return names.join(', ');
+}
 function renderAnnounceAdminBox(){
   var el=document.getElementById('announceAdminList');
   if(!el||!currentUser||currentUser.role!=='admin')return;
@@ -2216,24 +2259,41 @@ function renderAnnounceAdminBox(){
   var h='';
   rows.slice().reverse().forEach(function(r){
     h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.08);font-size:12px;">'
-      +'<span>'+(r['Message']||'')+' <span style="color:var(--muted);">('+(r['Date']||'')+')</span></span>'
+      +'<span>'+(r['Message']||'')+' <span style="color:var(--muted);">('+(r['Date']||'')+' &#8212; '+annTargetLabel(r)+')</span></span>'
       +'<button class="btn-del" onclick="deactivateAnnouncement('+r['_rowNum']+')" style="font-size:11px;">End</button>'
       +'</div>';
   });
   el.innerHTML=h;
 }
+function announceIsForMe(r){
+  var t=(r['Target']||'').trim();
+  if(!t||t==='ALL')return true;
+  var ids=t.split(',').map(function(x){return x.trim();});
+  return ids.indexOf(currentUser.userId)!==-1;
+}
+var _annBannerIdx=0;
 function renderAnnounceBanner(){
   var el=document.getElementById('announceBanner');
   if(!el||!currentUser)return;
-  var active=(allData.Announcements||[]).filter(function(r){return r['Active']==='Yes';});
-  if(!active.length){el.style.display='none';el.innerHTML='';return;}
-  var latest=active[active.length-1];
+  var active=(allData.Announcements||[]).filter(function(r){return r['Active']==='Yes'&&announceIsForMe(r);});
+  if(!active.length){el.style.display='none';el.innerHTML='';if(window._annBannerTimer){clearInterval(window._annBannerTimer);window._annBannerTimer=null;}return;}
   el.style.display='flex';
-  el.innerHTML='<span>&#128227;</span><span>'+(latest['Message']||'')+'</span><span style="margin-left:auto;font-size:11px;font-weight:400;opacity:0.8;">&#8212; '+(latest['Employee Name']||'Admin')+'</span>';
-  var key='ifw_ann_'+currentUser.userId+'_'+(latest['_rowNum']||latest['Date']);
-  if(!localStorage.getItem(key)){
-    localStorage.setItem(key,'1');
-    if(typeof playAlertSound==='function')playAlertSound();
+  if(_annBannerIdx>=active.length)_annBannerIdx=0;
+  var showOne=function(){
+    if(_annBannerIdx>=active.length)_annBannerIdx=0;
+    var a=active[_annBannerIdx];
+    var countLbl=active.length>1?(' <span style="opacity:.7;font-size:11px;">('+(_annBannerIdx+1)+'/'+active.length+')</span>'):'';
+    el.innerHTML='<span>&#128227;</span><span>'+(a['Message']||'')+countLbl+'</span><span style="margin-left:auto;font-size:11px;font-weight:400;opacity:0.8;">&#8212; '+(a['Employee Name']||'Admin')+'</span>';
+    var key='ifw_ann_'+currentUser.userId+'_'+(a['_rowNum']||a['Date']);
+    if(!localStorage.getItem(key)){
+      localStorage.setItem(key,'1');
+      if(typeof playAlertSound==='function')playAlertSound();
+    }
+  };
+  showOne();
+  if(window._annBannerTimer)clearInterval(window._annBannerTimer);
+  if(active.length>1){
+    window._annBannerTimer=setInterval(function(){_annBannerIdx++;showOne();},5000);
   }
 }
 function srchFilter(rows,q,fields){
@@ -3411,6 +3471,43 @@ function confirmChoiceUpload(replace){
 }
 
 /* ===== v22: ADMIN CLIENT BROKERAGE ===== */
+function renderCbrokLookup(){
+  var el=document.getElementById('cbrokLookupResult');
+  var box=document.getElementById('cbrokLookupBox');
+  if(!el||!box)return;
+  var q=(box.value||'').trim().toLowerCase();
+  if(!q){el.innerHTML='';return;}
+  var all=allData.ClientBrokerage||[];
+  var matches=all.filter(function(r){return (r['Client ID']||'').trim().toLowerCase()===q;});
+  if(!matches.length){
+    var partial=all.filter(function(r){return (r['Client ID']||'').trim().toLowerCase().indexOf(q)!==-1;});
+    if(partial.length && partial.length<=15){
+      var ph='<div class="no-data">Exact match nahi mila, milte-julte Client IDs:</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;">';
+      var seen={};
+      partial.forEach(function(r){var cid=(r['Client ID']||'').trim();if(!seen[cid]){seen[cid]=1;ph+='<span class="badge blue" style="cursor:pointer;" onclick="document.getElementById(\'cbrokLookupBox\').value=\''+cid+'\';renderCbrokLookup();">'+cid+'</span>';}});
+      el.innerHTML=ph+'</div>';
+    } else {
+      el.innerHTML='<div class="no-data">Is Client ID ki koi brokerage entry nahi mili</div>';
+    }
+    return;
+  }
+  var total=matches.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
+  var dates=matches.map(function(r){return r['Date']||'';}).sort();
+  var name=matches[matches.length-1]['Client Name']||'-';
+  var empNames={};matches.forEach(function(r){empNames[r['Employee Name']||'-']=1;});
+  var h='<div class="stats-grid" style="margin-top:8px;">';
+  h+='<div class="stat-card blue"><div class="stat-label">Total Brokerage (Lifetime)</div><div class="stat-value">'+fmt(total)+'</div><div class="stat-sub"></div></div>';
+  h+='<div class="stat-card green"><div class="stat-label">Total Entries</div><div class="stat-value">'+matches.length+'</div><div class="stat-sub"></div></div>';
+  h+='<div class="stat-card purple"><div class="stat-label">Client Name</div><div class="stat-value" style="font-size:16px;">'+name+'</div><div class="stat-sub"></div></div>';
+  h+='<div class="stat-card amber"><div class="stat-label">Employee(s)</div><div class="stat-value" style="font-size:14px;">'+Object.keys(empNames).join(', ')+'</div><div class="stat-sub"></div></div>';
+  h+='</div>';
+  h+='<table style="margin-top:10px;"><thead><tr><th>Date</th><th>Amount</th><th>Employee</th><th>Branch</th></tr></thead><tbody>';
+  matches.slice().sort(function(a,b){return (a['Date']||'').localeCompare(b['Date']||'');}).forEach(function(r){
+    h+='<tr><td>'+(r['Date']||'-')+'</td><td class="money">'+fmt(parseFloat(r['Amount']||0))+'</td><td>'+(r['Employee Name']||'-')+'</td><td>'+(r['Branch']||'-')+'</td></tr>';
+  });
+  h+='</tbody></table>';
+  el.innerHTML=h;
+}
 function renderCBrok(){
   var all=allData.ClientBrokerage||[];
   var sel=document.getElementById('cbrokEmpF');
@@ -4106,12 +4203,19 @@ function renderTradingJournalPage(){
   var openStatuses=['Open','1st Target Done'];
   if(tjStatF==='open')rows=rows.filter(function(r){return openStatuses.indexOf(r['Status'])!==-1;});
   else if(tjStatF==='closed')rows=rows.filter(function(r){return openStatuses.indexOf(r['Status'])===-1;});
+  else if(tjStatF==='target')rows=rows.filter(function(r){return r['Status']==='Target Done'||r['Status']==='2nd Target Done';});
+  else if(tjStatF==='sl')rows=rows.filter(function(r){return r['Status']==='SL Done';});
+  else if(tjStatF==='bep')rows=rows.filter(function(r){return r['Status']==='BEP (Break Even)';});
   var q=getSrch('srch-tj');rows=srchFilter(rows,q,['Stock','Group Name','Employee Name','Remarks']);
 
   var closed=rows.filter(function(r){return openStatuses.indexOf(r['Status'])===-1;});
-  var wins=closed.filter(function(r){return parseFloat(r['Result']||0)>0;});
+  var targetHits=closed.filter(function(r){return r['Status']==='Target Done'||r['Status']==='2nd Target Done';});
+  var slHits=closed.filter(function(r){return r['Status']==='SL Done';});
+  var bepHits=closed.filter(function(r){return r['Status']==='BEP (Break Even)';});
+  var manualHits=closed.filter(function(r){return r['Status']==='Manually Closed';});
+  var winLossBase=targetHits.length+slHits.length;
+  var winRate=winLossBase?Math.round(targetHits.length/winLossBase*100):0;
   var totalPL=closed.reduce(function(s,r){return s+(parseFloat(r['Result'])||0);},0);
-  var winRate=closed.length?Math.round(wins.length/closed.length*100):0;
   var intraday=rows.filter(function(r){return r['Trade Type']==='Intraday';}).length;
   var swing=rows.filter(function(r){return r['Trade Type']==='Swing';}).length;
   var positional=rows.filter(function(r){return r['Trade Type']==='Positional';}).length;
@@ -4121,7 +4225,10 @@ function renderTradingJournalPage(){
     {label:'Total Trades',value:rows.length,sub:'Intraday '+intraday+' &#183; Swing '+swing+' &#183; Positional '+positional,color:'blue',onclick:"setTJStat('all',event.currentTarget)"},
     {label:'Open / Pending',value:openRows.length,sub:'click to view running trades',color:'amber',onclick:"setTJStat('open',event.currentTarget)"},
     {label:'Closed Trades',value:closed.length,sub:'click to view closed trades',color:'purple',onclick:"setTJStat('closed',event.currentTarget)"},
-    {label:'Win Rate',value:winRate+'%',sub:wins.length+' wins out of '+closed.length,color:winRate>=50?'green':'amber'},
+    {label:'Win Rate',value:winRate+'%',sub:targetHits.length+' Target vs '+slHits.length+' SL'+(manualHits.length?(' &#183; '+manualHits.length+' manual'):''),color:winRate>=50?'green':'amber'},
+    {label:'Target Hit',value:targetHits.length,sub:'closed trades me se',color:'green',onclick:"setTJStat('target',event.currentTarget)"},
+    {label:'SL Hit',value:slHits.length,sub:'closed trades me se',color:'red',onclick:"setTJStat('sl',event.currentTarget)"},
+    {label:'BEP (Break Even)',value:bepHits.length,sub:'na profit na loss',color:'amber',onclick:"setTJStat('bep',event.currentTarget)"},
     {label:'Total P&L',value:fmt(totalPL),sub:totalPL>=0?'Net profit':'Net loss',color:totalPL>=0?'green':'red'}
   ]);
   document.getElementById('tjTable').innerHTML=mkTradeTable(rows);
@@ -4131,6 +4238,7 @@ function statusBadgeColor(s){
   if(s==='1st Target Done')return 'amber';
   if(s==='Target Done'||s==='2nd Target Done')return 'green';
   if(s==='SL Done')return 'red';
+  if(s==='BEP (Break Even)')return 'amber';
   return 'purple';
 }
 function mkTradeTable(rows){
@@ -4167,7 +4275,7 @@ function mkTradeTable(rows){
 function openTradeModal(rowNum){
   var row=(allData.TradingJournal||[]).find(function(r){return String(r['_rowNum'])===String(rowNum);});
   if(!row){showToast('Trade not found - reloading','error');loadAll();return;}
-  var statuses=['Open','1st Target Done','Target Done','2nd Target Done','SL Done','Manually Closed'];
+  var statuses=['Open','1st Target Done','Target Done','2nd Target Done','SL Done','BEP (Break Even)','Manually Closed'];
   var html='<div class="modal-title">Manage Trade &#8212; '+(row['Stock']||'')+'</div>';
   html+='<div class="form-group"><label>Stock Symbol</label><input type="text" id="tm_stock" value="'+(row['Stock']||'')+'"></div>';
   html+='<div class="form-group"><label>Entry Price</label><input type="number" id="tm_entry" value="'+(row['Entry Price']||'')+'"></div>';
