@@ -1339,14 +1339,14 @@ function login(){
   err.textContent='Invalid ID or Password';err.style.display='none';
   if(id===ADMIN_ID&&pass===ADMIN_PASS){currentUser={id:id,name:'Ravikant Sharma',branch:'Hisar',role:'admin',userId:id};startApp();return;}
   var emp=findEmpLogin(id,pass);
-  if(emp){currentUser={id:emp['Employee ID'],name:emp['Name'],branch:emp['Branch'],role:emp['Role']||'employee',userId:emp['Employee ID']};startApp();return;}
+  if(emp){currentUser={id:emp['Employee ID'],name:emp['Name'],branch:emp['Branch'],role:emp['Role']||'employee',userId:emp['Employee ID'],FinanceAccess:emp['FinanceAccess']||'No'};startApp();return;}
   /* employees list abhi load nahi hui (ya fail ho gayi) — abhi fetch karke dobara try karo */
   err.textContent='Connecting... please wait';err.style.color='var(--accent,#3fb27f)';err.style.display='block';
   fetchEmployees().then(function(r){
     if(r&&r.success)employees=r.employees||[];
     err.style.color='';
     var e2=findEmpLogin(id,pass);
-    if(e2){err.style.display='none';currentUser={id:e2['Employee ID'],name:e2['Name'],branch:e2['Branch'],role:e2['Role']||'employee',userId:e2['Employee ID']};startApp();}
+    if(e2){err.style.display='none';currentUser={id:e2['Employee ID'],name:e2['Name'],branch:e2['Branch'],role:e2['Role']||'employee',userId:e2['Employee ID'],FinanceAccess:e2['FinanceAccess']||'No'};startApp();}
     else{err.textContent='Invalid ID or Password';err.style.display='block';}
   }).catch(function(){
     err.style.color='';err.textContent='Network error - check internet & try again';err.style.display='block';
@@ -1658,8 +1658,8 @@ function loadEmps(){
       var sel=document.getElementById('attEmpFilter');
       if(sel){sel.innerHTML='<option value="">All Employees</option>';employees.forEach(function(e){var o=document.createElement('option');o.value=e['Employee ID'];o.textContent=e['Name'];sel.appendChild(o);});}
       var navTeam=document.getElementById('navMyTeam');if(navTeam)navTeam.style.display=isTeamParent()?'flex':'none';
-      var navAI=document.getElementById('navAddIncome');if(navAI)navAI.style.display=hasFinanceSubEmployee()?'flex':'none';
-      var navAE=document.getElementById('navAddExpense');if(navAE)navAE.style.display=hasFinanceSubEmployee()?'flex':'none';
+      var navAI=document.getElementById('navAddIncome');if(navAI)navAI.style.display=canAddFinance()?'flex':'none';
+      var navAE=document.getElementById('navAddExpense');if(navAE)navAE.style.display=canAddFinance()?'flex':'none';
       populateForEmpPickers();
       renderPage(curPage());
     }
@@ -1675,6 +1675,7 @@ function teamMembersOf(uid){
 }
 function isTeamParent(){return !!(currentUser&&teamMembersOf(currentUser.userId).length>0);}
 function hasFinanceSubEmployee(){return !!(currentUser&&teamMembersOf(currentUser.userId).some(function(e){return e['Role']==='finance';}));}
+function canAddFinance(){return !!(currentUser&&(hasFinanceSubEmployee()||currentUser['FinanceAccess']==='Yes'));}
 function forEmpObj(selId){
   var sel=document.getElementById(selId);
   var v=sel?sel.value:'';
@@ -4087,13 +4088,14 @@ function editEmpModal(empId){
   var curParentIds=parentIdsOf(emp);
   employees.forEach(function(e){if(e['Employee ID']===empId)return;h+='<label style="display:flex;align-items:center;gap:6px;font-weight:400;font-size:13px;padding:3px 0;"><input type="checkbox" class="ee_parent_cb" value="'+e['Employee ID']+'" style="width:auto;"'+(curParentIds.indexOf(e['Employee ID'])!==-1?' checked':'')+'> '+e['Name']+' ('+e['Employee ID']+')</label>';});
   h+='</div></div>';
+  h+='<div class="form-group"><label style="display:flex;align-items:center;gap:6px;font-weight:600;"><input type="checkbox" id="ee_finaccess" style="width:auto;"'+(emp['FinanceAccess']==='Yes'?' checked':'')+'> Income/Expense Access (admin allow) — is employee ko Add Income/Add Expense ka option milega, chahe iske sub-team me finance ID na ho</label></div>';
   h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" data-eid="'+empId+'" onclick="saveEmp(this.dataset.eid)">Save</button></div>';
   document.getElementById('modalBox').innerHTML=h;document.getElementById('modal').className='show';
 }
 
 function saveEmp(empId){
   var emp=employees.find(function(e){return e['Employee ID']===empId;});if(!emp)return;
-  var p={action:'updateEmployee','Employee ID':empId,_rowNum:emp._rowNum,'Name':document.getElementById('ee_name').value.trim(),'Branch':document.getElementById('ee_branch').value,'Role':document.getElementById('ee_role').value||'employee','Status':emp['Status']||'Active','Commission':parseFloat(document.getElementById('ee_comm').value)||50,'Email':document.getElementById('ee_email').value.trim(),'Salary':parseFloat(document.getElementById('ee_sal').value)||0,'Parent ID':Array.prototype.slice.call(document.querySelectorAll('.ee_parent_cb:checked')).map(function(el){return el.value;}).join(',')};
+  var p={action:'updateEmployee','Employee ID':empId,_rowNum:emp._rowNum,'Name':document.getElementById('ee_name').value.trim(),'Branch':document.getElementById('ee_branch').value,'Role':document.getElementById('ee_role').value||'employee','Status':emp['Status']||'Active','Commission':parseFloat(document.getElementById('ee_comm').value)||50,'Email':document.getElementById('ee_email').value.trim(),'Salary':parseFloat(document.getElementById('ee_sal').value)||0,'Parent ID':Array.prototype.slice.call(document.querySelectorAll('.ee_parent_cb:checked')).map(function(el){return el.value;}).join(','),'FinanceAccess':document.getElementById('ee_finaccess').checked?'Yes':'No'};
   var np=document.getElementById('ee_pass').value.trim();if(np)p['Password']=np;
   postData(p).then(function(r){closeModal();if(r&&r.success){showToast('Updated!','success');loadEmps();}else showToast('Failed','error');}).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
 }
