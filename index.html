@@ -4287,7 +4287,7 @@ function openTradeModal(rowNum){
   html+='<div class="form-group"><label>Strategy</label><select id="tm_strategy">'+tmStratList.map(function(s){return '<option value="'+s+'"'+(row['Strategy']===s?' selected':'')+'>'+s+'</option>';}).join('')+'</select></div>';
   html+='<div class="form-group"><label>Status</label><select id="tm_status" onchange="toggleTMExit()">'+statuses.map(function(s){return '<option value="'+s+'"'+(row['Status']===s?' selected':'')+'>'+s+'</option>';}).join('')+'</select></div>';
   var showExit=(row['Status']!=='Open'&&row['Status']!=='1st Target Done');
-  html+='<div class="form-group" id="tm_exitGroup" style="display:'+(showExit?'block':'none')+'"><label>Exit Price</label><input type="number" id="tm_exit" value="'+(row['Exit Price']||'')+'"></div>';
+  html+='<div class="form-group" id="tm_exitGroup" style="display:'+(showExit?'block':'none')+'"><label>Exit Price *</label><input type="number" id="tm_exit" value="'+(row['Exit Price']||'')+'"></div>';
   html+='<div class="form-group"><label>Remarks</label><textarea id="tm_remarks">'+(row['Remarks']||'')+'</textarea></div>';
   html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="saveTradeModal('+rowNum+',\''+(row['Direction']||'Buy')+'\')">Save</button></div>';
   document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
@@ -4309,7 +4309,8 @@ function saveTradeModal(rowNum,direction){
     'Qty':qty,'Status':status,'Strategy':stratEl?stratEl.value:'','Remarks':(document.getElementById('tm_remarks').value||'').trim()
   };
   var exitEl=document.getElementById('tm_exit');
-  if(status!=='Open'&&status!=='1st Target Done'&&exitEl&&exitEl.value!==''){
+  if(status!=='Open'&&status!=='1st Target Done'){
+    if(!exitEl||exitEl.value===''){showToast('Exit Price bharna zaroori hai jab trade close karte ho (P&L/Win-Rate ke liye)','error');return;}
     var exit=parseFloat(exitEl.value);
     var result=(exit-entry)*qty*(direction==='Buy'?1:-1);
     var resultPct=(entry&&qty)?(result/(entry*qty)*100):0;
