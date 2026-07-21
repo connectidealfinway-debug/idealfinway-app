@@ -1658,8 +1658,8 @@ function loadEmps(){
       var sel=document.getElementById('attEmpFilter');
       if(sel){sel.innerHTML='<option value="">All Employees</option>';employees.forEach(function(e){var o=document.createElement('option');o.value=e['Employee ID'];o.textContent=e['Name'];sel.appendChild(o);});}
       var navTeam=document.getElementById('navMyTeam');if(navTeam)navTeam.style.display=isTeamParent()?'flex':'none';
-      var navAI=document.getElementById('navAddIncome');if(navAI)navAI.style.display=isTeamParent()?'flex':'none';
-      var navAE=document.getElementById('navAddExpense');if(navAE)navAE.style.display=isTeamParent()?'flex':'none';
+      var navAI=document.getElementById('navAddIncome');if(navAI)navAI.style.display=hasFinanceSubEmployee()?'flex':'none';
+      var navAE=document.getElementById('navAddExpense');if(navAE)navAE.style.display=hasFinanceSubEmployee()?'flex':'none';
       populateForEmpPickers();
       renderPage(curPage());
     }
@@ -1674,6 +1674,7 @@ function teamMembersOf(uid){
   return employees.filter(function(e){return parentIdsOf(e).indexOf(target)!==-1&&(e['Status']||'Active')==='Active';});
 }
 function isTeamParent(){return !!(currentUser&&teamMembersOf(currentUser.userId).length>0);}
+function hasFinanceSubEmployee(){return !!(currentUser&&teamMembersOf(currentUser.userId).some(function(e){return e['Role']==='finance';}));}
 function forEmpObj(selId){
   var sel=document.getElementById(selId);
   var v=sel?sel.value:'';
