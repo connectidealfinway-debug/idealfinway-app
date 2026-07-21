@@ -578,6 +578,13 @@ tbody td{padding:10px 14px;vertical-align:middle;}
       <div id="teamCCLTable"></div>
       <h3 style="margin:24px 0 10px;">Call & Trade Log</h3>
       <div id="teamCTTable"></div>
+      <h3 style="margin:24px 0 10px;">Income &amp; Expense</h3>
+      <div class="stats-grid" id="teamFinStats"></div>
+      <div class="tab-btns">
+        <button class="tab-btn active" id="teamFinTabInc" onclick="setTeamFinTab('income')">&#8377; Income</button>
+        <button class="tab-btn" id="teamFinTabExp" onclick="setTeamFinTab('expense')">&#8377; Expense</button>
+      </div>
+      <div id="teamFinTable"></div>
     </div>
 
     <!-- TRADING JOURNAL -->
@@ -1702,6 +1709,7 @@ function renderMyTeamData(){
     document.getElementById('teamInsTable').innerHTML='';document.getElementById('teamStudTable').innerHTML='';
     document.getElementById('teamCCLStats').innerHTML='';document.getElementById('teamCCLTypeStats').innerHTML='';
     document.getElementById('teamCCLTable').innerHTML='';document.getElementById('teamCTTable').innerHTML='';
+    document.getElementById('teamFinStats').innerHTML='';document.getElementById('teamFinTable').innerHTML='';
     return;
   }
   var acc=fEmpStrict(allData.Accounts||[],uid),sip=fEmpStrict(allData.SIP||[],uid),ins=fEmpStrict(allData.Insurance||[],uid),stud=fEmpStrict(allData.Students||[],uid);
@@ -1774,6 +1782,38 @@ function renderMyTeamData(){
   ]);
   document.getElementById('teamCCLTable').innerHTML=mkCallClientTable(cclAll);
   document.getElementById('teamCTTable').innerHTML=mkCallTradeTable(ctAll.slice().sort(function(a,b){return (a['Date']||'').localeCompare(b['Date']||'');}).slice(-100));
+
+  var uidEmp=employees.find(function(e){return e['Employee ID']===uid;});
+  var uidName=uidEmp?uidEmp['Name']:'';
+  var teamInc=(allData.Income||[]).filter(function(r){return (r['Entered By']||'')===uidName;});
+  var teamExp=(allData.Expense||[]).filter(function(r){return (r['Entered By']||'')===uidName;});
+  var tInc2=teamInc.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
+  var tExp2=teamExp.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
+  document.getElementById('teamFinStats').innerHTML=mkStats([
+    {label:'Income',value:fmt(tInc2),sub:teamInc.length+' entries',color:'green'},
+    {label:'Expense',value:fmt(tExp2),sub:teamExp.length+' entries',color:'red'},
+    {label:'Net',value:fmt(tInc2-tExp2),sub:(tInc2-tExp2)>=0?'profit':'loss',color:(tInc2-tExp2)>=0?'blue':'red'}
+  ]);
+  window._teamFinCache={income:teamInc,expense:teamExp};
+  renderTeamFinTable();
+}
+var teamFinTab='income';
+function setTeamFinTab(t){
+  teamFinTab=t;
+  var b1=document.getElementById('teamFinTabInc'),b2=document.getElementById('teamFinTabExp');
+  if(b1)b1.className='tab-btn'+(t==='income'?' active':'');
+  if(b2)b2.className='tab-btn'+(t==='expense'?' active':'');
+  renderTeamFinTable();
+}
+function renderTeamFinTable(){
+  var el=document.getElementById('teamFinTable');
+  if(!el)return;
+  var c=window._teamFinCache||{income:[],expense:[]};
+  if(teamFinTab==='income'){
+    el.innerHTML=mkTable(c.income,[{k:'Date',l:'Date'},{k:'Category',l:'Category'},{k:'Name',l:'Name/Source'},{k:'Course',l:'Course'},{k:'Amount',l:'Received',money:true},{k:'Pending',l:'Pending'},{k:'Credited To',l:'Credited To'},{k:'Remarks',l:'Remarks'}],'Income');
+  } else {
+    el.innerHTML=mkTable(c.expense,[{k:'Date',l:'Date'},{k:'Category',l:'Category'},{k:'Description',l:'Description'},{k:'Amount',l:'Amount',money:true},{k:'Paid By',l:'Paid By'},{k:'Branch',l:'Branch'}],'Expense');
+  }
 }
 
 function renderPage(id){
