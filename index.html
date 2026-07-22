@@ -838,7 +838,14 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <div class="form-group"><label>Student Phone</label><input type="tel" id="st_phone" placeholder="10-digit mobile"></div>
         <div class="form-group"><label>Batch / Course</label><input type="text" id="st_batch" placeholder="e.g. Technical Analysis Batch 3"></div>
         <div class="form-group"><label>Referred By (Client Name)</label><input type="text" id="st_ref" placeholder="Who referred this student?"></div>
-        <div class="form-group"><label>Total Course Fee (&#8377;)</label><input type="number" id="st_totfee" placeholder="e.g. 35000"></div>
+        <div class="form-group"><label>Total Course Fee (&#8377;)</label><input type="number" id="st_totfee" placeholder="e.g. 35000 (khali chodo agar poori fee abhi mil gayi)"></div>
+        <div class="form-group"><label style="color:var(--danger,#ef4444);">Fees Received Abhi (&#8377;) &#8212; zaroori hai</label><input type="number" id="st_feesreceived" placeholder="Jitni fees li hai wahi daalo" oninput="calcStudentPending()"></div>
+        <div class="form-group" id="st_pendingGroup" style="display:none;"><label>Pending (&#8377;) &#8212; auto</label><input type="number" id="st_pending_display" disabled></div>
+        <div class="form-group"><label>Place</label><input type="text" id="st_place" placeholder="e.g. Hisar, Adampur"></div>
+        <div class="form-group"><label>Fees Credited To</label>
+          <select id="st_credit"><option>Office Account</option><option>Ravi Bank Account</option><option>Cash</option><option>Other</option></select>
+        </div>
+        <div class="form-group"><label>Remarks</label><input type="text" id="st_remarks" placeholder="Koi note (optional)"></div>
         <div class="form-group"><label>Demat Account Opened?</label>
           <select id="st_demat">
             <option value="">-- pata nahi / abhi tak nahi --</option>
@@ -3142,11 +3149,42 @@ function submitLead(){
   doSubmit(p,'Leads',document.querySelector('#page-addLead .btn-submit'),'Add Lead',function(){document.getElementById('l_cname').value='';document.getElementById('l_cphone').value='';document.getElementById('l_remarks').value='';});
 }
 
+function calcStudentPending(){
+  var tf=parseFloat(document.getElementById('st_totfee').value)||0;
+  var fr=parseFloat(document.getElementById('st_feesreceived').value)||0;
+  var grp=document.getElementById('st_pendingGroup');
+  if(tf>0){grp.style.display='';document.getElementById('st_pending_display').value=Math.max(0,tf-fr);}
+  else grp.style.display='none';
+}
 function submitStudent(){
   var sn=document.getElementById('st_name').value.trim();if(!sn){showToast('Student name required','error');return;}
+  var frRaw=document.getElementById('st_feesreceived').value;
+  var fr=parseFloat(frRaw);
+  if(!frRaw||isNaN(fr)||fr<=0){showToast('Pehle Fees Received daalo, tabhi student add hoga - bina fees entry nahi hogi','error');return;}
   var fe=forEmpObj('st_forEmp');
-  var p={action:'addStudent','Date':document.getElementById('st_date').value||td(),'Employee ID':fe.id,'Employee Name':fe.name,'Branch':fe.branch,'Student Name':sn,'Student Phone':document.getElementById('st_phone').value.trim(),'Batch':document.getElementById('st_batch').value.trim(),'Reference By':document.getElementById('st_ref').value.trim(),'Status':document.getElementById('st_status').value,'Total Fee':parseFloat(document.getElementById('st_totfee').value)||'','Demat Opened':document.getElementById('st_demat').value};
-  doSubmit(p,'Students',document.querySelector('#page-addStudent .btn-submit'),'Add Student',function(){document.getElementById('st_name').value='';document.getElementById('st_phone').value='';document.getElementById('st_batch').value='';document.getElementById('st_ref').value='';document.getElementById('st_totfee').value='';document.getElementById('st_demat').value='';});
+  var tf=parseFloat(document.getElementById('st_totfee').value)||fr;
+  var pending=Math.max(0,tf-fr);
+  var place=document.getElementById('st_place').value.trim()||fe.branch;
+  var credit=document.getElementById('st_credit').value;
+  var remarks=document.getElementById('st_remarks').value.trim();
+  var p={action:'addStudentWithFee','Date':document.getElementById('st_date').value||td(),'Employee ID':fe.id,'Employee Name':fe.name,'Branch':fe.branch,'Student Name':sn,'Student Phone':document.getElementById('st_phone').value.trim(),'Batch':document.getElementById('st_batch').value.trim(),'Reference By':document.getElementById('st_ref').value.trim(),'Status':document.getElementById('st_status').value,'Total Fee':tf,'Demat Opened':document.getElementById('st_demat').value,'FeesReceived':fr,'Pending':pending,'Place':place,'Credited To':credit,'Remarks':remarks,'Entered By':currentUser.name};
+  var btn=document.querySelector('#page-addStudent .btn-submit');
+  btn.disabled=true;btn.textContent='Adding...';
+  postData(p).then(function(r){
+    btn.disabled=false;btn.textContent='Add Student';
+    if(r&&r.success){
+      showToast('Student add ho gaya + fee entry bhi ho gayi - dobara Income me dalne ki zaroorat nahi','success');
+      allData.Students=allData.Students||[];
+      allData.Students.push({'Date':p['Date'],'Employee ID':p['Employee ID'],'Employee Name':p['Employee Name'],'Branch':p['Branch'],'Student Name':p['Student Name'],'Student Phone':p['Student Phone'],'Batch':p['Batch'],'Reference By':p['Reference By'],'Status':p['Status'],'Total Fee':p['Total Fee'],'Demat Opened':p['Demat Opened'],'Demat Client ID':''});
+      allData.Income=allData.Income||[];
+      allData.Income.push({'Date':p['Date'],'Category':'Student Fee','Name':p['Student Name'],'Place':p['Place'],'Phone':p['Student Phone'],'Course':p['Batch'],'Total Fee':p['Total Fee'],'Pending':p['Pending'],'Reference':p['Reference By'],'Credited To':p['Credited To'],'Amount':p['FeesReceived'],'Remarks':p['Remarks'],'Entered By':p['Entered By']});
+      ['st_name','st_phone','st_batch','st_ref','st_totfee','st_demat','st_feesreceived','st_place','st_remarks'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+      document.getElementById('st_credit').value='Office Account';
+      document.getElementById('st_pendingGroup').style.display='none';
+      setTimeout(function(){loadAll(2);},600);
+      goToMainAfterSave();
+    } else showToast('Save fail ho gaya: '+(r&&r.error||'Unknown'),'error');
+  }).catch(function(e){btn.disabled=false;btn.textContent='Add Student';showToast('Error: '+e.message,'error');});
 }
 
 function submitAttendance(){
