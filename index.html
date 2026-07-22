@@ -85,6 +85,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
 .badge.lump{background:rgba(245,158,11,0.15);color:var(--amber);}
 .btn-edit{background:rgba(59,130,246,0.15);color:var(--blue);border:1px solid rgba(59,130,246,0.3);border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer;margin-right:4px;font-weight:600;}
 .btn-del{background:rgba(239,68,68,0.15);color:var(--danger);border:1px solid rgba(239,68,68,0.3);border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer;font-weight:600;}
+.btn-call{background:rgba(63,191,127,0.15);color:var(--accent);border:1px solid rgba(63,191,127,0.3);border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer;margin-right:4px;font-weight:600;}
 .form-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;max-width:520px;}
 .form-card .form-group textarea{min-height:70px;resize:vertical;}
 .form-card.form-grid{max-width:960px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:6px 20px;align-items:start;}
@@ -1752,7 +1753,7 @@ function renderMyTeamData(){
     bh+='</tbody></table>';
   } else bh='<div class="no-data">Abhi tak koi client brokerage nahi hai</div>';
   document.getElementById('teamBrokTable').innerHTML=bh;
-  document.getElementById('teamAccTable').innerHTML=mkTable(accDisplay,[{k:'Date',l:'Date'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Client ID'},{k:'Client Phone',l:'Phone'},{k:'Status',l:'Status'}],'Accounts');
+  document.getElementById('teamAccTable').innerHTML=mkAccTable(accDisplay,{});
   document.getElementById('teamSIPTable').innerHTML=mkTable(sip,[{k:'Date',l:'Date'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Client ID'},{k:'Client Phone',l:'Phone'},{k:'Type',l:'Type'},{k:'Amount',l:'Amount',money:true},{k:'SIP Due Date',l:'Due Date'}],'SIP');
   document.getElementById('teamInsTable').innerHTML=mkTable(ins,[{k:'Date',l:'Date'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Policy ID'},{k:'Client Phone',l:'Phone'},{k:'Type',l:'Type'},{k:'Premium',l:'Premium',money:true}],'Insurance');
   document.getElementById('teamStudTable').innerHTML=mkStudentTable(stud,true);
@@ -2494,7 +2495,7 @@ function renderAccTable(){
 
 function mkAccTable(rows,dupSet){
   if(!rows||!rows.length)return '<div class="no-data">No accounts found</div>';
-  var h='<table><thead><tr><th>Date</th><th>Employee</th><th>Client</th><th>Client ID</th><th>Phone</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+  var h='<table><thead><tr><th>Date</th><th>Employee</th><th>Client</th><th>Client ID</th><th>Phone</th><th>Last Call</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
   var ordered=rows.slice().reverse();
   ordered.sort(function(a,b){
     var da=dupSet&&dupSet[(a['Client ID']||'').trim()]?1:0;
@@ -2507,13 +2508,14 @@ function mkAccTable(rows,dupSet){
       '<td>'+r['Date']+'</td><td>'+r['Employee Name']+'</td><td>'+r['Client Name']+'</td>'+
       '<td>'+(isDup?'<span class="dup-badge">&#9888;</span>':'')+cid+'</td>'+
       '<td>'+r['Client Phone']+'</td>';
+    h+='<td>'+(r['Last Call Date']?('<b>'+r['Last Call Date']+'</b><br><span style="font-size:10px;color:var(--muted,#8a94a6);">'+(r['Last Call Remarks']||'-')+'</span>'):'<span style="font-size:11px;color:var(--muted,#8a94a6);">Not called yet</span>')+'</td>';
     var act=(r['Status']||'Active')==='Active';
     var chips='';
     if((r['Trading Active']||'')==='Yes')chips+='<span class="badge blue" style="margin-left:3px;font-size:9px;padding:2px 5px;" title="Trading Active">T</span>';
     if((r['SIP Active']||'')==='Yes')chips+='<span class="badge purple" style="margin-left:3px;font-size:9px;padding:2px 5px;" title="SIP Active">S</span>';
     if((r['Investment Active']||'')==='Yes')chips+='<span class="badge amber" style="margin-left:3px;font-size:9px;padding:2px 5px;" title="Investment Active">I</span>';
     h+='<td><span class="badge '+(act?'green':'red')+'">'+(act?'Active':'Inactive')+'</span>'+chips+'</td>';
-    h+='<td><button class="btn-edit" onclick="openAccEditModal('+r['_rowNum']+')">&#9998;</button> <button class="btn-del" onclick="confirmDel(\'Accounts\','+r['_rowNum']+')">&#128465;</button></td></tr>';
+    h+='<td><button class="btn-call" onclick="openAccCallModal('+r['_rowNum']+')">&#128222;</button> <button class="btn-edit" onclick="openAccEditModal('+r['_rowNum']+')">&#9998;</button> <button class="btn-del" onclick="confirmDel(\'Accounts\','+r['_rowNum']+')">&#128465;</button></td></tr>';
   });
   return h+'</tbody></table>';
 }
@@ -2829,7 +2831,7 @@ function renderMyAccTable(){
   var q=getSrch('srch-myAcc');rows=srchFilter(rows,q,['Client Name','Client ID']);
   var active=rows.filter(function(r){return (r['Status']||'Active')==='Active';}).length;
   document.getElementById('myAccStats').innerHTML=mkStats([{label:'Total',value:rows.length,sub:'your accounts',color:'green',onclick:"setMyAccStat('all',event.currentTarget)"},{label:'Active',value:active,sub:'active',color:'blue',onclick:"setMyAccStat('active',event.currentTarget)"},{label:'Inactive',value:rows.length-active,sub:'inactive',color:'amber',onclick:"setMyAccStat('inactive',event.currentTarget)"}]);
-  document.getElementById('myAccTable').innerHTML=mkTable(rows,[{k:'Date',l:'Date'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Client ID'},{k:'Client Phone',l:'Phone'},{k:'Status',l:'Status'}],'Accounts');
+  document.getElementById('myAccTable').innerHTML=mkAccTable(rows,{});
 }
 
 function renderMyLeads(){
@@ -4710,6 +4712,38 @@ function saveAccEditModal(rowNum){
       setTimeout(function(){loadAll(2);},600);
     }
     else showToast('Update failed','error');
+  }).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
+}
+
+/* ===== Accounts: click-to-call + last-call remarks (only latest kept, no history log) ===== */
+function openAccCallModal(rowNum){
+  var row=(allData.Accounts||[]).find(function(r){return String(r['_rowNum'])===String(rowNum);});
+  if(!row){showToast('Account not found - reloading','error');loadAll();return;}
+  var html='<div class="modal-title">&#128222; Call &#8212; '+(row['Client Name']||row['Client ID']||'')+'</div>';
+  html+='<p style="color:var(--muted,#8a94a6);font-size:12px;margin:-8px 0 14px;">'+(row['Client ID']||'')+(row['Client Phone']?' &#183; '+row['Client Phone']+' &#183; <a href="tel:'+row['Client Phone']+'" style="color:var(--accent,#3fbf7f);font-weight:700;text-decoration:none;">&#128222; Call Now</a>':' &#183; <span style="color:var(--danger);">No phone number saved</span>')+'</p>';
+  if(row['Last Call Date']){
+    html+='<div style="background:rgba(63,191,127,0.1);border:1px solid rgba(63,191,127,0.3);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px;">';
+    html+='<b style="color:var(--accent,#3fbf7f);">Last baat &#8212; '+row['Last Call Date']+'</b><br>';
+    html+='<span style="color:var(--muted,#8a94a6);">'+(row['Last Call Remarks']||'(remarks nahi likhe the)')+'</span>';
+    html+='</div>';
+  } else {
+    html+='<div style="color:var(--muted,#8a94a6);font-size:12px;margin-bottom:14px;">Is client se pehle koi call log nahi hai.</div>';
+  }
+  html+='<div class="form-group"><label>Aaj ki call ka Remarks (regarding kya baat hui)</label><textarea id="accCallRemarks" placeholder="e.g. SIP restart karvana hai, agle hafte dobara call karo..."></textarea></div>';
+  html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="saveAccCall('+rowNum+')">Save Call Log</button></div>';
+  document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
+}
+function saveAccCall(rowNum){
+  var remarks=(document.getElementById('accCallRemarks').value||'').trim();
+  var vals={'Last Call Date':td(),'Last Call Remarks':remarks};
+  postData({action:'editRow',sheet:'Accounts',rowNum:rowNum,vals:vals}).then(function(r){
+    closeModal();
+    if(r&&r.success){
+      showToast('Call log saved','success');
+      patchRowLocal('Accounts',rowNum,vals);
+      renderPage(curPage());
+      setTimeout(function(){loadAll(2);},600);
+    } else showToast('Save failed','error');
   }).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
 }
 function ctRows(){
