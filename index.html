@@ -645,9 +645,13 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <button class="filter-btn active" onclick="setTJStat('all',this)">All</button>
         <button class="filter-btn" onclick="setTJStat('open',this)">Open</button>
         <button class="filter-btn" onclick="setTJStat('closed',this)">Closed</button>
+        <span style="color:var(--muted);font-size:12px;">Kisi specific din ka check:</span>
+        <input type="date" id="tj_specificDate" onchange="renderTradingJournalPage()" style="padding:6px 10px;border-radius:6px;">
+        <button class="filter-btn" onclick="document.getElementById('tj_specificDate').value='';renderTradingJournalPage();">Clear Date</button>
         <input class="srch" id="srch-tj" placeholder="&#128269; Search stock..." oninput="renderTradingJournalPage()">
       </div>
       <div class="stats-grid" id="tjStats"></div><div id="tjStatDiv"></div>
+      <div id="tjEmpBreakdown"></div>
       <div class="table-wrap"><div class="table-inner" id="tjTable"></div></div>
     </div>
 
@@ -4283,10 +4287,59 @@ function tjRows(){
   }
   return rows;
 }
+function tjWinStats(rows){
+  var openStatuses=['Open','1st Target Done'];
+  var closed=rows.filter(function(r){return openStatuses.indexOf(r['Status'])===-1;});
+  var targetHits=closed.filter(function(r){return r['Status']==='Target Done'||r['Status']==='2nd Target Done';});
+  var slHits=closed.filter(function(r){return r['Status']==='SL Done';});
+  var winLossBase=targetHits.length+slHits.length;
+  var winRate=winLossBase?Math.round(targetHits.length/winLossBase*100):0;
+  return {total:rows.length,closed:closed.length,target:targetHits.length,sl:slHits.length,winRate:winRate};
+}
+function renderTJEmpBreakdown(dateFilteredRows){
+  var el=document.getElementById('tjEmpBreakdown');
+  if(!el)return;
+  var isAdm=currentUser&&currentUser.role==='admin';
+  if(!isAdm){el.innerHTML='';return;}
+  var byEmp={};
+  dateFilteredRows.forEach(function(r){
+    var key=(r['Employee ID']||'').trim()||r['Employee Name']||'-';
+    if(!byEmp[key])byEmp[key]={name:r['Employee Name']||key,id:key,rows:[]};
+    byEmp[key].rows.push(r);
+  });
+  var keys=Object.keys(byEmp);
+  if(!keys.length){el.innerHTML='';return;}
+  keys.sort(function(a,b){return byEmp[b].rows.length-byEmp[a].rows.length;});
+  var h='<div class="sec-title" style="margin-top:18px;">Employee-wise Performance '+(document.getElementById('tj_specificDate').value?('&#183; '+document.getElementById('tj_specificDate').value):'')+'</div>';
+  h+='<div class="table-wrap"><div class="table-inner"><table><thead><tr><th>Employee</th><th>Total Trades</th><th>Closed</th><th>Target Hit</th><th>SL Hit</th><th>Win Rate</th></tr></thead><tbody>';
+  keys.forEach(function(k){
+    var e=byEmp[k];
+    var st=tjWinStats(e.rows);
+    h+='<tr style="cursor:pointer;" onclick="tjFilterToEmployee(\''+k.replace(/'/g,"\\'")+'\')">';
+    h+='<td style="font-weight:600;">'+e.name+'</td>';
+    h+='<td>'+st.total+'</td>';
+    h+='<td>'+st.closed+'</td>';
+    h+='<td style="color:var(--accent);">'+st.target+'</td>';
+    h+='<td style="color:var(--danger);">'+st.sl+'</td>';
+    h+='<td><span class="badge '+(st.winRate>=50?'green':'amber')+'">'+st.winRate+'%</span></td>';
+    h+='</tr>';
+  });
+  h+='</tbody></table></div></div>';
+  el.innerHTML=h;
+}
+function tjFilterToEmployee(empId){
+  var sel=document.getElementById('tj_empFilter');
+  if(sel){sel.value=empId;renderTradingJournalPage();sel.scrollIntoView({behavior:'smooth',block:'center'});}
+}
 function renderTradingJournalPage(){
   initTradingJournalForm();
+  var isAdmTJ=currentUser&&currentUser.role==='admin';
+  var specificDate=document.getElementById('tj_specificDate')?document.getElementById('tj_specificDate').value:'';
+  var allScopedRows=isAdmTJ?(allData.TradingJournal||[]):fEmpStrict(allData.TradingJournal||[],currentUser.userId);
+  var dateFilteredAll=specificDate?allScopedRows.filter(function(r){return (r['Date']||'')===specificDate;}):fDate(allScopedRows,filters['tj']||'all');
+  renderTJEmpBreakdown(dateFilteredAll);
   var rows=tjRows();
-  rows=fDate(rows,filters['tj']||'all');
+  rows=specificDate?rows.filter(function(r){return (r['Date']||'')===specificDate;}):fDate(rows,filters['tj']||'all');
   var openStatuses=['Open','1st Target Done'];
   if(tjStatF==='open')rows=rows.filter(function(r){return openStatuses.indexOf(r['Status'])!==-1;});
   else if(tjStatF==='closed')rows=rows.filter(function(r){return openStatuses.indexOf(r['Status'])===-1;});
