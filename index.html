@@ -2586,9 +2586,10 @@ function markNSETradeDone(rowNum){
   }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
 
-/* ===== v31: CONTEST ENGINE — generic multi-metric contest eligibility + level calculation =====
-   Har contest ek 'Metric Type' se bandhi hai. Naya contest metric add karna ho to bas
-   CONTEST_METRICS me ek naya entry daal do — baaki sab (level %, progress ring, leaderboard) automatic chal jayega. */
+/* ===== v32: CONTEST ENGINE v2 — multi-metric COMBO contests, custom/manual metrics, Rules =====
+   Har contest ek ya zyada 'Metric Type' se bandhi hai (comma-separated = COMBO, sab metrics AND-logic se milte hain).
+   Naya built-in metric add karna ho to CONTEST_METRICS me entry daalo. Naya CUSTOM metric admin khud "Other" se
+   bina code ke bana sakta hai — uska progress sirf employee ke apne click se badhta hai (ManualContestEntries sheet). */
 var CONTEST_METRICS = {
   'Account Opening': {
     sheet:'Accounts', label:'Demat Account Opening', unitLabel:'account',
@@ -2599,20 +2600,16 @@ var CONTEST_METRICS = {
     }
   },
   'SIP': {
-    sheet:'SIP', label:'SIP Registration', unitLabel:'SIP',
+    sheet:'SIP', label:'SIP Registration', unitLabel:'SIP client', amountField:'Amount',
     eligible:function(r){ return (r['Type']||'SIP')==='SIP'; }
   },
   'Insurance': {
-    sheet:'Insurance', label:'Insurance Policy', unitLabel:'policy',
+    sheet:'Insurance', label:'Insurance Policy', unitLabel:'policy', amountField:'Premium',
     eligible:function(r){ return true; }
   },
-  'Payment Account': {
-    sheet:'Accounts', label:'Payment/Trading Account', unitLabel:'account',
-    eligible:function(r){ return true; }
-  },
-  'Credit Client': {
-    sheet:'Leads', label:'Credit Client Conversion', unitLabel:'client',
-    eligible:function(r){ return r['Converted']==='Yes'; }
+  'Traded Client': {
+    sheet:null, multiSheet:true, label:'Traded Client (Trading Journal + Call&Trade)', unitLabel:'client',
+    eligible:function(){ return true; }
   }
 };
 function contestDateInRange(dateStr,startStr,endStr){
@@ -2620,24 +2617,68 @@ function contestDateInRange(dateStr,startStr,endStr){
   var d=(''+dateStr).slice(0,10);
   return d>=startStr && d<=endStr;
 }
-function contestEligibleRowsFor(contest){
-  var metric=CONTEST_METRICS[contest['Metric Type']];
-  if(!metric)return [];
-  var rows=allData[metric.sheet]||[];
-  var start=contest['Start Date'],end=contest['End Date'];
-  return rows.filter(function(r){
-    return contestDateInRange(r['Date'],start,end) && metric.eligible(r);
-  });
+function contestMetricList(contest){
+  return (contest['Metric Type']||'').split(',').map(function(s){return s.trim();}).filter(Boolean);
 }
-function contestEmployeeCounts(contest){
-  var rows=contestEligibleRowsFor(contest);
+function contestMetricConfig(contest){
+  try{ var c=JSON.parse(contest['Metric Config']||'{}'); return c&&typeof c==='object'?c:{}; }catch(e){ return {}; }
+}
+function contestIsCombo(contest){ return contestMetricList(contest).length>1; }
+function contestMetricUnitLabel(metricName){
+  return (CONTEST_METRICS[metricName]&&CONTEST_METRICS[metricName].unitLabel)||'entry';
+}
+/* Generic per-metric per-employee counter — handles built-in sheet metrics, multiSheet ('Traded Client'),
+   custom/manual metrics (anything not in CONTEST_METRICS -> ManualContestEntries), and count-vs-amount unit. */
+function contestMetricEmployeeCounts(contest,metricName,unit){
+  unit=unit||'count';
+  var start=contest['Start Date'],end=contest['End Date'];
   var byEmp={};
+  function ensure(id,name,branch){
+    if(!byEmp[id])byEmp[id]={id:id,name:name||id,branch:branch||'',count:0,_sum:0,_clients:{}};
+    return byEmp[id];
+  }
+  var metric=CONTEST_METRICS[metricName];
+  if(!metric){
+    (allData.ManualContestEntries||[]).forEach(function(r){
+      if(r['Contest ID']!==contest['Contest ID'])return;
+      if((r['Note']||'')!==metricName && contestMetricList(contest).length>1)return; /* combo: note tags which metric */
+      if(!contestDateInRange(r['Date'],start,end))return;
+      var id=(r['Employee ID']||'').trim()||r['Employee Name']||'-';
+      ensure(id,r['Employee Name'],r['Branch']).count++;
+    });
+    return byEmp;
+  }
+  if(metric.multiSheet){
+    var tj=(allData.TradingJournal||[]).filter(function(r){return contestDateInRange(r['Date'],start,end);});
+    var ct=(allData.CallTrade||[]).filter(function(r){return contestDateInRange(r['Date'],start,end);});
+    tj.concat(ct).forEach(function(r){
+      var id=(r['Employee ID']||'').trim()||r['Employee Name']||'-';
+      var e=ensure(id,r['Employee Name'],r['Branch']);
+      var cid=(r['Client ID']||r['Client Name']||'').trim();
+      if(cid)e._clients[cid]=true;
+    });
+    Object.keys(byEmp).forEach(function(id){byEmp[id].count=Object.keys(byEmp[id]._clients).length;});
+    return byEmp;
+  }
+  var rows=(allData[metric.sheet]||[]).filter(function(r){return contestDateInRange(r['Date'],start,end)&&metric.eligible(r);});
   rows.forEach(function(r){
     var id=(r['Employee ID']||'').trim()||r['Employee Name']||'-';
-    if(!byEmp[id])byEmp[id]={id:id,name:r['Employee Name']||id,branch:r['Branch']||'',count:0};
-    byEmp[id].count++;
+    var e=ensure(id,r['Employee Name'],r['Branch']);
+    e.count++;
+    var amtField=metric.amountField||'Amount';
+    e._sum+=parseFloat(r[amtField]!==undefined?r[amtField]:0)||0;
   });
+  if(unit==='amount'){
+    Object.keys(byEmp).forEach(function(id){byEmp[id].count=Math.round(byEmp[id]._sum);});
+  }
   return byEmp;
+}
+/* Single-metric wrapper (non-combo contests) — preserves exact old behaviour for the live Account Opening contest. */
+function contestEmployeeCounts(contest){
+  var metricName=contestMetricList(contest)[0];
+  var cfg=contestMetricConfig(contest);
+  var unit=(cfg.unit&&cfg.unit[metricName])||'count';
+  return contestMetricEmployeeCounts(contest,metricName,unit);
 }
 function contestLevels(contest){
   return [
@@ -2665,6 +2706,49 @@ function contestLevelInfo(count,contest){
   var pct=span?Math.min(100,Math.round(progressInLevel/span*100)):100;
   return {level:curLevel.level,levelLabel:'Level '+curLevel.level,reward:curLevel.reward,pct:pct,pending:Math.max(0,next.min-count),nextMin:next.min,count:count,levels:levels};
 }
+/* COMBO level info: level N is reached only when EVERY selected metric hits its own level-N threshold (AND logic).
+   Reward per level is a single combined reward (reused from L1-L4 Reward columns) since the user wants
+   "in dono ke reward ek saath" not separate rewards per metric. */
+function contestComboLevelInfo(contest,empId){
+  var metrics=contestMetricList(contest);
+  var cfg=contestMetricConfig(contest);
+  var levels=contestLevels(contest);
+  var perMetric=metrics.map(function(m){
+    var unit=(cfg.unit&&cfg.unit[m])||'count';
+    var mins=(cfg.perMetricLevels&&cfg.perMetricLevels[m])||[0,0,0,0];
+    var counts=contestMetricEmployeeCounts(contest,m,unit);
+    var count=(counts[empId]&&counts[empId].count)||0;
+    return {metric:m,unit:unit,count:count,mins:mins,unitLabel:contestMetricUnitLabel(m)+(unit==='amount'?' (Rs)':'')};
+  });
+  var curIdx=-1;
+  for(var i=0;i<4;i++){
+    var allMet=perMetric.every(function(pm){return pm.mins[i]>0 && pm.count>=pm.mins[i];});
+    if(allMet)curIdx=i;
+  }
+  var curLevel=curIdx>=0?levels[curIdx]:null;
+  var next=levels[curIdx+1]||null;
+  var pct=0,pending=[];
+  if(next){
+    var pcts=perMetric.map(function(pm){
+      var target=pm.mins[curIdx+1]||0;
+      var base=curIdx>=0?(pm.mins[curIdx]||0):0;
+      var span=target-base;
+      var prog=span>0?Math.min(100,Math.max(0,Math.round((pm.count-base)/span*100))):(pm.count>=target?100:0);
+      pending.push({metric:pm.metric,unitLabel:pm.unitLabel,need:Math.max(0,target-pm.count),target:target,count:pm.count});
+      return prog;
+    });
+    pct=pcts.length?Math.min.apply(null,pcts):0;
+  } else {
+    pct=curLevel?100:0;
+  }
+  return {
+    level:curIdx>=0?levels[curIdx].level:0,
+    curIdx:curIdx, nextIdx:next?curIdx+1:null,
+    reward:curLevel?curLevel.reward:'',
+    pct:pct, nextMin:next?next.level:null,
+    pending:pending, perMetric:perMetric, levels:levels
+  };
+}
 function activeContests(){
   var today=td();
   return (allData.Contests||[]).filter(function(c){return (c['Status']||'Active')==='Active' && c['End Date']>=today;});
@@ -2672,8 +2756,30 @@ function activeContests(){
 function allContestsSorted(){
   return (allData.Contests||[]).slice().sort(function(a,b){return (b['Created Date']||'').localeCompare(a['Created Date']||'');});
 }
+function mkContestRulesBlock(contest){
+  var rules=(contest['Rules']||'').split('\n').map(function(s){return s.trim();}).filter(Boolean);
+  if(!rules.length)return '';
+  var h='<div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:10px;padding:10px 14px;margin:12px 0;">';
+  h+='<div style="font-size:12px;font-weight:700;color:var(--amber);margin-bottom:4px;">&#9888; Eligibility Rules — yeh sab fulfill hona zaroori hai, tabhi count hoga:</div>';
+  h+='<ul style="margin:0;padding-left:18px;font-size:12px;color:var(--text);">';
+  rules.forEach(function(r){h+='<li style="margin-bottom:2px;">'+r+'</li>';});
+  h+='</ul></div>';
+  return h;
+}
+function contestManualClick(contestId,metricName){
+  var p={action:'addGeneric',sheet:'ManualContestEntries','Entry ID':'M'+Date.now(),'Contest ID':contestId,'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch,'Date':td(),'Note':metricName};
+  postData(p).then(function(r){
+    if(r&&r.success){
+      showToast('+1 '+metricName+' add ho gaya!','success');
+      allData.ManualContestEntries=allData.ManualContestEntries||[];
+      allData.ManualContestEntries.push(p);
+      renderContestPage();
+      setTimeout(function(){loadAll(2);},600);
+    } else showToast('Failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
 
-/* ===== v31: CONTEST PAGE RENDERING (gamified rings + leaderboard) ===== */
+/* ===== v31/v32: CONTEST PAGE RENDERING (gamified rings + leaderboard) ===== */
 function mkContestRing(pct,size){
   size=size||150;
   var r=(size/2)-10,cx=size/2,cy=size/2,circ=2*Math.PI*r;
@@ -2687,7 +2793,6 @@ function mkContestLevelSteps(info){
   var sizes=[46,58,70,84];
   var h='<div class="contest-levels">';
   info.levels.forEach(function(lv,i){
-    var done=info.level>=lv.level && info.level>0 && (lv.level<info.level || info.pct===100&&lv.level===info.level);
     var isDone=(info.count>=lv.min && lv.min>0);
     var isCur=info.level===lv.level && info.level>0 && !(info.nextMin===null);
     var cls='contest-lvl-circle'+(isDone?' done':'')+((isCur&&!isDone)?' cur':'')+((info.level===0&&i===0)?' cur':'');
@@ -2698,48 +2803,130 @@ function mkContestLevelSteps(info){
   h+='</div>';
   return h;
 }
+function mkContestComboLevelSteps(info){
+  var sizes=[46,58,70,84];
+  var h='<div class="contest-levels">';
+  info.levels.forEach(function(lv,i){
+    var isDone=info.level>=lv.level && info.level>0;
+    var isCur=info.curIdx===i;
+    var cls='contest-lvl-circle'+(isDone?' done':'')+((isCur&&!isDone)?' cur':'')+((info.level===0&&i===0)?' cur':'');
+    h+='<div class="contest-lvl-step"><div class="'+cls+'" style="width:'+sizes[i]+'px;height:'+sizes[i]+'px;font-size:'+(12+i*2)+'px;">'+(isDone?'&#10003;':lv.level)+'</div>'+
+       '<div class="contest-lvl-label">Level '+lv.level+'</div>'+
+       '<div class="contest-lvl-reward">'+(lv.reward||'')+'</div></div>';
+  });
+  h+='</div>';
+  return h;
+}
+function mkContestPerMetricBars(perMetric,contestId,pendingArr){
+  var h='<div style="display:flex;flex-direction:column;gap:8px;">';
+  perMetric.forEach(function(pm){
+    var pend=(pendingArr||[]).find(function(p){return p.metric===pm.metric;});
+    var target=pend?pend.target:(pm.mins[pm.mins.length-1]||pm.count);
+    var pct=target?Math.min(100,Math.round(pm.count/target*100)):100;
+    h+='<div>';
+    h+='<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:2px;"><span>'+pm.metric+'</span><span>'+pm.count+' / '+(target||'MAX')+' '+pm.unitLabel+'</span></div>';
+    h+='<div style="background:var(--card2);border-radius:6px;height:8px;overflow:hidden;"><div style="width:'+pct+'%;height:100%;background:var(--accent);"></div></div>';
+    if(!CONTEST_METRICS[pm.metric]){
+      h+='<button class="btn-mini add" style="margin-top:4px;font-size:10px;" onclick="contestManualClick(\''+contestId+'\',\''+pm.metric.replace(/'/g,"\\'")+'\')">&#43;1 '+pm.metric+' Done</button>';
+    }
+    h+='</div>';
+  });
+  h+='</div>';
+  return h;
+}
 function contestEmployeeCard(contest,empId,empName){
-  var counts=contestEmployeeCounts(contest);
-  var mine=counts[empId]||{count:0};
-  var info=contestLevelInfo(mine.count,contest);
-  var metric=CONTEST_METRICS[contest['Metric Type']]||{unitLabel:'entry'};
-  var msg=info.nextMin?('Sirf <b>'+info.pending+' '+metric.unitLabel+'</b> aur karo Level '+(info.level+1)+' tak pahunchne ke liye!'):'Aap top level pe ho! Zabardast! &#127881;';
+  var isCombo=contestIsCombo(contest);
+  var metrics=contestMetricList(contest);
   var h='<div class="contest-card">';
   h+='<div class="contest-title">&#127942; '+contest['Title']+'</div>';
-  h+='<div class="contest-sub">'+contest['Start Date']+' se '+contest['End Date']+' tak &#183; '+(metric.label||contest['Metric Type'])+'</div>';
+  h+='<div class="contest-sub">'+contest['Start Date']+' se '+contest['End Date']+' tak &#183; '+metrics.join(' + ')+'</div>';
+  h+=mkContestRulesBlock(contest);
   h+='<div class="contest-body">';
-  h+='<div class="contest-ring-wrap">'+mkContestRing(info.pct)+'<div class="contest-ring-center"><div class="contest-ring-pct">'+info.count+'</div><div class="contest-ring-lvl">'+(info.nextMin?('of '+info.nextMin):'MAX')+'</div></div></div>';
-  h+=mkContestLevelSteps(info);
-  h+='</div>';
-  h+='<div class="contest-info" style="margin-top:14px;"><div class="contest-target-msg">'+msg+'</div><div class="contest-motivate">Aapka current level: <b style="color:var(--accent);">'+(info.level>0?('Level '+info.level):'Shuru karo!')+'</b>'+(info.level>0?(' &#183; Reward: '+(info.reward||'-')):'')+'</div></div>';
+  if(!isCombo){
+    var metricName=metrics[0];
+    var counts=contestEmployeeCounts(contest);
+    var mine=counts[empId]||{count:0};
+    var info=contestLevelInfo(mine.count,contest);
+    var unitLabel=contestMetricUnitLabel(metricName);
+    var msg=info.nextMin?('Sirf <b>'+info.pending+' '+unitLabel+'</b> aur karo Level '+(info.level+1)+' tak pahunchne ke liye!'):'Aap top level pe ho! Zabardast! &#127881;';
+    h+='<div class="contest-ring-wrap">'+mkContestRing(info.pct)+'<div class="contest-ring-center"><div class="contest-ring-pct">'+info.count+'</div><div class="contest-ring-lvl">'+(info.nextMin?('of '+info.nextMin):'MAX')+'</div></div></div>';
+    h+=mkContestLevelSteps(info);
+    h+='</div>';
+    h+='<div class="contest-info" style="margin-top:14px;"><div class="contest-target-msg">'+msg+'</div><div class="contest-motivate">Aapka current level: <b style="color:var(--accent);">'+(info.level>0?('Level '+info.level):'Shuru karo!')+'</b>'+(info.level>0?(' &#183; Reward: '+(info.reward||'-')):'')+'</div></div>';
+    if(!CONTEST_METRICS[metricName]){
+      h+='<button class="btn-save" style="margin-top:10px;" onclick="contestManualClick(\''+contest['Contest ID']+'\',\''+metricName.replace(/'/g,"\\'")+'\')">&#43;1 '+metricName+' Done</button>';
+    }
+  } else {
+    var info=contestComboLevelInfo(contest,empId);
+    var msg=info.nextMin?info.pending.map(function(p){return p.need>0?('<b>'+p.need+' '+p.unitLabel+'</b> ('+p.metric+')'):null;}).filter(Boolean).join(' aur '):'';
+    h+='<div class="contest-ring-wrap">'+mkContestRing(info.pct)+'<div class="contest-ring-center"><div class="contest-ring-pct">'+(info.level>0?('L'+info.level):'L0')+'</div><div class="contest-ring-lvl">'+(info.nextMin?('to L'+info.nextMin):'MAX')+'</div></div></div>';
+    h+='<div style="flex:1;min-width:220px;">'+mkContestPerMetricBars(info.perMetric,contest['Contest ID'],info.pending)+'</div>';
+    h+='</div>';
+    h+='<div class="contest-info" style="margin-top:14px;"><div class="contest-target-msg">'+(msg?('Sirf '+msg+' aur karo Level '+(info.level+1)+' tak pahunchne ke liye!'):'Aap top level pe ho! Zabardast! &#127881;')+'</div><div class="contest-motivate">Aapka current level: <b style="color:var(--accent);">'+(info.level>0?('Level '+info.level):'Shuru karo!')+'</b>'+(info.level>0?(' &#183; Reward: '+(info.reward||'-')):'')+'</div></div>';
+  }
   h+='</div>';
   return h;
 }
 function contestAdminCard(contest){
-  var counts=contestEmployeeCounts(contest);
-  var ids=Object.keys(counts);
-  var metric=CONTEST_METRICS[contest['Metric Type']]||{unitLabel:'entry'};
-  ids.sort(function(a,b){return counts[b].count-counts[a].count;});
-  var medals=['&#129351;','&#129352;','&#129353;'];
+  var isCombo=contestIsCombo(contest);
+  var metrics=contestMetricList(contest);
   var h='<div class="contest-card">';
   h+='<div class="contest-title">&#127942; '+contest['Title']+' <span style="font-size:11px;background:rgba(63,191,127,.15);color:var(--accent);padding:2px 8px;border-radius:10px;">'+(contest['Status']||'Active')+'</span>'+(contest['_rowNum']?' <button class="btn-mini" style="margin-left:auto;color:var(--danger);border-color:rgba(239,68,68,.4);font-size:11px;" onclick="endContest('+contest['_rowNum']+')">End Contest</button>':'')+'</div>';
-  h+='<div class="contest-sub">'+contest['Start Date']+' se '+contest['End Date']+' tak &#183; '+(metric.label||contest['Metric Type'])+' &#183; '+ids.length+' employees participating</div>';
-  if(!ids.length){
-    h+='<div class="no-data" style="margin-top:14px;">Abhi tak koi eligible entry nahi hui</div>';
+  h+='<div class="contest-sub">'+contest['Start Date']+' se '+contest['End Date']+' tak &#183; '+metrics.join(' + ')+'</div>';
+  h+=mkContestRulesBlock(contest);
+  var medals=['&#129351;','&#129352;','&#129353;'];
+  if(!isCombo){
+    var counts=contestEmployeeCounts(contest);
+    var ids=Object.keys(counts);
+    ids.sort(function(a,b){return counts[b].count-counts[a].count;});
+    h+='<div class="contest-sub" style="margin-top:-6px;">'+ids.length+' employees participating</div>';
+    if(!ids.length){
+      h+='<div class="no-data" style="margin-top:14px;">Abhi tak koi eligible entry nahi hui</div>';
+    } else {
+      h+='<div class="table-wrap" style="margin-top:16px;"><div class="table-inner"><table><thead><tr><th>#</th><th>Employee</th><th>Branch</th><th>Count</th><th>Level</th><th>Reward</th><th>Progress</th></tr></thead><tbody>';
+      ids.forEach(function(id,i){
+        var e=counts[id],info=contestLevelInfo(e.count,contest);
+        h+='<tr class="contest-leaderboard-row" onclick="contestDrillEmployee(\''+contest['Contest ID']+'\',\''+id.replace(/'/g,"\\'")+'\')">';
+        h+='<td class="contest-medal">'+(medals[i]||(i+1))+'</td>';
+        h+='<td style="font-weight:700;">'+e.name+'</td><td>'+e.branch+'</td>';
+        h+='<td style="font-weight:700;color:var(--accent);">'+e.count+'</td>';
+        h+='<td>'+(info.level>0?'<span class="badge green">Level '+info.level+'</span>':'<span class="badge amber">Not yet</span>')+'</td>';
+        h+='<td style="font-size:11px;">'+(info.reward||'-')+'</td>';
+        h+='<td style="min-width:120px;"><div style="background:var(--card2);border-radius:6px;height:8px;overflow:hidden;"><div style="width:'+info.pct+'%;height:100%;background:var(--accent);"></div></div><div style="font-size:10px;color:var(--muted);margin-top:2px;">'+(info.nextMin?(info.pending+' more to L'+(info.level+1)):'MAX')+'</div></td>';
+        h+='</tr>';
+      });
+      h+='</tbody></table></div></div>';
+    }
   } else {
-    h+='<div class="table-wrap" style="margin-top:16px;"><div class="table-inner"><table><thead><tr><th>#</th><th>Employee</th><th>Branch</th><th>Count</th><th>Level</th><th>Reward</th><th>Progress</th></tr></thead><tbody>';
-    ids.forEach(function(id,i){
-      var e=counts[id],info=contestLevelInfo(e.count,contest);
-      h+='<tr class="contest-leaderboard-row" onclick="contestDrillEmployee(\''+contest['Contest ID']+'\',\''+id.replace(/'/g,"\\'")+'\')">';
-      h+='<td class="contest-medal">'+(medals[i]||(i+1))+'</td>';
-      h+='<td style="font-weight:700;">'+e.name+'</td><td>'+e.branch+'</td>';
-      h+='<td style="font-weight:700;color:var(--accent);">'+e.count+'</td>';
-      h+='<td>'+(info.level>0?'<span class="badge green">Level '+info.level+'</span>':'<span class="badge amber">Not yet</span>')+'</td>';
-      h+='<td style="font-size:11px;">'+(info.reward||'-')+'</td>';
-      h+='<td style="min-width:120px;"><div style="background:var(--card2);border-radius:6px;height:8px;overflow:hidden;"><div style="width:'+info.pct+'%;height:100%;background:var(--accent);"></div></div><div style="font-size:10px;color:var(--muted);margin-top:2px;">'+(info.nextMin?(info.pending+' more to L'+(info.level+1)):'MAX')+'</div></td>';
-      h+='</tr>';
+    var cfg=contestMetricConfig(contest);
+    var idMap={};
+    metrics.forEach(function(m){
+      var unit=(cfg.unit&&cfg.unit[m])||'count';
+      var c=contestMetricEmployeeCounts(contest,m,unit);
+      Object.keys(c).forEach(function(id){idMap[id]={id:id,name:c[id].name,branch:c[id].branch};});
     });
-    h+='</tbody></table></div></div>';
+    var ids=Object.keys(idMap);
+    h+='<div class="contest-sub" style="margin-top:-6px;">'+ids.length+' employees participating &#183; COMBO contest (sab metrics fulfill karne par hi level milega)</div>';
+    if(!ids.length){
+      h+='<div class="no-data" style="margin-top:14px;">Abhi tak koi eligible entry nahi hui</div>';
+    } else {
+      var rows=ids.map(function(id){return {id:id,emp:idMap[id],info:contestComboLevelInfo(contest,id)};});
+      rows.sort(function(a,b){if(b.info.level!==a.info.level)return b.info.level-a.info.level;return b.info.pct-a.info.pct;});
+      h+='<div class="table-wrap" style="margin-top:16px;"><div class="table-inner"><table><thead><tr><th>#</th><th>Employee</th><th>Branch</th>';
+      metrics.forEach(function(m){h+='<th>'+m+'</th>';});
+      h+='<th>Level</th><th>Reward</th><th>Progress</th></tr></thead><tbody>';
+      rows.forEach(function(row,i){
+        h+='<tr class="contest-leaderboard-row" onclick="contestDrillEmployee(\''+contest['Contest ID']+'\',\''+row.id.replace(/'/g,"\\'")+'\')">';
+        h+='<td class="contest-medal">'+(medals[i]||(i+1))+'</td>';
+        h+='<td style="font-weight:700;">'+row.emp.name+'</td><td>'+row.emp.branch+'</td>';
+        row.info.perMetric.forEach(function(pm){h+='<td>'+pm.count+'</td>';});
+        h+='<td>'+(row.info.level>0?'<span class="badge green">Level '+row.info.level+'</span>':'<span class="badge amber">Not yet</span>')+'</td>';
+        h+='<td style="font-size:11px;">'+(row.info.reward||'-')+'</td>';
+        h+='<td style="min-width:120px;"><div style="background:var(--card2);border-radius:6px;height:8px;overflow:hidden;"><div style="width:'+row.info.pct+'%;height:100%;background:var(--accent);"></div></div></td>';
+        h+='</tr>';
+      });
+      h+='</tbody></table></div></div>';
+    }
   }
   h+='<div id="contestDrill_'+contest['Contest ID']+'"></div>';
   h+='</div>';
@@ -2748,17 +2935,56 @@ function contestAdminCard(contest){
 function contestDrillEmployee(contestId,empId){
   var contest=(allData.Contests||[]).find(function(c){return c['Contest ID']===contestId;});
   if(!contest)return;
-  var metric=CONTEST_METRICS[contest['Metric Type']];
-  var rows=contestEligibleRowsFor(contest).filter(function(r){return ((r['Employee ID']||'').trim()||r['Employee Name'])===empId;});
   var el=document.getElementById('contestDrill_'+contestId);
   if(!el)return;
   if(el.innerHTML){el.innerHTML='';return;}
-  var h='<div class="day-detail" style="margin-top:14px;"><h3><span>Eligible Entries ('+rows.length+')</span><span class="day-close" onclick="document.getElementById(\'contestDrill_'+contestId+'\').innerHTML=\'\'">&#10005; Close</span></h3>';
-  if(!rows.length)h+='<div class="no-data">Koi eligible entry nahi mili</div>';
-  else{
-    h+='<table><thead><tr><th>Date</th><th>Client Name</th><th>Client ID</th></tr></thead><tbody>';
-    rows.slice().reverse().forEach(function(r){h+='<tr><td>'+(r['Date']||'-')+'</td><td>'+(r['Client Name']||'-')+'</td><td>'+(r['Client ID']||'-')+'</td></tr>';});
+  var metrics=contestMetricList(contest);
+  var h='<div class="day-detail" style="margin-top:14px;">';
+  var closeBtn='<span class="day-close" onclick="document.getElementById(\'contestDrill_'+contestId+'\').innerHTML=\'\'">&#10005; Close</span>';
+  if(metrics.length>1){
+    h+='<h3><span>Metric-wise Progress</span>'+closeBtn+'</h3>';
+    h+='<table><thead><tr><th>Metric</th><th>Count</th></tr></thead><tbody>';
+    var cfg=contestMetricConfig(contest);
+    metrics.forEach(function(m){
+      var unit=(cfg.unit&&cfg.unit[m])||'count';
+      var counts=contestMetricEmployeeCounts(contest,m,unit);
+      var c=(counts[empId]&&counts[empId].count)||0;
+      h+='<tr><td>'+m+'</td><td>'+c+(unit==='amount'?' (total ₹)':'')+'</td></tr>';
+    });
     h+='</tbody></table>';
+  } else {
+    var metricName=metrics[0],metric=CONTEST_METRICS[metricName],rows=[];
+    if(!metric){
+      rows=(allData.ManualContestEntries||[]).filter(function(r){return r['Contest ID']===contestId&&((r['Employee ID']||'').trim()||r['Employee Name'])===empId;});
+      h+='<h3><span>Manual Entries ('+rows.length+')</span>'+closeBtn+'</h3>';
+      if(!rows.length)h+='<div class="no-data">Koi entry nahi mili</div>';
+      else{
+        h+='<table><thead><tr><th>Date</th><th>Note</th></tr></thead><tbody>';
+        rows.slice().reverse().forEach(function(r){h+='<tr><td>'+(r['Date']||'-')+'</td><td>'+(r['Note']||'-')+'</td></tr>';});
+        h+='</tbody></table>';
+      }
+    } else if(metric.multiSheet){
+      var start=contest['Start Date'],end=contest['End Date'];
+      var tj=(allData.TradingJournal||[]).filter(function(r){return contestDateInRange(r['Date'],start,end)&&((r['Employee ID']||'').trim()||r['Employee Name'])===empId;});
+      var ct=(allData.CallTrade||[]).filter(function(r){return contestDateInRange(r['Date'],start,end)&&((r['Employee ID']||'').trim()||r['Employee Name'])===empId;});
+      rows=tj.concat(ct);
+      h+='<h3><span>Traded Clients ('+rows.length+' entries)</span>'+closeBtn+'</h3>';
+      if(!rows.length)h+='<div class="no-data">Koi entry nahi mili</div>';
+      else{
+        h+='<table><thead><tr><th>Date</th><th>Client</th></tr></thead><tbody>';
+        rows.slice().reverse().forEach(function(r){h+='<tr><td>'+(r['Date']||'-')+'</td><td>'+(r['Client Name']||r['Client ID']||'-')+'</td></tr>';});
+        h+='</tbody></table>';
+      }
+    } else {
+      rows=(allData[metric.sheet]||[]).filter(function(r){return contestDateInRange(r['Date'],contest['Start Date'],contest['End Date'])&&metric.eligible(r)&&((r['Employee ID']||'').trim()||r['Employee Name'])===empId;});
+      h+='<h3><span>Eligible Entries ('+rows.length+')</span>'+closeBtn+'</h3>';
+      if(!rows.length)h+='<div class="no-data">Koi eligible entry nahi mili</div>';
+      else{
+        h+='<table><thead><tr><th>Date</th><th>Client Name</th><th>Client ID</th></tr></thead><tbody>';
+        rows.slice().reverse().forEach(function(r){h+='<tr><td>'+(r['Date']||'-')+'</td><td>'+(r['Client Name']||'-')+'</td><td>'+(r['Client ID']||'-')+'</td></tr>';});
+        h+='</tbody></table>';
+      }
+    }
   }
   h+='</div>';
   el.innerHTML=h;
@@ -2767,7 +2993,7 @@ function contestDrillEmployee(contestId,empId){
 function renderContestPage(){
   var isAdm=currentUser&&currentUser.role==='admin';
   var box=document.getElementById('contestLaunchBox');
-  if(box)box.innerHTML=isAdm?mkContestLaunchForm():'';
+  if(box){box.innerHTML=isAdm?mkContestLaunchForm():'';if(isAdm)renderCxLevelsSection();}
   var contests=activeContests();
   var listEl=document.getElementById('contestList');
   if(!listEl)return;
@@ -2782,48 +3008,130 @@ function toggleContestLaunch(){
   var el=document.getElementById('contestLaunchFormBody');
   if(el)el.style.display=(el.style.display==='none'?'block':'none');
 }
+function cxSelectedMetrics(){
+  var out=[];
+  Object.keys(CONTEST_METRICS).forEach(function(k){
+    var cb=document.getElementById('cx_m_'+k.replace(/\s+/g,'_'));
+    if(cb&&cb.checked)out.push(k);
+  });
+  var otherCb=document.getElementById('cx_m_other');
+  if(otherCb&&otherCb.checked){
+    var nm=(document.getElementById('cx_other_name').value||'').trim();
+    if(nm)out.push(nm);
+  }
+  return out;
+}
+function renderCxLevelsSection(){
+  var el=document.getElementById('cx_levelsContainer');
+  if(!el)return;
+  var metrics=cxSelectedMetrics();
+  var sipSelected=metrics.indexOf('SIP')!==-1;
+  var sipUnitBox=document.getElementById('cx_sipUnitBox');
+  if(sipUnitBox)sipUnitBox.style.display=sipSelected?'block':'none';
+  if(!metrics.length){
+    el.innerHTML='<div style="color:var(--muted);font-size:12px;">Pehle upar se ek ya zyada metric select karo.</div>';
+    return;
+  }
+  var h='';
+  if(metrics.length===1){
+    h+='<div style="color:var(--muted);font-size:12px;margin:6px 0;">Har level ke liye minimum count/amount + reward daalo:</div>';
+    [1,2,3,4].forEach(function(lv){
+      h+='<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:8px;">';
+      h+='<div class="form-group" style="flex:1;min-width:100px;margin-bottom:0;"><label>Level '+lv+' Min</label><input type="number" id="cx_l'+lv+'min" placeholder="e.g. 25"></div>';
+      h+='<div class="form-group" style="flex:2;min-width:180px;margin-bottom:0;"><label>Level '+lv+' Reward</label><input type="text" id="cx_l'+lv+'reward" placeholder="e.g. ₹100/account or Nepal Trip / Cash Option"></div>';
+      h+='</div>';
+    });
+  } else {
+    h+='<div style="color:var(--muted);font-size:12px;margin:6px 0;">COMBO contest — har metric ke apne level thresholds daalo. Level tabhi milega jab <b>SAARE</b> metrics apna threshold cross karein:</div>';
+    metrics.forEach(function(m,mi){
+      h+='<div style="border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:10px;">';
+      h+='<div style="font-weight:700;font-size:12px;color:var(--accent);margin-bottom:6px;">'+m+'</div>';
+      h+='<div style="display:flex;gap:8px;flex-wrap:wrap;">';
+      [1,2,3,4].forEach(function(lv){
+        h+='<div class="form-group" style="flex:1;min-width:80px;margin-bottom:0;"><label>L'+lv+' Min</label><input type="number" class="cx_combo_min" data-metric="'+mi+'" data-lv="'+lv+'" placeholder="e.g. '+(lv*10)+'"></div>';
+      });
+      h+='</div></div>';
+    });
+    h+='<div style="color:var(--muted);font-size:12px;margin:10px 0 6px;">Combined Reward (jab dono/teeno fulfill ho jaayen):</div>';
+    [1,2,3,4].forEach(function(lv){
+      h+='<div class="form-group" style="margin-bottom:8px;"><label>Level '+lv+' Reward</label><input type="text" id="cx_l'+lv+'reward" placeholder="e.g. ₹200/combo or Goa Trip"></div>';
+    });
+  }
+  el.innerHTML=h;
+}
 function mkContestLaunchForm(){
-  var metricOpts=Object.keys(CONTEST_METRICS).map(function(k){return '<option value="'+k+'">'+k+' ('+CONTEST_METRICS[k].label+')</option>';}).join('');
   var h='<div class="contest-launch-card">';
   h+='<div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleContestLaunch()"><b style="color:var(--accent);">&#43; Naya Contest Launch Karo</b><span style="color:var(--muted);font-size:12px;">Har month/quarter naya contest yahan se shuru karo</span></div>';
   h+='<div id="contestLaunchFormBody" style="display:none;margin-top:16px;">';
   h+='<div class="form-group"><label>Contest Title</label><input type="text" id="cx_title" placeholder="e.g. Demat Account Opening Contest - Aug 2026"></div>';
-  h+='<div class="form-group"><label>Metric Type</label><select id="cx_metric">'+metricOpts+'</select></div>';
+  h+='<div class="form-group"><label>Metric(s) — ek ya zyada select karo (2+ = COMBO contest)</label>';
+  h+='<div style="display:flex;flex-wrap:wrap;gap:14px;padding:8px 0;">';
+  Object.keys(CONTEST_METRICS).forEach(function(k){
+    var cid='cx_m_'+k.replace(/\s+/g,'_');
+    h+='<label style="display:flex;align-items:center;gap:6px;font-weight:400;font-size:13px;"><input type="checkbox" id="'+cid+'" onchange="renderCxLevelsSection()"> '+k+'</label>';
+  });
+  h+='<label style="display:flex;align-items:center;gap:6px;font-weight:400;font-size:13px;"><input type="checkbox" id="cx_m_other" onchange="renderCxLevelsSection()"> Other (custom)</label>';
+  h+='</div>';
+  h+='<input type="text" id="cx_other_name" placeholder="Custom metric ka naam likho (e.g. Insurance Renewal)" oninput="renderCxLevelsSection()" style="margin-top:4px;">';
+  h+='</div>';
+  h+='<div id="cx_sipUnitBox" style="display:none;background:var(--card2);border-radius:8px;padding:8px 12px;margin-bottom:12px;">';
+  h+='<label style="font-size:12px;color:var(--muted);">SIP kis se measure ho?</label><br>';
+  h+='<label style="margin-right:16px;font-weight:400;font-size:13px;"><input type="radio" name="cx_sipunit" value="count" checked> Client Count</label>';
+  h+='<label style="font-weight:400;font-size:13px;"><input type="radio" name="cx_sipunit" value="amount"> Total Amount (₹)</label>';
+  h+='</div>';
   h+='<div style="display:flex;gap:12px;flex-wrap:wrap;">';
   h+='<div class="form-group" style="flex:1;min-width:140px;"><label>Start Date</label><input type="date" id="cx_start"></div>';
   h+='<div class="form-group" style="flex:1;min-width:140px;"><label>End Date</label><input type="date" id="cx_end"></div>';
   h+='</div>';
-  h+='<div style="color:var(--muted);font-size:12px;margin:6px 0;">Har level ke liye minimum count + reward daalo:</div>';
-  [1,2,3,4].forEach(function(lv){
-    h+='<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:8px;">';
-    h+='<div class="form-group" style="flex:1;min-width:100px;margin-bottom:0;"><label>Level '+lv+' Min Count</label><input type="number" id="cx_l'+lv+'min" placeholder="e.g. 25"></div>';
-    h+='<div class="form-group" style="flex:2;min-width:180px;margin-bottom:0;"><label>Level '+lv+' Reward</label><input type="text" id="cx_l'+lv+'reward" placeholder="e.g. ₹100/account or Nepal Trip / Cash Option"></div>';
-    h+='</div>';
-  });
+  h+='<div class="form-group"><label>Rules / Eligibility Conditions (ek line = ek rule, sabko yeh dikhega)</label><textarea id="cx_rules" rows="3" placeholder="e.g.&#10;NSE pe kam se kam 1 trade zaroori hai&#10;Transfer account allowed nahi&#10;Sirf online/link se khule account hi count honge"></textarea></div>';
+  h+='<div id="cx_levelsContainer"></div>';
   h+='<button class="btn-save" onclick="submitContest()">&#127942; Launch Contest</button>';
   h+='</div></div>';
   return h;
 }
 function submitContest(){
   var title=(document.getElementById('cx_title').value||'').trim();
-  var metric=document.getElementById('cx_metric').value;
+  var metrics=cxSelectedMetrics();
   var start=document.getElementById('cx_start').value,end=document.getElementById('cx_end').value;
+  var rules=(document.getElementById('cx_rules').value||'').trim();
   if(!title||!start||!end){showToast('Title, Start Date aur End Date required hai','error');return;}
+  if(!metrics.length){showToast('Kam se kam ek metric select karo','error');return;}
   if(start>end){showToast('Start Date, End Date se pehle honi chahiye','error');return;}
   var btn=document.querySelector('#contestLaunchFormBody .btn-save');
-  var p={action:'addContest','Title':title,'Metric Type':metric,'Start Date':start,'End Date':end,
-    'L1 Min':document.getElementById('cx_l1min').value||0,'L1 Reward':document.getElementById('cx_l1reward').value||'',
-    'L2 Min':document.getElementById('cx_l2min').value||0,'L2 Reward':document.getElementById('cx_l2reward').value||'',
-    'L3 Min':document.getElementById('cx_l3min').value||0,'L3 Reward':document.getElementById('cx_l3reward').value||'',
-    'L4 Min':document.getElementById('cx_l4min').value||0,'L4 Reward':document.getElementById('cx_l4reward').value||'',
-    'Status':'Active','Created By':currentUser.name,'Created Date':td()};
+  var metricCfg={};
+  var sipUnitEl=document.querySelector('input[name="cx_sipunit"]:checked');
+  if(metrics.indexOf('SIP')!==-1 && sipUnitEl && sipUnitEl.value==='amount'){
+    metricCfg.unit=metricCfg.unit||{};metricCfg.unit['SIP']='amount';
+  }
+  var p={action:'addContest','Title':title,'Metric Type':metrics.join(','),'Start Date':start,'End Date':end,
+    'Status':'Active','Created By':currentUser.name,'Created Date':td(),'Rules':rules};
+  if(metrics.length===1){
+    p['L1 Min']=document.getElementById('cx_l1min').value||0; p['L1 Reward']=document.getElementById('cx_l1reward').value||'';
+    p['L2 Min']=document.getElementById('cx_l2min').value||0; p['L2 Reward']=document.getElementById('cx_l2reward').value||'';
+    p['L3 Min']=document.getElementById('cx_l3min').value||0; p['L3 Reward']=document.getElementById('cx_l3reward').value||'';
+    p['L4 Min']=document.getElementById('cx_l4min').value||0; p['L4 Reward']=document.getElementById('cx_l4reward').value||'';
+  } else {
+    metricCfg.perMetricLevels={};
+    metrics.forEach(function(m,mi){
+      var mins=[1,2,3,4].map(function(lv){
+        var inp=document.querySelector('.cx_combo_min[data-metric="'+mi+'"][data-lv="'+lv+'"]');
+        return parseFloat(inp&&inp.value)||0;
+      });
+      metricCfg.perMetricLevels[m]=mins;
+    });
+    p['L1 Reward']=document.getElementById('cx_l1reward').value||'';
+    p['L2 Reward']=document.getElementById('cx_l2reward').value||'';
+    p['L3 Reward']=document.getElementById('cx_l3reward').value||'';
+    p['L4 Reward']=document.getElementById('cx_l4reward').value||'';
+  }
+  p['Metric Config']=JSON.stringify(metricCfg);
   btn.disabled=true;btn.textContent='Launching...';
   postData(p).then(function(r){
     btn.disabled=false;btn.textContent='Launch Contest';
     if(r&&r.success){
       showToast('Contest launch ho gaya!','success');
       document.getElementById('cx_title').value='';
-      [1,2,3,4].forEach(function(lv){document.getElementById('cx_l'+lv+'min').value='';document.getElementById('cx_l'+lv+'reward').value='';});
+      document.getElementById('cx_rules').value='';
       setTimeout(function(){loadAll(2);},600);
     } else showToast('Failed: '+(r&&r.error||'Unknown'),'error');
   }).catch(function(e){btn.disabled=false;btn.textContent='Launch Contest';showToast('Error: '+e.message,'error');});
