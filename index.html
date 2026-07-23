@@ -1661,6 +1661,8 @@ function curPage(){var p=document.querySelector('.page.active');return p?p.id.re
 var _lastKnownUpdateTs=null;
 function checkForUpdates(){
   if(!currentUser||document.hidden)return;
+  var ae=document.activeElement;
+  if(ae&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA'||ae.tagName==='SELECT'))return; /* v33.3: user kahin type/select kar raha hai — background refresh se uska in-progress edit wipe mat karo */
   getJSON('lastUpdate').then(function(r){
     if(!r||!r.success)return;
     var ts=r.ts;
@@ -2804,6 +2806,52 @@ function mkContestAllEntriesTable(contest,metricName){
   h+='</tbody></table></div></div></div>';
   return h;
 }
+/* v33.3: per-employee TOTAL stats (not just eligible-only) — taaki jinka trade pending hai wo bhi
+   leaderboard me dikhein, sirf unke sath eligible/pending/shortfall bhi saaf dikhe. */
+function contestEmployeeAllStats(contest,metricName){
+  var entries=contestAllEntriesRows(contest,metricName);
+  var byEmp={};
+  entries.forEach(function(e){
+    var r=e.row;
+    var id=(r['Employee ID']||'').trim()||r['Employee Name']||'-';
+    if(!byEmp[id])byEmp[id]={id:id,name:r['Employee Name']||id,branch:r['Branch']||'',total:0,eligible:0,pending:0};
+    byEmp[id].total++;
+    if(e.eligible)byEmp[id].eligible++;else byEmp[id].pending++;
+  });
+  return byEmp;
+}
+/* v33.3: employee apni khud ki poori list dekh sake — eligible + pending dono, is contest ke andar */
+function mkContestMyEntriesTable(contest,metricName,empId){
+  var entries=contestAllEntriesRows(contest,metricName).filter(function(e){return ((e.row['Employee ID']||'').trim()||e.row['Employee Name'])===empId;});
+  if(!entries.length)return '';
+  var pendingCount=entries.filter(function(e){return !e.eligible;}).length;
+  var h='<div style="margin-top:16px;">';
+  h+='<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:6px;">Aapki Entries ('+entries.length+' total, <span style="color:var(--amber);">'+pendingCount+' pending</span>)</div>';
+  h+='<div class="table-wrap"><div class="table-inner"><table><thead><tr><th>Date</th><th>Client</th><th>Status</th>'+(metricName==='Account Opening'?'<th>Action</th>':'')+'</tr></thead><tbody>';
+  entries.forEach(function(e){
+    var r=e.row;
+    h+='<tr'+(!e.eligible?' style="background:rgba(245,158,11,.07);"':'')+'>';
+    h+='<td>'+(r['Date']||'-')+'</td><td>'+(r['Client Name']||'-')+' <span style="color:var(--muted);font-size:10px;">('+(r['Client ID']||'-')+')</span></td>';
+    h+='<td>'+(e.eligible?'<span class="badge green">&#10003; Eligible</span>':'<span class="badge amber">&#9203; '+e.reason+'</span>')+'</td>';
+    if(metricName==='Account Opening')h+='<td>'+(e.eligible?'-':'<button class="btn-call" style="background:rgba(255,159,10,0.15);color:#ff9f0a;font-size:11px;" onclick="markNSETradeDone('+r['_rowNum']+')">&#128200; Trade Done?</button>')+'</td>';
+    h+='</tr>';
+  });
+  h+='</tbody></table></div></div></div>';
+  return h;
+}
+/* v33.3: same client (naam+phone match) dobara add na ho jaaye — Accounts page aur Contest quick-add dono se check */
+function findDuplicateAccount(clientName,clientPhone){
+  var cn=(clientName||'').trim().toLowerCase();
+  if(!cn)return null;
+  var ph=(clientPhone||'').trim();
+  return (allData.Accounts||[]).find(function(r){
+    var rn=(r['Client Name']||'').trim().toLowerCase();
+    if(rn!==cn)return false;
+    var rp=(r['Client Phone']||'').trim();
+    if(ph&&rp)return rp===ph;
+    return true;
+  })||null;
+}
 /* v33.2: Contest page se hi seedha naya Account Opening entry daalo — Accounts sheet shared hai isliye
    yeh entry Accounts list me bhi automatically dikh jayegi (contestBadgeForAccountDate isko tag karega). */
 function mkContestQuickAddAccount(contestId){
@@ -2826,8 +2874,11 @@ function submitContestAccount(contestId,fid){
   var cn=(document.getElementById('cxa_cname_'+fid).value||'').trim();
   var cid=(document.getElementById('cxa_cid_'+fid).value||'').trim();
   if(!cn||!cid){showToast('Client Name aur Client ID zaroori hai','error');return;}
+  var cphone=(document.getElementById('cxa_cphone_'+fid).value||'').trim();
+  var dup=findDuplicateAccount(cn,cphone);
+  if(dup&&!confirm('Yeh client "'+cn+'" pehle se add hai ('+(dup['Date']||'-')+' ko '+(dup['Employee Name']||'-')+' ne, ID: '+(dup['Client ID']||'-')+'). Double entry se bacho — kya phir bhi ek naya entry add karna hai?'))return;
   var p={action:'addAccount','Date':td(),'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch,
-    'Client Name':cn,'Client ID':cid,'Client Phone':(document.getElementById('cxa_cphone_'+fid).value||'').trim(),
+    'Client Name':cn,'Client ID':cid,'Client Phone':cphone,
     'Status':'Active','Trading Active':'No','SIP Active':'No','Investment Active':'No',
     'Account Type':document.getElementById('cxa_acctype_'+fid).value,'Source':document.getElementById('cxa_source_'+fid).value,
     'NSE Trade Done':'No','NSE Trade Date':''};
@@ -2848,6 +2899,102 @@ function contestBadgeForAccountDate(dateStr){
     return contestMetricList(x).indexOf('Account Opening')!==-1 && contestDateInRange(dateStr,x['Start Date'],x['End Date']);
   });
   return c?('<div style="font-size:9px;color:var(--accent);margin-top:2px;" title="Contest: '+c['Title']+'">&#127942; '+c['Title']+'</div>'):'';
+}
+/* v33.3: FULL Edit Contest — Title, Dates, Rules, aur level thresholds/rewards, bina contest end kiye */
+function toggleContestEdit(rowNum){
+  var box=document.getElementById('contestEditBox_'+rowNum);
+  if(!box){showToast('Naya version load nahi hua — page ko hard refresh (Ctrl+Shift+R) karo','error');return;}
+  if(box.style.display==='block'){box.style.display='none';box.innerHTML='';return;}
+  var contest=(allData.Contests||[]).find(function(c){return c['_rowNum']===rowNum;});
+  if(!contest)return;
+  box.innerHTML=mkContestEditFormFields(contest);
+  box.style.display='block';
+}
+function mkContestEditFormFields(contest){
+  var metrics=contestMetricList(contest);
+  var isCombo=metrics.length>1;
+  var rid=contest['_rowNum'];
+  var esc=function(s){return (s||'').replace(/"/g,'&quot;');};
+  var h='<div style="background:var(--card2);border-radius:10px;padding:14px;margin-top:10px;">';
+  h+='<div style="font-weight:700;color:var(--accent);margin-bottom:8px;">&#9999; Contest Edit Karo</div>';
+  h+='<div class="form-group"><label>Contest Title</label><input type="text" id="cxe_title_'+rid+'" value="'+esc(contest['Title'])+'"></div>';
+  h+='<div style="display:flex;gap:12px;flex-wrap:wrap;">';
+  h+='<div class="form-group" style="flex:1;min-width:140px;"><label>Start Date</label><input type="date" id="cxe_start_'+rid+'" value="'+(contest['Start Date']||'')+'"></div>';
+  h+='<div class="form-group" style="flex:1;min-width:140px;"><label>End Date</label><input type="date" id="cxe_end_'+rid+'" value="'+(contest['End Date']||'')+'"></div>';
+  h+='</div>';
+  h+='<div class="form-group"><label>Rules / Eligibility Conditions</label><textarea id="cxe_rules_'+rid+'" rows="3">'+(contest['Rules']||'')+'</textarea></div>';
+  if(!isCombo){
+    h+='<div style="color:var(--muted);font-size:12px;margin:6px 0;">Level thresholds + rewards:</div>';
+    [1,2,3,4].forEach(function(lv){
+      h+='<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:8px;">';
+      h+='<div class="form-group" style="flex:1;min-width:100px;margin-bottom:0;"><label>L'+lv+' Min</label><input type="number" id="cxe_l'+lv+'min_'+rid+'" value="'+(contest['L'+lv+' Min']||'')+'"></div>';
+      h+='<div class="form-group" style="flex:2;min-width:180px;margin-bottom:0;"><label>L'+lv+' Reward</label><input type="text" id="cxe_l'+lv+'reward_'+rid+'" value="'+esc(contest['L'+lv+' Reward'])+'"></div>';
+      h+='</div>';
+    });
+  } else {
+    var cfg=contestMetricConfig(contest);
+    h+='<div style="color:var(--muted);font-size:12px;margin:6px 0;">COMBO contest — har metric ka level threshold:</div>';
+    metrics.forEach(function(m,mi){
+      var mins=(cfg.perMetricLevels&&cfg.perMetricLevels[m])||[0,0,0,0];
+      h+='<div style="border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:10px;">';
+      h+='<div style="font-weight:700;font-size:12px;color:var(--accent);margin-bottom:6px;">'+m+'</div>';
+      h+='<div style="display:flex;gap:8px;flex-wrap:wrap;">';
+      [1,2,3,4].forEach(function(lv){
+        h+='<div class="form-group" style="flex:1;min-width:80px;margin-bottom:0;"><label>L'+lv+' Min</label><input type="number" class="cxe_combo_min_'+rid+'" data-metric="'+mi+'" data-lv="'+lv+'" value="'+(mins[lv-1]||'')+'"></div>';
+      });
+      h+='</div></div>';
+    });
+    h+='<div style="color:var(--muted);font-size:12px;margin:10px 0 6px;">Combined Reward:</div>';
+    [1,2,3,4].forEach(function(lv){
+      h+='<div class="form-group" style="margin-bottom:8px;"><label>Level '+lv+' Reward</label><input type="text" id="cxe_l'+lv+'reward_'+rid+'" value="'+esc(contest['L'+lv+' Reward'])+'"></div>';
+    });
+  }
+  h+='<button class="btn-save" onclick="saveContestEdit('+rid+')">Save Changes</button> ';
+  h+='<button class="btn-mini" onclick="toggleContestEdit('+rid+')">Cancel</button>';
+  h+='</div>';
+  return h;
+}
+function saveContestEdit(rowNum){
+  var contest=(allData.Contests||[]).find(function(c){return c['_rowNum']===rowNum;});
+  if(!contest)return;
+  var metrics=contestMetricList(contest);
+  var isCombo=metrics.length>1;
+  var vals={
+    'Title':(document.getElementById('cxe_title_'+rowNum).value||'').trim(),
+    'Start Date':document.getElementById('cxe_start_'+rowNum).value,
+    'End Date':document.getElementById('cxe_end_'+rowNum).value,
+    'Rules':document.getElementById('cxe_rules_'+rowNum).value
+  };
+  if(!vals['Title']||!vals['Start Date']||!vals['End Date']){showToast('Title, Start Date, End Date zaroori hai','error');return;}
+  if(vals['Start Date']>vals['End Date']){showToast('Start Date, End Date se pehle honi chahiye','error');return;}
+  if(!isCombo){
+    [1,2,3,4].forEach(function(lv){
+      vals['L'+lv+' Min']=document.getElementById('cxe_l'+lv+'min_'+rowNum).value||0;
+      vals['L'+lv+' Reward']=document.getElementById('cxe_l'+lv+'reward_'+rowNum).value||'';
+    });
+  } else {
+    var cfg=contestMetricConfig(contest);
+    cfg.perMetricLevels=cfg.perMetricLevels||{};
+    metrics.forEach(function(m,mi){
+      var mins=[1,2,3,4].map(function(lv){
+        var inp=document.querySelector('.cxe_combo_min_'+rowNum+'[data-metric="'+mi+'"][data-lv="'+lv+'"]');
+        return parseFloat(inp&&inp.value)||0;
+      });
+      cfg.perMetricLevels[m]=mins;
+    });
+    vals['Metric Config']=JSON.stringify(cfg);
+    [1,2,3,4].forEach(function(lv){
+      vals['L'+lv+' Reward']=document.getElementById('cxe_l'+lv+'reward_'+rowNum).value||'';
+    });
+  }
+  postData({action:'editRow',sheet:'Contests',rowNum:rowNum,vals:vals}).then(function(r){
+    if(r&&r.success){
+      showToast('Contest update ho gaya!','success');
+      patchRowLocal('Contests',rowNum,vals);
+      renderContestPage();
+      setTimeout(function(){loadAll(2);},600);
+    } else showToast('Failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
 function allContestsSorted(){
   return (allData.Contests||[]).slice().sort(function(a,b){return (b['Created Date']||'').localeCompare(a['Created Date']||'');});
@@ -2997,6 +3144,9 @@ function contestEmployeeCard(contest,empId,empName){
     h+='</div>';
     h+='<div class="contest-info" style="margin-top:14px;"><div class="contest-target-msg">'+(msg?('Sirf '+msg+' aur karo Level '+(info.level+1)+' tak pahunchne ke liye!'):'Aap top level pe ho! Zabardast! &#127881;')+'</div><div class="contest-motivate">Aapka current level: <b style="color:var(--accent);">'+(info.level>0?('Level '+info.level):'Shuru karo!')+'</b>'+(info.level>0?(' &#183; Reward: '+(info.reward||'-')):'')+'</div></div>';
   }
+  metrics.forEach(function(m){
+    if(CONTEST_METRICS[m]&&!CONTEST_METRICS[m].multiSheet)h+=mkContestMyEntriesTable(contest,m,empId);
+  });
   h+='</div>';
   return h;
 }
@@ -3004,26 +3154,41 @@ function contestAdminCard(contest){
   var isCombo=contestIsCombo(contest);
   var metrics=contestMetricList(contest);
   var h='<div class="contest-card">';
-  h+='<div class="contest-title">&#127942; '+contest['Title']+' <span style="font-size:11px;background:rgba(63,191,127,.15);color:var(--accent);padding:2px 8px;border-radius:10px;">'+(contest['Status']||'Active')+'</span>'+(contest['_rowNum']?' <button class="btn-mini" style="margin-left:auto;color:var(--danger);border-color:rgba(239,68,68,.4);font-size:11px;" onclick="endContest('+contest['_rowNum']+')">End Contest</button>':'')+'</div>';
+  h+='<div class="contest-title">&#127942; '+contest['Title']+' <span style="font-size:11px;background:rgba(63,191,127,.15);color:var(--accent);padding:2px 8px;border-radius:10px;">'+(contest['Status']||'Active')+'</span>'+(contest['_rowNum']?' <button class="btn-mini" style="margin-left:auto;font-size:11px;" onclick="toggleContestEdit('+contest['_rowNum']+')">&#9999; Edit Contest</button> <button class="btn-mini" style="color:var(--danger);border-color:rgba(239,68,68,.4);font-size:11px;" onclick="endContest('+contest['_rowNum']+')">End Contest</button>':'')+'</div>';
   h+='<div class="contest-sub">'+contest['Start Date']+' se '+contest['End Date']+' tak &#183; '+metrics.join(' + ')+'</div>';
+  if(contest['_rowNum'])h+='<div id="contestEditBox_'+contest['_rowNum']+'" style="display:none;"></div>';
   h+=mkContestRulesBlock(contest,true);
   if(metrics.indexOf('Account Opening')!==-1)h+=mkContestQuickAddAccount(contest['Contest ID']);
   var medals=['&#129351;','&#129352;','&#129353;'];
   if(!isCombo){
+    var metricName0=metrics[0];
+    var allStats=CONTEST_METRICS[metricName0]&&!CONTEST_METRICS[metricName0].multiSheet?contestEmployeeAllStats(contest,metricName0):null;
     var counts=contestEmployeeCounts(contest);
-    var ids=Object.keys(counts);
-    ids.sort(function(a,b){return counts[b].count-counts[a].count;});
-    h+='<div class="contest-sub" style="margin-top:-6px;">'+ids.length+' employees eligible ho chuke</div>';
+    var ids=allStats?Object.keys(allStats):Object.keys(counts);
+    ids.sort(function(a,b){
+      if(allStats)return (allStats[b].eligible-allStats[a].eligible)||(allStats[b].total-allStats[a].total);
+      return counts[b].count-counts[a].count;
+    });
+    h+='<div class="contest-sub" style="margin-top:-6px;">'+ids.length+' employees participating (click karke poori list + shortfall dekho)</div>';
     if(!ids.length){
-      h+='<div class="no-data" style="margin-top:14px;">Abhi tak koi entry eligible nahi hui — neeche saari entries dekho</div>';
+      h+='<div class="no-data" style="margin-top:14px;">Abhi tak koi entry nahi hui</div>';
     } else {
-      h+='<div class="table-wrap" style="margin-top:16px;"><div class="table-inner"><table><thead><tr><th>#</th><th>Employee</th><th>Branch</th><th>Count</th><th>Level</th><th>Reward</th><th>Progress</th></tr></thead><tbody>';
+      h+='<div class="table-wrap" style="margin-top:16px;"><div class="table-inner"><table><thead><tr><th>#</th><th>Employee</th><th>Branch</th>'+(allStats?'<th>Total</th><th>Eligible</th><th>Pending</th>':'<th>Count</th>')+'<th>Level</th><th>Reward</th><th>Progress</th></tr></thead><tbody>';
       ids.forEach(function(id,i){
-        var e=counts[id],info=contestLevelInfo(e.count,contest);
+        var eligCount=allStats?allStats[id].eligible:counts[id].count;
+        var info=contestLevelInfo(eligCount,contest);
+        var name=allStats?allStats[id].name:counts[id].name;
+        var branch=allStats?allStats[id].branch:counts[id].branch;
         h+='<tr class="contest-leaderboard-row" onclick="contestDrillEmployee(\''+contest['Contest ID']+'\',\''+id.replace(/'/g,"\\'")+'\')">';
         h+='<td class="contest-medal">'+(medals[i]||(i+1))+'</td>';
-        h+='<td style="font-weight:700;">'+e.name+'</td><td>'+e.branch+'</td>';
-        h+='<td style="font-weight:700;color:var(--accent);">'+e.count+'</td>';
+        h+='<td style="font-weight:700;">'+name+'</td><td>'+branch+'</td>';
+        if(allStats){
+          h+='<td style="font-weight:700;">'+allStats[id].total+'</td>';
+          h+='<td style="font-weight:700;color:var(--accent);">'+allStats[id].eligible+'</td>';
+          h+='<td style="font-weight:700;color:'+(allStats[id].pending>0?'var(--amber)':'var(--muted)')+';">'+allStats[id].pending+'</td>';
+        } else {
+          h+='<td style="font-weight:700;color:var(--accent);">'+eligCount+'</td>';
+        }
         h+='<td>'+(info.level>0?'<span class="badge green">Level '+info.level+'</span>':'<span class="badge amber">Not yet</span>')+'</td>';
         h+='<td style="font-size:11px;">'+(info.reward||'-')+'</td>';
         h+='<td style="min-width:120px;"><div style="background:var(--card2);border-radius:6px;height:8px;overflow:hidden;"><div style="width:'+info.pct+'%;height:100%;background:var(--accent);"></div></div><div style="font-size:10px;color:var(--muted);margin-top:2px;">'+(info.nextMin?(info.pending+' more to L'+(info.level+1)):'MAX')+'</div></td>';
@@ -3113,12 +3278,18 @@ function contestDrillEmployee(contestId,empId){
         h+='</tbody></table>';
       }
     } else {
-      rows=(allData[metric.sheet]||[]).filter(function(r){return contestDateInRange(r['Date'],contest['Start Date'],contest['End Date'])&&metric.eligible(r)&&((r['Employee ID']||'').trim()||r['Employee Name'])===empId;});
-      h+='<h3><span>Eligible Entries ('+rows.length+')</span>'+closeBtn+'</h3>';
-      if(!rows.length)h+='<div class="no-data">Koi eligible entry nahi mili</div>';
+      var entries=contestAllEntriesRows(contest,metricName).filter(function(e){return ((e.row['Employee ID']||'').trim()||e.row['Employee Name'])===empId;});
+      h+='<h3><span>Sabhi Entries ('+entries.length+')</span>'+closeBtn+'</h3>';
+      if(!entries.length)h+='<div class="no-data">Koi entry nahi mili</div>';
       else{
-        h+='<table><thead><tr><th>Date</th><th>Client Name</th><th>Client ID</th></tr></thead><tbody>';
-        rows.slice().reverse().forEach(function(r){h+='<tr><td>'+(r['Date']||'-')+'</td><td>'+(r['Client Name']||'-')+'</td><td>'+(r['Client ID']||'-')+'</td></tr>';});
+        h+='<table><thead><tr><th>Date</th><th>Client Name</th><th>Client ID</th><th>Status</th>'+(metricName==='Account Opening'?'<th>Action</th>':'')+'</tr></thead><tbody>';
+        entries.forEach(function(e){
+          var r=e.row;
+          h+='<tr><td>'+(r['Date']||'-')+'</td><td>'+(r['Client Name']||'-')+'</td><td>'+(r['Client ID']||'-')+'</td>';
+          h+='<td>'+(e.eligible?'<span class="badge green">&#10003; Eligible</span>':'<span class="badge amber">&#9203; '+e.reason+'</span>')+'</td>';
+          if(metricName==='Account Opening')h+='<td>'+(e.eligible?'-':'<button class="btn-call" style="background:rgba(255,159,10,0.15);color:#ff9f0a;font-size:11px;" onclick="markNSETradeDone('+r['_rowNum']+')">&#128200; Trade Done?</button>')+'</td>';
+          h+='</tr>';
+        });
         h+='</tbody></table>';
       }
     }
@@ -3888,6 +4059,9 @@ function submitInsurance(){
 function submitAccount(){
   var cn=document.getElementById('a_cname').value.trim(),cid=document.getElementById('a_cid').value.trim();
   if(!cn||!cid){showToast('Client Name and ID required','error');return;}
+  var cphoneChk=document.getElementById('a_cphone').value.trim();
+  var dupChk=findDuplicateAccount(cn,cphoneChk);
+  if(dupChk&&!confirm('Yeh client "'+cn+'" pehle se add hai ('+(dupChk['Date']||'-')+' ko '+(dupChk['Employee Name']||'-')+' ne, ID: '+(dupChk['Client ID']||'-')+'). Double entry se bacho — kya phir bhi ek naya entry add karna hai?'))return;
   var fe=forEmpObj('a_forEmp');
   var actTrading=document.getElementById('a_actTrading').checked?'Yes':'No';
   var actSIP=document.getElementById('a_actSIP').checked?'Yes':'No';
