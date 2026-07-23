@@ -336,6 +336,8 @@ tbody td{padding:10px 14px;vertical-align:middle;}
     <!-- ADMIN DASHBOARD -->
     <div class="page" id="page-adminDash">
       <div class="page-header"><h1>Admin Dashboard</h1><p>Overall performance overview</p></div>
+      <div id="attentionPanel"></div>
+      <div id="attentionDetail"></div>
       <div class="form-card" style="margin-bottom:16px;">
         <div class="form-group"><label>&#128227; Send Announcement</label>
           <textarea id="ann_msg" placeholder="e.g. Today's target is... / Focus on RELIANCE today / Motivate the team" rows="2"></textarea>
@@ -587,6 +589,8 @@ tbody td{padding:10px 14px;vertical-align:middle;}
     <!-- EMPLOYEE DASHBOARD -->
     <div class="page" id="page-empDash">
       <div class="page-header"><h1>My Dashboard</h1><p>Your performance overview</p></div>
+      <div id="myAttentionPanel"></div>
+      <div id="myAttentionDetail"></div>
       <div class="sip-alert" id="sipAlert"></div>
       <div class="filter-bar">
         <button class="filter-btn active" onclick="setF('today',this,'empDash')">Today</button>
@@ -2433,6 +2437,7 @@ function srchFilter(rows,q,fields){
 
 function renderAdminDash(){
   renderAnnounceAdminBox();
+  renderAttentionPanel(false);
   var brok=fDate(allData.Brokerage||[],dashF);
   var sip=fDate(allData.SIP||[],dashF);
   var ins=fDate(allData.Insurance||[],dashF);
@@ -3505,6 +3510,84 @@ function studentPending(r){
   var fi=studentFeeInfo(r['Student Phone']);
   return r2(Math.max(0,tf-fi.received));
 }
+
+/* ===== REQUIRE ATTENTION PANEL (Choice Connect-style action items) ===== */
+function computeAttention(scopeUid){
+  var today=new Date();today.setHours(0,0,0,0);
+  var limit3=new Date(today);limit3.setDate(limit3.getDate()+3);
+  var staleLimit=new Date(today);staleLimit.setDate(staleLimit.getDate()-15);
+  function inScope(r){
+    if(!scopeUid)return true;
+    return (r['Employee ID']||'').trim().toLowerCase()===scopeUid.trim().toLowerCase();
+  }
+  var studentFee=(allData.Students||[]).filter(function(r){
+    return inScope(r)&&studentPending(r)>0;
+  });
+  var sipDue=(allData.SIP||[]).filter(function(r){
+    if(!inScope(r))return false;
+    if((r['Type']||'SIP')!=='SIP')return false;
+    var dd=(r['SIP Due Date']||'').trim();if(!dd)return false;
+    var d=nextDue(dd);if(!d)return false;
+    return d>=today&&d<=limit3;
+  });
+  var staleLeads=(allData.Leads||[]).filter(function(r){
+    if(!inScope(r))return false;
+    if(r['Converted']==='Yes')return false;
+    var fu=(r['Follow Up']||'').trim();if(!fu)return false;
+    var d=new Date(fu);if(isNaN(d))return false;
+    return d<staleLimit;
+  });
+  var accountsStuck=(allData.Accounts||[]).filter(function(r){
+    if(!inScope(r))return false;
+    if((r['NSE Trade Done']||'')==='Yes')return false;
+    var d=new Date(r['Date']||'');if(isNaN(d))return false;
+    return d<staleLimit;
+  });
+  return {studentFee:studentFee,sipDue:sipDue,staleLeads:staleLeads,accountsStuck:accountsStuck};
+}
+function mkAttentionPanel(items,isMine){
+  var rows=[
+    {n:items.studentFee.length,label:'Student Fee Pending',sub:'Get in touch with your clients',key:'studentFee',color:'var(--danger)'},
+    {n:items.sipDue.length,label:'SIP Due (Next 3 Days)',sub:'Call clients to remind them',key:'sipDue',color:'var(--amber)'},
+    {n:items.staleLeads.length,label:'Leads with No Follow-up (15+ Days)',sub:'Reach out or mark converted',key:'staleLeads',color:'var(--blue)'},
+    {n:items.accountsStuck.length,label:'Accounts Pending NSE Trade (15+ Days)',sub:'Follow up to activate trading',key:'accountsStuck',color:'var(--purple)'}
+  ];
+  var any=rows.some(function(r){return r.n>0;});
+  var h='<div class="form-card" style="margin-bottom:16px;"><div style="font-weight:700;font-size:15px;margin-bottom:12px;">&#9888; Require Attention</div>';
+  if(!any){h+='<div class="no-data" style="padding:6px 0;">All clear! No pending action items. &#9989;</div>';}
+  else{
+    rows.forEach(function(r){
+      if(!r.n)return;
+      h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;" onclick="showAttentionDetail(\''+r.key+'\','+(isMine?'true':'false')+')">'+
+         '<div><div style="font-weight:700;color:'+r.color+';">'+r.n+' '+r.label+'</div>'+
+         '<div style="font-size:12px;color:var(--muted);">'+r.sub+'</div></div>'+
+         '<div style="font-size:18px;color:var(--muted);">&#8594;</div></div>';
+    });
+  }
+  h+='</div>';
+  return h;
+}
+function renderAttentionPanel(isMine){
+  var scope=isMine?currentUser.userId:null;
+  var items=computeAttention(scope);
+  var panelId=isMine?'myAttentionPanel':'attentionPanel';
+  var el=document.getElementById(panelId);
+  if(el)el.innerHTML=mkAttentionPanel(items,isMine);
+}
+function showAttentionDetail(key,isMine){
+  var scope=isMine?currentUser.userId:null;
+  var items=computeAttention(scope);
+  var map={
+    studentFee:{title:'Student Fee Pending',body:mkStudentTable(items.studentFee,false)},
+    sipDue:{title:'SIP Due (Next 3 Days)',body:mkTable(items.sipDue,[{k:'Date',l:'Date'},{k:'Employee Name',l:'Employee'},{k:'Client Name',l:'Client'},{k:'Client Phone',l:'Phone'},{k:'Amount',l:'Amount',money:true},{k:'SIP Due Date',l:'Due Date'}])},
+    staleLeads:{title:'Leads - No Follow-up (15+ Days)',body:mkLeads(items.staleLeads,true,true)},
+    accountsStuck:{title:'Accounts Pending NSE Trade (15+ Days)',body:mkTable(items.accountsStuck,[{k:'Date',l:'Date'},{k:'Employee Name',l:'Employee'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Client ID'},{k:'Client Phone',l:'Phone'},{k:'Status',l:'Status'}])}
+  };
+  var m=map[key];if(!m)return;
+  var divId=isMine?'myAttentionDetail':'attentionDetail';
+  var el=document.getElementById(divId);if(!el)return;
+  el.innerHTML='<div class="form-card" style="margin-bottom:16px;"><h3 style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><span>'+m.title+'</span><span style="cursor:pointer;color:var(--muted);font-size:13px;font-weight:400;" onclick="document.getElementById(\''+divId+'\').innerHTML=\'\';">&#10005; Close</span></h3>'+m.body+'</div>';
+}
 function dematGuess(phone){
   var p=(phone||'').trim();if(!p)return null;
   var acc=(allData.Accounts||[]).find(function(a){return (a['Client Phone']||'').trim()===p;});
@@ -3548,7 +3631,7 @@ function editStudentModal(rowNum){
   h+='<div class="form-group"><label>Total Fee (&#8377;)</label><input type="number" id="es_totfee" value="'+(r['Total Fee']||0)+'"></div>';
   h+='<div class="form-group"><label>Status</label><select id="es_status">'+['Joined','Interested','Not Interested'].map(function(s){return '<option'+(r['Status']===s?' selected':'')+'>'+s+'</option>';}).join('')+'</select></div>';
   h+='<div class="form-group"><label>Demat Account Opened?</label><select id="es_demat"><option value=""'+(!r['Demat Opened']?' selected':'')+'>-- select --</option><option value="Yes"'+(r['Demat Opened']==='Yes'?' selected':'')+'>Yes</option><option value="No"'+(r['Demat Opened']==='No'?' selected':'')+'>No</option></select></div>';
-  h+='<div class="form-group"><label>Demat Client ID (agar Yes)</label><input type="text" id="es_dcid" value="'+(r['Demat Client ID']||'')+'"></div>';
+  h+='<div class="form-group"><label>Demat Client ID (if Yes)</label><input type="text" id="es_dcid" value="'+(r['Demat Client ID']||'')+'"></div>';
   h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" data-rn="'+rowNum+'" onclick="saveStudentEdit(this.dataset.rn)">Save</button></div>';
   document.getElementById('modalBox').innerHTML=h;document.getElementById('modal').className='show';
 }
@@ -3635,6 +3718,7 @@ function renderAdminAttendance(){
 
 function renderEmpDash(){
   var f=filters['empDash']||'month',uid=currentUser.userId;
+  renderAttentionPanel(true);
   var sip=fDate(fEmp(allData.SIP||[],uid),f);
   var ins=fDate(fEmp(allData.Insurance||[],uid),f);
   var acc=fDate(fEmp(allData.Accounts||[],uid),f);
