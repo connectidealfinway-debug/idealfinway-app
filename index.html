@@ -248,6 +248,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
       <div class="nav-section">Dashboards</div>
       <div class="nav-item" onclick="showPage('adminDash')">&#9632; Main Dashboard</div>
       <div class="nav-item" onclick="showPage('bizOverview')">&#128176; Business Overview</div>
+      <div class="nav-item" onclick="showPage('client360')">&#128269; Client Search</div>
       <div class="nav-item" onclick="showPage('tradingJournal')">&#128200; Trading Journal</div>
       <div class="nav-item" onclick="showPage('callTrade')">&#128222; Call &amp; Trade</div>
       <div class="nav-item" onclick="showPage('watchlist')">&#11088; Watchlist</div>
@@ -297,6 +298,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
       <div class="nav-section">My Work</div>
       <div class="nav-item" onclick="showPage('empDash')">&#9632; Dashboard</div>
       <div class="nav-item" onclick="showPage('bizOverview')">&#128176; Business Overview</div>
+      <div class="nav-item" onclick="showPage('client360')">&#128269; Client Search</div>
       <div class="nav-item" onclick="showPage('markAttendance')">&#9711; Attendance</div>
       <div class="nav-item" onclick="showPage('tradingJournal')">&#128200; Trading Journal</div>
       <div class="nav-item" onclick="showPage('callTrade')">&#128222; Call &amp; Trade</div>
@@ -395,6 +397,19 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <button class="filter-btn" onclick="setF('all',this,'bizOverview')">All Time</button>
       </div>
       <div id="bizOverviewCards"></div>
+    </div>
+
+    <!-- CLIENT 360 (search + full profile, Choice Connect Client Details Report style) -->
+    <div class="page" id="page-client360">
+      <div class="page-header"><h1>Client Search</h1><p>Search any client by name or ID to see their complete history in one place</p></div>
+      <div class="form-card" style="margin-bottom:16px;">
+        <div style="display:flex;gap:10px;">
+          <input type="text" id="c360_q" class="srch" style="flex:1;" placeholder="Type client name or Client ID..." onkeyup="if(event.key==='Enter')searchClient360()">
+          <button class="btn-save" onclick="searchClient360()">&#128269; Search</button>
+        </div>
+      </div>
+      <div id="c360_results"></div>
+      <div id="c360_profile"></div>
     </div>
 
     <!-- ADMIN EMPLOYEE PERFORMANCE -->
@@ -2019,6 +2034,7 @@ function renderPage(id){
   else if(id==='myHisab')renderMyHisab();
   else if(id==='contest')renderContestPage();
   else if(id==='bizOverview')renderBizOverview();
+  else if(id==='client360'){var e=document.getElementById('c360_q');if(e)e.value='';document.getElementById('c360_results').innerHTML='';document.getElementById('c360_profile').innerHTML='';}
 }
 
 function mkStats(cards){var h='';cards.forEach(function(c){h+='<div class="stat-card '+(c.color||'green')+'"'+(c.onclick?' style="cursor:pointer" onclick="'+c.onclick+'"':'')+'><div class="stat-label">'+c.label+'</div><div class="stat-value">'+c.value+'</div><div class="stat-sub">'+(c.sub||'')+'</div></div>';});return h;}
@@ -3889,6 +3905,114 @@ function mkBizLeaderboard(list){
   h+='</tbody></table></div>';
   return h;
 }
+
+/* ===== CLIENT 360 (Choice Connect "Client Details Report" style search) ===== */
+function client360ScopeIds(){
+  if(currentUser.role==='admin')return null;
+  var ids={};
+  ids[currentUser.userId.trim().toLowerCase()]=1;
+  teamMembersOf(currentUser.userId).forEach(function(m){ids[(m['Employee ID']||'').trim().toLowerCase()]=1;});
+  return ids;
+}
+function searchClient360(){
+  var q=(document.getElementById('c360_q').value||'').trim().toLowerCase();
+  var resultsEl=document.getElementById('c360_results');
+  var profileEl=document.getElementById('c360_profile');
+  if(profileEl)profileEl.innerHTML='';
+  if(!q||q.length<2){resultsEl.innerHTML='<div class="no-data">Type at least 2 characters (client name or ID)</div>';return;}
+  var scopeIds=client360ScopeIds();
+  var map={};
+  function consider(r){
+    var cid=(r['Client ID']||'').trim();
+    var name=(r['Client Name']||'').trim();
+    if(!cid&&!name)return;
+    var key=(cid||name).toUpperCase();
+    if(!map[key])map[key]={cid:cid,name:name,phone:r['Client Phone']||'',branch:r['Branch']||'',emp:r['Employee Name']||'',empId:(r['Employee ID']||'').trim()};
+    else{
+      if(!map[key].phone&&r['Client Phone'])map[key].phone=r['Client Phone'];
+      if(!map[key].emp&&r['Employee Name'])map[key].emp=r['Employee Name'];
+      if(!map[key].empId&&r['Employee ID'])map[key].empId=(r['Employee ID']||'').trim();
+      if(!map[key].cid&&cid)map[key].cid=cid;
+    }
+  }
+  (allData.Accounts||[]).forEach(consider);
+  (allData.ClientBrokerage||[]).forEach(consider);
+  (allData.SIP||[]).forEach(consider);
+  (allData.Insurance||[]).forEach(consider);
+  var candidates=Object.keys(map).map(function(k){return map[k];}).filter(function(c){
+    if(scopeIds&&!scopeIds[(c.empId||'').toLowerCase()])return false;
+    return (c.cid||'').toLowerCase().indexOf(q)!==-1||(c.name||'').toLowerCase().indexOf(q)!==-1;
+  }).slice(0,30);
+  if(!candidates.length){resultsEl.innerHTML='<div class="no-data">No client found matching "'+q+'"</div>';return;}
+  if(candidates.length===1){resultsEl.innerHTML='';showClient360Profile(candidates[0].cid,candidates[0].name);return;}
+  var h='<div class="form-card" style="margin-bottom:16px;"><div style="font-weight:700;font-size:13px;margin-bottom:10px;color:var(--muted);">'+candidates.length+' matches - click to view</div>';
+  candidates.forEach(function(c){
+    h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;" onclick="showClient360Profile(\''+(c.cid||'').replace(/'/g,"\\\\'")+'\',\''+(c.name||'').replace(/'/g,"\\\\'")+'\')">'+
+      '<div><b>'+(c.name||'-')+'</b> <span style="color:var(--muted);font-size:12px;">'+(c.cid||'no ID')+'</span></div>'+
+      '<div style="font-size:12px;color:var(--muted);">'+(c.emp||'-')+' &#8594;</div></div>';
+  });
+  h+='</div>';
+  resultsEl.innerHTML=h;
+}
+function showClient360Profile(cid,name){
+  var resultsEl=document.getElementById('c360_results');if(resultsEl)resultsEl.innerHTML='';
+  var cidT=(cid||'').trim().toUpperCase();
+  var nameT=(name||'').trim().toUpperCase();
+  function matchesId(r){return cidT&&(r['Client ID']||'').trim().toUpperCase()===cidT;}
+  function matchesName(r){return !cidT&&nameT&&(r['Client Name']||'').trim().toUpperCase()===nameT;}
+  function matches(r){return matchesId(r)||matchesName(r);}
+  var accRows=(allData.Accounts||[]).filter(matches);
+  var cbrokRows=(allData.ClientBrokerage||[]).filter(matches).sort(function(a,b){return (a['Date']||'')<(b['Date']||'')?1:-1;});
+  var sipRows=(allData.SIP||[]).filter(matches);
+  var insRows=(allData.Insurance||[]).filter(matches);
+  var acc=accRows[0]||{};
+  var phone=acc['Client Phone']||(cbrokRows[0]&&cbrokRows[0]['Client Phone'])||'';
+  var totalBrok=r2(cbrokRows.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0));
+  var sipAmt=r2(sipRows.filter(function(r){return (r['Type']||'SIP')==='SIP';}).reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0));
+  var lumpAmt=r2(sipRows.filter(function(r){return r['Type']==='Lumpsum';}).reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0));
+  var premAmt=r2(insRows.reduce(function(s,r){return s+parseFloat(r['Premium']||0);},0));
+  var displayName=acc['Client Name']||name||(cbrokRows[0]&&cbrokRows[0]['Client Name'])||'Unknown';
+  var displayId=acc['Client ID']||cid||(cbrokRows[0]&&cbrokRows[0]['Client ID'])||'-';
+  var status=(acc['Status']||'Active');
+  var isAct=status==='Active';
+  var chips='';
+  if((acc['Trading Active']||'')==='Yes')chips+='<span class="badge blue" style="margin-left:4px;">Trading</span>';
+  if((acc['SIP Active']||'')==='Yes')chips+='<span class="badge purple" style="margin-left:4px;">SIP</span>';
+  if((acc['Investment Active']||'')==='Yes')chips+='<span class="badge amber" style="margin-left:4px;">Investment</span>';
+  var nseDone=(acc['NSE Trade Done']||'')==='Yes';
+
+  var h='<div class="form-card" style="margin-bottom:16px;">'+
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:12px;">'+
+      '<div><div style="font-size:19px;font-weight:700;">'+displayName+'</div>'+
+      '<div style="color:var(--muted);font-size:13px;">'+displayId+(phone?' &#183; '+phone:'')+(acc['Branch']?' &#183; '+acc['Branch']:'')+'</div>'+
+      '<div style="color:var(--muted);font-size:12px;margin-top:4px;">Handled by: <b>'+(acc['Employee Name']||'-')+'</b></div></div>'+
+      '<div style="text-align:right;">'+(accRows.length?'<span class="badge '+(isAct?'green':'red')+'">'+(isAct?'Active':'Inactive')+'</span>'+chips:'')+
+      '<div style="margin-top:6px;">'+(nseDone?'<span class="badge green">&#10003; NSE Trade Done</span>':(accRows.length?'<span class="badge amber">NSE Trade Pending</span>':''))+'</div></div>'+
+    '</div>'+
+    '<div class="stats-grid">'+mkStats([
+      {label:'Total Brokerage',value:fmt(totalBrok),sub:cbrokRows.length+' entries (lifetime)',color:'green'},
+      {label:'SIP Amount',value:fmt(sipAmt),sub:sipRows.filter(function(r){return (r['Type']||'SIP')==='SIP';}).length+' clients',color:'blue'},
+      {label:'Lumpsum',value:fmt(lumpAmt),sub:sipRows.filter(function(r){return r['Type']==='Lumpsum';}).length+' entries',color:'amber'},
+      {label:'Insurance Premium',value:fmt(premAmt),sub:insRows.length+' policies',color:'purple'}
+    ])+'</div>';
+  if(acc['Date']){
+    h+='<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);font-size:13px;color:var(--muted);">'+
+      'Account opened: <b style="color:var(--text);">'+acc['Date']+'</b> &#183; Type: <b style="color:var(--text);">'+(acc['Account Type']||'-')+'</b> &#183; Source: <b style="color:var(--text);">'+(acc['Source']||'-')+'</b>'+
+      (acc['Last Call Date']?(' &#183; Last call: <b style="color:var(--text);">'+acc['Last Call Date']+'</b>'+(acc['Last Call Remarks']?(' ("'+acc['Last Call Remarks']+'")'):'')):' &#183; Not called yet')+
+      '</div>';
+  }
+  h+='</div>';
+
+  h+='<div class="form-card" style="margin-bottom:16px;"><div style="font-weight:700;margin-bottom:10px;">Brokerage History</div>'+
+    mkTable(cbrokRows,[{k:'Date',l:'Date'},{k:'Amount',l:'Brokerage',money:true},{k:'Total Brokerage',l:'Total Brok',money:true},{k:'Employee Name',l:'Employee'}])+'</div>';
+  h+='<div class="form-card" style="margin-bottom:16px;"><div style="font-weight:700;margin-bottom:10px;">SIP / Mutual Fund</div>'+
+    mkTable(sipRows,[{k:'Date',l:'Date'},{k:'Type',l:'Type'},{k:'Amount',l:'Amount',money:true},{k:'SIP Due Date',l:'Due Date'},{k:'Employee Name',l:'Employee'}])+'</div>';
+  h+='<div class="form-card" style="margin-bottom:16px;"><div style="font-weight:700;margin-bottom:10px;">Insurance Policies</div>'+
+    mkTable(insRows,[{k:'Date',l:'Date'},{k:'Type',l:'Type'},{k:'Premium',l:'Premium',money:true},{k:'Employee Name',l:'Employee'}])+'</div>';
+
+  document.getElementById('c360_profile').innerHTML=h;
+}
+
 function renderBizOverview(){
   var el=document.getElementById('bizOverviewCards');
   if(!el)return;
