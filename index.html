@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>IdealFinway - Performance System</title>
 <!-- v26.1: partners net-profit %, fixed salary, salary slip email, date-wise matrix, top-10 clients, daily chart, combined dashboard P&L, finance restrictions, picker icons -->
 <style>
@@ -2781,7 +2784,7 @@ function mkContestRulesBlock(contest,editable){
 }
 function toggleEditRules(rowNum){
   var box=document.getElementById('rulesEdit_'+rowNum);
-  if(!box)return;
+  if(!box){ if(typeof showToast==='function') showToast('Naya version load nahi hua — page ko hard refresh (Ctrl+Shift+R) karo','error'); return; }
   if(box.style.display==='block'){box.style.display='none';box.innerHTML='';return;}
   var contest=(allData.Contests||[]).find(function(c){return c['_rowNum']===rowNum;});
   var cur=contest?(contest['Rules']||''):'';
