@@ -108,6 +108,13 @@ tbody td{padding:10px 14px;vertical-align:middle;}
 #toast.show{display:block;}
 #toast.success{border-left:3px solid var(--accent);color:var(--accent);}
 #toast.error{border-left:3px solid var(--danger);color:var(--danger);}
+#greetOverlay{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0);pointer-events:none;opacity:0;transition:opacity .4s ease;}
+#greetOverlay.show{opacity:1;}
+#greetOverlay .greet-box{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:26px 40px;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.5);transform:translateY(-10px);transition:transform .4s ease;}
+#greetOverlay.show .greet-box{transform:translateY(0);}
+#greetOverlay .greet-emoji{font-size:34px;margin-bottom:8px;}
+#greetOverlay .greet-text{font-size:20px;font-weight:700;color:var(--text);}
+#greetOverlay .greet-name{color:var(--accent);}
 .emp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:20px;}
 .emp-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;}
 .emp-name{font-size:15px;font-weight:700;margin-bottom:4px;}
@@ -1277,6 +1284,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
 
 <div id="modal"><div class="modal-box" id="modalBox"></div></div>
 <div id="toast"></div>
+<div id="greetOverlay"><div class="greet-box"><div class="greet-emoji" id="greetEmoji">&#9728;</div><div class="greet-text" id="greetText"></div></div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
@@ -1300,6 +1308,20 @@ var calStates={};['brok','myBrok','sipCal','mySipCal','meetCal','myMeetCal','cbr
 function td(){return new Date().toISOString().split('T')[0];}
 function fmt(n){var v=parseFloat(n)||0;return '₹'+v.toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:2});}
 function showToast(m,t){var el=document.getElementById('toast');el.textContent=m;el.className='show '+(t||'success');setTimeout(function(){el.className='';},3000);}
+function showGreeting(name){
+  var h=new Date().getHours();
+  var label,emoji;
+  if(h<12){label='Good Morning';emoji='&#9728;';}
+  else if(h<17){label='Good Afternoon';emoji='&#9925;';}
+  else{label='Good Evening';emoji='&#127769;';}
+  var firstName=(name||'').split(' ')[0]||name||'';
+  var ov=document.getElementById('greetOverlay');
+  if(!ov)return;
+  document.getElementById('greetEmoji').innerHTML=emoji;
+  document.getElementById('greetText').innerHTML=label+', <span class="greet-name">'+firstName+'</span>!';
+  ov.className='show';
+  setTimeout(function(){ov.className='';},2600);
+}
 function closeModal(){document.getElementById('modal').className='';}
 function postData(p){return fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(p)}).then(function(r){return r.text();}).then(function(t){return JSON.parse(t);});}
 function getJSON(action){return fetch(API+'?action='+action+'&t='+Date.now()).then(function(r){return r.text();}).then(function(t){return JSON.parse(t);});}
@@ -1606,6 +1628,7 @@ function startApp(){
   document.getElementById('sidebarName').textContent=currentUser.name;
   document.getElementById('sidebarRole').textContent=currentUser.role==='employee'?'':currentUser.role.toUpperCase();
   document.getElementById('sidebarBranch').textContent=currentUser.branch;
+  showGreeting(currentUser.name);
   var c=loadCache();
   if(c&&c.d){allData=c.d;if(c.e&&c.e.length&&!employees.length)employees=c.e;hadCache=true;}
   if(currentUser.role==='admin'){document.getElementById('adminNav').style.display='block';showPage('adminDash');}
