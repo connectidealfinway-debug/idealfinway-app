@@ -591,6 +591,8 @@ tbody td{padding:10px 14px;vertical-align:middle;}
       <div class="page-header"><h1>My Dashboard</h1><p>Your performance overview</p></div>
       <div id="myAttentionPanel"></div>
       <div id="myAttentionDetail"></div>
+      <div id="teamAttentionPanel"></div>
+      <div id="teamAttentionDetail"></div>
       <div class="sip-alert" id="sipAlert"></div>
       <div class="filter-bar">
         <button class="filter-btn active" onclick="setF('today',this,'empDash')">Today</button>
@@ -3537,11 +3539,12 @@ function computeAttention(scopeUid){
     var d=new Date(fu);if(isNaN(d))return false;
     return d<staleLimit;
   });
+  var NSE_TRACK_FROM=new Date(2026,6,20); /* only track NSE-trade-pending for accounts opened on/after 2026-07-20; older accounts predate this tracking and are excluded */
   var accountsStuck=(allData.Accounts||[]).filter(function(r){
     if(!inScope(r))return false;
     if((r['NSE Trade Done']||'')==='Yes')return false;
     var d=new Date(r['Date']||'');if(isNaN(d))return false;
-    return d<staleLimit;
+    return d>=NSE_TRACK_FROM;
   });
   return {studentFee:studentFee,sipDue:sipDue,staleLeads:staleLeads,accountsStuck:accountsStuck};
 }
@@ -3550,7 +3553,7 @@ function mkAttentionPanel(items,isMine){
     {n:items.studentFee.length,label:'Student Fee Pending',sub:'Get in touch with your clients',key:'studentFee',color:'var(--danger)'},
     {n:items.sipDue.length,label:'SIP Due (Next 3 Days)',sub:'Call clients to remind them',key:'sipDue',color:'var(--amber)'},
     {n:items.staleLeads.length,label:'Leads with No Follow-up (15+ Days)',sub:'Reach out or mark converted',key:'staleLeads',color:'var(--blue)'},
-    {n:items.accountsStuck.length,label:'Accounts Pending NSE Trade (15+ Days)',sub:'Follow up to activate trading',key:'accountsStuck',color:'var(--purple)'}
+    {n:items.accountsStuck.length,label:'New Accounts Pending NSE Trade (since Jul 20)',sub:'Follow up to activate trading',key:'accountsStuck',color:'var(--purple)'}
   ];
   var any=rows.some(function(r){return r.n>0;});
   var h='<div class="form-card" style="margin-bottom:16px;"><div style="font-weight:700;font-size:15px;margin-bottom:12px;">&#9888; Require Attention</div>';
@@ -3581,12 +3584,57 @@ function showAttentionDetail(key,isMine){
     studentFee:{title:'Student Fee Pending',body:mkStudentTable(items.studentFee,false)},
     sipDue:{title:'SIP Due (Next 3 Days)',body:mkTable(items.sipDue,[{k:'Date',l:'Date'},{k:'Employee Name',l:'Employee'},{k:'Client Name',l:'Client'},{k:'Client Phone',l:'Phone'},{k:'Amount',l:'Amount',money:true},{k:'SIP Due Date',l:'Due Date'}])},
     staleLeads:{title:'Leads - No Follow-up (15+ Days)',body:mkLeads(items.staleLeads,true,true)},
-    accountsStuck:{title:'Accounts Pending NSE Trade (15+ Days)',body:mkTable(items.accountsStuck,[{k:'Date',l:'Date'},{k:'Employee Name',l:'Employee'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Client ID'},{k:'Client Phone',l:'Phone'},{k:'Status',l:'Status'}])}
+    accountsStuck:{title:'New Accounts Pending NSE Trade (since Jul 20)',body:mkTable(items.accountsStuck,[{k:'Date',l:'Date'},{k:'Employee Name',l:'Employee'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Client ID'},{k:'Client Phone',l:'Phone'},{k:'Status',l:'Status'}])}
   };
   var m=map[key];if(!m)return;
   var divId=isMine?'myAttentionDetail':'attentionDetail';
   var el=document.getElementById(divId);if(!el)return;
   el.innerHTML='<div class="form-card" style="margin-bottom:16px;"><h3 style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><span>'+m.title+'</span><span style="cursor:pointer;color:var(--muted);font-size:13px;font-weight:400;" onclick="document.getElementById(\''+divId+'\').innerHTML=\'\';">&#10005; Close</span></h3>'+m.body+'</div>';
+}
+/* ===== TEAM (sub-employee) REQUIRE ATTENTION - for parents/managers ===== */
+function computeTeamAttention(parentUid){
+  var members=teamMembersOf(parentUid);
+  return members.map(function(m){
+    var items=computeAttention(m['Employee ID']);
+    var studentFee=items.studentFee.length,sipDue=items.sipDue.length,staleLeads=items.staleLeads.length,accountsStuck=items.accountsStuck.length;
+    return {id:m['Employee ID'],name:m['Name']||m['Employee ID'],studentFee:studentFee,sipDue:sipDue,staleLeads:staleLeads,accountsStuck:accountsStuck,total:studentFee+sipDue+staleLeads+accountsStuck};
+  });
+}
+function renderTeamAttentionPanel(){
+  var el=document.getElementById('teamAttentionPanel');
+  if(!el)return;
+  if(!isTeamParent()){el.innerHTML='';return;}
+  var rows=computeTeamAttention(currentUser.userId);
+  var totalAll=rows.reduce(function(s,r){return s+r.total;},0);
+  var h='<div class="form-card" style="margin-bottom:16px;"><div style="font-weight:700;font-size:15px;margin-bottom:12px;">&#9888; Team Require Attention'+(totalAll?(' <span style="color:var(--danger);">('+totalAll+')</span>'):'')+'</div>';
+  if(!totalAll){h+='<div class="no-data" style="padding:6px 0;">All clear across your team! &#9989;</div>';}
+  else{
+    h+='<table><thead><tr><th>Employee</th><th>Student Fee</th><th>SIP Due</th><th>Stale Leads</th><th>NSE Pending</th><th>Total</th></tr></thead><tbody>';
+    rows.slice().sort(function(a,b){return b.total-a.total;}).forEach(function(r){
+      if(!r.total)return;
+      h+='<tr style="cursor:pointer;" onclick="showTeamMemberAttention(\''+r.id+'\')">'+
+         '<td style="font-weight:600;">'+r.name+'</td>'+
+         '<td>'+(r.studentFee||'-')+'</td><td>'+(r.sipDue||'-')+'</td><td>'+(r.staleLeads||'-')+'</td><td>'+(r.accountsStuck||'-')+'</td>'+
+         '<td style="font-weight:700;color:var(--danger);">'+r.total+'</td></tr>';
+    });
+    h+='</tbody></table>';
+  }
+  h+='</div>';
+  el.innerHTML=h;
+}
+function showTeamMemberAttention(empId){
+  var items=computeAttention(empId);
+  var emp=employees.find(function(e){return e['Employee ID']===empId;});
+  var name=emp?(emp['Name']||empId):empId;
+  var h='<div class="form-card" style="margin-bottom:16px;"><h3 style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><span>'+name+' &#8212; Pending Items</span><span style="cursor:pointer;color:var(--muted);font-size:13px;font-weight:400;" onclick="document.getElementById(\'teamAttentionDetail\').innerHTML=\'\';">&#10005; Close</span></h3>';
+  var any=false;
+  if(items.studentFee.length){any=true;h+='<div style="font-weight:700;margin:10px 0 6px;color:var(--danger);">Student Fee Pending ('+items.studentFee.length+')</div>'+mkStudentTable(items.studentFee,false);}
+  if(items.sipDue.length){any=true;h+='<div style="font-weight:700;margin:14px 0 6px;color:var(--amber);">SIP Due Next 3 Days ('+items.sipDue.length+')</div>'+mkTable(items.sipDue,[{k:'Date',l:'Date'},{k:'Client Name',l:'Client'},{k:'Client Phone',l:'Phone'},{k:'Amount',l:'Amount',money:true},{k:'SIP Due Date',l:'Due Date'}]);}
+  if(items.staleLeads.length){any=true;h+='<div style="font-weight:700;margin:14px 0 6px;color:var(--blue);">Leads - No Follow-up ('+items.staleLeads.length+')</div>'+mkLeads(items.staleLeads,false,true);}
+  if(items.accountsStuck.length){any=true;h+='<div style="font-weight:700;margin:14px 0 6px;color:var(--purple);">New Accounts Pending NSE Trade ('+items.accountsStuck.length+')</div>'+mkTable(items.accountsStuck,[{k:'Date',l:'Date'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Client ID'},{k:'Client Phone',l:'Phone'},{k:'Status',l:'Status'}]);}
+  if(!any)h+='<div class="no-data">All clear for this employee.</div>';
+  h+='</div>';
+  document.getElementById('teamAttentionDetail').innerHTML=h;
 }
 function dematGuess(phone){
   var p=(phone||'').trim();if(!p)return null;
@@ -3719,6 +3767,7 @@ function renderAdminAttendance(){
 function renderEmpDash(){
   var f=filters['empDash']||'month',uid=currentUser.userId;
   renderAttentionPanel(true);
+  renderTeamAttentionPanel();
   var sip=fDate(fEmp(allData.SIP||[],uid),f);
   var ins=fDate(fEmp(allData.Insurance||[],uid),f);
   var acc=fDate(fEmp(allData.Accounts||[],uid),f);
