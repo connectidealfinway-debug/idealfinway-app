@@ -1604,7 +1604,7 @@ function startApp(){
   document.getElementById('loginWrap').style.display='none';
   document.getElementById('appWrap').style.display='block';
   document.getElementById('sidebarName').textContent=currentUser.name;
-  document.getElementById('sidebarRole').textContent=currentUser.role.toUpperCase();
+  document.getElementById('sidebarRole').textContent=currentUser.role==='employee'?'':currentUser.role.toUpperCase();
   document.getElementById('sidebarBranch').textContent=currentUser.branch;
   var c=loadCache();
   if(c&&c.d){allData=c.d;if(c.e&&c.e.length&&!employees.length)employees=c.e;hadCache=true;}
