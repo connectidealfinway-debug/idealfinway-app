@@ -2756,15 +2756,51 @@ function activeContests(){
 function allContestsSorted(){
   return (allData.Contests||[]).slice().sort(function(a,b){return (b['Created Date']||'').localeCompare(a['Created Date']||'');});
 }
-function mkContestRulesBlock(contest){
+function mkContestRulesBlock(contest,editable){
   var rules=(contest['Rules']||'').split('\n').map(function(s){return s.trim();}).filter(Boolean);
-  if(!rules.length)return '';
+  var rowNum=contest['_rowNum'];
+  if(!rules.length){
+    if(!editable)return '';
+    var h0='<div style="background:rgba(245,158,11,.08);border:1px dashed rgba(245,158,11,.4);border-radius:10px;padding:10px 14px;margin:12px 0;">';
+    h0+='<div style="font-size:12px;color:var(--muted);">Is contest me abhi koi Rules set nahi hai. <button class="btn-mini" style="font-size:11px;" onclick="toggleEditRules('+rowNum+')">&#9999; Rules Add Karo</button></div>';
+    h0+='<div id="rulesEdit_'+rowNum+'" style="display:none;margin-top:8px;"></div>';
+    h0+='</div>';
+    return h0;
+  }
   var h='<div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:10px;padding:10px 14px;margin:12px 0;">';
+  h+='<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">';
   h+='<div style="font-size:12px;font-weight:700;color:var(--amber);margin-bottom:4px;">&#9888; Eligibility Rules — yeh sab fulfill hona zaroori hai, tabhi count hoga:</div>';
+  if(editable)h+='<button class="btn-mini" style="font-size:10px;white-space:nowrap;" onclick="toggleEditRules('+rowNum+')">&#9999; Edit</button>';
+  h+='</div>';
   h+='<ul style="margin:0;padding-left:18px;font-size:12px;color:var(--text);">';
   rules.forEach(function(r){h+='<li style="margin-bottom:2px;">'+r+'</li>';});
-  h+='</ul></div>';
+  h+='</ul>';
+  if(editable)h+='<div id="rulesEdit_'+rowNum+'" style="display:none;margin-top:8px;"></div>';
+  h+='</div>';
   return h;
+}
+function toggleEditRules(rowNum){
+  var box=document.getElementById('rulesEdit_'+rowNum);
+  if(!box)return;
+  if(box.style.display==='block'){box.style.display='none';box.innerHTML='';return;}
+  var contest=(allData.Contests||[]).find(function(c){return c['_rowNum']===rowNum;});
+  var cur=contest?(contest['Rules']||''):'';
+  box.innerHTML='<textarea id="rulesTxt_'+rowNum+'" rows="3" style="width:100%;" placeholder="e.g.&#10;NSE pe kam se kam 1 trade zaroori hai&#10;Transfer account allowed nahi">'+cur+'</textarea>'+
+    '<button class="btn-save" style="margin-top:6px;font-size:12px;padding:6px 14px;" onclick="saveContestRules('+rowNum+')">Save Rules</button>';
+  box.style.display='block';
+}
+function saveContestRules(rowNum){
+  var ta=document.getElementById('rulesTxt_'+rowNum);
+  if(!ta)return;
+  var rules=ta.value;
+  postData({action:'editRow',sheet:'Contests',rowNum:rowNum,vals:{'Rules':rules}}).then(function(r){
+    if(r&&r.success){
+      showToast('Rules save ho gaye!','success');
+      patchRowLocal('Contests',rowNum,{'Rules':rules});
+      renderContestPage();
+      setTimeout(function(){loadAll(2);},600);
+    } else showToast('Failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
 function contestManualClick(contestId,metricName){
   var p={action:'addGeneric',sheet:'ManualContestEntries','Entry ID':'M'+Date.now(),'Contest ID':contestId,'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch,'Date':td(),'Note':metricName};
@@ -2873,7 +2909,7 @@ function contestAdminCard(contest){
   var h='<div class="contest-card">';
   h+='<div class="contest-title">&#127942; '+contest['Title']+' <span style="font-size:11px;background:rgba(63,191,127,.15);color:var(--accent);padding:2px 8px;border-radius:10px;">'+(contest['Status']||'Active')+'</span>'+(contest['_rowNum']?' <button class="btn-mini" style="margin-left:auto;color:var(--danger);border-color:rgba(239,68,68,.4);font-size:11px;" onclick="endContest('+contest['_rowNum']+')">End Contest</button>':'')+'</div>';
   h+='<div class="contest-sub">'+contest['Start Date']+' se '+contest['End Date']+' tak &#183; '+metrics.join(' + ')+'</div>';
-  h+=mkContestRulesBlock(contest);
+  h+=mkContestRulesBlock(contest,true);
   var medals=['&#129351;','&#129352;','&#129353;'];
   if(!isCombo){
     var counts=contestEmployeeCounts(contest);
