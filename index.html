@@ -2561,7 +2561,7 @@ function mkAccTable(rows,dupSet){
   ordered.forEach(function(r){
     var cid=(r['Client ID']||'').trim(),isDup=dupSet&&dupSet[cid];
     h+='<tr'+(isDup?' class="dup-row"':'')+'>'+
-      '<td>'+r['Date']+'</td><td>'+r['Employee Name']+'</td><td>'+r['Client Name']+'</td>'+
+      '<td>'+r['Date']+'</td><td>'+r['Employee Name']+'</td><td>'+r['Client Name']+contestBadgeForAccountDate(r['Date'])+'</td>'+
       '<td>'+(isDup?'<span class="dup-badge">&#9888;</span>':'')+cid+'</td>'+
       '<td>'+r['Client Phone']+'</td>';
     h+='<td>'+(r['Last Call Date']?('<b>'+r['Last Call Date']+'</b><br><span style="font-size:10px;color:var(--muted,#8a94a6);">'+(r['Last Call Remarks']||'-')+'</span>'):'<span style="font-size:11px;color:var(--muted,#8a94a6);">Not called yet</span>')+'</td>';
@@ -2756,6 +2756,99 @@ function activeContests(){
   var today=td();
   return (allData.Contests||[]).filter(function(c){return (c['Status']||'Active')==='Active' && c['End Date']>=today;});
 }
+/* v33.2: har entry (eligible ho ya na ho) admin ko dikhe, taaki pata chale kiska trade abhi baaki hai */
+function contestIneligibleReason(metricName,r){
+  if(metricName==='Account Opening'){
+    var reasons=[];
+    if((r['Account Type']||'New')!=='New')reasons.push('Transfer account');
+    if((r['Source']||'Online')!=='Online')reasons.push('Offline source');
+    if((r['NSE Trade Done']||'')!=='Yes')reasons.push('NSE trade pending');
+    return reasons.join(', ')||'Pending';
+  }
+  if(metricName==='SIP')return (r['Type']||'SIP')!=='SIP'?'SIP type nahi hai':'Pending';
+  return 'Pending';
+}
+function contestAllEntriesRows(contest,metricName){
+  var metric=CONTEST_METRICS[metricName];
+  if(!metric||metric.multiSheet)return [];
+  var start=contest['Start Date'],end=contest['End Date'];
+  var rows=(allData[metric.sheet]||[]).filter(function(r){return contestDateInRange(r['Date'],start,end);});
+  var out=rows.map(function(r){
+    var elig=metric.eligible(r);
+    return {row:r,eligible:elig,reason:elig?'':contestIneligibleReason(metricName,r)};
+  });
+  out.sort(function(a,b){
+    if(a.eligible!==b.eligible)return a.eligible?1:-1;
+    return (b.row['Date']||'').localeCompare(a.row['Date']||'');
+  });
+  return out;
+}
+function mkContestAllEntriesTable(contest,metricName){
+  var entries=contestAllEntriesRows(contest,metricName);
+  if(!entries.length)return '<div class="no-data" style="margin-top:10px;">Is period me abhi '+metricName+' ki koi entry nahi hui</div>';
+  var pendingCount=entries.filter(function(e){return !e.eligible;}).length;
+  var h='<div style="margin-top:16px;">';
+  h+='<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:6px;">'+metricName+' — Sabhi Entries ('+entries.length+' total, <span style="color:var(--amber);">'+pendingCount+' pending</span>)</div>';
+  h+='<div class="table-wrap"><div class="table-inner"><table><thead><tr><th>Date</th><th>Employee</th><th>Client</th><th>Status</th>'+(metricName==='Account Opening'?'<th>Action</th>':'')+'</tr></thead><tbody>';
+  entries.forEach(function(e){
+    var r=e.row;
+    h+='<tr'+(!e.eligible?' style="background:rgba(245,158,11,.07);"':'')+'>';
+    h+='<td>'+(r['Date']||'-')+'</td><td>'+(r['Employee Name']||'-')+'</td>';
+    h+='<td>'+(r['Client Name']||'-')+' <span style="color:var(--muted);font-size:10px;">('+(r['Client ID']||'-')+')</span></td>';
+    h+='<td>'+(e.eligible?'<span class="badge green">&#10003; Eligible</span>':'<span class="badge amber">&#9203; '+e.reason+'</span>')+'</td>';
+    if(metricName==='Account Opening'){
+      h+='<td>'+(e.eligible?'-':'<button class="btn-call" style="background:rgba(255,159,10,0.15);color:#ff9f0a;font-size:11px;" onclick="markNSETradeDone('+r['_rowNum']+')">&#128200; Trade Done?</button>')+'</td>';
+    }
+    h+='</tr>';
+  });
+  h+='</tbody></table></div></div></div>';
+  return h;
+}
+/* v33.2: Contest page se hi seedha naya Account Opening entry daalo — Accounts sheet shared hai isliye
+   yeh entry Accounts list me bhi automatically dikh jayegi (contestBadgeForAccountDate isko tag karega). */
+function mkContestQuickAddAccount(contestId){
+  var fid=contestId.replace(/[^a-zA-Z0-9]/g,'');
+  var h='<div style="background:var(--card2);border-radius:10px;padding:12px;margin:12px 0;">';
+  h+='<div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:8px;">&#43; Naya Account Entry (isi contest ke liye)</div>';
+  h+='<div style="display:flex;gap:8px;flex-wrap:wrap;">';
+  h+='<input type="text" id="cxa_cname_'+fid+'" placeholder="Client Name" style="flex:1;min-width:120px;">';
+  h+='<input type="text" id="cxa_cid_'+fid+'" placeholder="Client ID" style="flex:1;min-width:100px;">';
+  h+='<input type="text" id="cxa_cphone_'+fid+'" placeholder="Phone" style="flex:1;min-width:100px;">';
+  h+='</div>';
+  h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center;">';
+  h+='<select id="cxa_acctype_'+fid+'" style="flex:1;min-width:100px;"><option value="New">New</option><option value="Transfer">Transfer</option></select>';
+  h+='<select id="cxa_source_'+fid+'" style="flex:1;min-width:100px;"><option value="Online">Online</option><option value="Offline">Offline</option></select>';
+  h+='<button class="btn-save" style="font-size:12px;padding:8px 16px;" onclick="submitContestAccount(\''+contestId+'\',\''+fid+'\')">Add</button>';
+  h+='</div></div>';
+  return h;
+}
+function submitContestAccount(contestId,fid){
+  var cn=(document.getElementById('cxa_cname_'+fid).value||'').trim();
+  var cid=(document.getElementById('cxa_cid_'+fid).value||'').trim();
+  if(!cn||!cid){showToast('Client Name aur Client ID zaroori hai','error');return;}
+  var p={action:'addAccount','Date':td(),'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch,
+    'Client Name':cn,'Client ID':cid,'Client Phone':(document.getElementById('cxa_cphone_'+fid).value||'').trim(),
+    'Status':'Active','Trading Active':'No','SIP Active':'No','Investment Active':'No',
+    'Account Type':document.getElementById('cxa_acctype_'+fid).value,'Source':document.getElementById('cxa_source_'+fid).value,
+    'NSE Trade Done':'No','NSE Trade Date':''};
+  postData(p).then(function(r){
+    if(r&&r.success){
+      showToast('Account add ho gaya! Ab NSE trade complete karke isko eligible bana do.','success');
+      allData.Accounts=allData.Accounts||[];allData.Accounts.push(p);
+      var a=document.getElementById('cxa_cname_'+fid),b=document.getElementById('cxa_cid_'+fid),c=document.getElementById('cxa_cphone_'+fid);
+      if(a)a.value='';if(b)b.value='';if(c)c.value='';
+      renderContestPage();
+      setTimeout(function(){loadAll(2);},600);
+    } else showToast('Failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+/* v33.2: Accounts list me dikhao ki yeh account kis Account-Opening contest ke dauraan khula tha */
+function contestBadgeForAccountDate(dateStr){
+  var c=(allData.Contests||[]).find(function(x){
+    return contestMetricList(x).indexOf('Account Opening')!==-1 && contestDateInRange(dateStr,x['Start Date'],x['End Date']);
+  });
+  return c?('<div style="font-size:9px;color:var(--accent);margin-top:2px;" title="Contest: '+c['Title']+'">&#127942; '+c['Title']+'</div>'):'';
+}
 function allContestsSorted(){
   return (allData.Contests||[]).slice().sort(function(a,b){return (b['Created Date']||'').localeCompare(a['Created Date']||'');});
 }
@@ -2880,6 +2973,7 @@ function contestEmployeeCard(contest,empId,empName){
   h+='<div class="contest-title">&#127942; '+contest['Title']+'</div>';
   h+='<div class="contest-sub">'+contest['Start Date']+' se '+contest['End Date']+' tak &#183; '+metrics.join(' + ')+'</div>';
   h+=mkContestRulesBlock(contest);
+  if(metrics.indexOf('Account Opening')!==-1)h+=mkContestQuickAddAccount(contest['Contest ID']);
   h+='<div class="contest-body">';
   if(!isCombo){
     var metricName=metrics[0];
@@ -2913,14 +3007,15 @@ function contestAdminCard(contest){
   h+='<div class="contest-title">&#127942; '+contest['Title']+' <span style="font-size:11px;background:rgba(63,191,127,.15);color:var(--accent);padding:2px 8px;border-radius:10px;">'+(contest['Status']||'Active')+'</span>'+(contest['_rowNum']?' <button class="btn-mini" style="margin-left:auto;color:var(--danger);border-color:rgba(239,68,68,.4);font-size:11px;" onclick="endContest('+contest['_rowNum']+')">End Contest</button>':'')+'</div>';
   h+='<div class="contest-sub">'+contest['Start Date']+' se '+contest['End Date']+' tak &#183; '+metrics.join(' + ')+'</div>';
   h+=mkContestRulesBlock(contest,true);
+  if(metrics.indexOf('Account Opening')!==-1)h+=mkContestQuickAddAccount(contest['Contest ID']);
   var medals=['&#129351;','&#129352;','&#129353;'];
   if(!isCombo){
     var counts=contestEmployeeCounts(contest);
     var ids=Object.keys(counts);
     ids.sort(function(a,b){return counts[b].count-counts[a].count;});
-    h+='<div class="contest-sub" style="margin-top:-6px;">'+ids.length+' employees participating</div>';
+    h+='<div class="contest-sub" style="margin-top:-6px;">'+ids.length+' employees eligible ho chuke</div>';
     if(!ids.length){
-      h+='<div class="no-data" style="margin-top:14px;">Abhi tak koi eligible entry nahi hui</div>';
+      h+='<div class="no-data" style="margin-top:14px;">Abhi tak koi entry eligible nahi hui — neeche saari entries dekho</div>';
     } else {
       h+='<div class="table-wrap" style="margin-top:16px;"><div class="table-inner"><table><thead><tr><th>#</th><th>Employee</th><th>Branch</th><th>Count</th><th>Level</th><th>Reward</th><th>Progress</th></tr></thead><tbody>';
       ids.forEach(function(id,i){
@@ -2967,6 +3062,9 @@ function contestAdminCard(contest){
       h+='</tbody></table></div></div>';
     }
   }
+  metrics.forEach(function(m){
+    if(CONTEST_METRICS[m]&&!CONTEST_METRICS[m].multiSheet)h+=mkContestAllEntriesTable(contest,m);
+  });
   h+='<div id="contestDrill_'+contest['Contest ID']+'"></div>';
   h+='</div>';
   return h;
