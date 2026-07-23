@@ -331,12 +331,12 @@ tbody td{padding:10px 14px;vertical-align:middle;}
       <div class="page-header"><h1>Admin Dashboard</h1><p>Overall performance overview</p></div>
       <div class="form-card" style="margin-bottom:16px;">
         <div class="form-group"><label>&#128227; Send Announcement</label>
-          <textarea id="ann_msg" placeholder="e.g. Aaj ka target hai... / RELIANCE pe focus karo aaj / Sabko motivate karna hai" rows="2"></textarea>
+          <textarea id="ann_msg" placeholder="e.g. Today's target is... / Focus on RELIANCE today / Motivate the team" rows="2"></textarea>
         </div>
         <div class="form-group">
-          <label>Kisko bhejni hai?</label>
+          <label>Send To?</label>
           <div style="display:flex;gap:16px;margin-bottom:8px;">
-            <label style="display:flex;align-items:center;gap:6px;font-weight:400;"><input type="radio" name="ann_target_mode" value="all" checked onchange="toggleAnnTargetMode()"> Sabhi Employees</label>
+            <label style="display:flex;align-items:center;gap:6px;font-weight:400;"><input type="radio" name="ann_target_mode" value="all" checked onchange="toggleAnnTargetMode()"> All Employees</label>
             <label style="display:flex;align-items:center;gap:6px;font-weight:400;"><input type="radio" name="ann_target_mode" value="specific" onchange="toggleAnnTargetMode()"> Specific Employee(s)</label>
           </div>
           <div id="ann_specificBox" style="display:none;max-height:160px;overflow-y:auto;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px;"></div>
@@ -482,7 +482,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
 
     <!-- CONTESTS (v31) -->
     <div class="page" id="page-contest">
-      <div class="page-header"><h1>&#127942; Contests</h1><p>Chalte contests me apna level track karo</p></div>
+      <div class="page-header"><h1>&#127942; Contests</h1><p>Track your level in ongoing contests</p></div>
       <div id="contestLaunchBox"></div>
       <div id="contestList"></div>
     </div>
@@ -516,8 +516,8 @@ tbody td{padding:10px 14px;vertical-align:middle;}
 
     <!-- ADMIN STUDENTS -->
     <div class="page" id="page-adminStudents">
-      <div class="page-header"><h1>Student Portal</h1><p>Naam, admission date, fees, pending, demat status &#8212; sab ek jagah</p></div>
-      <button class="btn-mini" style="border-color:var(--blue);color:var(--blue);margin-bottom:12px;" onclick="migrateStudentFees()">&#8635; Purana Fee Data Migrate Karo</button>
+      <div class="page-header"><h1>Student Portal</h1><p>Name, admission date, fees, pending, demat status &#8212; all in one place</p></div>
+      <button class="btn-mini" style="border-color:var(--blue);color:var(--blue);margin-bottom:12px;" onclick="migrateStudentFees()">&#8635; Migrate Old Fee Data</button>
       <div class="filter-bar">
         <button class="filter-btn" onclick="setF('today',this,'astud')">Today</button>
         <button class="filter-btn" onclick="setF('week',this,'astud')">This Week</button>
@@ -594,9 +594,9 @@ tbody td{padding:10px 14px;vertical-align:middle;}
 
     <!-- MY TEAM -->
     <div class="page" id="page-myTeam">
-      <div class="page-header"><h1>My Team</h1><p>Sub-employees ke Accounts/SIP/Insurance/Students dekhein aur edit karein</p></div>
+      <div class="page-header"><h1>My Team</h1><p>View and edit sub-employees' Accounts/SIP/Insurance/Students</p></div>
       <div class="form-card" style="margin-bottom:20px;">
-        <div class="form-group"><label>Team Member Select Karein</label>
+        <div class="form-group"><label>Select Team Member</label>
           <select id="team_emp" onchange="renderMyTeamData()"><option value="">-- Select --</option></select>
         </div>
       </div>
@@ -682,7 +682,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <button class="filter-btn active" onclick="setTJStat('all',this)">All</button>
         <button class="filter-btn" onclick="setTJStat('open',this)">Open</button>
         <button class="filter-btn" onclick="setTJStat('closed',this)">Closed</button>
-        <span style="color:var(--muted);font-size:12px;">Kisi specific din ka check:</span>
+        <span style="color:var(--muted);font-size:12px;">Check a specific date:</span>
         <input type="date" id="tj_specificDate" onchange="renderTradingJournalPage()" style="padding:6px 10px;border-radius:6px;">
         <button class="filter-btn" onclick="document.getElementById('tj_specificDate').value='';renderTradingJournalPage();">Clear Date</button>
         <input class="srch" id="srch-tj" placeholder="&#128269; Search stock..." oninput="renderTradingJournalPage()">
@@ -706,14 +706,14 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <div id="ctOpenTradesDiv" style="flex:1;min-width:240px;"></div>
       </div>
       <div class="form-card form-grid" id="cclFormCard" style="display:none;">
-        <div class="form-group" id="ccl_forEmpGroup" style="display:none"><label>Kis Employee Ke Liye?</label><select id="ccl_forEmp"></select></div>
+        <div class="form-group" id="ccl_forEmpGroup" style="display:none"><label>For Which Employee?</label><select id="ccl_forEmp"></select></div>
         <div class="form-group"><label>Client ID</label><input type="text" id="ccl_cid" placeholder="e.g. FBO1234"></div>
         <div class="form-group"><label>Client Name</label><input type="text" id="ccl_cname" placeholder="Enter client name"></div>
         <div class="form-group"><label>Client Phone</label><input type="tel" id="ccl_cphone" placeholder="10-digit mobile"></div>
         <div class="form-group"><label>Trading Type</label>
-          <select id="ccl_type"><option value="Intraday">Intraday</option><option value="Swing Trading">Swing Trading</option><option value="Long Term Investment">Long Term Investment</option><option value="F&amp;O">F&amp;O</option><option value="Commodity">Commodity</option><option value="Self Trade">Self Trade (Khud Trade Karta Hai)</option></select>
+          <select id="ccl_type"><option value="Intraday">Intraday</option><option value="Swing Trading">Swing Trading</option><option value="Long Term Investment">Long Term Investment</option><option value="F&amp;O">F&amp;O</option><option value="Commodity">Commodity</option><option value="Self Trade">Self Trade (Trades Independently)</option></select>
         </div>
-        <div class="form-group"><label>Remarks (optional)</label><textarea id="ccl_remarks" rows="2" placeholder="Koi note ho to yahan likho"></textarea></div>
+        <div class="form-group"><label>Remarks (optional)</label><textarea id="ccl_remarks" rows="2" placeholder="Add a note if any"></textarea></div>
         <button class="btn-submit" onclick="submitCallClient()">Add to List</button>
       </div>
 
@@ -749,7 +749,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <div class="form-group"><label>Stock</label><input type="text" id="wl_stock" placeholder="e.g. RELIANCE" style="text-transform:uppercase;"></div>
         <div class="form-group"><label>Pattern</label><select id="wl_pattern" onchange="toggleWLPatternOther()"></select></div>
         <div class="form-group" id="wl_patternOtherGroup" style="display:none;"><label>Pattern (type)</label><input type="text" id="wl_patternOther" placeholder="Custom pattern"></div>
-        <div class="form-group" style="grid-column:1/-1;"><label>Notes</label><textarea id="wl_notes" placeholder="e.g. Breakout hua hai, Flag & Pole pattern bana hai" rows="2"></textarea></div>
+        <div class="form-group" style="grid-column:1/-1;"><label>Notes</label><textarea id="wl_notes" placeholder="e.g. Breakout occurred, Flag & Pole pattern formed" rows="2"></textarea></div>
         <div class="form-group" style="display:flex;align-items:center;gap:8px;"><label style="margin:0;display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="wl_star" style="width:16px;height:16px;">&#11088; Must Watch (Star)</label></div>
         <button class="btn-save" style="grid-column:1/-1;" onclick="submitWatchlist()">+ Add to Watchlist</button>
       </div>
@@ -769,7 +769,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <div class="form-group"><label>Client ID (optional)</label><input type="text" id="rem_cid" placeholder="e.g. FBO1234"></div>
         <div class="form-group"><label>Reminder Date</label><input type="date" id="rem_date"></div>
         <div class="form-group"><label>Reminder Time (optional)</label><input type="time" id="rem_time"></div>
-        <div class="form-group" style="grid-column:1/-1;"><label>Note</label><textarea id="rem_note" placeholder="e.g. Client ne bola 1 mahine baad SIP start karvani hai" rows="2"></textarea></div>
+        <div class="form-group" style="grid-column:1/-1;"><label>Note</label><textarea id="rem_note" placeholder="e.g. Client said to start SIP after 1 month" rows="2"></textarea></div>
         <button class="btn-save" style="grid-column:1/-1;" onclick="submitReminder()">+ Add Reminder</button>
       </div>
       <div class="filter-bar">
@@ -783,7 +783,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
     <div class="page" id="page-addSIP">
       <div class="page-header"><h1>Add Mutual Fund</h1><p>Enter SIP or Lumpsum details</p></div>
       <div class="form-card">
-        <div class="form-group" id="s_forEmpGroup" style="display:none"><label>Entry Kiske Liye Hai?</label><select id="s_forEmp"></select></div>
+        <div class="form-group" id="s_forEmpGroup" style="display:none"><label>Entry For Which Employee?</label><select id="s_forEmp"></select></div>
         <div class="form-group"><label>Date</label><input type="date" id="s_date"></div>
         <div class="form-group"><label>Investment Type</label>
           <select id="s_type" onchange="updateSIPLabel()">
@@ -804,7 +804,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
     <div class="page" id="page-addIns">
       <div class="page-header"><h1>Add Insurance</h1></div>
       <div class="form-card">
-        <div class="form-group" id="i_forEmpGroup" style="display:none"><label>Entry Kiske Liye Hai?</label><select id="i_forEmp"></select></div>
+        <div class="form-group" id="i_forEmpGroup" style="display:none"><label>Entry For Which Employee?</label><select id="i_forEmp"></select></div>
         <div class="form-group"><label>Date</label><input type="date" id="i_date"></div>
         <div class="form-group"><label>Insurance Type</label>
           <select id="i_type">
@@ -824,7 +824,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
     <div class="page" id="page-addAcc">
       <div class="page-header"><h1>Add Account Opening</h1></div>
       <div class="form-card">
-        <div class="form-group" id="a_forEmpGroup" style="display:none"><label>Entry Kiske Liye Hai?</label><select id="a_forEmp"></select></div>
+        <div class="form-group" id="a_forEmpGroup" style="display:none"><label>Entry For Which Employee?</label><select id="a_forEmp"></select></div>
         <div class="form-group"><label>Date</label><input type="date" id="a_date"></div>
         <div class="form-group"><label>Client Name</label><input type="text" id="a_cname" placeholder="Enter client name"></div>
         <div class="form-group"><label>Client ID / Demat No</label><input type="text" id="a_cid" placeholder="e.g. FBO1234"></div>
@@ -832,16 +832,16 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <div class="form-group"><label>Account Type</label>
           <select id="a_acctype"><option value="New">New</option><option value="Transfer">Transfer</option></select>
         </div>
-        <div class="form-group"><label>Kaise Khula (Source)</label>
-          <select id="a_source"><option value="Online">Online (Link se)</option><option value="Offline">Offline</option></select>
+        <div class="form-group"><label>How Was It Opened (Source)</label>
+          <select id="a_source"><option value="Online">Online (via Link)</option><option value="Offline">Offline</option></select>
         </div>
-        <div class="form-group"><label>Active In (multiple select kar sakte ho)</label>
+        <div class="form-group"><label>Active In (you can select multiple)</label>
           <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;">
             <label style="display:flex;align-items:center;gap:5px;font-weight:400;font-size:13px;"><input type="checkbox" id="a_actTrading" style="width:auto;"> Trading</label>
             <label style="display:flex;align-items:center;gap:5px;font-weight:400;font-size:13px;"><input type="checkbox" id="a_actSIP" style="width:auto;"> SIP</label>
             <label style="display:flex;align-items:center;gap:5px;font-weight:400;font-size:13px;"><input type="checkbox" id="a_actInvestment" style="width:auto;"> Investment</label>
           </div>
-          <div style="font-size:11px;color:var(--muted,#8a94a6);margin-top:4px;">Koi bhi select na kare to account Inactive maana jayega</div>
+          <div style="font-size:11px;color:var(--muted,#8a94a6);margin-top:4px;">If none selected, the account will be marked Inactive</div>
         </div>
         <button class="btn-submit" onclick="submitAccount()">Add Account</button>
       </div>
@@ -879,23 +879,23 @@ tbody td{padding:10px 14px;vertical-align:middle;}
     <div class="page" id="page-addStudent">
       <div class="page-header"><h1>Add Student Referral</h1><p>Track students referred to IdealFinway batch</p></div>
       <div class="form-card">
-        <div class="form-group" id="st_forEmpGroup" style="display:none"><label>Entry Kiske Liye Hai?</label><select id="st_forEmp"></select></div>
+        <div class="form-group" id="st_forEmpGroup" style="display:none"><label>Entry For Which Employee?</label><select id="st_forEmp"></select></div>
         <div class="form-group"><label>Date</label><input type="date" id="st_date"></div>
         <div class="form-group"><label>Student Name</label><input type="text" id="st_name" placeholder="Enter student name"></div>
         <div class="form-group"><label>Student Phone</label><input type="tel" id="st_phone" placeholder="10-digit mobile"></div>
         <div class="form-group"><label>Batch / Course</label><input type="text" id="st_batch" placeholder="e.g. Technical Analysis Batch 3"></div>
         <div class="form-group"><label>Referred By (Client Name)</label><input type="text" id="st_ref" placeholder="Who referred this student?"></div>
-        <div class="form-group"><label>Total Course Fee (&#8377;)</label><input type="number" id="st_totfee" placeholder="e.g. 35000 (khali chodo agar poori fee abhi mil gayi)"></div>
-        <div class="form-group"><label style="color:var(--danger,#ef4444);">Fees Received Abhi (&#8377;) &#8212; zaroori hai</label><input type="number" id="st_feesreceived" placeholder="Jitni fees li hai wahi daalo" oninput="calcStudentPending()"></div>
+        <div class="form-group"><label>Total Course Fee (&#8377;)</label><input type="number" id="st_totfee" placeholder="e.g. 35000 (leave blank if full fee already received)"></div>
+        <div class="form-group"><label style="color:var(--danger,#ef4444);">Fees Received Now (&#8377;) - required</label><input type="number" id="st_feesreceived" placeholder="Enter the amount of fees received" oninput="calcStudentPending()"></div>
         <div class="form-group" id="st_pendingGroup" style="display:none;"><label>Pending (&#8377;) &#8212; auto</label><input type="number" id="st_pending_display" disabled></div>
         <div class="form-group"><label>Place</label><input type="text" id="st_place" placeholder="e.g. Hisar, Adampur"></div>
         <div class="form-group"><label>Fees Credited To</label>
           <select id="st_credit"><option>Office Account</option><option>Ravi Bank Account</option><option>Cash</option><option>Other</option></select>
         </div>
-        <div class="form-group"><label>Remarks</label><input type="text" id="st_remarks" placeholder="Koi note (optional)"></div>
+        <div class="form-group"><label>Remarks</label><input type="text" id="st_remarks" placeholder="Add a note (optional)"></div>
         <div class="form-group"><label>Demat Account Opened?</label>
           <select id="st_demat">
-            <option value="">-- pata nahi / abhi tak nahi --</option>
+            <option value="">-- Not sure / Not yet --</option>
             <option value="Yes">Yes</option>
             <option value="No">No</option>
           </select>
@@ -916,14 +916,14 @@ tbody td{padding:10px 14px;vertical-align:middle;}
       <div class="page-header"><h1>Add Meeting</h1><p>Log a client meeting</p></div>
       <div class="form-card">
         <div class="form-group"><label>Date</label><input type="date" id="m_date"></div>
-        <div class="form-group"><label>Client / Person Name</label><input type="text" id="m_cname" placeholder="Kis se meeting hui"></div>
+        <div class="form-group"><label>Client / Person Name</label><input type="text" id="m_cname" placeholder="Who was the meeting with"></div>
         <div class="form-group"><label>Client Phone</label><input type="tel" id="m_cphone" placeholder="10-digit mobile"></div>
-        <div class="form-group"><label>Reference By</label><input type="text" id="m_ref" placeholder="Kiski reference se aaya"></div>
+        <div class="form-group"><label>Reference By</label><input type="text" id="m_ref" placeholder="Referred by"></div>
         <div class="form-group"><label>Regarding</label>
           <select id="m_regarding"><option value="SIP/MF">SIP / Mutual Fund</option><option value="Insurance">Insurance</option><option value="Demat">Demat / Account</option><option value="Other">Other</option></select>
         </div>
-        <div class="form-group"><label>Kaun-kaun gaye (Attendees)</label><input type="text" id="m_attendees" placeholder="Names, comma se alag"></div>
-        <div class="form-group"><label>Remarks (kya baat hui)</label><textarea id="m_remarks" placeholder="Meeting ki details..."></textarea></div>
+        <div class="form-group"><label>Who Attended (Attendees)</label><input type="text" id="m_attendees" placeholder="Names, comma separated"></div>
+        <div class="form-group"><label>Remarks (what was discussed)</label><textarea id="m_remarks" placeholder="Meeting details..."></textarea></div>
         <div class="form-group"><label>Next Meeting Date</label><input type="date" id="m_next"></div>
         <div class="form-group"><label>Converted?</label>
           <select id="m_conv" onchange="toggleConvProduct()"><option value="No">No</option><option value="Yes">Yes</option></select>
@@ -954,7 +954,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
           <button class="btn-submit" id="punchInBtn" style="flex:1;" onclick="doPunch('In')">&#9200; Punch In</button>
           <button class="btn-submit" id="punchOutBtn" style="flex:1;background:var(--amber,#e0a33e);" onclick="doPunch('Out')">&#128682; Punch Out</button>
         </div>
-        <p style="opacity:.6;font-size:12px;margin-top:8px;">Punch In subah, Punch Out shaam ko. Time khaali chhodo to abhi ka time apne-aap lag jayega. Ek din ka ek hi record banega (in+out).</p>
+        <p style="opacity:.6;font-size:12px;margin-top:8px;">Punch In in the morning, Punch Out in the evening. Leave the time blank to use the current time automatically. Only one record is created per day (in+out).</p>
       </div>
       <div class="sec-title">My Recent Attendance</div>
       <div class="table-wrap"><div class="table-inner" id="myAttTable"></div></div>
@@ -1109,12 +1109,12 @@ tbody td{padding:10px 14px;vertical-align:middle;}
 
     <!-- ===== v22: UPLOAD CHOICE SHEET ===== -->
     <div class="page" id="page-uploadChoice">
-      <div class="page-header"><h1>Upload Choice Sheet</h1><p>Choice ki Bi Report (brokerage sheet) upload karo &#8212; clients automatically employees se match ho jayenge</p></div>
+      <div class="page-header"><h1>Upload Choice Sheet</h1><p>Upload the Choice Bi Report (brokerage sheet) - clients will automatically be matched to employees</p></div>
       <div style="max-width:760px;">
         <label class="upload-box" for="choiceFile">
           <div class="upload-icon">&#128196;</div>
-          <div style="font-weight:700;font-size:15px;">Choice Bi Report file yaha choose karo</div>
-          <div style="color:var(--muted);font-size:12px;margin-top:4px;">.xls file jaisi portal se download hoti hai &#8212; kuch change karne ki zaroorat nahi</div>
+          <div style="font-weight:700;font-size:15px;">Choose the Choice Bi Report file here</div>
+          <div style="color:var(--muted);font-size:12px;margin-top:4px;">Use the .xls file exactly as downloaded from the portal - no changes needed</div>
           <input type="file" id="choiceFile" accept=".xls,.xlsx,.html,.htm" onchange="handleChoiceFile(this)">
         </label>
         <div id="choicePreview"></div>
@@ -1123,9 +1123,9 @@ tbody td{padding:10px 14px;vertical-align:middle;}
 
     <!-- ===== v22: ADMIN CLIENT BROKERAGE ===== -->
     <div class="page" id="page-adminCBrok">
-      <div class="page-header"><h1>Client Brokerage</h1><p>Client-wise brokerage (Choice uploads se) &#8212; REMESHIRE amount</p></div>
+      <div class="page-header"><h1>Client Brokerage</h1><p>Client-wise brokerage (from Choice uploads) &#8212; REMESHIRE amount</p></div>
       <div class="form-card" style="margin-bottom:14px;">
-        <div class="form-group"><label>&#128269; Client ID Lookup (Total Brokerage, Sabhi Dates Milaakar)</label>
+        <div class="form-group"><label>&#128269; Client ID Lookup (Total Brokerage, All Dates Combined)</label>
           <input class="srch" id="cbrokLookupBox" placeholder="Client ID likhein e.g. FBO0515..." oninput="renderCbrokLookup()" style="width:100%;">
         </div>
         <div id="cbrokLookupResult"></div>
@@ -1155,7 +1155,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
 
     <!-- ===== v22: FINANCE DASHBOARD ===== -->
     <div class="page" id="page-finDash">
-      <div class="page-header"><h1>Finance Dashboard</h1><p>Income, expense aur profit overview</p></div>
+      <div class="page-header"><h1>Finance Dashboard</h1><p>Income, expense and profit overview</p></div>
       <div class="filter-bar">
         <span style="font-size:13px;color:var(--muted);">Month:</span>
         <input type="month" id="finDashMonth" class="srch" style="width:auto;" onchange="renderFinDash()">
@@ -1172,7 +1172,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
 
     <!-- ===== v22: ADD INCOME ===== -->
     <div class="page" id="page-addIncome">
-      <div class="page-header"><h1>Add Income</h1><p>Student fee, insurance, brokerage ya koi bhi income</p></div>
+      <div class="page-header"><h1>Add Income</h1><p>Student fee, insurance, brokerage or any other income</p></div>
       <div class="form-card">
         <div class="form-group"><label>Date</label><input type="date" id="in_date"></div>
         <div class="form-group"><label>Income Category</label>
@@ -1184,17 +1184,17 @@ tbody td{padding:10px 14px;vertical-align:middle;}
             <option value="Other Income">Other Income</option>
           </select>
         </div>
-        <div class="form-group"><label id="in_amt_label">Amount Received (&#8377;)</label><input type="number" id="in_amount" placeholder="Kitna paisa aaya"></div>
+        <div class="form-group"><label id="in_amt_label">Amount Received (&#8377;)</label><input type="number" id="in_amount" placeholder="Amount received"></div>
         <div id="in_studentFields">
-          <div class="form-group"><label>Student Name</label><input type="text" id="in_name" placeholder="Student ka naam"></div>
+          <div class="form-group"><label>Student Name</label><input type="text" id="in_name" placeholder="Student's name"></div>
           <div class="form-group"><label>Place</label><input type="text" id="in_place" placeholder="e.g. Hisar, Barwala"></div>
           <div class="form-group"><label>Mobile Number</label><input type="tel" id="in_phone" placeholder="10-digit mobile"></div>
           <div class="form-group"><label>Course</label><select id="in_course"><option>Full Course</option><option>Basic Course</option><option>Advanced Course</option><option>Other</option></select></div>
-          <div class="form-group"><label>Total Fee (&#8377;)</label><input type="number" id="in_totalfee" placeholder="Puri fee kitni hai" oninput="calcPending()"></div>
-          <div class="form-group"><label>Pending (&#8377;) &#8212; auto</label><input type="number" id="in_pending" placeholder="Baaki kitna hai"></div>
-          <div class="form-group"><label>Reference</label><input type="text" id="in_ref" placeholder="Kiski reference se aaya"></div>
+          <div class="form-group"><label>Total Fee (&#8377;)</label><input type="number" id="in_totalfee" placeholder="Total fee amount" oninput="calcPending()"></div>
+          <div class="form-group"><label>Pending (&#8377;) &#8212; auto</label><input type="number" id="in_pending" placeholder="Remaining amount"></div>
+          <div class="form-group"><label>Reference</label><input type="text" id="in_ref" placeholder="Referred by"></div>
         </div>
-        <div class="form-group" id="in_srcGroup" style="display:none;"><label>Source / Name (optional)</label><input type="text" id="in_src" placeholder="Kaha se income aayi"></div>
+        <div class="form-group" id="in_srcGroup" style="display:none;"><label>Source / Name (optional)</label><input type="text" id="in_src" placeholder="Where the income came from"></div>
         <div class="form-group"><label>Credited To</label>
           <select id="in_credit"><option>Ravi Bank Account</option><option>Office Account</option><option>Cash</option><option>Other</option></select>
         </div>
@@ -1205,7 +1205,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
 
     <!-- ===== v22: ADD EXPENSE ===== -->
     <div class="page" id="page-addExpense">
-      <div class="page-header"><h1>Add Expense</h1><p>Office ka koi bhi kharcha</p></div>
+      <div class="page-header"><h1>Add Expense</h1><p>Any office expense</p></div>
       <div class="form-card">
         <div class="form-group"><label>Date</label><input type="date" id="ex_date"></div>
         <div class="form-group"><label>Expense Category</label>
@@ -1223,9 +1223,9 @@ tbody td{padding:10px 14px;vertical-align:middle;}
             <option>Other</option>
           </select>
         </div>
-        <div class="form-group"><label>Kis chij pe kharcha hua (Description)</label><input type="text" id="ex_desc" placeholder="e.g. AC Tohana, wifi bill, gadi rent"></div>
-        <div class="form-group"><label>Amount (&#8377;)</label><input type="number" id="ex_amount" placeholder="Kitna kharcha hua"></div>
-        <div class="form-group"><label>Paid By</label><input type="text" id="ex_paidby" list="ex_paidby_list" placeholder="Kisne pay kiya">
+        <div class="form-group"><label>What Was It Spent On (Description)</label><input type="text" id="ex_desc" placeholder="e.g. AC Tohana, wifi bill, gadi rent"></div>
+        <div class="form-group"><label>Amount (&#8377;)</label><input type="number" id="ex_amount" placeholder="Amount spent"></div>
+        <div class="form-group"><label>Paid By</label><input type="text" id="ex_paidby" list="ex_paidby_list" placeholder="Who paid">
           <datalist id="ex_paidby_list"><option>Ravi</option></datalist>
         </div>
         <div class="form-group"><label>Branch</label><select id="ex_branch"><option>Hisar</option><option>Adampur</option><option>Rohtak</option><option>Tohana</option></select></div>
@@ -1255,7 +1255,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
 
     <!-- ===== v22: MONTHLY HISAB ===== -->
     <div class="page" id="page-hisab">
-      <div class="page-header"><h1>Monthly Hisab</h1><p>Month-end settlement &#8212; har employee ka net payable auto-calculate</p></div>
+      <div class="page-header"><h1>Monthly Hisab</h1><p>Month-end settlement - auto-calculates net payable for each employee</p></div>
       <div class="filter-bar">
         <span style="font-size:13px;color:var(--muted);">Month:</span>
         <input type="month" id="hisabMonth" class="srch" style="width:auto;" onchange="renderHisab()">
@@ -1268,7 +1268,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
 
     <!-- ===== v22: MY HISAB (employee payslip) ===== -->
     <div class="page" id="page-myHisab">
-      <div class="page-header"><h1>My Hisab</h1><p>Aapka month-wise settlement (view only)</p></div>
+      <div class="page-header"><h1>My Hisab</h1><p>Your month-wise settlement (view only)</p></div>
       <div id="myHisabCards"></div>
     </div>
 
@@ -1455,9 +1455,9 @@ function computeReminders(){
 }
 function buildReminderHTML(r){
   var isAdm=currentUser&&currentUser.role==='admin';
-  var h='<div class="modal-title">&#128276; Aaj Ka Reminder &#8212; '+td()+'</div>';
+  var h='<div class="modal-title">&#128276; Today\'s Reminder - '+td()+'</div>';
   if(r.meetToday.length){
-    h+='<div style="font-weight:700;color:var(--blue,#3b82f6);margin:4px 0 8px;">&#129309; Aaj Meeting Hai:</div>';
+    h+='<div style="font-weight:700;color:var(--blue,#3b82f6);margin:4px 0 8px;">&#129309; Meeting Today:</div>';
     h+='<div style="max-height:170px;overflow:auto;margin-bottom:14px;">'+r.meetToday.map(function(m){
       var ph=(m['Client Phone']||'').replace(/[^\d+]/g,'');
       return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 4px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:13px;">'
@@ -1468,7 +1468,7 @@ function buildReminderHTML(r){
   }
   if(r.sipTomorrow.length){
     var tm=r.tomorrow;
-    h+='<div style="font-weight:700;color:var(--accent,#3fbf7f);margin:4px 0 8px;">&#128197; Kal ('+('0'+tm.getDate()).slice(-2)+'/'+('0'+(tm.getMonth()+1)).slice(-2)+') SIP due hai &#8212; client ko call karke yaad dilao:</div>';
+    h+='<div style="font-weight:700;color:var(--accent,#3fbf7f);margin:4px 0 8px;">&#128197; Tomorrow ('+('0'+tm.getDate()).slice(-2)+'/'+('0'+(tm.getMonth()+1)).slice(-2)+') SIP is due - call the client to remind them:</div>';
     h+='<div style="max-height:200px;overflow:auto;margin-bottom:14px;">'+r.sipTomorrow.map(function(row){
       var ph=(row['Client Phone']||'').replace(/[^\d+]/g,'');
       return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 4px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:13px;">'
@@ -1506,7 +1506,7 @@ function buildReminderHTML(r){
     }).join('')+'</div>';
   }
   if(r.starredWatch&&r.starredWatch.length){
-    h+='<div style="font-weight:700;color:#f59e0b;margin:4px 0 8px;">&#11088; Starred Watchlist &#8212; aaj yeh stocks zaroor dekhna hai:</div>';
+    h+='<div style="font-weight:700;color:#f59e0b;margin:4px 0 8px;">&#11088; Starred Watchlist &#8212; be sure to check these stocks today:</div>';
     h+='<div style="max-height:170px;overflow:auto;margin-bottom:14px;">'+r.starredWatch.map(function(w){
       return '<div style="padding:8px 4px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:13px;">'
         +'<b>'+(w['Stock']||'-')+'</b>'+(w['Notes']?' &#183; '+w['Notes']:'')
@@ -1514,9 +1514,9 @@ function buildReminderHTML(r){
     }).join('')+'</div>';
   }
   if(!r.meetToday.length&&!r.sipTomorrow.length&&!r.pendStud.length&&!(r.tradeAlerts&&r.tradeAlerts.length)&&!(r.dueReminders&&r.dueReminders.length)&&!(r.starredWatch&&r.starredWatch.length)){
-    h+='<div style="color:var(--muted,#8a94a6);padding:14px 0;">Koi pending reminder nahi hai. Sab clear hai! &#9989;</div>';
+    h+='<div style="color:var(--muted,#8a94a6);padding:14px 0;">No pending reminders. All clear! &#9989;</div>';
   }
-  h+='<div class="modal-actions"><button class="btn-save" onclick="closeModal()">Theek hai, dekh liya</button></div>';
+  h+='<div class="modal-actions"><button class="btn-save" onclick="closeModal()">Got it</button></div>';
   return h;
 }
 /* Sidebar me hamesha visible bell + badge — kabhi bhi click karke dekh sakte h, sirf ek baar dismiss hone wala popup nahi */
@@ -1560,15 +1560,15 @@ function check315Reminder(){
   if(!openIntraday.length)return;
   localStorage.setItem(key,'1');
   playAlertSound();
-  var h2='<div class="modal-title">&#9200; 3:15 PM Reminder &#8212; Intraday Trade Close Karo!</div>';
-  h2+='<div style="color:var(--muted,#8a94a6);margin-bottom:10px;font-size:13px;">Yeh intraday trades abhi tak open hain, market band hone se pehle close karke client ko update karo:</div>';
+  var h2='<div class="modal-title">&#9200; 3:15 PM Reminder &#8212; Close Intraday Trades!</div>';
+  h2+='<div style="color:var(--muted,#8a94a6);margin-bottom:10px;font-size:13px;">These intraday trades are still open - close them before market close and update the client:</div>';
   h2+='<div style="max-height:220px;overflow:auto;margin-bottom:14px;">'+openIntraday.map(function(r){
     return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 4px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:13px;">'
       +'<span>'+(r['Stock']||'-')+' &#183; '+(r['Direction']||'')+' &#183; Entry '+(r['Entry Price']||'-')+'</span>'
       +'<span style="color:var(--amber,#f59e0b);font-weight:700;">'+(r['Status']||'Open')+'</span>'
       +'</div>';
   }).join('')+'</div>';
-  h2+='<div class="modal-actions"><button class="btn-save" onclick="closeModal()">Theek hai</button></div>';
+  h2+='<div class="modal-actions"><button class="btn-save" onclick="closeModal()">Got it</button></div>';
   document.getElementById('modalBox').innerHTML=h2;
   document.getElementById('modal').className='show';
 }
@@ -1594,7 +1594,7 @@ function checkReminderTimes(){
     var h2='<div class="modal-title">&#128276; Reminder &#8212; '+t+'</div>';
     h2+='<div style="margin-bottom:6px;font-size:14px;font-weight:600;">'+(r['Client Name']||'-')+(r['Client ID']?' &#8212; '+r['Client ID']:'')+'</div>';
     h2+='<div style="color:var(--muted,#8a94a6);margin-bottom:14px;font-size:13px;">'+(r['Note']||'')+'</div>';
-    h2+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Baad Mein</button><button class="btn-save" onclick="markReminderDone('+r['_rowNum']+');closeModal();">Done Kar Do</button></div>';
+    h2+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Later</button><button class="btn-save" onclick="markReminderDone('+r['_rowNum']+');closeModal();">Mark Done</button></div>';
     document.getElementById('modalBox').innerHTML=h2;
     document.getElementById('modal').className='show';
     break;
@@ -1768,7 +1768,7 @@ function renderMyTeamData(){
   var sel=document.getElementById('team_emp');
   var uid=sel?sel.value:'';
   if(!uid){
-    document.getElementById('teamStats').innerHTML='<div class="no-data">Upar se team member select karein</div>';
+    document.getElementById('teamStats').innerHTML='<div class="no-data">Select a team member above</div>';
     document.getElementById('teamBrokTable').innerHTML='';document.getElementById('teamAccTable').innerHTML='';document.getElementById('teamSIPTable').innerHTML='';
     document.getElementById('teamInsTable').innerHTML='';document.getElementById('teamStudTable').innerHTML='';
     document.getElementById('teamCCLStats').innerHTML='';document.getElementById('teamCCLTypeStats').innerHTML='';
@@ -1785,8 +1785,8 @@ function renderMyTeamData(){
   var uniqC={};cbrok.forEach(function(r){uniqC[(r['Client ID']||'').trim()]=1;});
   var teamWorkingAcc=acc.filter(function(r){return uniqC[(r['Client ID']||'').trim()];});
   document.getElementById('teamStats').innerHTML=mkStats([
-    {label:'Total Brokerage',value:fmt(totBrok),sub:'lifetime, sabhi clients',color:'red'},
-    {label:'Working Clients',value:Object.keys(uniqC).length,sub:(teamWorkingOnly?'showing working clients only, click to show all':'brokerage wale, click to filter')+' &#128064;',color:'purple',onclick:'toggleTeamWorking()'},
+    {label:'Total Brokerage',value:fmt(totBrok),sub:'lifetime, all clients',color:'red'},
+    {label:'Working Clients',value:Object.keys(uniqC).length,sub:(teamWorkingOnly?'showing working clients only, click to show all':'with brokerage, click to filter')+' &#128064;',color:'purple',onclick:'toggleTeamWorking()'},
     {label:'Accounts',value:acc.length,sub:'clients, click to show all &#128064;',color:'green',onclick:'showAllTeamClients()'},
     {label:'SIP/MF',value:sip.length,sub:'entries',color:'blue'},
     {label:'Insurance',value:ins.length,sub:'policies',color:'amber'},
@@ -1808,7 +1808,7 @@ function renderMyTeamData(){
     bh='<table><thead><tr><th>#</th><th>Client ID</th><th>Client Name</th><th>Entries</th><th>Brokerage</th></tr></thead><tbody>';
     agg.forEach(function(c,i){bh+='<tr><td>'+(i+1)+'</td><td>'+(c.cid||'-')+'</td><td style="font-weight:600;">'+(c.name||'-')+'</td><td>'+c.n+'</td><td class="money">'+fmt(c.amt)+'</td></tr>';});
     bh+='</tbody></table>';
-  } else bh='<div class="no-data">Abhi tak koi client brokerage nahi hai</div>';
+  } else bh='<div class="no-data">No client brokerage yet</div>';
   document.getElementById('teamBrokTable').innerHTML=bh;
   document.getElementById('teamAccTable').innerHTML=mkAccTable(accDisplay,{});
   document.getElementById('teamSIPTable').innerHTML=mkTable(sip,[{k:'Date',l:'Date'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Client ID'},{k:'Client Phone',l:'Phone'},{k:'Type',l:'Type'},{k:'Amount',l:'Amount',money:true},{k:'SIP Due Date',l:'Due Date'}],'SIP');
@@ -1841,8 +1841,8 @@ function renderMyTeamData(){
   document.getElementById('teamCCLTypeStats').innerHTML=mkStats([
     {label:'Intraday Clients',value:intradayN2,sub:'trading type',color:'blue'},
     {label:'Swing Clients',value:swingN2,sub:'trading type',color:'purple'},
-    {label:'On Break',value:breakN2,sub:'trading se break par',color:'amber'},
-    {label:'Khud Trade Karte Hain',value:selfN2,sub:'call ki zaroorat nahi',color:'green'}
+    {label:'On Break',value:breakN2,sub:'on a break from trading',color:'amber'},
+    {label:'Trade Independently',value:selfN2,sub:'no call needed',color:'green'}
   ]);
   document.getElementById('teamCCLTable').innerHTML=mkCallClientTable(cclAll);
   document.getElementById('teamCTTable').innerHTML=mkCallTradeTable(ctAll.slice().sort(function(a,b){return (a['Date']||'').localeCompare(b['Date']||'');}).slice(-100));
@@ -2121,13 +2121,13 @@ function submitWatchlist(){
   var pattern=patSel?patSel.value:'';
   if(pattern==='Other')pattern=(document.getElementById('wl_patternOther').value||'').trim()||'Other';
   var starred=document.getElementById('wl_star').checked?'Yes':'No';
-  if(!stock){showToast('Stock name daalo','error');return;}
+  if(!stock){showToast('Enter stock name','error');return;}
   var p={action:'addGeneric',sheet:'Watchlist',
     'Date Added':td(),'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch,
     'Stock':stock,'Notes':notes,'Pattern':pattern,'Starred':starred,'Traded':'No','Status':'Active'};
   postData(p).then(function(r){
     if(r&&r.success){
-      showToast('Watchlist me add ho gaya','success');
+      showToast('Added to watchlist','success');
       document.getElementById('wl_stock').value='';document.getElementById('wl_notes').value='';
       document.getElementById('wl_star').checked=false;
       var po=document.getElementById('wl_patternOther');if(po)po.value='';
@@ -2158,7 +2158,7 @@ function toggleWatchlistTraded(rowNum,current){
   }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
 function mkWatchlistTable(rows,showEmp){
-  if(!rows||!rows.length)return '<div class="no-data">Koi stock nahi hai watchlist mein</div>';
+  if(!rows||!rows.length)return '<div class="no-data">No stocks in watchlist</div>';
   var sorted=rows.slice().sort(function(a,b){
     var as=a['Starred']==='Yes'?1:0, bs=b['Starred']==='Yes'?1:0;
     if(as!==bs)return bs-as;
@@ -2212,13 +2212,13 @@ function submitReminder(){
   var date=document.getElementById('rem_date').value;
   var time=document.getElementById('rem_time').value||'';
   var note=(document.getElementById('rem_note').value||'').trim();
-  if(!date||!note){showToast('Date aur Note dono zaroori hain','error');return;}
+  if(!date||!note){showToast('Both Date and Note are required','error');return;}
   var p={action:'addGeneric',sheet:'Reminders',
     'Date Added':td(),'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch,
     'Client Name':client,'Client ID':cid,'Note':note,'Reminder Date':date,'Reminder Time':time,'Status':'Pending'};
   postData(p).then(function(r){
     if(r&&r.success){
-      showToast('Reminder set ho gaya','success');
+      showToast('Reminder set','success');
       document.getElementById('rem_client').value='';document.getElementById('rem_cid').value='';document.getElementById('rem_note').value='';document.getElementById('rem_date').value='';document.getElementById('rem_time').value='';
       if(!allData.Reminders)allData.Reminders=[];
       allData.Reminders.push(p);
@@ -2238,7 +2238,7 @@ function markReminderDone(rowNum){
   }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
 function mkRemindersTable(rows,showEmp){
-  if(!rows||!rows.length)return '<div class="no-data">Koi reminder nahi hai</div>';
+  if(!rows||!rows.length)return '<div class="no-data">No reminders</div>';
   var todayStr=td();
   var sorted=rows.slice().sort(function(a,b){return (a['Reminder Date']||'').localeCompare(b['Reminder Date']||'');});
   var h='<table><thead><tr><th>Date</th><th>Time</th>'+(showEmp?'<th>Employee</th>':'')+'<th>Client ID</th><th>Client/Ref</th><th>Note</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
@@ -2321,12 +2321,12 @@ function toggleAnnTargetMode(){
 }
 function sendAnnouncement(){
   var msg=(document.getElementById('ann_msg').value||'').trim();
-  if(!msg){showToast('Message likho','error');return;}
+  if(!msg){showToast('Enter a message','error');return;}
   var mode=(document.querySelector('input[name="ann_target_mode"]:checked')||{}).value;
   var target='ALL';
   if(mode==='specific'){
     var picked=Array.from(document.querySelectorAll('.ann_emp_cb:checked')).map(function(c){return c.value;});
-    if(!picked.length){showToast('Kam se kam ek employee select karo','error');return;}
+    if(!picked.length){showToast('Select at least one employee','error');return;}
     target=picked.join(',');
   }
   var p={action:'addGeneric',sheet:'Announcements','Date':td(),'Message':msg,'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Active':'Yes','Target':target};
@@ -2351,7 +2351,7 @@ function deactivateAnnouncement(rowNum){
 }
 function annTargetLabel(r){
   var t=(r['Target']||'').trim();
-  if(!t||t==='ALL')return 'Sabhi Employees';
+  if(!t||t==='ALL')return 'All Employees';
   var ids=t.split(',').map(function(x){return x.trim();});
   var names=ids.map(function(id){var e=employees.find(function(x){return x['Employee ID']===id;});return e?e['Name']:id;});
   return names.join(', ');
@@ -2360,7 +2360,7 @@ function renderAnnounceAdminBox(){
   var el=document.getElementById('announceAdminList');
   if(!el||!currentUser||currentUser.role!=='admin')return;
   var rows=(allData.Announcements||[]).filter(function(r){return r['Active']==='Yes';});
-  if(!rows.length){el.innerHTML='<div style="font-size:12px;color:var(--muted);">Koi active announcement nahi hai abhi</div>';return;}
+  if(!rows.length){el.innerHTML='<div style="font-size:12px;color:var(--muted);">No active announcements right now</div>';return;}
   var h='';
   rows.slice().reverse().forEach(function(r){
     h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.08);font-size:12px;">'
@@ -2574,7 +2574,7 @@ function mkAccTable(rows,dupSet){
     if((r['Investment Active']||'')==='Yes')chips+='<span class="badge amber" style="margin-left:3px;font-size:9px;padding:2px 5px;" title="Investment Active">I</span>';
     h+='<td><span class="badge '+(act?'green':'red')+'">'+(act?'Active':'Inactive')+'</span>'+chips+'</td>';
     var nseDone=(r['NSE Trade Done']||'')==='Yes';
-    var nseBtn=nseDone?'<span class="badge green" title="NSE trade done on '+(r['NSE Trade Date']||'')+'">&#10003; NSE Trade</span>':'<button class="btn-call" style="background:rgba(255,159,10,0.15);color:#ff9f0a;" onclick="markNSETradeDone('+r['_rowNum']+')" title="Client ne NSE pe trade kar liya to yahan click karo">&#128200; Trade Done?</button>';
+    var nseBtn=nseDone?'<span class="badge green" title="NSE trade done on '+(r['NSE Trade Date']||'')+'">&#10003; NSE Trade</span>':'<button class="btn-call" style="background:rgba(255,159,10,0.15);color:#ff9f0a;" onclick="markNSETradeDone('+r['_rowNum']+')" title="Click here once the client has completed an NSE trade">&#128200; Trade Done?</button>';
     h+='<td><button class="btn-call" onclick="openAccCallModal('+r['_rowNum']+')">&#128222;</button> <button class="btn-edit" onclick="openAccEditModal('+r['_rowNum']+')">&#9998;</button> <button class="btn-del" onclick="confirmDel(\'Accounts\','+r['_rowNum']+')">&#128465;</button> '+nseBtn+'</td></tr>';
   });
   return h+'</tbody></table>';
@@ -2583,7 +2583,7 @@ function markNSETradeDone(rowNum){
   var vals={'NSE Trade Done':'Yes','NSE Trade Date':td()};
   postData({action:'editRow',sheet:'Accounts',rowNum:rowNum,vals:vals}).then(function(r){
     if(r&&r.success){
-      showToast('NSE Trade marked done — contest ke liye eligible ho gaya!','success');
+      showToast('NSE Trade marked done - now eligible for the contest!','success');
       patchRowLocal('Accounts',rowNum,vals);
       renderPage(curPage());
       setTimeout(function(){loadAll(2);},600);
@@ -2700,7 +2700,7 @@ function contestLevelInfo(count,contest){
   if(curIdx===-1){
     var l1=levels[0];
     var pct=l1.min?Math.min(100,Math.round(count/l1.min*100)):0;
-    return {level:0,levelLabel:'Level 1 shuru karo',reward:'',pct:pct,pending:Math.max(0,l1.min-count),nextMin:l1.min,count:count,levels:levels};
+    return {level:0,levelLabel:'Start Level 1',reward:'',pct:pct,pending:Math.max(0,l1.min-count),nextMin:l1.min,count:count,levels:levels};
   }
   var curLevel=levels[curIdx],next=levels[curIdx+1]||null;
   if(!next){
@@ -2767,7 +2767,7 @@ function contestIneligibleReason(metricName,r){
     if((r['NSE Trade Done']||'')!=='Yes')reasons.push('NSE trade pending');
     return reasons.join(', ')||'Pending';
   }
-  if(metricName==='SIP')return (r['Type']||'SIP')!=='SIP'?'SIP type nahi hai':'Pending';
+  if(metricName==='SIP')return (r['Type']||'SIP')!=='SIP'?'Not a SIP type':'Pending';
   return 'Pending';
 }
 function contestAllEntriesRows(contest,metricName){
@@ -2787,10 +2787,10 @@ function contestAllEntriesRows(contest,metricName){
 }
 function mkContestAllEntriesTable(contest,metricName){
   var entries=contestAllEntriesRows(contest,metricName);
-  if(!entries.length)return '<div class="no-data" style="margin-top:10px;">Is period me abhi '+metricName+' ki koi entry nahi hui</div>';
+  if(!entries.length)return '<div class="no-data" style="margin-top:10px;">No '+metricName+' entries yet for this period</div>';
   var pendingCount=entries.filter(function(e){return !e.eligible;}).length;
   var h='<div style="margin-top:16px;">';
-  h+='<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:6px;">'+metricName+' — Sabhi Entries ('+entries.length+' total, <span style="color:var(--amber);">'+pendingCount+' pending</span>)</div>';
+  h+='<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:6px;">'+metricName+' - All Entries ('+entries.length+' total, <span style="color:var(--amber);">'+pendingCount+' pending</span>)</div>';
   h+='<div class="table-wrap"><div class="table-inner"><table><thead><tr><th>Date</th><th>Employee</th><th>Client</th><th>Status</th>'+(metricName==='Account Opening'?'<th>Action</th>':'')+'</tr></thead><tbody>';
   entries.forEach(function(e){
     var r=e.row;
@@ -2826,7 +2826,7 @@ function mkContestMyEntriesTable(contest,metricName,empId){
   if(!entries.length)return '';
   var pendingCount=entries.filter(function(e){return !e.eligible;}).length;
   var h='<div style="margin-top:16px;">';
-  h+='<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:6px;">Aapki Entries ('+entries.length+' total, <span style="color:var(--amber);">'+pendingCount+' pending</span>)</div>';
+  h+='<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:6px;">Your Entries ('+entries.length+' total, <span style="color:var(--amber);">'+pendingCount+' pending</span>)</div>';
   h+='<div class="table-wrap"><div class="table-inner"><table><thead><tr><th>Date</th><th>Client</th><th>Status</th>'+(metricName==='Account Opening'?'<th>Action</th>':'')+'</tr></thead><tbody>';
   entries.forEach(function(e){
     var r=e.row;
@@ -2857,7 +2857,7 @@ function findDuplicateAccount(clientName,clientPhone){
 function mkContestQuickAddAccount(contestId){
   var fid=contestId.replace(/[^a-zA-Z0-9]/g,'');
   var h='<div style="background:var(--card2);border-radius:10px;padding:12px;margin:12px 0;">';
-  h+='<div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:8px;">&#43; Naya Account Entry (isi contest ke liye)</div>';
+  h+='<div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:8px;">&#43; New Account Entry (for this contest)</div>';
   h+='<div style="display:flex;gap:8px;flex-wrap:wrap;">';
   h+='<input type="text" id="cxa_cname_'+fid+'" placeholder="Client Name" style="flex:1;min-width:120px;">';
   h+='<input type="text" id="cxa_cid_'+fid+'" placeholder="Client ID" style="flex:1;min-width:100px;">';
@@ -2873,10 +2873,10 @@ function mkContestQuickAddAccount(contestId){
 function submitContestAccount(contestId,fid){
   var cn=(document.getElementById('cxa_cname_'+fid).value||'').trim();
   var cid=(document.getElementById('cxa_cid_'+fid).value||'').trim();
-  if(!cn||!cid){showToast('Client Name aur Client ID zaroori hai','error');return;}
+  if(!cn||!cid){showToast('Client Name and Client ID are required','error');return;}
   var cphone=(document.getElementById('cxa_cphone_'+fid).value||'').trim();
   var dup=findDuplicateAccount(cn,cphone);
-  if(dup&&!confirm('Yeh client "'+cn+'" pehle se add hai ('+(dup['Date']||'-')+' ko '+(dup['Employee Name']||'-')+' ne, ID: '+(dup['Client ID']||'-')+'). Double entry se bacho — kya phir bhi ek naya entry add karna hai?'))return;
+  if(dup&&!confirm('This client "'+cn+'" was already added on '+(dup['Date']||'-')+' by '+(dup['Employee Name']||'-')+', ID: '+(dup['Client ID']||'-')+'. Avoid duplicate entries - add a new entry anyway?'))return;
   var p={action:'addAccount','Date':td(),'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch,
     'Client Name':cn,'Client ID':cid,'Client Phone':cphone,
     'Status':'Active','Trading Active':'No','SIP Active':'No','Investment Active':'No',
@@ -2884,7 +2884,7 @@ function submitContestAccount(contestId,fid){
     'NSE Trade Done':'No','NSE Trade Date':''};
   postData(p).then(function(r){
     if(r&&r.success){
-      showToast('Account add ho gaya! Ab NSE trade complete karke isko eligible bana do.','success');
+      showToast('Account added! Complete the NSE trade to make it eligible.','success');
       allData.Accounts=allData.Accounts||[];allData.Accounts.push(p);
       var a=document.getElementById('cxa_cname_'+fid),b=document.getElementById('cxa_cid_'+fid),c=document.getElementById('cxa_cphone_'+fid);
       if(a)a.value='';if(b)b.value='';if(c)c.value='';
@@ -2903,7 +2903,7 @@ function contestBadgeForAccountDate(dateStr){
 /* v33.3: FULL Edit Contest — Title, Dates, Rules, aur level thresholds/rewards, bina contest end kiye */
 function toggleContestEdit(rowNum){
   var box=document.getElementById('contestEditBox_'+rowNum);
-  if(!box){showToast('Naya version load nahi hua — page ko hard refresh (Ctrl+Shift+R) karo','error');return;}
+  if(!box){showToast('New version not loaded - hard refresh the page (Ctrl+Shift+R)','error');return;}
   if(box.style.display==='block'){box.style.display='none';box.innerHTML='';return;}
   var contest=(allData.Contests||[]).find(function(c){return c['_rowNum']===rowNum;});
   if(!contest)return;
@@ -2916,7 +2916,7 @@ function mkContestEditFormFields(contest){
   var rid=contest['_rowNum'];
   var esc=function(s){return (s||'').replace(/"/g,'&quot;');};
   var h='<div style="background:var(--card2);border-radius:10px;padding:14px;margin-top:10px;">';
-  h+='<div style="font-weight:700;color:var(--accent);margin-bottom:8px;">&#9999; Contest Edit Karo</div>';
+  h+='<div style="font-weight:700;color:var(--accent);margin-bottom:8px;">&#9999; Edit Contest</div>';
   h+='<div class="form-group"><label>Contest Title</label><input type="text" id="cxe_title_'+rid+'" value="'+esc(contest['Title'])+'"></div>';
   h+='<div style="display:flex;gap:12px;flex-wrap:wrap;">';
   h+='<div class="form-group" style="flex:1;min-width:140px;"><label>Start Date</label><input type="date" id="cxe_start_'+rid+'" value="'+(contest['Start Date']||'')+'"></div>';
@@ -2933,7 +2933,7 @@ function mkContestEditFormFields(contest){
     });
   } else {
     var cfg=contestMetricConfig(contest);
-    h+='<div style="color:var(--muted);font-size:12px;margin:6px 0;">COMBO contest — har metric ka level threshold:</div>';
+    h+='<div style="color:var(--muted);font-size:12px;margin:6px 0;">COMBO contest - level threshold for each metric:</div>';
     metrics.forEach(function(m,mi){
       var mins=(cfg.perMetricLevels&&cfg.perMetricLevels[m])||[0,0,0,0];
       h+='<div style="border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:10px;">';
@@ -2965,8 +2965,8 @@ function saveContestEdit(rowNum){
     'End Date':document.getElementById('cxe_end_'+rowNum).value,
     'Rules':document.getElementById('cxe_rules_'+rowNum).value
   };
-  if(!vals['Title']||!vals['Start Date']||!vals['End Date']){showToast('Title, Start Date, End Date zaroori hai','error');return;}
-  if(vals['Start Date']>vals['End Date']){showToast('Start Date, End Date se pehle honi chahiye','error');return;}
+  if(!vals['Title']||!vals['Start Date']||!vals['End Date']){showToast('Title, Start Date, End Date are required','error');return;}
+  if(vals['Start Date']>vals['End Date']){showToast('Start Date must be before End Date','error');return;}
   if(!isCombo){
     [1,2,3,4].forEach(function(lv){
       vals['L'+lv+' Min']=document.getElementById('cxe_l'+lv+'min_'+rowNum).value||0;
@@ -2989,7 +2989,7 @@ function saveContestEdit(rowNum){
   }
   postData({action:'editRow',sheet:'Contests',rowNum:rowNum,vals:vals}).then(function(r){
     if(r&&r.success){
-      showToast('Contest update ho gaya!','success');
+      showToast('Contest updated!','success');
       patchRowLocal('Contests',rowNum,vals);
       renderContestPage();
       setTimeout(function(){loadAll(2);},600);
@@ -3005,14 +3005,14 @@ function mkContestRulesBlock(contest,editable){
   if(!rules.length){
     if(!editable)return '';
     var h0='<div style="background:rgba(245,158,11,.08);border:1px dashed rgba(245,158,11,.4);border-radius:10px;padding:10px 14px;margin:12px 0;">';
-    h0+='<div style="font-size:12px;color:var(--muted);">Is contest me abhi koi Rules set nahi hai. <button class="btn-mini" style="font-size:11px;" onclick="toggleEditRules('+rowNum+')">&#9999; Rules Add Karo</button></div>';
+    h0+='<div style="font-size:12px;color:var(--muted);">No rules are set for this contest yet. <button class="btn-mini" style="font-size:11px;" onclick="toggleEditRules('+rowNum+')">&#9999; Add Rules</button></div>';
     h0+='<div id="rulesEdit_'+rowNum+'" style="display:none;margin-top:8px;"></div>';
     h0+='</div>';
     return h0;
   }
   var h='<div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:10px;padding:10px 14px;margin:12px 0;">';
   h+='<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">';
-  h+='<div style="font-size:12px;font-weight:700;color:var(--amber);margin-bottom:4px;">&#9888; Eligibility Rules — yeh sab fulfill hona zaroori hai, tabhi count hoga:</div>';
+  h+='<div style="font-size:12px;font-weight:700;color:var(--amber);margin-bottom:4px;">&#9888; Eligibility Rules - all of these must be fulfilled for the entry to count:</div>';
   if(editable)h+='<button class="btn-mini" style="font-size:10px;white-space:nowrap;" onclick="toggleEditRules('+rowNum+')">&#9999; Edit</button>';
   h+='</div>';
   h+='<ul style="margin:0;padding-left:18px;font-size:12px;color:var(--text);">';
@@ -3024,11 +3024,11 @@ function mkContestRulesBlock(contest,editable){
 }
 function toggleEditRules(rowNum){
   var box=document.getElementById('rulesEdit_'+rowNum);
-  if(!box){ if(typeof showToast==='function') showToast('Naya version load nahi hua — page ko hard refresh (Ctrl+Shift+R) karo','error'); return; }
+  if(!box){ if(typeof showToast==='function') showToast('New version not loaded - hard refresh the page (Ctrl+Shift+R)','error'); return; }
   if(box.style.display==='block'){box.style.display='none';box.innerHTML='';return;}
   var contest=(allData.Contests||[]).find(function(c){return c['_rowNum']===rowNum;});
   var cur=contest?(contest['Rules']||''):'';
-  box.innerHTML='<textarea id="rulesTxt_'+rowNum+'" rows="3" style="width:100%;" placeholder="e.g.&#10;NSE pe kam se kam 1 trade zaroori hai&#10;Transfer account allowed nahi">'+cur+'</textarea>'+
+  box.innerHTML='<textarea id="rulesTxt_'+rowNum+'" rows="3" style="width:100%;" placeholder="e.g.&#10;At least 1 NSE trade required&#10;Transfer accounts not allowed">'+cur+'</textarea>'+
     '<button class="btn-save" style="margin-top:6px;font-size:12px;padding:6px 14px;" onclick="saveContestRules('+rowNum+')">Save Rules</button>';
   box.style.display='block';
 }
@@ -3038,7 +3038,7 @@ function saveContestRules(rowNum){
   var rules=ta.value;
   postData({action:'editRow',sheet:'Contests',rowNum:rowNum,vals:{'Rules':rules}}).then(function(r){
     if(r&&r.success){
-      showToast('Rules save ho gaye!','success');
+      showToast('Rules saved!','success');
       patchRowLocal('Contests',rowNum,{'Rules':rules});
       renderContestPage();
       setTimeout(function(){loadAll(2);},600);
@@ -3049,7 +3049,7 @@ function contestManualClick(contestId,metricName){
   var p={action:'addGeneric',sheet:'ManualContestEntries','Entry ID':'M'+Date.now(),'Contest ID':contestId,'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch,'Date':td(),'Note':metricName};
   postData(p).then(function(r){
     if(r&&r.success){
-      showToast('+1 '+metricName+' add ho gaya!','success');
+      showToast('+1 '+metricName+' added!','success');
       allData.ManualContestEntries=allData.ManualContestEntries||[];
       allData.ManualContestEntries.push(p);
       renderContestPage();
@@ -3118,7 +3118,7 @@ function contestEmployeeCard(contest,empId,empName){
   var metrics=contestMetricList(contest);
   var h='<div class="contest-card">';
   h+='<div class="contest-title">&#127942; '+contest['Title']+'</div>';
-  h+='<div class="contest-sub">'+contest['Start Date']+' se '+contest['End Date']+' tak &#183; '+metrics.join(' + ')+'</div>';
+  h+='<div class="contest-sub">'+contest['Start Date']+' to '+contest['End Date']+' &#183; '+metrics.join(' + ')+'</div>';
   h+=mkContestRulesBlock(contest);
   if(metrics.indexOf('Account Opening')!==-1)h+=mkContestQuickAddAccount(contest['Contest ID']);
   h+='<div class="contest-body">';
@@ -3128,21 +3128,21 @@ function contestEmployeeCard(contest,empId,empName){
     var mine=counts[empId]||{count:0};
     var info=contestLevelInfo(mine.count,contest);
     var unitLabel=contestMetricUnitLabel(metricName);
-    var msg=info.nextMin?('Sirf <b>'+info.pending+' '+unitLabel+'</b> aur karo Level '+(info.level+1)+' tak pahunchne ke liye!'):'Aap top level pe ho! Zabardast! &#127881;';
+    var msg=info.nextMin?('Just <b>'+info.pending+' '+unitLabel+'</b> more to reach Level '+(info.level+1)+'!'):'You are at the top level! Great work! &#127881;';
     h+='<div class="contest-ring-wrap">'+mkContestRing(info.pct)+'<div class="contest-ring-center"><div class="contest-ring-pct">'+info.count+'</div><div class="contest-ring-lvl">'+(info.nextMin?('of '+info.nextMin):'MAX')+'</div></div></div>';
     h+=mkContestLevelSteps(info);
     h+='</div>';
-    h+='<div class="contest-info" style="margin-top:14px;"><div class="contest-target-msg">'+msg+'</div><div class="contest-motivate">Aapka current level: <b style="color:var(--accent);">'+(info.level>0?('Level '+info.level):'Shuru karo!')+'</b>'+(info.level>0?(' &#183; Reward: '+(info.reward||'-')):'')+'</div></div>';
+    h+='<div class="contest-info" style="margin-top:14px;"><div class="contest-target-msg">'+msg+'</div><div class="contest-motivate">Current level: <b style="color:var(--accent);">'+(info.level>0?('Level '+info.level):'Get started!')+'</b>'+(info.level>0?(' &#183; Reward: '+(info.reward||'-')):'')+'</div></div>';
     if(!CONTEST_METRICS[metricName]){
       h+='<button class="btn-save" style="margin-top:10px;" onclick="contestManualClick(\''+contest['Contest ID']+'\',\''+metricName.replace(/'/g,"\\'")+'\')">&#43;1 '+metricName+' Done</button>';
     }
   } else {
     var info=contestComboLevelInfo(contest,empId);
-    var msg=info.nextMin?info.pending.map(function(p){return p.need>0?('<b>'+p.need+' '+p.unitLabel+'</b> ('+p.metric+')'):null;}).filter(Boolean).join(' aur '):'';
+    var msg=info.nextMin?info.pending.map(function(p){return p.need>0?('<b>'+p.need+' '+p.unitLabel+'</b> ('+p.metric+')'):null;}).filter(Boolean).join(' and '):'';
     h+='<div class="contest-ring-wrap">'+mkContestRing(info.pct)+'<div class="contest-ring-center"><div class="contest-ring-pct">'+(info.level>0?('L'+info.level):'L0')+'</div><div class="contest-ring-lvl">'+(info.nextMin?('to L'+info.nextMin):'MAX')+'</div></div></div>';
     h+='<div style="flex:1;min-width:220px;">'+mkContestPerMetricBars(info.perMetric,contest['Contest ID'],info.pending)+'</div>';
     h+='</div>';
-    h+='<div class="contest-info" style="margin-top:14px;"><div class="contest-target-msg">'+(msg?('Sirf '+msg+' aur karo Level '+(info.level+1)+' tak pahunchne ke liye!'):'Aap top level pe ho! Zabardast! &#127881;')+'</div><div class="contest-motivate">Aapka current level: <b style="color:var(--accent);">'+(info.level>0?('Level '+info.level):'Shuru karo!')+'</b>'+(info.level>0?(' &#183; Reward: '+(info.reward||'-')):'')+'</div></div>';
+    h+='<div class="contest-info" style="margin-top:14px;"><div class="contest-target-msg">'+(msg?('Just '+msg+' more to reach Level '+(info.level+1)+'!'):'You are at the top level! Great work! &#127881;')+'</div><div class="contest-motivate">Current level: <b style="color:var(--accent);">'+(info.level>0?('Level '+info.level):'Get started!')+'</b>'+(info.level>0?(' &#183; Reward: '+(info.reward||'-')):'')+'</div></div>';
   }
   metrics.forEach(function(m){
     if(CONTEST_METRICS[m]&&!CONTEST_METRICS[m].multiSheet)h+=mkContestMyEntriesTable(contest,m,empId);
@@ -3155,7 +3155,7 @@ function contestAdminCard(contest){
   var metrics=contestMetricList(contest);
   var h='<div class="contest-card">';
   h+='<div class="contest-title">&#127942; '+contest['Title']+' <span style="font-size:11px;background:rgba(63,191,127,.15);color:var(--accent);padding:2px 8px;border-radius:10px;">'+(contest['Status']||'Active')+'</span>'+(contest['_rowNum']?' <button class="btn-mini" style="margin-left:auto;font-size:11px;" onclick="toggleContestEdit('+contest['_rowNum']+')">&#9999; Edit Contest</button> <button class="btn-mini" style="color:var(--danger);border-color:rgba(239,68,68,.4);font-size:11px;" onclick="endContest('+contest['_rowNum']+')">End Contest</button>':'')+'</div>';
-  h+='<div class="contest-sub">'+contest['Start Date']+' se '+contest['End Date']+' tak &#183; '+metrics.join(' + ')+'</div>';
+  h+='<div class="contest-sub">'+contest['Start Date']+' to '+contest['End Date']+' &#183; '+metrics.join(' + ')+'</div>';
   if(contest['_rowNum'])h+='<div id="contestEditBox_'+contest['_rowNum']+'" style="display:none;"></div>';
   h+=mkContestRulesBlock(contest,true);
   if(metrics.indexOf('Account Opening')!==-1)h+=mkContestQuickAddAccount(contest['Contest ID']);
@@ -3169,9 +3169,9 @@ function contestAdminCard(contest){
       if(allStats)return (allStats[b].eligible-allStats[a].eligible)||(allStats[b].total-allStats[a].total);
       return counts[b].count-counts[a].count;
     });
-    h+='<div class="contest-sub" style="margin-top:-6px;">'+ids.length+' employees participating (click karke poori list + shortfall dekho)</div>';
+    h+='<div class="contest-sub" style="margin-top:-6px;">'+ids.length+' employees participating (click to see the full list + shortfall)</div>';
     if(!ids.length){
-      h+='<div class="no-data" style="margin-top:14px;">Abhi tak koi entry nahi hui</div>';
+      h+='<div class="no-data" style="margin-top:14px;">No entries yet</div>';
     } else {
       h+='<div class="table-wrap" style="margin-top:16px;"><div class="table-inner"><table><thead><tr><th>#</th><th>Employee</th><th>Branch</th>'+(allStats?'<th>Total</th><th>Eligible</th><th>Pending</th>':'<th>Count</th>')+'<th>Level</th><th>Reward</th><th>Progress</th></tr></thead><tbody>';
       ids.forEach(function(id,i){
@@ -3205,9 +3205,9 @@ function contestAdminCard(contest){
       Object.keys(c).forEach(function(id){idMap[id]={id:id,name:c[id].name,branch:c[id].branch};});
     });
     var ids=Object.keys(idMap);
-    h+='<div class="contest-sub" style="margin-top:-6px;">'+ids.length+' employees participating &#183; COMBO contest (sab metrics fulfill karne par hi level milega)</div>';
+    h+='<div class="contest-sub" style="margin-top:-6px;">'+ids.length+' employees participating &#183; COMBO contest (level unlocks only when ALL metrics are fulfilled)</div>';
     if(!ids.length){
-      h+='<div class="no-data" style="margin-top:14px;">Abhi tak koi eligible entry nahi hui</div>';
+      h+='<div class="no-data" style="margin-top:14px;">No eligible entries yet</div>';
     } else {
       var rows=ids.map(function(id){return {id:id,emp:idMap[id],info:contestComboLevelInfo(contest,id)};});
       rows.sort(function(a,b){if(b.info.level!==a.info.level)return b.info.level-a.info.level;return b.info.pct-a.info.pct;});
@@ -3259,7 +3259,7 @@ function contestDrillEmployee(contestId,empId){
     if(!metric){
       rows=(allData.ManualContestEntries||[]).filter(function(r){return r['Contest ID']===contestId&&((r['Employee ID']||'').trim()||r['Employee Name'])===empId;});
       h+='<h3><span>Manual Entries ('+rows.length+')</span>'+closeBtn+'</h3>';
-      if(!rows.length)h+='<div class="no-data">Koi entry nahi mili</div>';
+      if(!rows.length)h+='<div class="no-data">No entries found</div>';
       else{
         h+='<table><thead><tr><th>Date</th><th>Note</th></tr></thead><tbody>';
         rows.slice().reverse().forEach(function(r){h+='<tr><td>'+(r['Date']||'-')+'</td><td>'+(r['Note']||'-')+'</td></tr>';});
@@ -3271,7 +3271,7 @@ function contestDrillEmployee(contestId,empId){
       var ct=(allData.CallTrade||[]).filter(function(r){return contestDateInRange(r['Date'],start,end)&&((r['Employee ID']||'').trim()||r['Employee Name'])===empId;});
       rows=tj.concat(ct);
       h+='<h3><span>Traded Clients ('+rows.length+' entries)</span>'+closeBtn+'</h3>';
-      if(!rows.length)h+='<div class="no-data">Koi entry nahi mili</div>';
+      if(!rows.length)h+='<div class="no-data">No entries found</div>';
       else{
         h+='<table><thead><tr><th>Date</th><th>Client</th></tr></thead><tbody>';
         rows.slice().reverse().forEach(function(r){h+='<tr><td>'+(r['Date']||'-')+'</td><td>'+(r['Client Name']||r['Client ID']||'-')+'</td></tr>';});
@@ -3279,8 +3279,8 @@ function contestDrillEmployee(contestId,empId){
       }
     } else {
       var entries=contestAllEntriesRows(contest,metricName).filter(function(e){return ((e.row['Employee ID']||'').trim()||e.row['Employee Name'])===empId;});
-      h+='<h3><span>Sabhi Entries ('+entries.length+')</span>'+closeBtn+'</h3>';
-      if(!entries.length)h+='<div class="no-data">Koi entry nahi mili</div>';
+      h+='<h3><span>All Entries ('+entries.length+')</span>'+closeBtn+'</h3>';
+      if(!entries.length)h+='<div class="no-data">No entries found</div>';
       else{
         h+='<table><thead><tr><th>Date</th><th>Client Name</th><th>Client ID</th><th>Status</th>'+(metricName==='Account Opening'?'<th>Action</th>':'')+'</tr></thead><tbody>';
         entries.forEach(function(e){
@@ -3305,7 +3305,7 @@ function renderContestPage(){
   var contests=activeContests();
   var listEl=document.getElementById('contestList');
   if(!listEl)return;
-  if(!contests.length){listEl.innerHTML='<div class="no-data">Abhi koi active contest nahi hai'+(isAdm?'. Upar se naya contest launch karo!':'.')+'</div>';return;}
+  if(!contests.length){listEl.innerHTML='<div class="no-data">No active contest right now'+(isAdm?'. Launch a new contest from above!':'.')+'</div>';return;}
   var h='';
   contests.forEach(function(c){
     h+=isAdm?contestAdminCard(c):contestEmployeeCard(c,currentUser.userId,currentUser.name);
@@ -3337,12 +3337,12 @@ function renderCxLevelsSection(){
   var sipUnitBox=document.getElementById('cx_sipUnitBox');
   if(sipUnitBox)sipUnitBox.style.display=sipSelected?'block':'none';
   if(!metrics.length){
-    el.innerHTML='<div style="color:var(--muted);font-size:12px;">Pehle upar se ek ya zyada metric select karo.</div>';
+    el.innerHTML='<div style="color:var(--muted);font-size:12px;">First select one or more metrics above.</div>';
     return;
   }
   var h='';
   if(metrics.length===1){
-    h+='<div style="color:var(--muted);font-size:12px;margin:6px 0;">Har level ke liye minimum count/amount + reward daalo:</div>';
+    h+='<div style="color:var(--muted);font-size:12px;margin:6px 0;">Enter the minimum count/amount + reward for each level:</div>';
     [1,2,3,4].forEach(function(lv){
       h+='<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:8px;">';
       h+='<div class="form-group" style="flex:1;min-width:100px;margin-bottom:0;"><label>Level '+lv+' Min</label><input type="number" id="cx_l'+lv+'min" placeholder="e.g. 25"></div>';
@@ -3350,7 +3350,7 @@ function renderCxLevelsSection(){
       h+='</div>';
     });
   } else {
-    h+='<div style="color:var(--muted);font-size:12px;margin:6px 0;">COMBO contest — har metric ke apne level thresholds daalo. Level tabhi milega jab <b>SAARE</b> metrics apna threshold cross karein:</div>';
+    h+='<div style="color:var(--muted);font-size:12px;margin:6px 0;">COMBO contest - set level thresholds for each metric. A level unlocks only when <b>ALL</b> metrics cross their threshold:</div>';
     metrics.forEach(function(m,mi){
       h+='<div style="border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:10px;">';
       h+='<div style="font-weight:700;font-size:12px;color:var(--accent);margin-bottom:6px;">'+m+'</div>';
@@ -3360,7 +3360,7 @@ function renderCxLevelsSection(){
       });
       h+='</div></div>';
     });
-    h+='<div style="color:var(--muted);font-size:12px;margin:10px 0 6px;">Combined Reward (jab dono/teeno fulfill ho jaayen):</div>';
+    h+='<div style="color:var(--muted);font-size:12px;margin:10px 0 6px;">Combined Reward (once all selected metrics are fulfilled):</div>';
     [1,2,3,4].forEach(function(lv){
       h+='<div class="form-group" style="margin-bottom:8px;"><label>Level '+lv+' Reward</label><input type="text" id="cx_l'+lv+'reward" placeholder="e.g. ₹200/combo or Goa Trip"></div>';
     });
@@ -3369,10 +3369,10 @@ function renderCxLevelsSection(){
 }
 function mkContestLaunchForm(){
   var h='<div class="contest-launch-card">';
-  h+='<div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleContestLaunch()"><b style="color:var(--accent);">&#43; Naya Contest Launch Karo</b><span style="color:var(--muted);font-size:12px;">Har month/quarter naya contest yahan se shuru karo</span></div>';
+  h+='<div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleContestLaunch()"><b style="color:var(--accent);">&#43; Launch New Contest</b><span style="color:var(--muted);font-size:12px;">Start a new contest here every month/quarter</span></div>';
   h+='<div id="contestLaunchFormBody" style="display:none;margin-top:16px;">';
   h+='<div class="form-group"><label>Contest Title</label><input type="text" id="cx_title" placeholder="e.g. Demat Account Opening Contest - Aug 2026"></div>';
-  h+='<div class="form-group"><label>Metric(s) — ek ya zyada select karo (2+ = COMBO contest)</label>';
+  h+='<div class="form-group"><label>Metric(s) - select one or more (2+ = COMBO contest)</label>';
   h+='<div style="display:flex;flex-wrap:wrap;gap:14px;padding:8px 0;">';
   Object.keys(CONTEST_METRICS).forEach(function(k){
     var cid='cx_m_'+k.replace(/\s+/g,'_');
@@ -3380,10 +3380,10 @@ function mkContestLaunchForm(){
   });
   h+='<label style="display:flex;align-items:center;gap:6px;font-weight:400;font-size:13px;"><input type="checkbox" id="cx_m_other" onchange="renderCxLevelsSection()"> Other (custom)</label>';
   h+='</div>';
-  h+='<input type="text" id="cx_other_name" placeholder="Custom metric ka naam likho (e.g. Insurance Renewal)" oninput="renderCxLevelsSection()" style="margin-top:4px;">';
+  h+='<input type="text" id="cx_other_name" placeholder="Enter custom metric name (e.g. Insurance Renewal)" oninput="renderCxLevelsSection()" style="margin-top:4px;">';
   h+='</div>';
   h+='<div id="cx_sipUnitBox" style="display:none;background:var(--card2);border-radius:8px;padding:8px 12px;margin-bottom:12px;">';
-  h+='<label style="font-size:12px;color:var(--muted);">SIP kis se measure ho?</label><br>';
+  h+='<label style="font-size:12px;color:var(--muted);">How should SIP be measured?</label><br>';
   h+='<label style="margin-right:16px;font-weight:400;font-size:13px;"><input type="radio" name="cx_sipunit" value="count" checked> Client Count</label>';
   h+='<label style="font-weight:400;font-size:13px;"><input type="radio" name="cx_sipunit" value="amount"> Total Amount (₹)</label>';
   h+='</div>';
@@ -3391,7 +3391,7 @@ function mkContestLaunchForm(){
   h+='<div class="form-group" style="flex:1;min-width:140px;"><label>Start Date</label><input type="date" id="cx_start"></div>';
   h+='<div class="form-group" style="flex:1;min-width:140px;"><label>End Date</label><input type="date" id="cx_end"></div>';
   h+='</div>';
-  h+='<div class="form-group"><label>Rules / Eligibility Conditions (ek line = ek rule, sabko yeh dikhega)</label><textarea id="cx_rules" rows="3" placeholder="e.g.&#10;NSE pe kam se kam 1 trade zaroori hai&#10;Transfer account allowed nahi&#10;Sirf online/link se khule account hi count honge"></textarea></div>';
+  h+='<div class="form-group"><label>Rules / Eligibility Conditions (one line = one rule, visible to everyone)</label><textarea id="cx_rules" rows="3" placeholder="e.g.&#10;At least 1 NSE trade required&#10;Transfer accounts not allowed&#10;Only accounts opened online/via link will count"></textarea></div>';
   h+='<div id="cx_levelsContainer"></div>';
   h+='<button class="btn-save" onclick="submitContest()">&#127942; Launch Contest</button>';
   h+='</div></div>';
@@ -3402,9 +3402,9 @@ function submitContest(){
   var metrics=cxSelectedMetrics();
   var start=document.getElementById('cx_start').value,end=document.getElementById('cx_end').value;
   var rules=(document.getElementById('cx_rules').value||'').trim();
-  if(!title||!start||!end){showToast('Title, Start Date aur End Date required hai','error');return;}
-  if(!metrics.length){showToast('Kam se kam ek metric select karo','error');return;}
-  if(start>end){showToast('Start Date, End Date se pehle honi chahiye','error');return;}
+  if(!title||!start||!end){showToast('Title, Start Date and End Date are required','error');return;}
+  if(!metrics.length){showToast('Select at least one metric','error');return;}
+  if(start>end){showToast('Start Date must be before End Date','error');return;}
   var btn=document.querySelector('#contestLaunchFormBody .btn-save');
   var metricCfg={};
   var sipUnitEl=document.querySelector('input[name="cx_sipunit"]:checked');
@@ -3437,7 +3437,7 @@ function submitContest(){
   postData(p).then(function(r){
     btn.disabled=false;btn.textContent='Launch Contest';
     if(r&&r.success){
-      showToast('Contest launch ho gaya!','success');
+      showToast('Contest launched!','success');
       document.getElementById('cx_title').value='';
       document.getElementById('cx_rules').value='';
       setTimeout(function(){loadAll(2);},600);
@@ -3445,7 +3445,7 @@ function submitContest(){
   }).catch(function(e){btn.disabled=false;btn.textContent='Launch Contest';showToast('Error: '+e.message,'error');});
 }
 function endContest(rowNum){
-  if(!confirm('Is contest ko end/archive karna hai? Employees ko ab yeh dikhna band ho jayega.'))return;
+  if(!confirm('End/archive this contest? Employees will no longer see it.'))return;
   postData({action:'editRow',sheet:'Contests',rowNum:rowNum,vals:{'Status':'Ended'}}).then(function(r){
     if(r&&r.success){showToast('Contest ended','success');patchRowLocal('Contests',rowNum,{'Status':'Ended'});renderContestPage();setTimeout(function(){loadAll(2);},600);}
     else showToast('Failed: '+(r&&r.error||''),'error');
@@ -3501,7 +3501,7 @@ function mkStudentTable(rows,canEdit){
     var pend=studentPending(r);
     var demat=(r['Demat Opened']||'').trim();
     var guess=!demat?dematGuess(r['Student Phone']):null;
-    var dematBadge=demat==='Yes'?'<span class="badge green">Yes</span>':(demat==='No'?'<span class="badge red">No</span>':(guess?'<span class="badge amber" title="Account mila Client ID '+guess+' se — confirm karo">? shayad Yes</span>':'<span class="badge amber">-</span>'));
+    var dematBadge=demat==='Yes'?'<span class="badge green">Yes</span>':(demat==='No'?'<span class="badge red">No</span>':(guess?'<span class="badge amber" title="Account found matching Client ID '+guess+' - please confirm">? possibly Yes</span>':'<span class="badge amber">-</span>'));
     h+='<tr'+(pend>0?' class="dup-row"':'')+'>';
     h+='<td>'+(r['Date']||'-')+'</td><td style="font-weight:600;">'+(r['Student Name']||'-')+'</td><td>'+(r['Student Phone']||'-')+'</td><td>'+(r['Batch']||'-')+'</td><td>'+(r['Employee Name']||'-')+'</td>';
     h+='<td class="money">'+(tf?fmt(tf):'-')+'</td><td class="money">'+fmt(fi.received)+'</td>';
@@ -3515,7 +3515,7 @@ function mkStudentTable(rows,canEdit){
 }
 function editStudentModal(rowNum){
   var r=(allData.Students||[]).find(function(x){return String(x._rowNum)===String(rowNum);});
-  if(!r){showToast('Student record nahi mila','error');return;}
+  if(!r){showToast('Student record not found','error');return;}
   var h='<div class="modal-title">Edit Student</div>';
   h+='<div class="form-group"><label>Admission Date</label><input type="date" id="es_date" value="'+(r['Date']||'')+'"></div>';
   h+='<div class="form-group"><label>Student Name</label><input type="text" id="es_name" value="'+(r['Student Name']||'')+'"></div>';
@@ -3524,7 +3524,7 @@ function editStudentModal(rowNum){
   h+='<div class="form-group"><label>Referred By</label><input type="text" id="es_ref" value="'+(r['Reference By']||'')+'"></div>';
   h+='<div class="form-group"><label>Total Fee (&#8377;)</label><input type="number" id="es_totfee" value="'+(r['Total Fee']||0)+'"></div>';
   h+='<div class="form-group"><label>Status</label><select id="es_status">'+['Joined','Interested','Not Interested'].map(function(s){return '<option'+(r['Status']===s?' selected':'')+'>'+s+'</option>';}).join('')+'</select></div>';
-  h+='<div class="form-group"><label>Demat Account Opened?</label><select id="es_demat"><option value=""'+(!r['Demat Opened']?' selected':'')+'>-- set karo --</option><option value="Yes"'+(r['Demat Opened']==='Yes'?' selected':'')+'>Yes</option><option value="No"'+(r['Demat Opened']==='No'?' selected':'')+'>No</option></select></div>';
+  h+='<div class="form-group"><label>Demat Account Opened?</label><select id="es_demat"><option value=""'+(!r['Demat Opened']?' selected':'')+'>-- select --</option><option value="Yes"'+(r['Demat Opened']==='Yes'?' selected':'')+'>Yes</option><option value="No"'+(r['Demat Opened']==='No'?' selected':'')+'>No</option></select></div>';
   h+='<div class="form-group"><label>Demat Client ID (agar Yes)</label><input type="text" id="es_dcid" value="'+(r['Demat Client ID']||'')+'"></div>';
   h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" data-rn="'+rowNum+'" onclick="saveStudentEdit(this.dataset.rn)">Save</button></div>';
   document.getElementById('modalBox').innerHTML=h;document.getElementById('modal').className='show';
@@ -3547,9 +3547,9 @@ function migrateStudentFees(){
     if(r['Date']&&(!byPhone[p].date||r['Date']<byPhone[p].date))byPhone[p].date=r['Date'];
   });
   var list=Object.keys(byPhone).map(function(p){return byPhone[p];});
-  if(!list.length){showToast('Migrate karne layak koi purana data nahi mila — sab already Student Portal me hai','success');return;}
-  var h='<div class="modal-title">Purana Student Fee Data Migrate Karein?</div>';
-  h+='<p style="color:var(--muted);font-size:13px;margin-bottom:12px;">Income entries (Student Fee category) me '+list.length+' aise students mile jo Student Portal me nahi hain. Inko naye student record ke roop me add kar diya jayega (Total Fee un entries se liya jayega). Purana Income data waisa hi rahega, kuch delete nahi hoga.</p>';
+  if(!list.length){showToast('No old data found to migrate - everything is already in Student Portal','success');return;}
+  var h='<div class="modal-title">Migrate Old Student Fee Data?</div>';
+  h+='<p style="color:var(--muted);font-size:13px;margin-bottom:12px;">Found '+list.length+' students in Income entries (Student Fee category) who are not in Student Portal. They will be added as new student records (Total Fee taken from those entries). The old Income data will remain unchanged - nothing will be deleted.</p>';
   h+='<div style="max-height:220px;overflow:auto;font-size:12px;color:var(--muted);margin-bottom:12px;">'+list.map(function(s){return (s.name||'(no name)')+' &#183; '+s.phone+' &#183; Fee '+fmt(s.totFee);}).join('<br>')+'</div>';
   h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="runMigrateStudentFees()">Migrate '+list.length+' students</button></div>';
   document.getElementById('modalBox').innerHTML=h;document.getElementById('modal').className='show';
@@ -3562,7 +3562,7 @@ function runMigrateStudentFees(){
   showToast('Migrating '+list.length+' students...','success');
   var i=0;
   function next(){
-    if(i>=list.length){showToast('Migration complete! Student Portal refresh ho raha hai.','success');loadAll();return;}
+    if(i>=list.length){showToast('Migration complete! Refreshing Student Portal.','success');loadAll();return;}
     var s=list[i++];
     postData({action:'addStudent','Date':s.date||td(),'Employee ID':'','Employee Name':s.credit||'Office','Branch':'','Student Name':s.name,'Student Phone':s.phone,'Batch':s.course,'Reference By':s.ref,'Status':'Joined','Total Fee':s.totFee||''}).then(next).catch(next);
   }
@@ -3579,8 +3579,8 @@ function renderAdminStudents(){
   document.getElementById('astudStats').innerHTML=mkStats([
     {label:'Total Students',value:rows.length,sub:'all employees',color:'green'},
     {label:'Joined Batch',value:joined,sub:'confirmed',color:'blue'},
-    {label:'Fees Pending',value:fmt(pendTotal),sub:pendRows.length+' students &#8212; reminder chal rahi hai',color:'red'},
-    {label:'Demat Not Opened',value:dematNo,sub:'follow-up karo',color:'amber'}
+    {label:'Fees Pending',value:fmt(pendTotal),sub:pendRows.length+' students - reminders active',color:'red'},
+    {label:'Demat Not Opened',value:dematNo,sub:'follow up',color:'amber'}
   ]);
   document.getElementById('astudTable').innerHTML=mkStudentTable(rows,true);
 }
@@ -3633,7 +3633,7 @@ function renderEmpDash(){
   var myTot=r2(myCB+myMan);
   var isPtnr=isPartnerRole(uid);
   var shareVal=isPtnr?myPoolShare(uid,f):r2(myTot*pct/100);
-  var shareSub=isPtnr?'profit pool ka '+pct+'% (income - expense - staff payout ke baad)':'total brokerage ka '+pct+'%';
+  var shareSub=isPtnr?''+pct+'% of profit pool (after income - expense - staff payout)':''+pct+'% of total brokerage';
   document.getElementById('empDashStats').innerHTML=mkStats([
     {label:'Total Brokerage',value:fmt(myTot),sub:'client: '+fmt(r2(myCB))+' &#183; manual: '+fmt(r2(myMan)),color:'green'},
     {label:'My Share ('+pct+'%)',value:fmt(shareVal),sub:shareSub,color:'blue'},
@@ -3665,12 +3665,12 @@ function renderMyBrok(){
   var comb=r2(cT+t);
   var isPtnr=isPartnerRole(uid);
   var shareVal2=isPtnr?myPoolShare(uid,f):r2(comb*pct/100);
-  var shareSub2=isPtnr?'profit pool ka '+pct+'% (income - expense - staff payout ke baad)':'total ka '+pct+'%';
+  var shareSub2=isPtnr?''+pct+'% of profit pool (after income - expense - staff payout)':''+pct+'% of total';
   document.getElementById('myBrokStats').innerHTML=mkStats([
     {label:periodLabel(f)+' Total Brokerage',value:fmt(comb),sub:'client: '+fmt(r2(cT))+' &#183; manual: '+fmt(r2(t)),color:'green',onclick:"showMyBrokStat('period')"},
     {label:'My Share ('+pct+'%)',value:fmt(shareVal2),sub:shareSub2,color:'blue'},
     {label:'Working Clients',value:Object.keys(uniqC).length,sub:'Avg/Client: '+fmt(Object.keys(uniqC).length?r2(cT/Object.keys(uniqC).length):0),color:'purple',onclick:"showMyBrokStat('working')"},
-    {label:'Lifetime Total',value:fmt(r2(cLife+lifeMan)),sub:'ab tak ki total brokerage',color:'amber',onclick:"showMyBrokStat('life')"}
+    {label:'Lifetime Total',value:fmt(r2(cLife+lifeMan)),sub:'total brokerage to date',color:'amber',onclick:"showMyBrokStat('life')"}
   ]);
   window._myBrokStatCache={period:cRows.concat(myRows),working:cRows,life:myC.concat(myRows)};
   document.getElementById('myBrokChart').innerHTML=mkDailyChart(cRows,'&#128200; Daily Brokerage');
@@ -3692,7 +3692,7 @@ function renderMyBrok(){
       });
       h+='</tbody></table>';
     }
-  } else h='<div class="no-data">Is period me client brokerage nahi hai</div>';
+  } else h='<div class="no-data">No client brokerage in this period</div>';
   if(rows.length){
     h+='<div class="sec-title" style="padding:14px;">Manual Entries</div>';
     h+=mkTable(rows,[{k:'Date',l:'Date'},{k:'Branch',l:'Branch'},{k:'Amount',l:'Amount',money:true}],null);
@@ -3896,7 +3896,7 @@ function periodLabel(f){return ({today:'Today',week:'This Week',month:'This Mont
 function applyEmpRange(){
   var f=document.getElementById('empFrom').value,t=document.getElementById('empTo').value;
   if(!f||!t){showToast('Select both From and To dates','error');return;}
-  if(f>t){showToast('From date, To date se pehle honi chahiye','error');return;}
+  if(f>t){showToast('From date must be before To date','error');return;}
   empRange={start:new Date(f+'T00:00:00'),end:new Date(t+'T23:59:59')};
   document.querySelectorAll('#page-adminEmps .filter-btn').forEach(function(b){b.classList.remove('active');});
   renderEmpPerf(null);
@@ -3943,7 +3943,7 @@ function initMeetingForm(){var e=document.getElementById('m_date');if(e&&!e.valu
 function toggleConvProduct(){var c=document.getElementById('m_conv'),g=document.getElementById('m_prod_group');if(c&&g)g.style.display=(c.value==='Yes')?'':'none';}
 function submitMeeting(){
   var cn=document.getElementById('m_cname').value.trim();
-  if(!cn){showToast('Client/Person name daalo','error');return;}
+  if(!cn){showToast('Enter Client/Person name','error');return;}
   var conv=document.getElementById('m_conv').value;
   var p={action:'addMeeting','Date':document.getElementById('m_date').value||td(),'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch,'Client Name':cn,'Client Phone':document.getElementById('m_cphone').value.trim(),'Reference By':document.getElementById('m_ref').value.trim(),'Regarding':document.getElementById('m_regarding').value,'Attendees':document.getElementById('m_attendees').value.trim(),'Remarks':document.getElementById('m_remarks').value.trim(),'Next Meeting':document.getElementById('m_next').value||'','Converted':conv,'Convert Product':conv==='Yes'?document.getElementById('m_prod').value:''};
   doSubmit(p,'Meetings',document.querySelector('#page-addMeeting .btn-submit'),'Add Meeting',function(){document.getElementById('m_cname').value='';document.getElementById('m_cphone').value='';document.getElementById('m_ref').value='';document.getElementById('m_attendees').value='';document.getElementById('m_remarks').value='';document.getElementById('m_next').value='';});
@@ -4061,7 +4061,7 @@ function submitAccount(){
   if(!cn||!cid){showToast('Client Name and ID required','error');return;}
   var cphoneChk=document.getElementById('a_cphone').value.trim();
   var dupChk=findDuplicateAccount(cn,cphoneChk);
-  if(dupChk&&!confirm('Yeh client "'+cn+'" pehle se add hai ('+(dupChk['Date']||'-')+' ko '+(dupChk['Employee Name']||'-')+' ne, ID: '+(dupChk['Client ID']||'-')+'). Double entry se bacho — kya phir bhi ek naya entry add karna hai?'))return;
+  if(dupChk&&!confirm('This client "'+cn+'" was already added on '+(dupChk['Date']||'-')+' by '+(dupChk['Employee Name']||'-')+', ID: '+(dupChk['Client ID']||'-')+'. Avoid duplicate entries - add a new entry anyway?'))return;
   var fe=forEmpObj('a_forEmp');
   var actTrading=document.getElementById('a_actTrading').checked?'Yes':'No';
   var actSIP=document.getElementById('a_actSIP').checked?'Yes':'No';
@@ -4088,7 +4088,7 @@ function submitStudent(){
   var sn=document.getElementById('st_name').value.trim();if(!sn){showToast('Student name required','error');return;}
   var frRaw=document.getElementById('st_feesreceived').value;
   var fr=parseFloat(frRaw);
-  if(!frRaw||isNaN(fr)||fr<=0){showToast('Pehle Fees Received daalo, tabhi student add hoga - bina fees entry nahi hogi','error');return;}
+  if(!frRaw||isNaN(fr)||fr<=0){showToast('Enter Fees Received first - the student cannot be added without a fee entry','error');return;}
   var fe=forEmpObj('st_forEmp');
   var tf=parseFloat(document.getElementById('st_totfee').value)||fr;
   var pending=Math.max(0,tf-fr);
@@ -4101,7 +4101,7 @@ function submitStudent(){
   postData(p).then(function(r){
     btn.disabled=false;btn.textContent='Add Student';
     if(r&&r.success){
-      showToast('Student add ho gaya + fee entry bhi ho gayi - dobara Income me dalne ki zaroorat nahi','success');
+      showToast('Student added and fee entry recorded - no need to add it again in Income','success');
       allData.Students=allData.Students||[];
       allData.Students.push({'Date':p['Date'],'Employee ID':p['Employee ID'],'Employee Name':p['Employee Name'],'Branch':p['Branch'],'Student Name':p['Student Name'],'Student Phone':p['Student Phone'],'Batch':p['Batch'],'Reference By':p['Reference By'],'Status':p['Status'],'Total Fee':p['Total Fee'],'Demat Opened':p['Demat Opened'],'Demat Client ID':''});
       allData.Income=allData.Income||[];
@@ -4111,7 +4111,7 @@ function submitStudent(){
       document.getElementById('st_pendingGroup').style.display='none';
       setTimeout(function(){loadAll(2);},600);
       goToMainAfterSave();
-    } else showToast('Save fail ho gaya: '+(r&&r.error||'Unknown'),'error');
+    } else showToast('Save failed: '+(r&&r.error||'Unknown'),'error');
   }).catch(function(e){btn.disabled=false;btn.textContent='Add Student';showToast('Error: '+e.message,'error');});
 }
 
@@ -4328,7 +4328,7 @@ function ddmmyyyy2ymd(s){var m=String(s).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
 function handleChoiceFile(input){
   var file=input.files&&input.files[0];if(!file)return;
   var prev=document.getElementById('choicePreview');
-  prev.innerHTML='<div class="prev-ok">File parhi ja rahi hai...</div>';
+  prev.innerHTML='<div class="prev-ok">Reading file...</div>';
   var reader=new FileReader();
   reader.onload=function(ev){
     try{
@@ -4338,10 +4338,10 @@ function handleChoiceFile(input){
       var parsed;
       if(text&&text.toLowerCase().indexOf('<table')!==-1)parsed=parseChoiceHTML(text);
       else parsed=parseChoiceXLSX(buf);
-      if(!parsed.rows.length){prev.innerHTML='<div class="prev-err">Is file me client brokerage data nahi mila. Choice ki Bi Report (.xls) upload karo jisme CLIENT ID aur REMESHIRE BROKERAGE columns ho.</div>';return;}
+      if(!parsed.rows.length){prev.innerHTML='<div class="prev-err">No client brokerage data found in this file. Upload the Choice Bi Report (.xls) containing CLIENT ID and REMESHIRE BROKERAGE columns.</div>';return;}
       choiceParsed=parsed;
       buildChoicePreview();
-    }catch(err){prev.innerHTML='<div class="prev-err">File parse nahi hui: '+err.message+'</div>';}
+    }catch(err){prev.innerHTML='<div class="prev-err">File could not be parsed: '+err.message+'</div>';}
   };
   reader.readAsArrayBuffer(file);
 }
@@ -4377,12 +4377,12 @@ function parseChoiceHTML(text){
     if(isNaN(amt))continue;
     rows.push({cid:cid,cname:texts[idxName]||'',amt:amt,tot:isNaN(tot)?0:tot});
   }
-  if(!headerFound)throw new Error('CLIENT ID header nahi mila');
-  if(idxRem===-1)throw new Error('REMESHIRE BROKERAGE column nahi mila');
+  if(!headerFound)throw new Error('CLIENT ID header not found');
+  if(idxRem===-1)throw new Error('REMESHIRE BROKERAGE column not found');
   return {rows:rows,from:from,to:to};
 }
 function parseChoiceXLSX(buf){
-  if(typeof XLSX==='undefined')throw new Error('Excel reader load nahi hua — internet check karke page refresh karo');
+  if(typeof XLSX==='undefined')throw new Error('Excel reader failed to load - check your internet and refresh the page');
   var wb=XLSX.read(buf,{type:'array'});
   var ws=wb.Sheets[wb.SheetNames[0]];
   var aoa=XLSX.utils.sheet_to_json(ws,{header:1,raw:false});
@@ -4404,7 +4404,7 @@ function parseChoiceXLSX(buf){
     if(isNaN(amt))return;
     rows.push({cid:cid,cname:String(row[idxName]||'').trim(),amt:amt,tot:isNaN(tot)?0:tot});
   });
-  if(!headerFound)throw new Error('CLIENT ID header nahi mila');
+  if(!headerFound)throw new Error('CLIENT ID header not found');
   return {rows:rows,from:from,to:to};
 }
 function buildChoicePreview(){
@@ -4427,13 +4427,13 @@ function buildChoicePreview(){
   var dup=(allData.ClientBrokerage||[]).some(function(x){return x['From Date']===p.from&&x['To Date']===p.to;});
   p.isDup=dup;
   var h='';
-  if(!p.from||!p.to)h+='<div class="prev-warn">&#9888; File me date range nahi mili &#8212; aaj ki date use hogi.</div>';
+  if(!p.from||!p.to)h+='<div class="prev-warn">&#9888; No date range found in file - today\'s date will be used.</div>';
   h+='<div class="stats-grid" style="margin-top:16px;">'+mkStats([
-    {label:'Period',value:(p.from||td()),sub:'se '+(p.to||td()),color:'blue'},
+    {label:'Period',value:(p.from||td()),sub:'to '+(p.to||td()),color:'blue'},
     {label:'Total Clients',value:p.rows.length,sub:'file me entries',color:'green'},
     {label:'Total Brokerage',value:fmt(total),sub:'REMESHIRE amount',color:'green'},
-    {label:'Matched',value:matched,sub:'employees se match',color:'purple'},
-    {label:'Unmatched',value:unmatched.length,sub:'IDEAL.OFFICE pe jayenge',color:unmatched.length?'amber':'green'}
+    {label:'Matched',value:matched,sub:'matched to employees',color:'purple'},
+    {label:'Unmatched',value:unmatched.length,sub:'will go to IDEAL.OFFICE',color:unmatched.length?'amber':'green'}
   ])+'</div>';
   h+='<div class="table-wrap" style="margin-bottom:16px;"><div class="table-inner"><table><thead><tr><th>Employee</th><th>Branch</th><th>Clients</th><th>Brokerage</th><th>Share</th></tr></thead><tbody>';
   Object.keys(empSum).sort(function(a,b){return empSum[b].amt-empSum[a].amt;}).forEach(function(k){
@@ -4442,9 +4442,9 @@ function buildChoicePreview(){
   });
   h+='</tbody></table></div></div>';
   if(unmatched.length){
-    h+='<div class="prev-warn"><b>Unmatched clients ('+unmatched.length+'):</b> '+unmatched.map(function(r){return r.cid;}).join(', ')+'<br><span style="font-size:12px;">Ye kisi employee ke Accounts me nahi mile &#8212; inki brokerage IDEAL.OFFICE (Office client) ke naam pe count hogi. Chaaho to pehle in clients ke accounts sahi employee me add karke dobara upload karo.</span></div>';
+    h+='<div class="prev-warn"><b>Unmatched clients ('+unmatched.length+'):</b> '+unmatched.map(function(r){return r.cid;}).join(', ')+'<br><span style="font-size:12px;">These were not found in any employee\'s Accounts - their brokerage will be counted under IDEAL.OFFICE (Office client). If needed, add these clients\' accounts under the correct employee first and re-upload.</span></div>';
   }
-  if(dup)h+='<div class="prev-err"><b>&#9888; Ye period ('+p.from+' se '+p.to+') pehle se uploaded hai!</b><br>Replace karne se purana data delete hoke naya save hoga &#8212; double counting nahi hogi.</div>';
+  if(dup)h+='<div class="prev-err"><b>&#9888; This period ('+p.from+' to '+p.to+') has already been uploaded!</b><br>Replacing will delete the old data and save the new one - no double counting.</div>';
   h+='<div style="display:flex;gap:10px;margin-top:6px;">';
   if(dup)h+='<button class="btn-submit" style="background:var(--amber);" onclick="confirmChoiceUpload(true)">&#8635; Replace &amp; Upload</button>';
   else h+='<button class="btn-submit" onclick="confirmChoiceUpload(false)">&#10003; Confirm &amp; Upload</button>';
@@ -4459,10 +4459,10 @@ function confirmChoiceUpload(replace){
   var rows=p.assigned.map(function(x){
     return {'Date':to,'From Date':from,'To Date':to,'Client ID':x.r.cid,'Client Name':x.r.cname,'Employee ID':x.emp.id,'Employee Name':x.emp.name,'Branch':x.emp.branch,'Amount':x.r.amt,'Total Brokerage':x.r.tot,'Upload ID':uploadId};
   });
-  prev.innerHTML='<div class="prev-ok">Uploading... '+rows.length+' entries. Page band mat karo.</div>';
+  prev.innerHTML='<div class="prev-ok">Uploading... '+rows.length+' entries. Do not close the page.</div>';
   var pre=replace?postData({action:'deleteClientBrokerageRange',fromDate:from,toDate:to}):Promise.resolve({success:true});
   pre.then(function(dr){
-    if(!dr||!dr.success)throw new Error('Purana data delete nahi hua: '+(dr&&dr.error||''));
+    if(!dr||!dr.success)throw new Error('Old data could not be deleted: '+(dr&&dr.error||''));
     if(replace)allData.ClientBrokerage=(allData.ClientBrokerage||[]).filter(function(x){return !(x['From Date']===from&&x['To Date']===to);});
     var chunks=[];for(var i=0;i<rows.length;i+=150)chunks.push(rows.slice(i,i+150));
     var seq=Promise.resolve();var done=0;
@@ -4477,10 +4477,10 @@ function confirmChoiceUpload(replace){
   }).then(function(){
     rows.forEach(function(r){allData.ClientBrokerage.push(r);});
     showToast('Upload complete! '+rows.length+' entries','success');
-    prev.innerHTML='<div class="prev-ok"><b>&#10003; Upload ho gaya!</b> '+rows.length+' client entries save hui ('+from+' se '+to+'). Client Brokerage page pe dekho.</div>';
+    prev.innerHTML='<div class="prev-ok"><b>&#10003; Upload complete!</b> '+rows.length+' client entries saved ('+from+' to '+to+'). Check the Client Brokerage page.</div>';
     choiceParsed=null;document.getElementById('choiceFile').value='';
   }).catch(function(e){
-    prev.innerHTML='<div class="prev-err">Upload error: '+e.message+' &#8212; dobara try karo.</div>';
+    prev.innerHTML='<div class="prev-err">Upload error: '+e.message+' - please try again.</div>';
   });
 }
 
@@ -4496,12 +4496,12 @@ function renderCbrokLookup(){
   if(!matches.length){
     var partial=all.filter(function(r){return (r['Client ID']||'').trim().toLowerCase().indexOf(q)!==-1;});
     if(partial.length && partial.length<=15){
-      var ph='<div class="no-data">Exact match nahi mila, milte-julte Client IDs:</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;">';
+      var ph='<div class="no-data">No exact match found, similar Client IDs:</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;">';
       var seen={};
       partial.forEach(function(r){var cid=(r['Client ID']||'').trim();if(!seen[cid]){seen[cid]=1;ph+='<span class="badge blue" style="cursor:pointer;" onclick="document.getElementById(\'cbrokLookupBox\').value=\''+cid+'\';renderCbrokLookup();">'+cid+'</span>';}});
       el.innerHTML=ph+'</div>';
     } else {
-      el.innerHTML='<div class="no-data">Is Client ID ki koi brokerage entry nahi mili</div>';
+      el.innerHTML='<div class="no-data">No brokerage entry found for this Client ID</div>';
     }
     return;
   }
@@ -4540,7 +4540,7 @@ function renderCBrok(){
   document.getElementById('cbrokStats').innerHTML=mkStats([
     {label:'Lifetime',value:fmt(life),sub:all.length+' entries',color:'green',onclick:"showCBrokStat('life')"},
     {label:periodLabel(filters['cbrok']||'month'),value:fmt(t),sub:rows.length+' entries',color:'blue',onclick:"showCBrokStat('period')"},
-    {label:'Working Clients',value:Object.keys(uniq).length,sub:'jinhone kaam kiya (is period)',color:'purple',onclick:"showCBrokStat('working')"},
+    {label:'Working Clients',value:Object.keys(uniq).length,sub:'who worked (this period)',color:'purple',onclick:"showCBrokStat('working')"},
     {label:'Avg / Client',value:fmt(Object.keys(uniq).length?r2(t/Object.keys(uniq).length):0),sub:'per client brokerage',color:'amber'}
   ]);
   window._cbrokStatCache={life:all,period:rows,working:rows};
@@ -4583,10 +4583,10 @@ function calcPending(){
 }
 function submitIncome(){
   var amt=document.getElementById('in_amount').value;
-  if(!amt||isNaN(parseFloat(amt))){showToast('Amount daalo','error');return;}
+  if(!amt||isNaN(parseFloat(amt))){showToast('Enter amount','error');return;}
   var cat=document.getElementById('in_cat').value;
   var isStu=cat==='Student Fee';
-  if(isStu&&!document.getElementById('in_name').value.trim()){showToast('Student ka naam daalo','error');return;}
+  if(isStu&&!document.getElementById('in_name').value.trim()){showToast("Enter the student's name",'error');return;}
   var p={action:'addIncome','Date':document.getElementById('in_date').value||td(),'Category':cat,
     'Name':isStu?document.getElementById('in_name').value.trim():document.getElementById('in_src').value.trim(),
     'Place':isStu?document.getElementById('in_place').value.trim():'',
@@ -4608,8 +4608,8 @@ function initExpenseForm(){
 }
 function submitExpense(){
   var amt=document.getElementById('ex_amount').value,desc=document.getElementById('ex_desc').value.trim();
-  if(!amt||isNaN(parseFloat(amt))){showToast('Amount daalo','error');return;}
-  if(!desc){showToast('Kis chij pe kharcha hua likho','error');return;}
+  if(!amt||isNaN(parseFloat(amt))){showToast('Enter amount','error');return;}
+  if(!desc){showToast('Enter what the expense was for','error');return;}
   var p={action:'addExpense','Date':document.getElementById('ex_date').value||td(),'Category':document.getElementById('ex_cat').value,'Description':desc,'Amount':parseFloat(amt),'Paid By':document.getElementById('ex_paidby').value.trim()||'Ravi','Branch':document.getElementById('ex_branch').value,'Remarks':document.getElementById('ex_remarks').value.trim(),'Entered By':currentUser.name};
   doSubmit(p,'Expense',document.querySelector('#page-addExpense .btn-submit'),'Add Expense',function(){document.getElementById('ex_amount').value='';document.getElementById('ex_desc').value='';document.getElementById('ex_remarks').value='';});
 }
@@ -4661,9 +4661,9 @@ function renderFinDash(){
   var payable=ht.totPay;
   var fdCards=[
     {label:'Income (entries)',value:fmt(tInc),sub:inc.length+' entries',color:'green'},
-    {label:'Client Brokerage',value:fmt(tCB),sub:'Choice uploads se',color:'blue'},
+    {label:'Client Brokerage',value:fmt(tCB),sub:'from Choice uploads',color:'blue'},
     {label:'Expense',value:fmt(tExp),sub:exp.length+' entries',color:'red'},
-    {label:'Team Payable (Hisab)',value:fmt(payable),sub:mo?(ht.empCount+' employees (Monthly Hisab se match)'):'sabhi months',color:'amber'}
+    {label:'Team Payable (Hisab)',value:fmt(payable),sub:mo?(ht.empCount+' employees (matched from Monthly Hisab)'):'all months',color:'amber'}
   ];
   if(currentUser&&currentUser.role==='admin')fdCards.push({label:'Net Profit',value:fmt(r2(tInc+tCB-tExp-payable)),sub:'income - expense - payable',color:'purple'});
   document.getElementById('finDashStats').innerHTML=mkStats(fdCards);
@@ -4750,7 +4750,7 @@ function renderHisab(){
       cardsH+='<div class="hisab-cell"><div class="lbl">Partnership %</div><div class="val">'+(isAdm?'<input type="number" min="0" max="100" value="'+st.pct+'" onchange="setHisabPct(\''+eid+'\',this.value)">':st.pct+'%')+'</div></div>';
       cardsH+='<div class="hisab-cell"><div class="lbl">Partner Share</div><div class="val">'+fmt(c.share)+'</div></div>';
     }else{
-      cardsH+='<div class="hisab-cell"><div class="lbl">Brokerage'+(isAdm?' (edit ho sakti hai)':'')+'</div><div class="val">'+(isAdm?'<input type="number" step="0.01" style="width:110px;" value="'+(st.brok||0)+'" onchange="setHisabBrok(\''+eid+'\',this.value)">':fmt(st.brok||0))+'</div></div>';
+      cardsH+='<div class="hisab-cell"><div class="lbl">Brokerage'+(isAdm?' (editable)':'')+'</div><div class="val">'+(isAdm?'<input type="number" step="0.01" style="width:110px;" value="'+(st.brok||0)+'" onchange="setHisabBrok(\''+eid+'\',this.value)">':fmt(st.brok||0))+'</div></div>';
       cardsH+='<div class="hisab-cell"><div class="lbl">Commission %</div><div class="val">'+(isAdm?'<input type="number" min="0" max="100" value="'+st.pct+'" onchange="setHisabPct(\''+eid+'\',this.value)">':st.pct+'%')+'</div></div>';
       cardsH+='<div class="hisab-cell"><div class="lbl">Brok Share</div><div class="val">'+fmt(c.share)+'</div></div>';
     }
@@ -4783,7 +4783,7 @@ function renderHisab(){
     var c=calc(st);
     totPay+=c.net;
     if(st.status==='Paid'){paidAmt+=c.net;paidN++;}else pendAmt+=c.net;
-    card(e,st,c,'<div style="font-size:12px;color:var(--muted);margin-bottom:8px;">&#8505; Inke apne clients ki brokerage (sirf jankari ke liye): <b style="color:var(--text);">'+fmt(kb)+'</b> &#8212; partner ko net income ka '+st.pct+'% milta hai, brokerage commission nahi</div>');
+    card(e,st,c,'<div style="font-size:12px;color:var(--muted);margin-bottom:8px;">&#8505; Their own clients\' brokerage (for reference only): <b style="color:var(--text);">'+fmt(kb)+'</b> - partner receives '+st.pct+'% of net income, not brokerage commission</div>');
   });
   totPay=r2(totPay);paidAmt=r2(paidAmt);pendAmt=r2(pendAmt);
   document.getElementById('hisabCards').innerHTML=cardsH||'<div class="no-data">No active employees</div>';
@@ -4801,7 +4801,7 @@ function renderHisab(){
       {label:'Other Income',value:fmt(tInc),sub:'course/insurance/etc',color:'blue'},
       {label:'Office Expense',value:fmt(tExp),sub:exp.length+' entries',color:'red'},
       {label:'Team Payout',value:fmt(totPay),sub:'staff + partners',color:'amber'},
-      {label:'Profit Pool',value:fmt(pool),sub:'income - exp - staff pay (partners ka base)',color:'purple'},
+      {label:'Profit Pool',value:fmt(pool),sub:'income - exp - staff pay (partner base)',color:'purple'},
       {label:'NET PROFIT',value:fmt(netProfit),sub:netProfit>=0?'&#9650; profit':'&#9660; loss',color:netProfit>=0?'green':'red'}
     ])+'</div></div>';
   }else{document.getElementById('hisabPL').innerHTML='';}
@@ -4810,8 +4810,8 @@ function setHisabPct(eid,v){var st=hisabSt.rows[eid];if(!st)return;st.pct=parseF
 function setHisabBrok(eid,v){var st=hisabSt.rows[eid];if(!st)return;st.brok=r2(v);st.manual=true;renderHisab();}
 function addHisabLine(eid,type){
   var sug=type==='add'?['Policy Commission','SIP Incentive','Contest Bonus','Fixed Salary','Referral','Other']:['Sub-staff Salary','Advance','Card/Personal','Office Deduction','Other'];
-  var h='<div class="modal-title">'+(type==='add'?'Addition (paisa jodo)':'Deduction (paisa kaato)')+'</div>';
-  h+='<div class="form-group"><label>Kis chij ka</label><input type="text" id="hl_label" list="hl_sug" placeholder="e.g. '+sug[0]+'"><datalist id="hl_sug">';
+  var h='<div class="modal-title">'+(type==='add'?'Addition (add money)':'Deduction (deduct money)')+'</div>';
+  h+='<div class="form-group"><label>For What</label><input type="text" id="hl_label" list="hl_sug" placeholder="e.g. '+sug[0]+'"><datalist id="hl_sug">';
   sug.forEach(function(s){h+='<option>'+s+'</option>';});
   h+='</datalist></div>';
   h+='<div class="form-group"><label>Amount (&#8377;)</label><input type="number" id="hl_amt" placeholder="Enter amount"></div>';
@@ -4821,7 +4821,7 @@ function addHisabLine(eid,type){
 }
 function saveHisabLine(eid,type){
   var l=document.getElementById('hl_label').value.trim(),a=parseFloat(document.getElementById('hl_amt').value);
-  if(!l||isNaN(a)){showToast('Label aur amount dono daalo','error');return;}
+  if(!l||isNaN(a)){showToast('Enter both label and amount','error');return;}
   hisabSt.rows[eid].lines.push({t:type,l:l,a:a});
   closeModal();renderHisab();
 }
@@ -4855,8 +4855,8 @@ function markHisabPaid(eid){
       upsertLocalHisab(p);showToast('Marked as Paid!','success');renderHisab();
       /* salary slip email */
       postData({action:'sendSalarySlip','Month':hisabSt.month,'Employee ID':eid}).then(function(sr){
-        if(sr&&sr.success)showToast('&#9993; Salary slip email chali gayi ('+(sr.sent||'')+')','success');
-        else showToast('Slip email nahi gayi: '+((sr&&sr.error)||'')+' &#8212; Manage Employees me email daalo','error');
+        if(sr&&sr.success)showToast('&#9993; Salary slip email sent ('+(sr.sent||'')+')','success');
+        else showToast('Slip email not sent: '+((sr&&sr.error)||'')+' - add email in Manage Employees','error');
       }).catch(function(){});
     }
     else{st.status='Pending';st.paidDate='';showToast('Failed: '+(r&&r.error||''),'error');renderHisab();}
@@ -4866,7 +4866,7 @@ function renderMyHisab(){
   var uid=currentUser.userId;
   var rows=(allData.Hisab||[]).filter(function(r){return (r['Employee ID']||'').trim().toLowerCase()===uid.trim().toLowerCase();});
   rows.sort(function(a,b){return (b['Month']||'').localeCompare(a['Month']||'');});
-  if(!rows.length){document.getElementById('myHisabCards').innerHTML='<div class="no-data">Abhi tak koi hisab nahi bana. Month end pe finance team hisab banayegi.</div>';return;}
+  if(!rows.length){document.getElementById('myHisabCards').innerHTML='<div class="no-data">No settlement generated yet. The finance team will prepare it at month end.</div>';return;}
   var h='';
   rows.forEach(function(r){
     var lines=[];try{lines=JSON.parse(r['Details']||'[]');}catch(e){}
@@ -4902,7 +4902,7 @@ function showMyBrokDay(ds){
     h+='</tbody></table></div>';
   }
   if(man.length)h+='<div style="margin-top:8px;font-size:13px;color:var(--muted);">Manual entries: '+fmt(r2(mT))+'</div>';
-  if(!rows.length&&!man.length)h+='<div class="no-data">Is din koi brokerage nahi</div>';
+  if(!rows.length&&!man.length)h+='<div class="no-data">No brokerage on this day</div>';
   h+='</div>';
   var el=document.getElementById('myBrokDayDiv');el.innerHTML=h;el.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
@@ -4922,7 +4922,7 @@ function showCBrokDay(ds){
     });
     h+='</tbody></table></div>';
     h+='<div style="margin-top:10px;font-size:12px;color:var(--muted);">Avg per client: <b style="color:var(--accent);">'+fmt(Object.keys(uniq).length?r2(t/Object.keys(uniq).length):0)+'</b></div>';
-  } else h+='<div class="no-data">Is din koi entry nahi</div>';
+  } else h+='<div class="no-data">No entry on this day</div>';
   h+='</div>';
   var el=document.getElementById('cbrokDayDiv');el.innerHTML=h;el.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
@@ -4944,7 +4944,7 @@ function autoPunchIn(){
       if(!rec){rec={'Date':t,'Employee ID':uid,'Employee Name':currentUser.name,'Branch':currentUser.branch,'In Time':curT,'Out Time':'','Status':aStatus,'Remarks':'Auto (login)'};allData.Attendance.push(rec);}
       else{rec['In Time']=curT;rec['Status']=aStatus;}
       saveCache();
-      showToast('&#10003; Attendance lag gayi &#8212; '+curT+(aStatus==='Late'?' (Late)':''),aStatus==='Late'?'error':'success');
+      showToast('&#10003; Attendance marked - '+curT+(aStatus==='Late'?' (Late)':''),aStatus==='Late'?'error':'success');
     }
   }).catch(function(){autoPunched=false;});
 }
@@ -4953,7 +4953,7 @@ function autoPunchIn(){
 
 var editSt={sheet:null,rowNum:null};
 function openEdit(sheet,rowNum,trEl){
-  if(!rowNum||rowNum<2){showToast('Ye nayi entry abhi sync ho rahi hai — data reload ho raha hai, 2-3 second baad edit karo','error');loadAll(2);return;}
+  if(!rowNum||rowNum<2){showToast('This new entry is still syncing - data is reloading, please edit again in 2-3 seconds','error');loadAll(2);return;}
   editSt={sheet:sheet,rowNum:rowNum};
   var colMap={Brokerage:['Date','Employee Name','Branch','Amount'],SIP:['Date','Employee Name','Client Name','Client ID','Client Phone','Type','Amount','SIP Due Date'],Insurance:['Date','Employee Name','Client Name','Client ID','Client Phone','Type','Premium'],Accounts:['Date','Employee Name','Client Name','Client ID','Client Phone','Status'],Leads:['Date','Employee Name','Client Name','Client Phone','Category','Contact','Meeting Done','Follow Up','Remarks'],Students:['Date','Employee Name','Student Name','Student Phone','Batch','Reference By','Status'],ClientBrokerage:['Date','Client ID','Client Name','Employee Name','Branch','Amount','Total Brokerage'],Income:['Date','Category','Name','Course','Amount','Pending','Credited To','Remarks'],Expense:['Date','Category','Description','Amount','Paid By','Branch']};
   var editFields={Brokerage:['Date','Amount'],SIP:['Date','Client Name','Client ID','Client Phone','Type','Amount','SIP Due Date'],Insurance:['Date','Client Name','Client ID','Client Phone','Type','Premium'],Accounts:['Date','Client Name','Client ID','Client Phone','Status'],Leads:['Date','Client Name','Client Phone','Category','Contact','Meeting Done','Follow Up','Remarks'],Students:['Date','Student Name','Student Phone','Batch','Reference By','Status'],ClientBrokerage:['Date','Client ID','Client Name','Amount'],Income:['Date','Category','Name','Amount','Pending','Credited To','Remarks'],Expense:['Date','Category','Description','Amount','Paid By','Branch']};
@@ -4984,7 +4984,7 @@ function saveEdit(){
 }
 
 function confirmDel(sheet,rowNum){
-  if(!rowNum||rowNum<2){showToast('Ye nayi entry abhi sync ho rahi hai — data reload ho raha hai, 2-3 second baad delete karo','error');loadAll(2);return;}
+  if(!rowNum||rowNum<2){showToast('This new entry is still syncing - data is reloading, please delete again in 2-3 seconds','error');loadAll(2);return;}
   document.getElementById('modalBox').innerHTML='<div class="modal-title">Delete Entry?</div><p style="color:var(--muted);font-size:13px;margin-bottom:20px;">This cannot be undone.</p><div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-danger" onclick="doDel(\''+sheet+'\','+rowNum+')">Delete</button></div>';
   document.getElementById('modal').className='show';
 }
@@ -4998,14 +4998,14 @@ function renderManageEmps(){
   if(!employees.length){document.getElementById('manageEmpTable').innerHTML='<div class="no-data">No employees.</div>';return;}
   var missing=employees.filter(function(e){return (e['Status']||'Active')==='Active'&&!(e['Email']||'').trim();});
   var h='';
-  if(missing.length)h+='<div class="prev-err" style="margin-bottom:10px;">&#9888; <b>'+missing.length+' employee(s) ka Email set nahi hai</b> &#8212; inko Mark Paid karne par salary slip mail NAHI jayegi: '+missing.map(function(e){return e['Name']||e['Employee ID'];}).join(', ')+'</div>';
+  if(missing.length)h+='<div class="prev-err" style="margin-bottom:10px;">&#9888; <b>'+missing.length+' employee(s) do not have an Email set</b> - they will NOT receive a salary slip email when marked Paid: '+missing.map(function(e){return e['Name']||e['Employee ID'];}).join(', ')+'</div>';
   h+='<table><thead><tr><th>Employee ID</th><th>Name</th><th>Branch</th><th>Role</th><th>Sub-team Of</th><th>Commission %</th><th>Salary</th><th>Email</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
   employees.forEach(function(e){
     var isAct=(e['Status']||'Active')==='Active';
     var em=(e['Email']||'').trim();
     var pids=parentIdsOf(e);
     var pLabel=pids.length?pids.map(function(pid){var pEmp=employees.find(function(x){return x['Employee ID']===pid;});return pEmp?pEmp['Name']:pid;}).join(', '):'<span style="color:var(--muted);">&#8212;</span>';
-    h+='<tr><td>'+(e['Employee ID']||'-')+'</td><td style="font-weight:600;">'+(e['Name']||'-')+'</td><td>'+(e['Branch']||'-')+'</td><td>'+(e['Role']||'employee')+'</td><td>'+pLabel+'</td><td style="font-weight:700;color:var(--accent);">'+(e['Commission']!==''&&e['Commission']!==undefined?e['Commission']+'%':'50%')+'</td><td>'+(parseFloat(e['Salary'])>0?fmt(e['Salary']):'-')+'</td><td>'+(em?em:'<span class="badge red" title="Email missing — salary slip mail nahi jayegi">&#9888; missing</span>')+'</td><td><span class="badge '+(isAct?'green':'red')+'">'+(isAct?'Active':'Inactive')+'</span></td><td>';
+    h+='<tr><td>'+(e['Employee ID']||'-')+'</td><td style="font-weight:600;">'+(e['Name']||'-')+'</td><td>'+(e['Branch']||'-')+'</td><td>'+(e['Role']||'employee')+'</td><td>'+pLabel+'</td><td style="font-weight:700;color:var(--accent);">'+(e['Commission']!==''&&e['Commission']!==undefined?e['Commission']+'%':'50%')+'</td><td>'+(parseFloat(e['Salary'])>0?fmt(e['Salary']):'-')+'</td><td>'+(em?em:'<span class="badge red" title="Email missing - salary slip email will not be sent">&#9888; missing</span>')+'</td><td><span class="badge '+(isAct?'green':'red')+'">'+(isAct?'Active':'Inactive')+'</span></td><td>';
     h+='<button class="btn-edit" data-id="'+e['Employee ID']+'" onclick="editEmpModal(this.dataset.id)">&#9998; Edit</button>';
     h+='<button class="btn-del" data-id="'+e['Employee ID']+'" data-act="'+(isAct?'Inactive':'Active')+'" onclick="toggleEmpBtn(this)">'+( isAct?'Deactivate':'Activate')+'</button>';
     h+='</td></tr>';
@@ -5018,12 +5018,12 @@ function showAddEmpModal(){
   h+='<div class="form-group"><label>Employee ID</label><input type="text" id="ne_id" placeholder="e.g. Ideal.name"></div>';
   h+='<div class="form-group"><label>Full Name</label><input type="text" id="ne_name"></div>';
   h+='<div class="form-group"><label>Branch</label><select id="ne_branch"><option>Hisar</option><option>Adampur</option><option>Rohtak</option><option>Tohana</option></select></div>';
-  h+='<div class="form-group"><label>Role</label><select id="ne_role"><option value="employee">Employee</option><option value="finance">Finance (Hisab &amp; Income/Expense)</option><option value="partner">Partner (net profit ka %)</option><option value="admin">Admin</option></select></div>';
-  h+='<div class="form-group"><label>Commission % (employee: brokerage ka % &#183; partner: net profit ka %)</label><input type="number" id="ne_comm" value="50" min="0" max="100"></div>';
-  h+='<div class="form-group"><label>Fixed Salary (&#8377;/month, nahi h to 0)</label><input type="number" id="ne_sal" value="0"></div>';
-  h+='<div class="form-group"><label>Email (salary slip ke liye)</label><input type="email" id="ne_email" placeholder="employee@gmail.com"></div>';
+  h+='<div class="form-group"><label>Role</label><select id="ne_role"><option value="employee">Employee</option><option value="finance">Finance (Hisab &amp; Income/Expense)</option><option value="partner">Partner (% of net profit)</option><option value="admin">Admin</option></select></div>';
+  h+='<div class="form-group"><label>Commission % (employee: % of brokerage &#183; partner: % of net profit)</label><input type="number" id="ne_comm" value="50" min="0" max="100"></div>';
+  h+='<div class="form-group"><label>Fixed Salary (&#8377;/month, 0 if none)</label><input type="number" id="ne_sal" value="0"></div>';
+  h+='<div class="form-group"><label>Email (for salary slip)</label><input type="email" id="ne_email" placeholder="employee@gmail.com"></div>';
   h+='<div class="form-group"><label>Password</label><input type="text" id="ne_pass"></div>';
-  h+='<div class="form-group"><label>Sub-team Of (Parents) — multiple select kar sakte ho</label><div style="max-height:160px;overflow-y:auto;border:1px solid var(--border,rgba(255,255,255,.15));border-radius:8px;padding:8px;">';
+  h+='<div class="form-group"><label>Sub-team Of (Parents) - you can select multiple</label><div style="max-height:160px;overflow-y:auto;border:1px solid var(--border,rgba(255,255,255,.15));border-radius:8px;padding:8px;">';
   employees.forEach(function(e){h+='<label style="display:flex;align-items:center;gap:6px;font-weight:400;font-size:13px;padding:3px 0;"><input type="checkbox" class="ne_parent_cb" value="'+e['Employee ID']+'" style="width:auto;"> '+e['Name']+' ('+e['Employee ID']+')</label>';});
   h+='</div></div>';
   h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="addEmployee()">Add</button></div>';
@@ -5048,15 +5048,15 @@ function editEmpModal(empId){
   h+='<div class="form-group"><label>Role</label><select id="ee_role">';
   [['employee','Employee'],['finance','Finance'],['partner','Partner (net profit %)'],['admin','Admin']].forEach(function(r){h+='<option value="'+r[0]+'"'+((emp['Role']||'employee').toLowerCase()===r[0]?' selected':'')+'>'+r[1]+'</option>';});
   h+='</select></div>';
-  h+='<div class="form-group"><label>Commission % (employee: brokerage ka % &#183; partner: net profit ka %)</label><input type="number" id="ee_comm" value="'+(emp['Commission']!==''&&emp['Commission']!==undefined?emp['Commission']:50)+'" min="0" max="100"></div>';
+  h+='<div class="form-group"><label>Commission % (employee: % of brokerage &#183; partner: % of net profit)</label><input type="number" id="ee_comm" value="'+(emp['Commission']!==''&&emp['Commission']!==undefined?emp['Commission']:50)+'" min="0" max="100"></div>';
   h+='<div class="form-group"><label>Fixed Salary (&#8377;/month)</label><input type="number" id="ee_sal" value="'+(parseFloat(emp['Salary'])||0)+'"></div>';
-  h+='<div class="form-group"><label>Email (salary slip ke liye)</label><input type="email" id="ee_email" value="'+(emp['Email']||'')+'" placeholder="employee@gmail.com"></div>';
+  h+='<div class="form-group"><label>Email (for salary slip)</label><input type="email" id="ee_email" value="'+(emp['Email']||'')+'" placeholder="employee@gmail.com"></div>';
   h+='<div class="form-group"><label>New Password (blank = keep)</label><input type="text" id="ee_pass" placeholder="Leave blank to keep"></div>';
-  h+='<div class="form-group"><label>Sub-team Of (Parents) — multiple select kar sakte ho</label><div style="max-height:160px;overflow-y:auto;border:1px solid var(--border,rgba(255,255,255,.15));border-radius:8px;padding:8px;">';
+  h+='<div class="form-group"><label>Sub-team Of (Parents) - you can select multiple</label><div style="max-height:160px;overflow-y:auto;border:1px solid var(--border,rgba(255,255,255,.15));border-radius:8px;padding:8px;">';
   var curParentIds=parentIdsOf(emp);
   employees.forEach(function(e){if(e['Employee ID']===empId)return;h+='<label style="display:flex;align-items:center;gap:6px;font-weight:400;font-size:13px;padding:3px 0;"><input type="checkbox" class="ee_parent_cb" value="'+e['Employee ID']+'" style="width:auto;"'+(curParentIds.indexOf(e['Employee ID'])!==-1?' checked':'')+'> '+e['Name']+' ('+e['Employee ID']+')</label>';});
   h+='</div></div>';
-  h+='<div class="form-group"><label style="display:flex;align-items:center;gap:6px;font-weight:600;"><input type="checkbox" id="ee_finaccess" style="width:auto;"'+(emp['FinanceAccess']==='Yes'?' checked':'')+'> Income/Expense Access (admin allow) — is employee ko Add Income/Add Expense ka option milega, chahe iske sub-team me finance ID na ho</label></div>';
+  h+='<div class="form-group"><label style="display:flex;align-items:center;gap:6px;font-weight:600;"><input type="checkbox" id="ee_finaccess" style="width:auto;"'+(emp['FinanceAccess']==='Yes'?' checked':'')+'> Income/Expense Access (admin granted) - this employee will get the Add Income/Add Expense option, even without a finance ID in their sub-team</label></div>';
   h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" data-eid="'+empId+'" onclick="saveEmp(this.dataset.eid)">Save</button></div>';
   document.getElementById('modalBox').innerHTML=h;document.getElementById('modal').className='show';
 }
@@ -5122,7 +5122,7 @@ function populateTJGroupNames(){
   var names={};
   (allData.TradingJournal||[]).forEach(function(r){var g=(r['Group Name']||'').trim();if(g)names[g]=1;});
   var list=Object.keys(names).sort();
-  sel.innerHTML='<option value="">-- Select --</option>'+list.map(function(n){return '<option value="'+n+'">'+n+'</option>';}).join('')+'<option value="__other__">+ Other (naya likhein)</option>';
+  sel.innerHTML='<option value="">-- Select --</option>'+list.map(function(n){return '<option value="'+n+'">'+n+'</option>';}).join('')+'<option value="__other__">+ Other (type new)</option>';
 }
 function toggleTJGroupOther(){
   var sel=document.getElementById('tj_groupNameSel');
@@ -5290,8 +5290,8 @@ function renderTradingJournalPage(){
     {label:'Open / Pending',value:openRows.length,sub:'click to view running trades',color:'amber',onclick:"setTJStat('open',event.currentTarget)"},
     {label:'Closed Trades',value:closed.length,sub:'click to view closed trades',color:'purple',onclick:"setTJStat('closed',event.currentTarget)"},
     {label:'Win Rate',value:winRate+'%',sub:targetHits.length+' Target vs '+slHits.length+' SL'+(manualHits.length?(' &#183; '+manualHits.length+' manual'):''),color:winRate>=50?'green':'amber'},
-    {label:'Target Hit',value:targetHits.length,sub:'closed trades me se',color:'green',onclick:"setTJStat('target',event.currentTarget)"},
-    {label:'SL Hit',value:slHits.length,sub:'closed trades me se',color:'red',onclick:"setTJStat('sl',event.currentTarget)"},
+    {label:'Target Hit',value:targetHits.length,sub:'of closed trades',color:'green',onclick:"setTJStat('target',event.currentTarget)"},
+    {label:'SL Hit',value:slHits.length,sub:'of closed trades',color:'red',onclick:"setTJStat('sl',event.currentTarget)"},
     {label:'BEP (Break Even)',value:bepHits.length,sub:'na profit na loss',color:'amber',onclick:"setTJStat('bep',event.currentTarget)"},
     {label:'Total P&L',value:fmt(totalPL),sub:totalPL>=0?'Net profit':'Net loss',color:totalPL>=0?'green':'red'}
   ]);
@@ -5374,7 +5374,7 @@ function saveTradeModal(rowNum,direction){
   };
   var exitEl=document.getElementById('tm_exit');
   if(status!=='Open'&&status!=='1st Target Done'){
-    if(!exitEl||exitEl.value===''){showToast('Exit Price bharna zaroori hai jab trade close karte ho (P&L/Win-Rate ke liye)','error');return;}
+    if(!exitEl||exitEl.value===''){showToast('Exit Price is required when closing a trade (for P&L/Win-Rate)','error');return;}
     var exit=parseFloat(exitEl.value);
     var result=(exit-entry)*qty*(direction==='Buy'?1:-1);
     var resultPct=(entry&&qty)?(result/(entry*qty)*100):0;
@@ -5456,14 +5456,14 @@ function renderCCLTypeStats(){
   var breakN=all.filter(function(r){return (r['Status']||'Active')==='Break';}).length;
   var selfN=all.filter(function(r){return (r['Trading Type']||'')==='Self Trade'&&(r['Status']||'Active')==='Active';}).length;
   el.innerHTML=mkStats([
-    {label:'Intraday Clients',value:intradayN,sub:'calling ke liye click karo',color:'blue',onclick:"setCCLType('intraday')"},
-    {label:'Swing Clients',value:swingN,sub:'calling ke liye click karo',color:'purple',onclick:"setCCLType('swing')"},
-    {label:'On Break',value:breakN,sub:'trading se break par',color:'amber',onclick:"setCCLType('break')"},
-    {label:'Khud Trade Karte Hain',value:selfN,sub:'call ki zaroorat nahi',color:'green',onclick:"setCCLType('selftrade')"}
+    {label:'Intraday Clients',value:intradayN,sub:'click to call',color:'blue',onclick:"setCCLType('intraday')"},
+    {label:'Swing Clients',value:swingN,sub:'click to call',color:'purple',onclick:"setCCLType('swing')"},
+    {label:'On Break',value:breakN,sub:'on a break from trading',color:'amber',onclick:"setCCLType('break')"},
+    {label:'Trade Independently',value:selfN,sub:'no call needed',color:'green',onclick:"setCCLType('selftrade')"}
   ]);
   var lbl=document.getElementById('cclFilterLabel');
   if(lbl){
-    var names={intraday:'Intraday',swing:'Swing',break:'On Break',selftrade:'Khud Trade Karne Wale'};
+    var names={intraday:'Intraday',swing:'Swing',break:'On Break',selftrade:'Trade Independently'};
     lbl.innerHTML=cclTypeF==='all'?'':('Showing: '+names[cclTypeF]+' &#8212; <span style="cursor:pointer;text-decoration:underline;" onclick="setCCLType(\''+cclTypeF+'\')">Clear Filter</span>');
   }
 }
@@ -5516,7 +5516,7 @@ function cclTodayStatus(cid){
   return {label:ctStatusLabel(last),color:ctBadgeColor(last),count:rows.length};
 }
 function mkCallClientTable(rows){
-  if(!rows||!rows.length)return '<div class="no-data">Calling list khali hai — upar "Add Client to Calling List" se client add karo</div>';
+  if(!rows||!rows.length)return '<div class="no-data">Calling list is empty - add a client using "Add Client to Calling List" above</div>';
   var isAdm=currentUser&&currentUser.role==='admin';
   var team=currentUser?teamMembersOf(currentUser.userId):[];
   var canManage=isAdm||team.length>0;
@@ -5560,7 +5560,7 @@ function renderCallLogModalBody(){
   html+='<div class="form-group" id="lm_notPickedReasonGroup" style="display:none"><label>Reason</label><select id="lm_notPickedReason"><option value="Call Again">Call Again</option><option value="Busy">Busy</option><option value="Don&#39;t Call">Don&#39;t Call</option></select></div>';
   html+='<div class="form-group" id="lm_tradeDoneGroup" style="display:none"><label>Trade Done</label><select id="lm_tradeDone" onchange="toggleLMTradeDone()"><option value="">-- Select --</option><option value="Yes">Yes</option><option value="No">No</option></select></div>';
   html+='<div class="form-group" id="lm_tradedInGroup" style="display:none"><label>Traded In</label><input type="text" id="lm_tradedIn" placeholder="e.g. RELIANCE, TCS"></div>';
-  html+='<div class="form-group"><label>Remarks</label><textarea id="lm_remarks" placeholder="e.g. 50 shares liye / funds nahi the / break chahiye..."></textarea></div>';
+  html+='<div class="form-group"><label>Remarks</label><textarea id="lm_remarks" placeholder="e.g. Bought 50 shares / insufficient funds / needs a break..."></textarea></div>';
   html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Close</button><button class="btn-save" onclick="saveNewCallLog()">Save Entry</button></div>';
   html+='<div id="lmHistory" style="margin-top:18px;"></div>';
   document.getElementById('modalBox').innerHTML=html;
@@ -5593,8 +5593,8 @@ function renderLMHistory(){
   var cid=(row['Client ID']||'').trim();
   var todayStr=td();
   var rows=(allData.CallTrade||[]).filter(function(r){return r['Date']===todayStr&&(r['Client ID']||'').trim()===cid;});
-  var h='<div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;">Aaj ki entries ('+rows.length+')</div>';
-  if(!rows.length){h+='<div class="no-data" style="padding:10px;">Abhi tak koi entry nahi</div>';}
+  var h='<div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;">Today\'s entries ('+rows.length+')</div>';
+  if(!rows.length){h+='<div class="no-data" style="padding:10px;">No entries yet</div>';}
   else {
     rows.slice().reverse().forEach(function(r){
       h+='<div style="border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:12px;">';
@@ -5614,7 +5614,7 @@ function saveNewCallLog(){
   var callStatus=document.getElementById('lm_callStatus').value;
   var pickStatus=document.getElementById('lm_pickStatus').value||'';
   var tradeDone=document.getElementById('lm_tradeDone').value||'';
-  if(callStatus==='Called'&&!pickStatus){showToast('Pick Status select karo','error');return;}
+  if(callStatus==='Called'&&!pickStatus){showToast('Select Pick Status','error');return;}
   var p={
     action:'addCallTrade',
     'Date':td(),
@@ -5701,7 +5701,7 @@ function openAccEditModal(rowNum){
   html+='<label style="display:flex;align-items:center;gap:5px;font-weight:400;font-size:13px;"><input type="checkbox" id="ae_actTrading" style="width:auto;"'+((row['Trading Active']||'')==='Yes'?' checked':'')+'> Trading</label>';
   html+='<label style="display:flex;align-items:center;gap:5px;font-weight:400;font-size:13px;"><input type="checkbox" id="ae_actSIP" style="width:auto;"'+((row['SIP Active']||'')==='Yes'?' checked':'')+'> SIP</label>';
   html+='<label style="display:flex;align-items:center;gap:5px;font-weight:400;font-size:13px;"><input type="checkbox" id="ae_actInvestment" style="width:auto;"'+((row['Investment Active']||'')==='Yes'?' checked':'')+'> Investment</label>';
-  html+='</div><div style="font-size:11px;color:var(--muted,#8a94a6);margin-top:4px;">Koi bhi select na kare to account Inactive maana jayega</div></div>';
+  html+='</div><div style="font-size:11px;color:var(--muted,#8a94a6);margin-top:4px;">If none selected, the account will be marked Inactive</div></div>';
   html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-danger" onclick="confirmDel(\'Accounts\','+rowNum+')">Delete</button><button class="btn-save" onclick="saveAccEditModal('+rowNum+')">Save</button></div>';
   document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
 }
@@ -5739,12 +5739,12 @@ function openAccCallModal(rowNum){
   if(row['Last Call Date']){
     html+='<div style="background:rgba(63,191,127,0.1);border:1px solid rgba(63,191,127,0.3);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px;">';
     html+='<b style="color:var(--accent,#3fbf7f);">Last baat &#8212; '+row['Last Call Date']+'</b><br>';
-    html+='<span style="color:var(--muted,#8a94a6);">'+(row['Last Call Remarks']||'(remarks nahi likhe the)')+'</span>';
+    html+='<span style="color:var(--muted,#8a94a6);">'+(row['Last Call Remarks']||'(no remarks were added)')+'</span>';
     html+='</div>';
   } else {
-    html+='<div style="color:var(--muted,#8a94a6);font-size:12px;margin-bottom:14px;">Is client se pehle koi call log nahi hai.</div>';
+    html+='<div style="color:var(--muted,#8a94a6);font-size:12px;margin-bottom:14px;">No call log exists yet for this client.</div>';
   }
-  html+='<div class="form-group"><label>Aaj ki call ka Remarks (regarding kya baat hui)</label><textarea id="accCallRemarks" placeholder="e.g. SIP restart karvana hai, agle hafte dobara call karo..."></textarea></div>';
+  html+='<div class="form-group"><label>Today\'s Call Remarks (what was discussed)</label><textarea id="accCallRemarks" placeholder="e.g. Needs SIP restart, call again next week..."></textarea></div>';
   html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="saveAccCall('+rowNum+')">Save Call Log</button></div>';
   document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
 }
@@ -5829,7 +5829,7 @@ function renderCTOpenTrades(){
   window._ctOpenRows=rows;
   if(!rows.length){el.innerHTML='';return;}
   var h='<div style="background:rgba(63,191,127,0.08);border:1px solid var(--accent,#3fbf7f);border-radius:10px;padding:10px 14px;">';
-  h+='<div style="font-size:12px;font-weight:700;color:var(--accent,#3fbf7f);margin-bottom:6px;">&#128200; Aaj Ki Open Trades ('+rows.length+') &#8212; client ko yeh trade karwa sakte ho</div>';
+  h+='<div style="font-size:12px;font-weight:700;color:var(--accent,#3fbf7f);margin-bottom:6px;">&#128200; Today\'s Open Trades ('+rows.length+') - you can get the client to place these trades</div>';
   h+='<div style="display:flex;flex-wrap:wrap;gap:6px;">';
   rows.forEach(function(r,idx){
     h+='<span onclick="toggleCTOpenChip('+idx+')" style="cursor:pointer;background:var(--card2,rgba(255,255,255,0.08));border:1px solid var(--border,rgba(255,255,255,0.15));border-radius:14px;padding:4px 10px;font-size:12px;font-weight:600;">'+(r['Stock']||'-')+'</span>';
