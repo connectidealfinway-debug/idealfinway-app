@@ -247,6 +247,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
     <div id="adminNav" style="display:none">
       <div class="nav-section">Dashboards</div>
       <div class="nav-item" onclick="showPage('adminDash')">&#9632; Main Dashboard</div>
+      <div class="nav-item" onclick="showPage('bizOverview')">&#128176; Business Overview</div>
       <div class="nav-item" onclick="showPage('tradingJournal')">&#128200; Trading Journal</div>
       <div class="nav-item" onclick="showPage('callTrade')">&#128222; Call &amp; Trade</div>
       <div class="nav-item" onclick="showPage('watchlist')">&#11088; Watchlist</div>
@@ -295,6 +296,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
     <div id="empNav" style="display:none">
       <div class="nav-section">My Work</div>
       <div class="nav-item" onclick="showPage('empDash')">&#9632; Dashboard</div>
+      <div class="nav-item" onclick="showPage('bizOverview')">&#128176; Business Overview</div>
       <div class="nav-item" onclick="showPage('markAttendance')">&#9711; Attendance</div>
       <div class="nav-item" onclick="showPage('tradingJournal')">&#128200; Trading Journal</div>
       <div class="nav-item" onclick="showPage('callTrade')">&#128222; Call &amp; Trade</div>
@@ -362,7 +364,27 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <button class="filter-btn" onclick="setDashF('all',this)">All Time</button>
       </div>
       <div class="stats-grid" id="adminStats"></div>
+      <div id="clientHealthPanel"></div>
+      <div id="topClientsPanel"></div>
       <div id="adminEmpCards"></div>
+    </div>
+
+    <!-- BUSINESS OVERVIEW (segment-wise, Choice Connect style) -->
+    <div class="page" id="page-bizOverview">
+      <div class="page-header"><h1>Business Overview</h1><p>Segment-wise performance: Stock Market, SIP, Insurance, Student</p></div>
+      <div class="filter-bar" id="bizScopeBox" style="display:none;">
+        <button class="filter-btn active" onclick="setBizScope('own',this)">My Own</button>
+        <button class="filter-btn" onclick="setBizScope('team',this)">My Team (incl. sub-team)</button>
+      </div>
+      <div class="filter-bar">
+        <button class="filter-btn" onclick="setF('today',this,'bizOverview')">Today</button>
+        <button class="filter-btn" onclick="setF('week',this,'bizOverview')">This Week</button>
+        <button class="filter-btn active" onclick="setF('month',this,'bizOverview')">This Month</button>
+        <button class="filter-btn" onclick="setF('quarter',this,'bizOverview')">Quarter</button>
+        <button class="filter-btn" onclick="setF('year',this,'bizOverview')">This Year</button>
+        <button class="filter-btn" onclick="setF('all',this,'bizOverview')">All Time</button>
+      </div>
+      <div id="bizOverviewCards"></div>
     </div>
 
     <!-- ADMIN EMPLOYEE PERFORMANCE -->
@@ -1302,7 +1324,7 @@ var currentUser=null;
 var allData={Brokerage:[],ClientBrokerage:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[],Meetings:[],Income:[],Expense:[],Hisab:[],TradingJournal:[],CallTrade:[],CallClients:[],Watchlist:[],Reminders:[],Announcements:[]};
 var employees=[];
 var filters={};
-var accStat='all',myAccStat='all',dashF='today',accDupOnly=false,teamWorkingOnly=false;
+var accStat='all',myAccStat='all',dashF='today',accDupOnly=false,teamWorkingOnly=false,bizScope='own';
 var leadCatF='all',myLeadCatF='all';
 var leadConvF='all',myLeadConvF='all',meetConvF='all',myMeetConvF='all';
 var wlStatF='all';
@@ -1955,6 +1977,7 @@ function renderPage(id){
   else if(id==='hisab')renderHisab();
   else if(id==='myHisab')renderMyHisab();
   else if(id==='contest')renderContestPage();
+  else if(id==='bizOverview')renderBizOverview();
 }
 
 function mkStats(cards){var h='';cards.forEach(function(c){h+='<div class="stat-card '+(c.color||'green')+'"'+(c.onclick?' style="cursor:pointer" onclick="'+c.onclick+'"':'')+'><div class="stat-label">'+c.label+'</div><div class="stat-value">'+c.value+'</div><div class="stat-sub">'+(c.sub||'')+'</div></div>';});return h;}
@@ -2472,6 +2495,36 @@ function renderAdminDash(){
     {label:'Students',value:stud.length,sub:stud.filter(function(r){return r['Status']==='Joined';}).length+' joined',color:'green'},
     {label:'Total Leads',value:leads.length,sub:'follow-ups',color:'amber'}
   ]);
+  /* ===== Client Health & Projections (Choice Connect Neuron-dashboard style) ===== */
+  var allAccLive=allData.Accounts||[];
+  var actPct=allAccLive.length?Math.round(allAccLive.filter(function(r){return (r['Status']||'Active')==='Active';}).length/allAccLive.length*100):0;
+  var now=new Date();
+  var mStart=new Date(now.getFullYear(),now.getMonth(),1);
+  var daysInMonth=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+  var daysElapsed=now.getDate();
+  var brokMTD=(allData.Brokerage||[]).filter(function(r){var d=new Date(r['Date']||'');return !isNaN(d)&&d>=mStart&&d<=now;}).reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
+  var cbrokMTD=(allData.ClientBrokerage||[]).filter(function(r){var d=new Date(r['Date']||'');return !isNaN(d)&&d>=mStart&&d<=now;}).reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
+  var totalBrokMTD=r2(brokMTD+cbrokMTD);
+  var avgPerDay=daysElapsed?r2(totalBrokMTD/daysElapsed):0;
+  var projectedMonthEnd=r2(avgPerDay*daysInMonth);
+  document.getElementById('clientHealthPanel').innerHTML='<div class="form-card" style="margin-bottom:16px;">'+
+    '<div style="font-weight:700;font-size:15px;margin-bottom:12px;">&#128202; Client Health &amp; Projections (This Month)</div>'+
+    '<div class="stats-grid">'+mkStats([
+      {label:'Active Client %',value:actPct+'%',sub:allAccLive.filter(function(r){return (r['Status']||'Active')==='Active';}).length+' of '+allAccLive.length+' accounts active',color:actPct>=70?'green':(actPct>=40?'amber':'red')},
+      {label:'Avg Brokerage / Day',value:fmt(avgPerDay),sub:'MTD total: '+fmt(totalBrokMTD)+' ('+daysElapsed+' days)',color:'blue'},
+      {label:'Projected Month-End Brokerage',value:fmt(projectedMonthEnd),sub:'at current daily pace',color:'purple'}
+    ])+'</div></div>';
+  var topClients=aggByClient(cbrok).slice(0,10);
+  var tch='<div class="form-card" style="margin-bottom:16px;">'+
+    '<div style="font-weight:700;font-size:15px;margin-bottom:12px;">&#127942; Top Active Clients ('+periodLabel(dashF)+', by Brokerage)</div>';
+  if(!topClients.length){tch+='<div class="no-data">No client brokerage in this period</div>';}
+  else{
+    tch+='<table><thead><tr><th>#</th><th>Client ID</th><th>Client Name</th><th>Entries</th><th>Brokerage</th></tr></thead><tbody>';
+    topClients.forEach(function(c,i){tch+='<tr><td>'+(i+1)+'</td><td>'+(c.cid||'-')+'</td><td style="font-weight:600;">'+(c.name||'-')+'</td><td>'+c.n+'</td><td class="money">'+fmt(c.amt)+'</td></tr>';});
+    tch+='</tbody></table>';
+  }
+  tch+='</div>';
+  document.getElementById('topClientsPanel').innerHTML=tch;
   var em={};
   function track(rows,key){rows.forEach(function(r){var id=r['Employee ID']||r['Employee Name']||'?';if(!em[id])em[id]={name:r['Employee Name']||id,branch:r['Branch']||'',brok:0,sip:0,ins:0,acc:0,stud:0};if(key==='brok')em[id].brok+=parseFloat(r['Amount']||0);else if(key==='sip')em[id].sip+=parseFloat(r['Amount']||0);else if(key==='ins')em[id].ins++;else if(key==='acc')em[id].acc++;else if(key==='stud')em[id].stud++;});}
   /* brokerage = manual Brokerage sheet + ClientBrokerage (Choice uploads, jaha se asli income aati hai) */
@@ -3635,6 +3688,81 @@ function showTeamMemberAttention(empId){
   if(!any)h+='<div class="no-data">All clear for this employee.</div>';
   h+='</div>';
   document.getElementById('teamAttentionDetail').innerHTML=h;
+}
+
+/* ===== BUSINESS OVERVIEW (Choice Connect "My Business" style, segment-wise) ===== */
+function setBizScope(kind,btn){
+  bizScope=kind;
+  btn.parentElement.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  renderBizOverview();
+}
+function computeBizOverview(){
+  var f=filters['bizOverview']||'month';
+  var isAdmin=currentUser.role==='admin';
+  var scopeIds=null; /* null = everyone (admin sees whole company) */
+  if(!isAdmin){
+    var uid=currentUser.userId;
+    scopeIds={};
+    scopeIds[uid.trim().toLowerCase()]=1;
+    if(bizScope==='team'&&isTeamParent()){
+      teamMembersOf(uid).forEach(function(m){scopeIds[(m['Employee ID']||'').trim().toLowerCase()]=1;});
+    }
+  }
+  function inScope(r){
+    if(!scopeIds)return true;
+    return !!scopeIds[(r['Employee ID']||'').trim().toLowerCase()];
+  }
+  var acc=fDate(allData.Accounts||[],f).filter(inScope);
+  var sip=fDate(allData.SIP||[],f).filter(inScope);
+  var ins=fDate(allData.Insurance||[],f).filter(inScope);
+  var stud=fDate(allData.Students||[],f).filter(inScope);
+  var brok=fDate(allData.Brokerage||[],f).filter(inScope);
+  var cbrok=fDate(allData.ClientBrokerage||[],f).filter(inScope);
+
+  var sipR=sip.filter(function(r){return (r['Type']||'SIP')==='SIP';});
+  var lumpR=sip.filter(function(r){return r['Type']==='Lumpsum';});
+  var sipAmt=sipR.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
+  var lumpAmt=lumpR.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
+  var tPrem=ins.reduce(function(s,r){return s+parseFloat(r['Premium']||0);},0);
+  var tBrok=r2(brok.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0)+cbrok.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0));
+  var activeAcc=acc.filter(function(r){return (r['Status']||'Active')==='Active';}).length;
+  var nseDone=acc.filter(function(r){return (r['NSE Trade Done']||'')==='Yes';}).length;
+  var joined=stud.filter(function(r){return r['Status']==='Joined';}).length;
+  var studInc=stud.reduce(function(s,r){return s+studentFeeInfo(r['Student Phone']).received;},0);
+
+  var stockMarket={label:'Stock Market (Demat)',color:'purple',metric1Lbl:'Accounts Opened',metric1:acc.length,metric2Lbl:'Trading Activated',metric2:nseDone,valueLbl:'Brokerage Income',value:r2(tBrok)};
+  var mutualFund={label:'Mutual Fund / SIP',color:'blue',metric1Lbl:'SIP Clients',metric1:sipR.length,metric2Lbl:'Lumpsum Entries',metric2:lumpR.length,valueLbl:'SIP + Lumpsum Value',value:r2(sipAmt+lumpAmt)};
+  var insurance={label:'Insurance',color:'amber',metric1Lbl:'Policies Issued',metric1:ins.length,metric2Lbl:'Health/Life',metric2:ins.filter(function(r){return (r['Type']||'').indexOf('Health')!==-1;}).length+'/'+ins.filter(function(r){return (r['Type']||'').indexOf('Life')!==-1;}).length,valueLbl:'Premium Value',value:r2(tPrem)};
+  var student={label:'Student Training',color:'green',metric1Lbl:'Referred',metric1:stud.length,metric2Lbl:'Joined',metric2:joined,valueLbl:'Fee Received',value:r2(studInc)};
+  var totalIncome=r2(tBrok+r2(sipAmt+lumpAmt)+tPrem+studInc);
+  return {f:f,stockMarket:stockMarket,mutualFund:mutualFund,insurance:insurance,student:student,totalIncome:totalIncome,activeAcc:activeAcc,totalAcc:acc.length};
+}
+function mkBizSegmentCard(seg){
+  return '<div class="form-card" style="flex:1;min-width:220px;">'+
+    '<div style="font-weight:700;font-size:14px;color:var(--'+seg.color+',var(--accent));margin-bottom:10px;">'+seg.label+'</div>'+
+    '<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;"><span style="color:var(--muted);">'+seg.metric1Lbl+'</span><b>'+seg.metric1+'</b></div>'+
+    '<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:10px;"><span style="color:var(--muted);">'+seg.metric2Lbl+'</span><b>'+seg.metric2+'</b></div>'+
+    '<div style="border-top:1px solid var(--border);padding-top:8px;display:flex;justify-content:space-between;align-items:center;"><span style="font-size:12px;color:var(--muted);">'+seg.valueLbl+'</span><span style="font-weight:700;font-size:15px;">'+fmt(seg.value)+'</span></div>'+
+  '</div>';
+}
+function renderBizOverview(){
+  var el=document.getElementById('bizOverviewCards');
+  if(!el)return;
+  var d=computeBizOverview();
+  var toggleBox=document.getElementById('bizScopeBox');
+  if(toggleBox){
+    toggleBox.style.display=(currentUser.role!=='admin'&&isTeamParent())?'flex':'none';
+  }
+  var h='<div class="form-card" style="margin-bottom:16px;background:linear-gradient(135deg,rgba(63,191,127,0.1),rgba(59,130,246,0.05));">'+
+    '<div style="font-size:13px;color:var(--muted);margin-bottom:4px;">Total Business Value ('+periodLabel(d.f)+')</div>'+
+    '<div style="font-size:28px;font-weight:700;color:var(--accent);">'+fmt(d.totalIncome)+'</div>'+
+    '<div style="font-size:12px;color:var(--muted);margin-top:4px;">Across Stock Market + SIP + Insurance + Student segments</div>'+
+  '</div>';
+  h+='<div style="display:flex;gap:14px;flex-wrap:wrap;">'+
+    mkBizSegmentCard(d.stockMarket)+mkBizSegmentCard(d.mutualFund)+mkBizSegmentCard(d.insurance)+mkBizSegmentCard(d.student)+
+  '</div>';
+  el.innerHTML=h;
 }
 function dematGuess(phone){
   var p=(phone||'').trim();if(!p)return null;
