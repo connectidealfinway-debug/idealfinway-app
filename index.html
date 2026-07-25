@@ -2721,7 +2721,7 @@ function mkAccTable(rows,dupSet){
     if((r['Investment Active']||'')==='Yes')chips+='<span class="badge amber" style="margin-left:3px;font-size:9px;padding:2px 5px;" title="Investment Active">I</span>';
     h+='<td><span class="badge '+(act?'green':'red')+'">'+(act?'Active':'Inactive')+'</span>'+chips+'</td>';
     var nseDone=(r['NSE Trade Done']||'')==='Yes';
-    var nseBtn=nseDone?'<span class="badge green" title="NSE trade done on '+(r['NSE Trade Date']||'')+'">&#10003; NSE Trade</span>':'<button class="btn-call" style="background:rgba(255,159,10,0.15);color:#ff9f0a;" onclick="markNSETradeDone('+r['_rowNum']+')" title="Click here once the client has completed an NSE trade">&#128200; Trade Done?</button>';
+    var nseBtn=nseDone?'<button class="badge green" style="border:none;cursor:pointer;" onclick="undoNSETradeDone('+r['_rowNum']+')" title="NSE trade done on '+(r['NSE Trade Date']||'')+' — click to undo if marked by mistake">&#10003; NSE Trade</button>':'<button class="btn-call" style="background:rgba(255,159,10,0.15);color:#ff9f0a;" onclick="markNSETradeDone('+r['_rowNum']+')" title="Click here once the client has completed an NSE trade">&#128200; Trade Done?</button>';
     h+='<td><button class="btn-call" onclick="openAccCallModal('+r['_rowNum']+')">&#128222;</button> <button class="btn-edit" onclick="openAccEditModal('+r['_rowNum']+')">&#9998;</button> <button class="btn-del" onclick="confirmDel(\'Accounts\','+r['_rowNum']+')">&#128465;</button> '+nseBtn+'</td></tr>';
   });
   return h+'</tbody></table>';
@@ -2731,6 +2731,19 @@ function markNSETradeDone(rowNum){
   postData({action:'editRow',sheet:'Accounts',rowNum:rowNum,vals:vals}).then(function(r){
     if(r&&r.success){
       showToast('NSE Trade marked done - now eligible for the contest!','success');
+      patchRowLocal('Accounts',rowNum,vals);
+      renderPage(curPage());
+      setTimeout(function(){loadAll(2);},600);
+    } else showToast('Update failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+/* v43: agar galti se Trade Done pe click ho gaya, to usi badge ko dobara click karke undo kar sakte hain */
+function undoNSETradeDone(rowNum){
+  if(!confirm('Undo NSE Trade Done for this account? (Use this only if it was marked by mistake)'))return;
+  var vals={'NSE Trade Done':'No','NSE Trade Date':''};
+  postData({action:'editRow',sheet:'Accounts',rowNum:rowNum,vals:vals}).then(function(r){
+    if(r&&r.success){
+      showToast('NSE Trade Done undone','success');
       patchRowLocal('Accounts',rowNum,vals);
       renderPage(curPage());
       setTimeout(function(){loadAll(2);},600);
@@ -2986,18 +2999,30 @@ function mkContestMyEntriesTable(contest,metricName,empId){
   h+='</tbody></table></div></div></div>';
   return h;
 }
-/* v33.3: same client (naam+phone match) dobara add na ho jaaye — Accounts page aur Contest quick-add dono se check */
-function findDuplicateAccount(clientName,clientPhone){
+/* v43: same client dobara add na ho jaaye — ab Client ID match ko hard-block karte hain (chahe employee same ho ya alag),
+   aur naam+phone match par soft-warning (confirm) dikhate hain. Accounts page aur Contest quick-add dono se check hota hai. */
+function findDuplicateAccount(clientName,clientPhone,clientId){
+  var cid=(clientId||'').trim().toLowerCase();
+  var byId=null;
+  if(cid){
+    byId=(allData.Accounts||[]).find(function(r){return (r['Client ID']||'').trim().toLowerCase()===cid;})||null;
+  }
   var cn=(clientName||'').trim().toLowerCase();
-  if(!cn)return null;
-  var ph=(clientPhone||'').trim();
-  return (allData.Accounts||[]).find(function(r){
-    var rn=(r['Client Name']||'').trim().toLowerCase();
-    if(rn!==cn)return false;
-    var rp=(r['Client Phone']||'').trim();
-    if(ph&&rp)return rp===ph;
-    return true;
-  })||null;
+  var byName=null;
+  if(cn){
+    var ph=(clientPhone||'').trim();
+    byName=(allData.Accounts||[]).find(function(r){
+      var rn=(r['Client Name']||'').trim().toLowerCase();
+      if(rn!==cn)return false;
+      var rp=(r['Client Phone']||'').trim();
+      if(ph&&rp)return rp===ph;
+      return true;
+    })||null;
+  }
+  return {byId:byId,byName:byName};
+}
+function dupAccountMsg(d){
+  return 'Already added: '+(d['Client Name']||'-')+' (ID: '+(d['Client ID']||'-')+', Phone: '+(d['Client Phone']||'-')+') by '+(d['Employee Name']||'-')+' on '+(d['Date']||'-')+'.';
 }
 /* v33.2: Contest page se hi seedha naya Account Opening entry daalo — Accounts sheet shared hai isliye
    yeh entry Accounts list me bhi automatically dikh jayegi (contestBadgeForAccountDate isko tag karega). */
@@ -3022,8 +3047,9 @@ function submitContestAccount(contestId,fid){
   var cid=(document.getElementById('cxa_cid_'+fid).value||'').trim();
   if(!cn||!cid){showToast('Client Name and Client ID are required','error');return;}
   var cphone=(document.getElementById('cxa_cphone_'+fid).value||'').trim();
-  var dup=findDuplicateAccount(cn,cphone);
-  if(dup&&!confirm('This client "'+cn+'" was already added on '+(dup['Date']||'-')+' by '+(dup['Employee Name']||'-')+', ID: '+(dup['Client ID']||'-')+'. Avoid duplicate entries - add a new entry anyway?'))return;
+  var dup=findDuplicateAccount(cn,cphone,cid);
+  if(dup.byId){showToast(dupAccountMsg(dup.byId)+' Same Client ID cannot be added again.','error');return;}
+  if(dup.byName&&!confirm(dupAccountMsg(dup.byName)+' Avoid duplicate entries - add a new entry anyway?'))return;
   var p={action:'addAccount','Date':td(),'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch,
     'Client Name':cn,'Client ID':cid,'Client Phone':cphone,
     'Status':'Active','Trading Active':'No','SIP Active':'No','Investment Active':'No',
@@ -4621,8 +4647,9 @@ function submitAccount(){
   var cn=document.getElementById('a_cname').value.trim(),cid=document.getElementById('a_cid').value.trim();
   if(!cn||!cid){showToast('Client Name and ID required','error');return;}
   var cphoneChk=document.getElementById('a_cphone').value.trim();
-  var dupChk=findDuplicateAccount(cn,cphoneChk);
-  if(dupChk&&!confirm('This client "'+cn+'" was already added on '+(dupChk['Date']||'-')+' by '+(dupChk['Employee Name']||'-')+', ID: '+(dupChk['Client ID']||'-')+'. Avoid duplicate entries - add a new entry anyway?'))return;
+  var dupChk=findDuplicateAccount(cn,cphoneChk,cid);
+  if(dupChk.byId){showToast(dupAccountMsg(dupChk.byId)+' Same Client ID cannot be added again.','error');return;}
+  if(dupChk.byName&&!confirm(dupAccountMsg(dupChk.byName)+' Avoid duplicate entries - add a new entry anyway?'))return;
   var fe=forEmpObj('a_forEmp');
   var actTrading=document.getElementById('a_actTrading').checked?'Yes':'No';
   var actSIP=document.getElementById('a_actSIP').checked?'Yes':'No';
