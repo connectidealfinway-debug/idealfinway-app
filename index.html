@@ -872,7 +872,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         </div>
         <div class="form-group"><label>Client Name</label><input type="text" id="s_cname" placeholder="Enter client name"></div>
         <div class="form-group"><label>Client ID / Folio No</label><input type="text" id="s_cid" placeholder="e.g. FBO1234"></div>
-        <div class="form-group"><label>Client Phone</label><input type="tel" id="s_cphone" placeholder="10-digit mobile"></div>
+        <div class="form-group"><label style="color:var(--danger,#ef4444);">Client Phone - required</label><input type="tel" id="s_cphone" placeholder="10-digit mobile"></div>
         <div class="form-group"><label id="s_amt_label">SIP Amount (&#8377;/month)</label><input type="number" id="s_amount" placeholder="Enter amount"></div>
         <div class="form-group" id="sipDueDateGroup"><label>SIP Due Date (Monthly)</label><input type="date" id="s_duedate" placeholder="Select due date"></div>
         <button class="btn-submit" onclick="submitSIP()">Add Entry</button>
@@ -907,7 +907,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <div class="form-group"><label>Date</label><input type="date" id="a_date"></div>
         <div class="form-group"><label>Client Name</label><input type="text" id="a_cname" placeholder="Enter client name"></div>
         <div class="form-group"><label>Client ID / Demat No</label><input type="text" id="a_cid" placeholder="e.g. FBO1234"></div>
-        <div class="form-group"><label>Client Phone</label><input type="tel" id="a_cphone" placeholder="10-digit mobile"></div>
+        <div class="form-group"><label style="color:var(--danger,#ef4444);">Client Phone - required</label><input type="tel" id="a_cphone" placeholder="10-digit mobile"></div>
         <div class="form-group"><label>Account Type</label>
           <select id="a_acctype"><option value="New">New</option><option value="Transfer">Transfer</option></select>
         </div>
@@ -963,7 +963,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <div class="form-group" id="st_forEmpGroup" style="display:none"><label>Entry For Which Employee?</label><select id="st_forEmp"></select></div>
         <div class="form-group"><label>Date</label><input type="date" id="st_date"></div>
         <div class="form-group"><label>Student Name</label><input type="text" id="st_name" placeholder="Enter student name"></div>
-        <div class="form-group"><label>Student Phone</label><input type="tel" id="st_phone" placeholder="10-digit mobile"></div>
+        <div class="form-group"><label style="color:var(--danger,#ef4444);">Student Phone - required</label><input type="tel" id="st_phone" placeholder="10-digit mobile"></div>
         <div class="form-group"><label>Batch / Course</label><input type="text" id="st_batch" placeholder="e.g. Technical Analysis Batch 3"></div>
         <div class="form-group"><label>How Did This Student Come? (Reference)</label>
           <select id="st_reftype" onchange="onStRefTypeChange()">
@@ -3105,7 +3105,7 @@ function mkContestQuickAddAccount(contestId){
   h+='<div style="display:flex;gap:8px;flex-wrap:wrap;">';
   h+='<input type="text" id="cxa_cname_'+fid+'" placeholder="Client Name" style="flex:1;min-width:120px;">';
   h+='<input type="text" id="cxa_cid_'+fid+'" placeholder="Client ID" style="flex:1;min-width:100px;">';
-  h+='<input type="text" id="cxa_cphone_'+fid+'" placeholder="Phone" style="flex:1;min-width:100px;">';
+  h+='<input type="text" id="cxa_cphone_'+fid+'" placeholder="Phone (required)" style="flex:1;min-width:100px;">';
   h+='</div>';
   h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center;">';
   h+='<select id="cxa_acctype_'+fid+'" style="flex:1;min-width:100px;"><option value="New">New</option><option value="Transfer">Transfer</option></select>';
@@ -3119,6 +3119,7 @@ function submitContestAccount(contestId,fid){
   var cid=(document.getElementById('cxa_cid_'+fid).value||'').trim();
   if(!cn||!cid){showToast('Client Name and Client ID are required','error');return;}
   var cphone=(document.getElementById('cxa_cphone_'+fid).value||'').trim();
+  if(!cphone){showToast('Client mobile number is required - entry cannot be added without it','error');return;}
   var dup=findDuplicateAccount(cn,cphone,cid);
   if(dup.byId){showToast(dupAccountMsg(dup.byId)+' Same Client ID cannot be added again.','error');return;}
   if(dup.byName&&!confirm(dupAccountMsg(dup.byName)+' Avoid duplicate entries - add a new entry anyway?'))return;
@@ -4704,9 +4705,11 @@ function submitBrokerage(){
 function submitSIP(){
   var cn=document.getElementById('s_cname').value.trim(),cid=document.getElementById('s_cid').value.trim(),amt=document.getElementById('s_amount').value;
   if(!cn||!cid||!amt){showToast('Fill all required fields','error');return;}
+  var sphone=document.getElementById('s_cphone').value.trim();
+  if(!sphone){showToast('Client mobile number is required - entry cannot be added without it','error');return;}
   var tp=document.getElementById('s_type').value;
   var fe=forEmpObj('s_forEmp');
-  var p={action:'addSIP','Date':document.getElementById('s_date').value||td(),'Employee ID':fe.id,'Employee Name':fe.name,'Branch':fe.branch,'Client Name':cn,'Client ID':cid,'Client Phone':document.getElementById('s_cphone').value.trim(),'Type':tp,'Amount':parseFloat(amt),'SIP Due Date':tp==='SIP'?(document.getElementById('s_duedate').value||''):''};
+  var p={action:'addSIP','Date':document.getElementById('s_date').value||td(),'Employee ID':fe.id,'Employee Name':fe.name,'Branch':fe.branch,'Client Name':cn,'Client ID':cid,'Client Phone':sphone,'Type':tp,'Amount':parseFloat(amt),'SIP Due Date':tp==='SIP'?(document.getElementById('s_duedate').value||''):''};
   doSubmit(p,'SIP',document.querySelector('#page-addSIP .btn-submit'),'Add Entry',function(){document.getElementById('s_cname').value='';document.getElementById('s_cid').value='';document.getElementById('s_cphone').value='';document.getElementById('s_amount').value='';document.getElementById('s_duedate').value='';});
 }
 
@@ -4722,6 +4725,7 @@ function submitAccount(){
   var cn=document.getElementById('a_cname').value.trim(),cid=document.getElementById('a_cid').value.trim();
   if(!cn||!cid){showToast('Client Name and ID required','error');return;}
   var cphoneChk=document.getElementById('a_cphone').value.trim();
+  if(!cphoneChk){showToast('Client mobile number is required - entry cannot be added without it','error');return;}
   var dupChk=findDuplicateAccount(cn,cphoneChk,cid);
   if(dupChk.byId){showToast(dupAccountMsg(dupChk.byId)+' Same Client ID cannot be added again.','error');return;}
   if(dupChk.byName&&!confirm(dupAccountMsg(dupChk.byName)+' Avoid duplicate entries - add a new entry anyway?'))return;
@@ -4775,22 +4779,28 @@ function populateStRefPickers(){
     dl.innerHTML=h;
   }
 }
+/* v46: mobile number ab compulsory hai, isliye duplicate check ab PRIMARILY phone number se hota hai (naam se nahi) -
+   kyunki naam ki spelling alag ho sakti hai (admin/parent employee ne daala vs employee khud daale) lekin
+   mobile number hi ek student ko uniquely identify karta hai. Same phone kahi bhi mile (kisi bhi employee ke under),
+   to hard-block. Name-only match (phone alag/missing) sirf legacy safety ke liye soft-warning rehta hai. */
 function findDuplicateStudent(name,phone){
-  var sn=(name||'').trim().toLowerCase();
-  if(!sn)return {bySame:null,byName:null};
   var ph=(phone||'').trim();
-  var bySame=null,byName=null;
+  var sn=(name||'').trim().toLowerCase();
+  var byPhone=null,byName=null;
   (allData.Students||[]).forEach(function(r){
-    var rn=(r['Student Name']||'').trim().toLowerCase();
-    if(rn!==sn)return;
     var rp=(r['Student Phone']||'').trim();
-    if(ph&&rp&&rp===ph){if(!bySame)bySame=r;}
-    else if(!byName)byName=r;
+    if(ph&&rp&&rp===ph&&!byPhone)byPhone=r;
   });
-  return {bySame:bySame,byName:byName};
+  if(!byPhone&&sn){
+    (allData.Students||[]).forEach(function(r){
+      var rn=(r['Student Name']||'').trim().toLowerCase();
+      if(rn===sn&&!byName)byName=r;
+    });
+  }
+  return {bySame:byPhone,byName:byName};
 }
 function dupStudentMsg(d){
-  return 'Already added: '+(d['Student Name']||'-')+' (Phone: '+(d['Student Phone']||'-')+') by '+(d['Employee Name']||'-')+' on '+(d['Date']||'-')+'.';
+  return 'This mobile number ('+(d['Student Phone']||'-')+') is already registered for: '+(d['Student Name']||'-')+' (added by '+(d['Employee Name']||'-')+' on '+(d['Date']||'-')+').';
 }
 function submitStudent(){
   var sn=document.getElementById('st_name').value.trim();if(!sn){showToast('Student name required','error');return;}
@@ -4798,6 +4808,7 @@ function submitStudent(){
   var fr=parseFloat(frRaw);
   if(!frRaw||isNaN(fr)||fr<=0){showToast('Enter Fees Received first - the student cannot be added without a fee entry','error');return;}
   var stPhone=document.getElementById('st_phone').value.trim();
+  if(!stPhone){showToast('Student mobile number is required - entry cannot be added without it','error');return;}
   var dupChk=findDuplicateStudent(sn,stPhone);
   if(dupChk.bySame){showToast(dupStudentMsg(dupChk.bySame)+' Same student cannot be added again.','error');return;}
   if(dupChk.byName&&!confirm(dupStudentMsg(dupChk.byName)+' Avoid duplicate entries - add anyway?'))return;
