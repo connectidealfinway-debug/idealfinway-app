@@ -965,7 +965,17 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <div class="form-group"><label>Student Name</label><input type="text" id="st_name" placeholder="Enter student name"></div>
         <div class="form-group"><label>Student Phone</label><input type="tel" id="st_phone" placeholder="10-digit mobile"></div>
         <div class="form-group"><label>Batch / Course</label><input type="text" id="st_batch" placeholder="e.g. Technical Analysis Batch 3"></div>
-        <div class="form-group"><label>Referred By (Client Name)</label><input type="text" id="st_ref" placeholder="Who referred this student?"></div>
+        <div class="form-group"><label>How Did This Student Come? (Reference)</label>
+          <select id="st_reftype" onchange="onStRefTypeChange()">
+            <option value="Direct">Direct (walk-in / no reference)</option>
+            <option value="Employee">Employee Referral</option>
+            <option value="Student">Referred by Another Student</option>
+            <option value="Other">Other (type manually)</option>
+          </select>
+        </div>
+        <div class="form-group" id="st_refEmpGroup" style="display:none;"><label>Which Employee Referred?</label><select id="st_refEmp"></select></div>
+        <div class="form-group" id="st_refStudGroup" style="display:none;"><label>Which Student Referred? (type name)</label><input type="text" id="st_refStud" list="st_studList" placeholder="Start typing existing student's name..."><datalist id="st_studList"></datalist></div>
+        <div class="form-group" id="st_refOtherGroup" style="display:none;"><label>Reference (free text)</label><input type="text" id="st_ref" placeholder="Who referred this student?"></div>
         <div class="form-group"><label>Total Course Fee (&#8377;)</label><input type="number" id="st_totfee" placeholder="e.g. 35000 (leave blank if full fee already received)"></div>
         <div class="form-group"><label style="color:var(--danger,#ef4444);">Fees Received Now (&#8377;) - required</label><input type="number" id="st_feesreceived" placeholder="Enter the amount of fees received" oninput="calcStudentPending()"></div>
         <div class="form-group" id="st_pendingGroup" style="display:none;"><label>Pending (&#8377;) &#8212; auto</label><input type="number" id="st_pending_display" disabled></div>
@@ -2017,7 +2027,7 @@ function renderPage(id){
   else if(id==='addAcc'){var e=document.getElementById('a_date');if(e&&!e.value)e.value=td();}
   else if(id==='addLead'){var e=document.getElementById('l_date');if(e&&!e.value)e.value=td();}
   else if(id==='addMeeting')initMeetingForm();
-  else if(id==='addStudent'){var e=document.getElementById('st_date');if(e&&!e.value)e.value=td();}
+  else if(id==='addStudent'){var e=document.getElementById('st_date');if(e&&!e.value)e.value=td();populateStRefPickers();}
   else if(id==='markAttendance'){var e=document.getElementById('att_date');if(e&&!e.value)e.value=td();renderMyAttendance();}
   else if(id==='empDash')renderEmpDash();
   else if(id==='myBrok')renderMyBrok();
@@ -4143,7 +4153,7 @@ function getStudentReminders(uid){
 }
 function mkStudentTable(rows,canEdit){
   if(!rows||!rows.length)return '<div class="no-data">No students found</div>';
-  var h='<table><thead><tr><th>Admission Date</th><th>Student</th><th>Phone</th><th>Course</th><th>Employee</th><th>Total Fee</th><th>Received</th><th>Pending</th><th>Demat</th><th>Status</th>'+(canEdit?'<th>Actions</th>':'')+'</tr></thead><tbody>';
+  var h='<table><thead><tr><th>Admission Date</th><th>Student</th><th>Phone</th><th>Course</th><th>Employee</th><th>Total Fee</th><th>Received</th><th>Pending</th><th>Demat</th><th>Reference</th><th>Status</th>'+(canEdit?'<th>Actions</th>':'')+'</tr></thead><tbody>';
   rows.slice().reverse().forEach(function(r){
     var tf=parseFloat(r['Total Fee'])||0;
     var fi=studentFeeInfo(r['Student Phone']);
@@ -4156,6 +4166,7 @@ function mkStudentTable(rows,canEdit){
     h+='<td class="money">'+(tf?fmt(tf):'-')+'</td><td class="money">'+fmt(fi.received)+'</td>';
     h+='<td>'+(pend>0?'<span class="badge red">&#9200; '+fmt(pend)+'</span>':(tf?'<span class="badge green">Clear</span>':'-'))+'</td>';
     h+='<td>'+dematBadge+'</td>';
+    h+='<td style="font-size:11px;">'+(r['Reference By']||'-')+'</td>';
     h+='<td><span class="badge '+(r['Status']==='Joined'?'green':(r['Status']==='Not Interested'?'red':'amber'))+'">'+(r['Status']||'-')+'</span></td>';
     if(canEdit){var rn=r._rowNum||0;h+='<td><button class="btn-edit" onclick="editStudentModal('+rn+')">&#9998;</button><button class="btn-del" onclick="confirmDel(\'Students\','+rn+')">&#128465;</button></td>';}
     h+='</tr>';
@@ -4737,18 +4748,79 @@ function calcStudentPending(){
   if(tf>0){grp.style.display='';document.getElementById('st_pending_display').value=Math.max(0,tf-fr);}
   else grp.style.display='none';
 }
+/* v45: student dobara add na ho (employee ho ya finance/admin, koi bhi ho) - naam+phone match par check,
+   aur reference structured rakha - Direct / Employee / Student / Other, taaki pata chale student kaise aaya. */
+function onStRefTypeChange(){
+  var t=document.getElementById('st_reftype').value;
+  document.getElementById('st_refEmpGroup').style.display=(t==='Employee')?'':'none';
+  document.getElementById('st_refStudGroup').style.display=(t==='Student')?'':'none';
+  document.getElementById('st_refOtherGroup').style.display=(t==='Other')?'':'none';
+}
+function populateStRefPickers(){
+  var sel=document.getElementById('st_refEmp');
+  if(sel){
+    sel.innerHTML='<option value="">-- Select Employee --</option>';
+    (employees||[]).forEach(function(e){
+      if((e['Status']||'Active')!=='Active')return;
+      var o=document.createElement('option');o.value=e['Name'];o.textContent=e['Name'];sel.appendChild(o);
+    });
+  }
+  var dl=document.getElementById('st_studList');
+  if(dl){
+    var seen={};var h='';
+    (allData.Students||[]).forEach(function(s){
+      var n=(s['Student Name']||'').trim();if(!n||seen[n.toLowerCase()])return;seen[n.toLowerCase()]=1;
+      h+='<option value="'+n+'">';
+    });
+    dl.innerHTML=h;
+  }
+}
+function findDuplicateStudent(name,phone){
+  var sn=(name||'').trim().toLowerCase();
+  if(!sn)return {bySame:null,byName:null};
+  var ph=(phone||'').trim();
+  var bySame=null,byName=null;
+  (allData.Students||[]).forEach(function(r){
+    var rn=(r['Student Name']||'').trim().toLowerCase();
+    if(rn!==sn)return;
+    var rp=(r['Student Phone']||'').trim();
+    if(ph&&rp&&rp===ph){if(!bySame)bySame=r;}
+    else if(!byName)byName=r;
+  });
+  return {bySame:bySame,byName:byName};
+}
+function dupStudentMsg(d){
+  return 'Already added: '+(d['Student Name']||'-')+' (Phone: '+(d['Student Phone']||'-')+') by '+(d['Employee Name']||'-')+' on '+(d['Date']||'-')+'.';
+}
 function submitStudent(){
   var sn=document.getElementById('st_name').value.trim();if(!sn){showToast('Student name required','error');return;}
   var frRaw=document.getElementById('st_feesreceived').value;
   var fr=parseFloat(frRaw);
   if(!frRaw||isNaN(fr)||fr<=0){showToast('Enter Fees Received first - the student cannot be added without a fee entry','error');return;}
+  var stPhone=document.getElementById('st_phone').value.trim();
+  var dupChk=findDuplicateStudent(sn,stPhone);
+  if(dupChk.bySame){showToast(dupStudentMsg(dupChk.bySame)+' Same student cannot be added again.','error');return;}
+  if(dupChk.byName&&!confirm(dupStudentMsg(dupChk.byName)+' Avoid duplicate entries - add anyway?'))return;
   var fe=forEmpObj('st_forEmp');
   var tf=parseFloat(document.getElementById('st_totfee').value)||fr;
   var pending=Math.max(0,tf-fr);
   var place=document.getElementById('st_place').value.trim()||fe.branch;
   var credit=document.getElementById('st_credit').value;
   var remarks=document.getElementById('st_remarks').value.trim();
-  var p={action:'addStudentWithFee','Date':document.getElementById('st_date').value||td(),'Employee ID':fe.id,'Employee Name':fe.name,'Branch':fe.branch,'Student Name':sn,'Student Phone':document.getElementById('st_phone').value.trim(),'Batch':document.getElementById('st_batch').value.trim(),'Reference By':document.getElementById('st_ref').value.trim(),'Status':document.getElementById('st_status').value,'Total Fee':tf,'Demat Opened':document.getElementById('st_demat').value,'FeesReceived':fr,'Pending':pending,'Place':place,'Credited To':credit,'Remarks':remarks,'Entered By':currentUser.name};
+  var refType=document.getElementById('st_reftype').value;
+  var refBy='Direct (no reference)';
+  if(refType==='Employee'){
+    var refEmpName=document.getElementById('st_refEmp').value;
+    if(!refEmpName){showToast('Select which employee referred this student','error');return;}
+    refBy='Employee: '+refEmpName;
+  } else if(refType==='Student'){
+    var refStudName=document.getElementById('st_refStud').value.trim();
+    if(!refStudName){showToast('Type which student referred this student','error');return;}
+    refBy='Student: '+refStudName;
+  } else if(refType==='Other'){
+    refBy=document.getElementById('st_ref').value.trim()||'Direct (no reference)';
+  }
+  var p={action:'addStudentWithFee','Date':document.getElementById('st_date').value||td(),'Employee ID':fe.id,'Employee Name':fe.name,'Branch':fe.branch,'Student Name':sn,'Student Phone':stPhone,'Batch':document.getElementById('st_batch').value.trim(),'Reference By':refBy,'Status':document.getElementById('st_status').value,'Total Fee':tf,'Demat Opened':document.getElementById('st_demat').value,'FeesReceived':fr,'Pending':pending,'Place':place,'Credited To':credit,'Remarks':remarks,'Entered By':currentUser.name};
   var btn=document.querySelector('#page-addStudent .btn-submit');
   btn.disabled=true;btn.textContent='Adding...';
   postData(p).then(function(r){
@@ -4759,8 +4831,11 @@ function submitStudent(){
       allData.Students.push({'Date':p['Date'],'Employee ID':p['Employee ID'],'Employee Name':p['Employee Name'],'Branch':p['Branch'],'Student Name':p['Student Name'],'Student Phone':p['Student Phone'],'Batch':p['Batch'],'Reference By':p['Reference By'],'Status':p['Status'],'Total Fee':p['Total Fee'],'Demat Opened':p['Demat Opened'],'Demat Client ID':''});
       allData.Income=allData.Income||[];
       allData.Income.push({'Date':p['Date'],'Category':'Student Fee','Name':p['Student Name'],'Place':p['Place'],'Phone':p['Student Phone'],'Course':p['Batch'],'Total Fee':p['Total Fee'],'Pending':p['Pending'],'Reference':p['Reference By'],'Credited To':p['Credited To'],'Amount':p['FeesReceived'],'Remarks':p['Remarks'],'Entered By':p['Entered By']});
-      ['st_name','st_phone','st_batch','st_ref','st_totfee','st_demat','st_feesreceived','st_place','st_remarks'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+      ['st_name','st_phone','st_batch','st_ref','st_refStud','st_totfee','st_demat','st_feesreceived','st_place','st_remarks'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
       document.getElementById('st_credit').value='Office Account';
+      document.getElementById('st_reftype').value='Direct';
+      if(document.getElementById('st_refEmp'))document.getElementById('st_refEmp').value='';
+      onStRefTypeChange();
       document.getElementById('st_pendingGroup').style.display='none';
       setTimeout(function(){loadAll(2);},600);
       goToMainAfterSave();
