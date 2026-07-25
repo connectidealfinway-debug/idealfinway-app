@@ -875,6 +875,15 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <div class="form-group"><label style="color:var(--danger,#ef4444);">Client Phone - required</label><input type="tel" id="s_cphone" placeholder="10-digit mobile"></div>
         <div class="form-group"><label id="s_amt_label">SIP Amount (&#8377;/month)</label><input type="number" id="s_amount" placeholder="Enter amount"></div>
         <div class="form-group" id="sipDueDateGroup"><label>SIP Due Date (Monthly)</label><input type="date" id="s_duedate" placeholder="Select due date"></div>
+        <div class="form-group"><label>How Did This Client Come? (Reference)</label>
+          <select id="s_reftype" onchange="onRefTypeChange('s')">
+            <option value="Direct">Direct (walk-in / no reference)</option>
+            <option value="Employee">Employee Referral</option>
+            <option value="Other">Other (type manually)</option>
+          </select>
+        </div>
+        <div class="form-group" id="s_refEmpGroup" style="display:none;"><label>Which Employee Referred?</label><select id="s_refEmp"></select></div>
+        <div class="form-group" id="s_refOtherGroup" style="display:none;"><label>Reference (free text)</label><input type="text" id="s_refOther" placeholder="Who referred this client?"></div>
         <button class="btn-submit" onclick="submitSIP()">Add Entry</button>
       </div>
     </div>
@@ -895,6 +904,15 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <div class="form-group"><label>Client ID / Policy No</label><input type="text" id="i_cid" placeholder="Policy number"></div>
         <div class="form-group"><label>Client Phone</label><input type="tel" id="i_cphone" placeholder="10-digit mobile"></div>
         <div class="form-group"><label>Annual Premium (&#8377;)</label><input type="number" id="i_premium" placeholder="Enter premium"></div>
+        <div class="form-group"><label>How Did This Client Come? (Reference)</label>
+          <select id="i_reftype" onchange="onRefTypeChange('i')">
+            <option value="Direct">Direct (walk-in / no reference)</option>
+            <option value="Employee">Employee Referral</option>
+            <option value="Other">Other (type manually)</option>
+          </select>
+        </div>
+        <div class="form-group" id="i_refEmpGroup" style="display:none;"><label>Which Employee Referred?</label><select id="i_refEmp"></select></div>
+        <div class="form-group" id="i_refOtherGroup" style="display:none;"><label>Reference (free text)</label><input type="text" id="i_refOther" placeholder="Who referred this client?"></div>
         <button class="btn-submit" onclick="submitInsurance()">Add Insurance</button>
       </div>
     </div>
@@ -924,6 +942,15 @@ tbody td{padding:10px 14px;vertical-align:middle;}
           <div style="font-size:11px;color:var(--muted,#8a94a6);margin-top:4px;">If none selected, the account will be marked Inactive</div>
         </div>
         <div class="form-group"><label>Remarks (client ke baare me kuch note - optional)</label><textarea id="a_remarks" placeholder="e.g. Family referred by X, prefers WhatsApp, budget conscious..."></textarea></div>
+        <div class="form-group"><label>How Did This Client Come? (Reference)</label>
+          <select id="a_reftype" onchange="onRefTypeChange('a')">
+            <option value="Direct">Direct (walk-in / no reference)</option>
+            <option value="Employee">Employee Referral</option>
+            <option value="Other">Other (type manually)</option>
+          </select>
+        </div>
+        <div class="form-group" id="a_refEmpGroup" style="display:none;"><label>Which Employee Referred?</label><select id="a_refEmp"></select></div>
+        <div class="form-group" id="a_refOtherGroup" style="display:none;"><label>Reference (free text)</label><input type="text" id="a_refOther" placeholder="Who referred this client?"></div>
         <button class="btn-submit" onclick="submitAccount()">Add Account</button>
       </div>
     </div>
@@ -964,7 +991,14 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <div class="form-group"><label>Date</label><input type="date" id="st_date"></div>
         <div class="form-group"><label>Student Name</label><input type="text" id="st_name" placeholder="Enter student name"></div>
         <div class="form-group"><label style="color:var(--danger,#ef4444);">Student Phone - required</label><input type="tel" id="st_phone" placeholder="10-digit mobile"></div>
-        <div class="form-group"><label>Batch / Course</label><input type="text" id="st_batch" placeholder="e.g. Technical Analysis Batch 3"></div>
+        <div class="form-group"><label>Batch No.</label><input type="text" id="st_batchno" placeholder="e.g. Batch 3"></div>
+        <div class="form-group"><label>Course</label>
+          <select id="st_course">
+            <option value="Intraday">Intraday</option>
+            <option value="Swing">Swing</option>
+            <option value="Full Course">Full Course</option>
+          </select>
+        </div>
         <div class="form-group"><label>How Did This Student Come? (Reference)</label>
           <select id="st_reftype" onchange="onStRefTypeChange()">
             <option value="Direct">Direct (walk-in / no reference)</option>
@@ -1867,6 +1901,42 @@ function forEmpObj(selId){
   var e=employees.find(function(x){return x['Employee ID']===v;});
   return e?{id:e['Employee ID'],name:e['Name'],branch:e['Branch']}:{id:currentUser.userId,name:currentUser.name,branch:currentUser.branch};
 }
+/* v48: generic Reference (Direct / Employee Referral / Other) helpers - SIP, Insurance, Account sab me use hote h.
+   Jab "Employee Referral" select ho aur employee choose ho jaye, entry automatic usi employee ki list me jaye -
+   isliye computeRefAndFe() overrides the picked "Entry For Which Employee" object with the referenced employee. */
+function onRefTypeChange(prefix){
+  var t=document.getElementById(prefix+'_reftype').value;
+  var refEmpGroup=document.getElementById(prefix+'_refEmpGroup');
+  var refOtherGroup=document.getElementById(prefix+'_refOtherGroup');
+  if(refEmpGroup)refEmpGroup.style.display=(t==='Employee')?'':'none';
+  if(refOtherGroup)refOtherGroup.style.display=(t==='Other')?'':'none';
+}
+function populateRefEmpPicker(selId){
+  var sel=document.getElementById(selId);
+  if(!sel)return;
+  var cur=sel.value;
+  sel.innerHTML='<option value="">-- Select Employee --</option>';
+  (employees||[]).forEach(function(e){
+    if((e['Status']||'Active')!=='Active')return;
+    var o=document.createElement('option');o.value=e['Name'];o.textContent=e['Name'];sel.appendChild(o);
+  });
+  if(cur)sel.value=cur;
+}
+function computeRefAndFe(prefix,defaultFe){
+  var t=document.getElementById(prefix+'_reftype').value;
+  var refBy='Direct (no reference)';
+  var fe=defaultFe;
+  if(t==='Employee'){
+    var refEmpName=(document.getElementById(prefix+'_refEmp')||{}).value;
+    if(!refEmpName)return {error:'Select which employee referred this client'};
+    refBy='Employee: '+refEmpName;
+    var refEmpObj=employees.find(function(e){return (e['Name']||'').trim().toLowerCase()===refEmpName.trim().toLowerCase();});
+    if(refEmpObj)fe={id:refEmpObj['Employee ID'],name:refEmpObj['Name'],branch:refEmpObj['Branch']};
+  } else if(t==='Other'){
+    refBy=((document.getElementById(prefix+'_refOther')||{}).value||'').trim()||'Direct (no reference)';
+  }
+  return {refBy:refBy,fe:fe};
+}
 function populateForEmpPickers(){
   if(!currentUser)return;
   var team=teamMembersOf(currentUser.userId);
@@ -2022,9 +2092,9 @@ function renderPage(id){
   else if(id==='adminPoints')renderPoints();
   else if(id==='addPoints')initPointsForm();
   else if(id==='addBrok')initBrokForm();
-  else if(id==='addSIP'){var e=document.getElementById('s_date');if(e&&!e.value)e.value=td();}
-  else if(id==='addIns'){var e=document.getElementById('i_date');if(e&&!e.value)e.value=td();}
-  else if(id==='addAcc'){var e=document.getElementById('a_date');if(e&&!e.value)e.value=td();}
+  else if(id==='addSIP'){var e=document.getElementById('s_date');if(e&&!e.value)e.value=td();populateRefEmpPicker('s_refEmp');}
+  else if(id==='addIns'){var e=document.getElementById('i_date');if(e&&!e.value)e.value=td();populateRefEmpPicker('i_refEmp');}
+  else if(id==='addAcc'){var e=document.getElementById('a_date');if(e&&!e.value)e.value=td();populateRefEmpPicker('a_refEmp');}
   else if(id==='addLead'){var e=document.getElementById('l_date');if(e&&!e.value)e.value=td();}
   else if(id==='addMeeting')initMeetingForm();
   else if(id==='addStudent'){var e=document.getElementById('st_date');if(e&&!e.value)e.value=td();populateStRefPickers();}
@@ -4154,7 +4224,7 @@ function getStudentReminders(uid){
 }
 function mkStudentTable(rows,canEdit){
   if(!rows||!rows.length)return '<div class="no-data">No students found</div>';
-  var h='<table><thead><tr><th>Admission Date</th><th>Student</th><th>Phone</th><th>Course</th><th>Employee</th><th>Total Fee</th><th>Received</th><th>Pending</th><th>Demat</th><th>Reference</th><th>Status</th>'+(canEdit?'<th>Actions</th>':'')+'</tr></thead><tbody>';
+  var h='<table><thead><tr><th>Admission Date</th><th>Student</th><th>Phone</th><th>Batch No.</th><th>Course</th><th>Employee</th><th>Total Fee</th><th>Received</th><th>Pending</th><th>Demat</th><th>Reference</th><th>Status</th>'+(canEdit?'<th>Actions</th>':'')+'</tr></thead><tbody>';
   rows.slice().reverse().forEach(function(r){
     var tf=parseFloat(r['Total Fee'])||0;
     var fi=studentFeeInfo(r['Student Phone']);
@@ -4163,7 +4233,7 @@ function mkStudentTable(rows,canEdit){
     var guess=!demat?dematGuess(r['Student Phone']):null;
     var dematBadge=demat==='Yes'?'<span class="badge green">Yes</span>':(demat==='No'?'<span class="badge red">No</span>':(guess?'<span class="badge amber" title="Account found matching Client ID '+guess+' - please confirm">? possibly Yes</span>':'<span class="badge amber">-</span>'));
     h+='<tr'+(pend>0?' class="dup-row"':'')+'>';
-    h+='<td>'+(r['Date']||'-')+'</td><td style="font-weight:600;">'+(r['Student Name']||'-')+'</td><td>'+(r['Student Phone']||'-')+'</td><td>'+(r['Batch']||'-')+'</td><td>'+(r['Employee Name']||'-')+'</td>';
+    h+='<td>'+(r['Date']||'-')+'</td><td style="font-weight:600;">'+(r['Student Name']||'-')+'</td><td>'+(r['Student Phone']||'-')+'</td><td>'+(r['Batch']||'-')+'</td><td>'+(r['Course']||'-')+'</td><td>'+(r['Employee Name']||'-')+'</td>';
     h+='<td class="money">'+(tf?fmt(tf):'-')+'</td><td class="money">'+fmt(fi.received)+'</td>';
     h+='<td>'+(pend>0?'<span class="badge red">&#9200; '+fmt(pend)+'</span>':(tf?'<span class="badge green">Clear</span>':'-'))+'</td>';
     h+='<td>'+dematBadge+'</td>';
@@ -4181,7 +4251,8 @@ function editStudentModal(rowNum){
   h+='<div class="form-group"><label>Admission Date</label><input type="date" id="es_date" value="'+(r['Date']||'')+'"></div>';
   h+='<div class="form-group"><label>Student Name</label><input type="text" id="es_name" value="'+(r['Student Name']||'')+'"></div>';
   h+='<div class="form-group"><label>Phone</label><input type="tel" id="es_phone" value="'+(r['Student Phone']||'')+'"></div>';
-  h+='<div class="form-group"><label>Course / Batch</label><input type="text" id="es_batch" value="'+(r['Batch']||'')+'"></div>';
+  h+='<div class="form-group"><label>Batch No.</label><input type="text" id="es_batch" value="'+(r['Batch']||'')+'"></div>';
+  h+='<div class="form-group"><label>Course</label><select id="es_course">'+['Intraday','Swing','Full Course'].map(function(c){return '<option'+(r['Course']===c?' selected':'')+'>'+c+'</option>';}).join('')+'</select></div>';
   h+='<div class="form-group"><label>Referred By</label><input type="text" id="es_ref" value="'+(r['Reference By']||'')+'"></div>';
   h+='<div class="form-group"><label>Total Fee (&#8377;)</label><input type="number" id="es_totfee" value="'+(r['Total Fee']||0)+'"></div>';
   h+='<div class="form-group"><label>Status</label><select id="es_status">'+['Joined','Interested','Not Interested'].map(function(s){return '<option'+(r['Status']===s?' selected':'')+'>'+s+'</option>';}).join('')+'</select></div>';
@@ -4191,17 +4262,24 @@ function editStudentModal(rowNum){
   document.getElementById('modalBox').innerHTML=h;document.getElementById('modal').className='show';
 }
 function saveStudentEdit(rowNum){
-  var vals={'Date':document.getElementById('es_date').value,'Student Name':document.getElementById('es_name').value.trim(),'Student Phone':document.getElementById('es_phone').value.trim(),'Batch':document.getElementById('es_batch').value.trim(),'Reference By':document.getElementById('es_ref').value.trim(),'Total Fee':parseFloat(document.getElementById('es_totfee').value)||0,'Status':document.getElementById('es_status').value,'Demat Opened':document.getElementById('es_demat').value,'Demat Client ID':document.getElementById('es_dcid').value.trim()};
+  var vals={'Date':document.getElementById('es_date').value,'Student Name':document.getElementById('es_name').value.trim(),'Student Phone':document.getElementById('es_phone').value.trim(),'Batch':document.getElementById('es_batch').value.trim(),'Course':document.getElementById('es_course').value,'Reference By':document.getElementById('es_ref').value.trim(),'Total Fee':parseFloat(document.getElementById('es_totfee').value)||0,'Status':document.getElementById('es_status').value,'Demat Opened':document.getElementById('es_demat').value,'Demat Client ID':document.getElementById('es_dcid').value.trim()};
   postData({action:'editRow',sheet:'Students',rowNum:rowNum,vals:vals}).then(function(r){closeModal();if(r&&r.success){showToast('Student updated!','success');loadAll();}else showToast('Update failed: '+(r&&r.error||''),'error');}).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
 }
 function migrateStudentFees(){
   var known={};
-  (allData.Students||[]).forEach(function(r){var p=(r['Student Phone']||'').trim();if(p)known[p]=true;});
+  var knownNames={};
+  /* v48: naam-based fallback bhi - kabhi kabhi purani Student row me phone khaali hota h,
+     to sirf phone match se dedup miss ho sakta tha - ab naam se bhi check hoga */
+  (allData.Students||[]).forEach(function(r){
+    var p=(r['Student Phone']||'').trim();if(p)known[p]=true;
+    var n=(r['Student Name']||'').trim().toLowerCase();if(n)knownNames[n]=true;
+  });
   var inc=(allData.Income||[]).filter(function(r){return r['Category']==='Student Fee'&&(r['Phone']||'').trim();});
   var byPhone={};
   inc.forEach(function(r){
     var p=r['Phone'].trim();
-    if(known[p])return;
+    var n=(r['Name']||'').trim().toLowerCase();
+    if(known[p]||(n&&knownNames[n]))return;
     if(!byPhone[p])byPhone[p]={name:r['Name']||'',phone:p,course:r['Course']||'',date:r['Date']||'',totFee:0,ref:r['Reference']||'',credit:r['Credited To']||''};
     var tf=parseFloat(r['Total Fee'])||0;
     if(tf>byPhone[p].totFee)byPhone[p].totFee=tf;
@@ -4225,7 +4303,17 @@ function runMigrateStudentFees(){
   function next(){
     if(i>=list.length){showToast('Migration complete! Refreshing Student Portal.','success');loadAll();return;}
     var s=list[i++];
-    postData({action:'addStudent','Date':s.date||td(),'Employee ID':'','Employee Name':s.credit||'Office','Branch':'','Student Name':s.name,'Student Phone':s.phone,'Batch':s.course,'Reference By':s.ref,'Status':'Joined','Total Fee':s.totFee||''}).then(next).catch(next);
+    /* v48: FIX - Employee Name pehle 's.credit' (Fees Credited To value, e.g. "Ravi Bank Account") se le raha tha,
+       jo galat h - vo sirf paisa kaha gaya bata raha h, ki entry KISKI h. Ab Reference field se hi employee nikalte h. */
+    var empId='',empName='',branch='';
+    var ref=(s.ref||'').trim();
+    if(ref.toLowerCase().indexOf('employee:')===0){
+      var refName=ref.substring(ref.indexOf(':')+1).trim();
+      var matched=employees.find(function(e){return (e['Name']||'').trim().toLowerCase()===refName.toLowerCase();});
+      if(matched){empId=matched['Employee ID'];empName=matched['Name'];branch=matched['Branch']||'';}
+      else empName=refName;
+    }
+    postData({action:'addStudent','Date':s.date||td(),'Employee ID':empId,'Employee Name':empName,'Branch':branch,'Student Name':s.name,'Student Phone':s.phone,'Batch':s.course,'Reference By':s.ref,'Status':'Joined','Total Fee':s.totFee||''}).then(next).catch(next);
   }
   next();
 }
@@ -4709,16 +4797,22 @@ function submitSIP(){
   if(!sphone){showToast('Client mobile number is required - entry cannot be added without it','error');return;}
   var tp=document.getElementById('s_type').value;
   var fe=forEmpObj('s_forEmp');
-  var p={action:'addSIP','Date':document.getElementById('s_date').value||td(),'Employee ID':fe.id,'Employee Name':fe.name,'Branch':fe.branch,'Client Name':cn,'Client ID':cid,'Client Phone':sphone,'Type':tp,'Amount':parseFloat(amt),'SIP Due Date':tp==='SIP'?(document.getElementById('s_duedate').value||''):''};
-  doSubmit(p,'SIP',document.querySelector('#page-addSIP .btn-submit'),'Add Entry',function(){document.getElementById('s_cname').value='';document.getElementById('s_cid').value='';document.getElementById('s_cphone').value='';document.getElementById('s_amount').value='';document.getElementById('s_duedate').value='';});
+  var ref=computeRefAndFe('s',fe);
+  if(ref.error){showToast(ref.error,'error');return;}
+  fe=ref.fe;
+  var p={action:'addSIP','Date':document.getElementById('s_date').value||td(),'Employee ID':fe.id,'Employee Name':fe.name,'Branch':fe.branch,'Client Name':cn,'Client ID':cid,'Client Phone':sphone,'Type':tp,'Amount':parseFloat(amt),'SIP Due Date':tp==='SIP'?(document.getElementById('s_duedate').value||''):'','Reference':ref.refBy};
+  doSubmit(p,'SIP',document.querySelector('#page-addSIP .btn-submit'),'Add Entry',function(){document.getElementById('s_cname').value='';document.getElementById('s_cid').value='';document.getElementById('s_cphone').value='';document.getElementById('s_amount').value='';document.getElementById('s_duedate').value='';document.getElementById('s_reftype').value='Direct';document.getElementById('s_refOther').value='';onRefTypeChange('s');});
 }
 
 function submitInsurance(){
   var cn=document.getElementById('i_cname').value.trim(),prem=document.getElementById('i_premium').value;
   if(!cn||!prem){showToast('Fill required fields','error');return;}
   var fe=forEmpObj('i_forEmp');
-  var p={action:'addInsurance','Date':document.getElementById('i_date').value||td(),'Employee ID':fe.id,'Employee Name':fe.name,'Branch':fe.branch,'Client Name':cn,'Client ID':document.getElementById('i_cid').value.trim(),'Client Phone':document.getElementById('i_cphone').value.trim(),'Type':document.getElementById('i_type').value,'Premium':parseFloat(prem)};
-  doSubmit(p,'Insurance',document.querySelector('#page-addIns .btn-submit'),'Add Insurance',function(){document.getElementById('i_cname').value='';document.getElementById('i_cid').value='';document.getElementById('i_cphone').value='';document.getElementById('i_premium').value='';});
+  var ref=computeRefAndFe('i',fe);
+  if(ref.error){showToast(ref.error,'error');return;}
+  fe=ref.fe;
+  var p={action:'addInsurance','Date':document.getElementById('i_date').value||td(),'Employee ID':fe.id,'Employee Name':fe.name,'Branch':fe.branch,'Client Name':cn,'Client ID':document.getElementById('i_cid').value.trim(),'Client Phone':document.getElementById('i_cphone').value.trim(),'Type':document.getElementById('i_type').value,'Premium':parseFloat(prem),'Reference':ref.refBy};
+  doSubmit(p,'Insurance',document.querySelector('#page-addIns .btn-submit'),'Add Insurance',function(){document.getElementById('i_cname').value='';document.getElementById('i_cid').value='';document.getElementById('i_cphone').value='';document.getElementById('i_premium').value='';document.getElementById('i_reftype').value='Direct';document.getElementById('i_refOther').value='';onRefTypeChange('i');});
 }
 
 function submitAccount(){
@@ -4730,13 +4824,16 @@ function submitAccount(){
   if(dupChk.byId){showToast(dupAccountMsg(dupChk.byId)+' Same Client ID cannot be added again.','error');return;}
   if(dupChk.byName&&!confirm(dupAccountMsg(dupChk.byName)+' Avoid duplicate entries - add a new entry anyway?'))return;
   var fe=forEmpObj('a_forEmp');
+  var ref=computeRefAndFe('a',fe);
+  if(ref.error){showToast(ref.error,'error');return;}
+  fe=ref.fe;
   var actTrading=document.getElementById('a_actTrading').checked?'Yes':'No';
   var actSIP=document.getElementById('a_actSIP').checked?'Yes':'No';
   var actInv=document.getElementById('a_actInvestment').checked?'Yes':'No';
   var actIPO=document.getElementById('a_actIPO').checked?'Yes':'No';
   var statusComputed=(actTrading==='Yes'||actSIP==='Yes'||actInv==='Yes'||actIPO==='Yes')?'Active':'Inactive';
-  var p={action:'addAccount','Date':document.getElementById('a_date').value||td(),'Employee ID':fe.id,'Employee Name':fe.name,'Branch':fe.branch,'Client Name':cn,'Client ID':cid,'Client Phone':document.getElementById('a_cphone').value.trim(),'Status':statusComputed,'Trading Active':actTrading,'SIP Active':actSIP,'Investment Active':actInv,'IPO Active':actIPO,'Remarks':document.getElementById('a_remarks').value.trim(),'Account Type':document.getElementById('a_acctype').value,'Source':document.getElementById('a_source').value,'NSE Trade Done':'No','NSE Trade Date':''};
-  doSubmit(p,'Accounts',document.querySelector('#page-addAcc .btn-submit'),'Add Account',function(){document.getElementById('a_cname').value='';document.getElementById('a_cid').value='';document.getElementById('a_cphone').value='';document.getElementById('a_remarks').value='';document.getElementById('a_actTrading').checked=false;document.getElementById('a_actSIP').checked=false;document.getElementById('a_actInvestment').checked=false;document.getElementById('a_actIPO').checked=false;});
+  var p={action:'addAccount','Date':document.getElementById('a_date').value||td(),'Employee ID':fe.id,'Employee Name':fe.name,'Branch':fe.branch,'Client Name':cn,'Client ID':cid,'Client Phone':document.getElementById('a_cphone').value.trim(),'Status':statusComputed,'Trading Active':actTrading,'SIP Active':actSIP,'Investment Active':actInv,'IPO Active':actIPO,'Remarks':document.getElementById('a_remarks').value.trim(),'Account Type':document.getElementById('a_acctype').value,'Source':document.getElementById('a_source').value,'NSE Trade Done':'No','NSE Trade Date':'','Reference':ref.refBy};
+  doSubmit(p,'Accounts',document.querySelector('#page-addAcc .btn-submit'),'Add Account',function(){document.getElementById('a_cname').value='';document.getElementById('a_cid').value='';document.getElementById('a_cphone').value='';document.getElementById('a_remarks').value='';document.getElementById('a_actTrading').checked=false;document.getElementById('a_actSIP').checked=false;document.getElementById('a_actInvestment').checked=false;document.getElementById('a_actIPO').checked=false;document.getElementById('a_reftype').value='Direct';document.getElementById('a_refOther').value='';onRefTypeChange('a');});
 }
 
 function submitLead(){
@@ -4813,17 +4910,16 @@ function submitStudent(){
   if(dupChk.bySame){showToast(dupStudentMsg(dupChk.bySame)+' Same student cannot be added again.','error');return;}
   if(dupChk.byName&&!confirm(dupStudentMsg(dupChk.byName)+' Avoid duplicate entries - add anyway?'))return;
   var fe=forEmpObj('st_forEmp');
-  var tf=parseFloat(document.getElementById('st_totfee').value)||fr;
-  var pending=Math.max(0,tf-fr);
-  var place=document.getElementById('st_place').value.trim()||fe.branch;
-  var credit=document.getElementById('st_credit').value;
-  var remarks=document.getElementById('st_remarks').value.trim();
   var refType=document.getElementById('st_reftype').value;
   var refBy='Direct (no reference)';
   if(refType==='Employee'){
     var refEmpName=document.getElementById('st_refEmp').value;
     if(!refEmpName){showToast('Select which employee referred this student','error');return;}
     refBy='Employee: '+refEmpName;
+    /* v48: jis employee ka reference select kiya, entry automatic usi employee ki list me jaye -
+       alag se "Entry For Which Employee" match karne ki zarurat nahi, mismatch ka chance khatam */
+    var refEmpObj=employees.find(function(e){return (e['Name']||'').trim().toLowerCase()===refEmpName.trim().toLowerCase();});
+    if(refEmpObj)fe={id:refEmpObj['Employee ID'],name:refEmpObj['Name'],branch:refEmpObj['Branch']};
   } else if(refType==='Student'){
     var refStudName=document.getElementById('st_refStud').value.trim();
     if(!refStudName){showToast('Type which student referred this student','error');return;}
@@ -4831,7 +4927,12 @@ function submitStudent(){
   } else if(refType==='Other'){
     refBy=document.getElementById('st_ref').value.trim()||'Direct (no reference)';
   }
-  var p={action:'addStudentWithFee','Date':document.getElementById('st_date').value||td(),'Employee ID':fe.id,'Employee Name':fe.name,'Branch':fe.branch,'Student Name':sn,'Student Phone':stPhone,'Batch':document.getElementById('st_batch').value.trim(),'Reference By':refBy,'Status':document.getElementById('st_status').value,'Total Fee':tf,'Demat Opened':document.getElementById('st_demat').value,'FeesReceived':fr,'Pending':pending,'Place':place,'Credited To':credit,'Remarks':remarks,'Entered By':currentUser.name};
+  var tf=parseFloat(document.getElementById('st_totfee').value)||fr;
+  var pending=Math.max(0,tf-fr);
+  var place=document.getElementById('st_place').value.trim()||fe.branch;
+  var credit=document.getElementById('st_credit').value;
+  var remarks=document.getElementById('st_remarks').value.trim();
+  var p={action:'addStudentWithFee','Date':document.getElementById('st_date').value||td(),'Employee ID':fe.id,'Employee Name':fe.name,'Branch':fe.branch,'Student Name':sn,'Student Phone':stPhone,'Batch':document.getElementById('st_batchno').value.trim(),'Course':document.getElementById('st_course').value,'Reference By':refBy,'Status':document.getElementById('st_status').value,'Total Fee':tf,'Demat Opened':document.getElementById('st_demat').value,'FeesReceived':fr,'Pending':pending,'Place':place,'Credited To':credit,'Remarks':remarks,'Entered By':currentUser.name};
   var btn=document.querySelector('#page-addStudent .btn-submit');
   btn.disabled=true;btn.textContent='Adding...';
   postData(p).then(function(r){
@@ -4839,10 +4940,11 @@ function submitStudent(){
     if(r&&r.success){
       showToast('Student added and fee entry recorded - no need to add it again in Income','success');
       allData.Students=allData.Students||[];
-      allData.Students.push({'Date':p['Date'],'Employee ID':p['Employee ID'],'Employee Name':p['Employee Name'],'Branch':p['Branch'],'Student Name':p['Student Name'],'Student Phone':p['Student Phone'],'Batch':p['Batch'],'Reference By':p['Reference By'],'Status':p['Status'],'Total Fee':p['Total Fee'],'Demat Opened':p['Demat Opened'],'Demat Client ID':''});
+      allData.Students.push({'Date':p['Date'],'Employee ID':p['Employee ID'],'Employee Name':p['Employee Name'],'Branch':p['Branch'],'Student Name':p['Student Name'],'Student Phone':p['Student Phone'],'Batch':p['Batch'],'Course':p['Course'],'Reference By':p['Reference By'],'Status':p['Status'],'Total Fee':p['Total Fee'],'Demat Opened':p['Demat Opened'],'Demat Client ID':''});
       allData.Income=allData.Income||[];
       allData.Income.push({'Date':p['Date'],'Category':'Student Fee','Name':p['Student Name'],'Place':p['Place'],'Phone':p['Student Phone'],'Course':p['Batch'],'Total Fee':p['Total Fee'],'Pending':p['Pending'],'Reference':p['Reference By'],'Credited To':p['Credited To'],'Amount':p['FeesReceived'],'Remarks':p['Remarks'],'Entered By':p['Entered By']});
-      ['st_name','st_phone','st_batch','st_ref','st_refStud','st_totfee','st_demat','st_feesreceived','st_place','st_remarks'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+      ['st_name','st_phone','st_batchno','st_ref','st_refStud','st_totfee','st_demat','st_feesreceived','st_place','st_remarks'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+      document.getElementById('st_course').value='Intraday';
       document.getElementById('st_credit').value='Office Account';
       document.getElementById('st_reftype').value='Direct';
       if(document.getElementById('st_refEmp'))document.getElementById('st_refEmp').value='';
@@ -4927,6 +5029,14 @@ function computeHisabTotals(mo){
     var id=(e['Employee ID']||'').trim().toLowerCase();
     return !SHARED.some(function(s){return s.from===id;});
   });
+  function studentRefCommission(e){
+    /* v48: jis employee ki reference h student ki, uski received fees ka 10% auto-commission is employee ko */
+    var refTag='employee: '+(e['Name']||'').trim().toLowerCase();
+    var sum=inc.filter(function(r){
+      return r['Category']==='Student Fee'&&(r['Reference']||'').trim().toLowerCase()===refTag;
+    }).reduce(function(s,r){return s+(parseFloat(r['Amount'])||0);},0);
+    return r2(sum*0.10);
+  }
   function getRow(e){
     var eid=e['Employee ID'];
     if(savedRows[eid])return savedRows[eid];
@@ -4939,6 +5049,8 @@ function computeHisabTotals(mo){
         if(b>0)st.lines.push({t:'add',l:s.label,a:r2(b*s.pct/100)});
       }
     });
+    var refComm=studentRefCommission(e);
+    if(refComm>0)st.lines.push({t:'add',l:'Student Referral Commission (10%)',a:refComm});
     return st;
   }
   function calc(base,st){
@@ -4973,7 +5085,15 @@ function computeHisabTotals(mo){
   });
   totPay=r2(totPay);paidAmt=r2(paidAmt);pendAmt=r2(pendAmt);
   var netProfit=r2(totBrok+tInc-tExp-totPay);
-  return {mo:mo,totBrok:totBrok,tInc:tInc,tExp:tExp,staffPay:staffPay,pool:pool,totPay:totPay,paidAmt:paidAmt,pendAmt:pendAmt,paidN:paidN,empCount:emps.length,netProfit:netProfit,byEmp:byEmp};
+  /* v48: partner ko total student-referral-commission ka dyan rehne ke liye - is month me kitna auto-commission ban chuka h */
+  var totalRefComm=0;
+  emps.forEach(function(e){
+    var st=getRow(e);
+    var line=st.lines.find(function(l){return l.l==='Student Referral Commission (10%)';});
+    if(line)totalRefComm+=parseFloat(line.a)||0;
+  });
+  totalRefComm=r2(totalRefComm);
+  return {mo:mo,totBrok:totBrok,tInc:tInc,tExp:tExp,staffPay:staffPay,pool:pool,totPay:totPay,paidAmt:paidAmt,pendAmt:pendAmt,paidN:paidN,empCount:emps.length,netProfit:netProfit,byEmp:byEmp,totalRefComm:totalRefComm};
 }
 function hisabMonthsInRange(f){
   var r=(!f||f==='all')?null:getRange(f);
@@ -5441,6 +5561,14 @@ function renderHisab(){
     var id=(e['Employee ID']||'').trim().toLowerCase();
     return !SHARED.some(function(s){return s.from===id;});
   });
+  function studentRefCommission(e){
+    /* v48: jis employee ki reference h student ki, uski received fees ka 10% auto-commission is employee ko - Monthly Hisab me bhi */
+    var refTag='employee: '+(e['Name']||'').trim().toLowerCase();
+    var sum=inc.filter(function(r){
+      return r['Category']==='Student Fee'&&(r['Reference']||'').trim().toLowerCase()===refTag;
+    }).reduce(function(s,r){return s+(parseFloat(r['Amount'])||0);},0);
+    return r2(sum*0.10);
+  }
   function initSt(e){
     var eid=e['Employee ID'];
     if(hisabSt.rows[eid])return hisabSt.rows[eid];
@@ -5453,6 +5581,8 @@ function renderHisab(){
         if(b>0)st.lines.push({t:'add',l:s.label,a:r2(b*s.pct/100)});
       }
     });
+    var refComm=studentRefCommission(e);
+    if(refComm>0)st.lines.push({t:'add',l:'Student Referral Commission (10%)',a:refComm});
     hisabSt.rows[eid]=st;
     return st;
   }
@@ -5526,11 +5656,21 @@ function renderHisab(){
   });
   totPay=r2(totPay);paidAmt=r2(paidAmt);pendAmt=r2(pendAmt);
   document.getElementById('hisabCards').innerHTML=cardsH||'<div class="no-data">No active employees</div>';
+  /* v48: partner ko total student-referral-commission ka dyan rehne ke liye */
+  var totalRefComm=0;
+  emps.forEach(function(e){
+    var st=hisabSt.rows[e['Employee ID']];
+    if(!st)return;
+    var line=st.lines.find(function(l){return l.l==='Student Referral Commission (10%)';});
+    if(line)totalRefComm+=parseFloat(line.a)||0;
+  });
+  totalRefComm=r2(totalRefComm);
   document.getElementById('hisabSummary').innerHTML=mkStats([
     {label:'Month Brokerage',value:fmt(totBrok),sub:cbMonth.length+' client entries',color:'green'},
     {label:'Team Payable',value:fmt(totPay),sub:emps.length+' log (staff+partners)',color:'blue'},
     {label:'Paid',value:fmt(paidAmt),sub:paidN+' paid',color:'green'},
-    {label:'Pending',value:fmt(pendAmt),sub:(emps.length-paidN)+' baaki',color:'amber'}
+    {label:'Pending',value:fmt(pendAmt),sub:(emps.length-paidN)+' baaki',color:'amber'},
+    {label:'Student Referral Commission',value:fmt(totalRefComm),sub:'10% auto (this month)',color:'purple'}
   ]);
   var netProfit=r2(totBrok+tInc-tExp-totPay);
   if(isAdm){
