@@ -919,9 +919,11 @@ tbody td{padding:10px 14px;vertical-align:middle;}
             <label style="display:flex;align-items:center;gap:5px;font-weight:400;font-size:13px;"><input type="checkbox" id="a_actTrading" style="width:auto;"> Trading</label>
             <label style="display:flex;align-items:center;gap:5px;font-weight:400;font-size:13px;"><input type="checkbox" id="a_actSIP" style="width:auto;"> SIP</label>
             <label style="display:flex;align-items:center;gap:5px;font-weight:400;font-size:13px;"><input type="checkbox" id="a_actInvestment" style="width:auto;"> Investment</label>
+            <label style="display:flex;align-items:center;gap:5px;font-weight:400;font-size:13px;"><input type="checkbox" id="a_actIPO" style="width:auto;"> IPO</label>
           </div>
           <div style="font-size:11px;color:var(--muted,#8a94a6);margin-top:4px;">If none selected, the account will be marked Inactive</div>
         </div>
+        <div class="form-group"><label>Remarks (client ke baare me kuch note - optional)</label><textarea id="a_remarks" placeholder="e.g. Family referred by X, prefers WhatsApp, budget conscious..."></textarea></div>
         <button class="btn-submit" onclick="submitAccount()">Add Account</button>
       </div>
     </div>
@@ -2598,20 +2600,79 @@ function renderAdminDash(){
   document.getElementById('adminEmpCards').innerHTML=html+'</div>';
 }
 
+/* v44: Employee Performance card click karne pe uski poori detail (client-wise brokerage, accounts, SIP, insurance, students)
+   usi period ke hisaab se (jo filter-bar me select hai) niche expand ho jaati hai. */
+var empPerfF='all';
+var empPerfExpandedId=null;
+function empPerfRangeFilter(rows){
+  return empRange?rows.filter(function(r){var d=new Date(r['Date']||'');return !isNaN(d)&&d>=empRange.start&&d<=empRange.end;}):fDate(rows,empPerfF);
+}
+function empPerfRowsFor(sheetKey,id){
+  return empPerfRangeFilter(allData[sheetKey]||[]).filter(function(r){return (r['Employee ID']||r['Employee Name']||'?')===id;});
+}
+function escId(s){return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
+function toggleEmpDetail(id){
+  empPerfExpandedId=(empPerfExpandedId===id)?null:id;
+  renderEmpPerf(empPerfF);
+  if(empPerfExpandedId===id){
+    setTimeout(function(){var el=document.querySelector('#empPerfCards [id^="empDetail_"]');if(el)el.scrollIntoView({behavior:'smooth',block:'nearest'});},50);
+  }
+}
+function renderEmpDetailPanel(id,name){
+  var cbrok=empPerfRowsFor('ClientBrokerage',id);
+  var manBrok=empPerfRowsFor('Brokerage',id);
+  var sip=empPerfRowsFor('SIP',id);
+  var ins=empPerfRowsFor('Insurance',id);
+  var acc=empPerfRowsFor('Accounts',id);
+  var stud=empPerfRowsFor('Students',id);
+  var cbrokT=cbrok.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
+  var manBrokT=manBrok.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
+  var totBrok=r2(cbrokT+manBrokT);
+  var sipAmt=sip.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
+  var insAmt=ins.reduce(function(s,r){return s+parseFloat(r['Premium']||0);},0);
+  var agg=aggByClient(cbrok);
+  var bh;
+  if(agg.length){
+    bh='<div class="table-inner"><table><thead><tr><th>#</th><th>Client ID</th><th>Client Name</th><th>Entries</th><th>Brokerage</th></tr></thead><tbody>';
+    agg.forEach(function(c,i){bh+='<tr><td>'+(i+1)+'</td><td>'+(c.cid||'-')+'</td><td style="font-weight:600;">'+(c.name||'-')+'</td><td>'+c.n+'</td><td class="money">'+fmt(c.amt)+'</td></tr>';});
+    bh+='</tbody></table></div>';
+  } else bh='<div class="no-data">No client brokerage in this period</div>';
+  var h='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;"><div style="font-size:16px;font-weight:700;">&#128100; '+name+' &#8212; Full Detail</div><button class="btn-cancel" style="padding:4px 14px;" onclick="event.stopPropagation();toggleEmpDetail(\''+escId(id)+'\')">&#10005; Close</button></div>';
+  h+='<div class="stats-grid" style="margin-bottom:18px;">'+mkStats([
+    {label:'Total Brokerage',value:fmt(totBrok),sub:cbrok.length+' client entries',color:'green'},
+    {label:'Accounts',value:acc.length,sub:'demat accounts opened',color:'blue'},
+    {label:'SIP Amount',value:fmt(sipAmt),sub:sip.length+' entries',color:'purple'},
+    {label:'Insurance Premium',value:fmt(insAmt),sub:ins.length+' policies',color:'amber'},
+    {label:'Students',value:stud.length,sub:'referred',color:'green'}
+  ])+'</div>';
+  h+='<h4 style="margin:16px 0 8px;">Client-wise Brokerage</h4>'+bh;
+  h+='<h4 style="margin:20px 0 8px;">Accounts</h4><div class="table-inner">'+mkAccTable(acc,{})+'</div>';
+  h+='<h4 style="margin:20px 0 8px;">SIP / Mutual Fund</h4><div class="table-inner">'+mkTable(sip,[{k:'Date',l:'Date'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Client ID'},{k:'Client Phone',l:'Phone'},{k:'Type',l:'Type'},{k:'Amount',l:'Amount',money:true},{k:'SIP Due Date',l:'Due Date'}],'SIP')+'</div>';
+  h+='<h4 style="margin:20px 0 8px;">Insurance</h4><div class="table-inner">'+mkTable(ins,[{k:'Date',l:'Date'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Policy ID'},{k:'Client Phone',l:'Phone'},{k:'Type',l:'Type'},{k:'Premium',l:'Premium',money:true}],'Insurance')+'</div>';
+  h+='<h4 style="margin:20px 0 8px;">Students</h4>'+mkStudentTable(stud,true);
+  return h;
+}
 function renderEmpPerf(f){
-  function fr(rows){return empRange?rows.filter(function(r){var d=new Date(r['Date']||'');return !isNaN(d)&&d>=empRange.start&&d<=empRange.end;}):fDate(rows,f);}
-  var brok=fr(allData.Brokerage||[]),cbrok=fr(allData.ClientBrokerage||[]),sip=fr(allData.SIP||[]),ins=fr(allData.Insurance||[]),acc=fr(allData.Accounts||[]),stud=fr(allData.Students||[]),leads=fr(allData.Leads||[]);
+  empPerfF=f;
+  var brok=empPerfRangeFilter(allData.Brokerage||[]),cbrok=empPerfRangeFilter(allData.ClientBrokerage||[]),sip=empPerfRangeFilter(allData.SIP||[]),ins=empPerfRangeFilter(allData.Insurance||[]),acc=empPerfRangeFilter(allData.Accounts||[]),stud=empPerfRangeFilter(allData.Students||[]),leads=empPerfRangeFilter(allData.Leads||[]);
   var em={};
   function t(rows,k){rows.forEach(function(r){var id=r['Employee ID']||r['Employee Name']||'?';if(!em[id])em[id]={name:r['Employee Name']||id,branch:r['Branch']||'',brok:0,sip:0,ins:0,acc:0,stud:0,leads:0};if(k==='brok')em[id].brok+=parseFloat(r['Amount']||0);else if(k==='sip')em[id].sip+=parseFloat(r['Amount']||0);else if(k==='ins')em[id].ins++;else if(k==='acc')em[id].acc++;else if(k==='stud')em[id].stud++;else if(k==='leads')em[id].leads++;});}
   /* brokerage = manual Brokerage sheet + ClientBrokerage (Choice uploads, jaha se asli income aati hai) */
   t(brok,'brok');t(cbrok,'brok');t(sip,'sip');t(ins,'ins');t(acc,'acc');t(stud,'stud');t(leads,'leads');
   var ks=Object.keys(em);
   var lbl=empRange?('Custom: '+document.getElementById('empFrom').value+' \u2192 '+document.getElementById('empTo').value):periodLabel(f);
-  var head='<div style="padding:0 0 12px;color:var(--muted,#8a94a6);font-size:14px;">Showing: <b style="color:var(--accent);">'+lbl+'</b> \u00b7 ranked by brokerage</div>';
+  var head='<div style="padding:0 0 12px;color:var(--muted,#8a94a6);font-size:14px;">Showing: <b style="color:var(--accent);">'+lbl+'</b> \u00b7 ranked by brokerage \u00b7 click a card for full detail</div>';
   if(!ks.length){document.getElementById('empPerfCards').innerHTML=head+'<div class="no-data">No data for this period</div>';return;}
   ks.sort(function(a,b){return em[b].brok-em[a].brok;});
   var html=head+'<div class="emp-grid">';
-  ks.forEach(function(id,i){var e=em[id];html+='<div class="emp-card"><div class="emp-name">#'+(i+1)+' '+e.name+'</div><div class="emp-meta" style="margin-bottom:8px;">'+e.branch+'</div><div class="emp-stats"><div class="emp-stat"><div class="emp-stat-val">'+fmt(e.brok)+'</div><div class="emp-stat-lbl">Brokerage</div></div><div class="emp-stat"><div class="emp-stat-val">'+fmt(e.sip)+'</div><div class="emp-stat-lbl">SIP Amt</div></div><div class="emp-stat"><div class="emp-stat-val">'+e.ins+'</div><div class="emp-stat-lbl">Insurance</div></div><div class="emp-stat"><div class="emp-stat-val">'+e.acc+'</div><div class="emp-stat-lbl">Accounts</div></div><div class="emp-stat"><div class="emp-stat-val">'+e.stud+'</div><div class="emp-stat-lbl">Students</div></div><div class="emp-stat"><div class="emp-stat-val">'+e.leads+'</div><div class="emp-stat-lbl">Leads</div></div></div></div>';});
+  ks.forEach(function(id,i){
+    var e=em[id];
+    var expanded=(empPerfExpandedId===id);
+    html+='<div class="emp-card" style="cursor:pointer;'+(expanded?'border-color:var(--accent,#3fbf7f);':'')+'" onclick="toggleEmpDetail(\''+escId(id)+'\')" title="Click for full detail"><div class="emp-name">#'+(i+1)+' '+e.name+(expanded?' <span style="font-size:11px;color:var(--accent,#3fbf7f);">&#9660; expanded</span>':'')+'</div><div class="emp-meta" style="margin-bottom:8px;">'+e.branch+'</div><div class="emp-stats"><div class="emp-stat"><div class="emp-stat-val">'+fmt(e.brok)+'</div><div class="emp-stat-lbl">Brokerage</div></div><div class="emp-stat"><div class="emp-stat-val">'+fmt(e.sip)+'</div><div class="emp-stat-lbl">SIP Amt</div></div><div class="emp-stat"><div class="emp-stat-val">'+e.ins+'</div><div class="emp-stat-lbl">Insurance</div></div><div class="emp-stat"><div class="emp-stat-val">'+e.acc+'</div><div class="emp-stat-lbl">Accounts</div></div><div class="emp-stat"><div class="emp-stat-val">'+e.stud+'</div><div class="emp-stat-lbl">Students</div></div><div class="emp-stat"><div class="emp-stat-val">'+e.leads+'</div><div class="emp-stat-lbl">Leads</div></div></div></div>';
+    if(expanded){
+      html+='<div class="form-card" id="empDetail_'+i+'" style="grid-column:1/-1;" onclick="event.stopPropagation();">'+renderEmpDetailPanel(id,e.name)+'</div>';
+    }
+  });
   document.getElementById('empPerfCards').innerHTML=html+'</div>';
 }
 
@@ -2713,12 +2774,13 @@ function mkAccTable(rows,dupSet){
       '<td>'+r['Date']+'</td><td>'+r['Employee Name']+'</td><td>'+r['Client Name']+contestBadgeForAccountDate(r['Date'])+'</td>'+
       '<td>'+(isDup?'<span class="dup-badge">&#9888;</span>':'')+cid+'</td>'+
       '<td>'+r['Client Phone']+'</td>';
-    h+='<td>'+(r['Last Call Date']?('<b>'+r['Last Call Date']+'</b><br><span style="font-size:10px;color:var(--muted,#8a94a6);">'+(r['Last Call Remarks']||'-')+'</span>'):'<span style="font-size:11px;color:var(--muted,#8a94a6);">Not called yet</span>')+'</td>';
+    h+='<td>'+(r['Last Call Date']?('<b>'+r['Last Call Date']+'</b><br><span style="font-size:10px;color:var(--muted,#8a94a6);">'+(r['Last Call Remarks']||'-')+'</span>'):'<span style="font-size:11px;color:var(--muted,#8a94a6);">Not called yet</span>')+(r['Remarks']?('<br><span style="font-size:10px;color:#3fbf7f;" title="General remarks about this client">&#128221; '+r['Remarks']+'</span>'):'')+'</td>';
     var act=(r['Status']||'Active')==='Active';
     var chips='';
     if((r['Trading Active']||'')==='Yes')chips+='<span class="badge blue" style="margin-left:3px;font-size:9px;padding:2px 5px;" title="Trading Active">T</span>';
     if((r['SIP Active']||'')==='Yes')chips+='<span class="badge purple" style="margin-left:3px;font-size:9px;padding:2px 5px;" title="SIP Active">S</span>';
     if((r['Investment Active']||'')==='Yes')chips+='<span class="badge amber" style="margin-left:3px;font-size:9px;padding:2px 5px;" title="Investment Active">I</span>';
+    if((r['IPO Active']||'')==='Yes')chips+='<span class="badge green" style="margin-left:3px;font-size:9px;padding:2px 5px;" title="IPO Active">IPO</span>';
     h+='<td><span class="badge '+(act?'green':'red')+'">'+(act?'Active':'Inactive')+'</span>'+chips+'</td>';
     var nseDone=(r['NSE Trade Done']||'')==='Yes';
     var nseBtn=nseDone?'<button class="badge green" style="border:none;cursor:pointer;" onclick="undoNSETradeDone('+r['_rowNum']+')" title="NSE trade done on '+(r['NSE Trade Date']||'')+' — click to undo if marked by mistake">&#10003; NSE Trade</button>':'<button class="btn-call" style="background:rgba(255,159,10,0.15);color:#ff9f0a;" onclick="markNSETradeDone('+r['_rowNum']+')" title="Click here once the client has completed an NSE trade">&#128200; Trade Done?</button>';
@@ -4012,6 +4074,7 @@ function showClient360Profile(cid,name){
   if((acc['Trading Active']||'')==='Yes')chips+='<span class="badge blue" style="margin-left:4px;">Trading</span>';
   if((acc['SIP Active']||'')==='Yes')chips+='<span class="badge purple" style="margin-left:4px;">SIP</span>';
   if((acc['Investment Active']||'')==='Yes')chips+='<span class="badge amber" style="margin-left:4px;">Investment</span>';
+  if((acc['IPO Active']||'')==='Yes')chips+='<span class="badge green" style="margin-left:4px;">IPO</span>';
   var nseDone=(acc['NSE Trade Done']||'')==='Yes';
 
   var h='<div class="form-card" style="margin-bottom:16px;">'+
@@ -4033,6 +4096,7 @@ function showClient360Profile(cid,name){
       'Account opened: <b style="color:var(--text);">'+acc['Date']+'</b> &#183; Type: <b style="color:var(--text);">'+(acc['Account Type']||'-')+'</b> &#183; Source: <b style="color:var(--text);">'+(acc['Source']||'-')+'</b>'+
       (acc['Last Call Date']?(' &#183; Last call: <b style="color:var(--text);">'+acc['Last Call Date']+'</b>'+(acc['Last Call Remarks']?(' ("'+acc['Last Call Remarks']+'")'):'')):' &#183; Not called yet')+
       '</div>';
+    if(acc['Remarks'])h+='<div style="margin-top:8px;font-size:13px;color:#3fbf7f;">&#128221; <b>Remarks:</b> '+acc['Remarks']+'</div>';
   }
   h+='</div>';
 
@@ -4654,9 +4718,10 @@ function submitAccount(){
   var actTrading=document.getElementById('a_actTrading').checked?'Yes':'No';
   var actSIP=document.getElementById('a_actSIP').checked?'Yes':'No';
   var actInv=document.getElementById('a_actInvestment').checked?'Yes':'No';
-  var statusComputed=(actTrading==='Yes'||actSIP==='Yes'||actInv==='Yes')?'Active':'Inactive';
-  var p={action:'addAccount','Date':document.getElementById('a_date').value||td(),'Employee ID':fe.id,'Employee Name':fe.name,'Branch':fe.branch,'Client Name':cn,'Client ID':cid,'Client Phone':document.getElementById('a_cphone').value.trim(),'Status':statusComputed,'Trading Active':actTrading,'SIP Active':actSIP,'Investment Active':actInv,'Account Type':document.getElementById('a_acctype').value,'Source':document.getElementById('a_source').value,'NSE Trade Done':'No','NSE Trade Date':''};
-  doSubmit(p,'Accounts',document.querySelector('#page-addAcc .btn-submit'),'Add Account',function(){document.getElementById('a_cname').value='';document.getElementById('a_cid').value='';document.getElementById('a_cphone').value='';document.getElementById('a_actTrading').checked=false;document.getElementById('a_actSIP').checked=false;document.getElementById('a_actInvestment').checked=false;});
+  var actIPO=document.getElementById('a_actIPO').checked?'Yes':'No';
+  var statusComputed=(actTrading==='Yes'||actSIP==='Yes'||actInv==='Yes'||actIPO==='Yes')?'Active':'Inactive';
+  var p={action:'addAccount','Date':document.getElementById('a_date').value||td(),'Employee ID':fe.id,'Employee Name':fe.name,'Branch':fe.branch,'Client Name':cn,'Client ID':cid,'Client Phone':document.getElementById('a_cphone').value.trim(),'Status':statusComputed,'Trading Active':actTrading,'SIP Active':actSIP,'Investment Active':actInv,'IPO Active':actIPO,'Remarks':document.getElementById('a_remarks').value.trim(),'Account Type':document.getElementById('a_acctype').value,'Source':document.getElementById('a_source').value,'NSE Trade Done':'No','NSE Trade Date':''};
+  doSubmit(p,'Accounts',document.querySelector('#page-addAcc .btn-submit'),'Add Account',function(){document.getElementById('a_cname').value='';document.getElementById('a_cid').value='';document.getElementById('a_cphone').value='';document.getElementById('a_remarks').value='';document.getElementById('a_actTrading').checked=false;document.getElementById('a_actSIP').checked=false;document.getElementById('a_actInvestment').checked=false;document.getElementById('a_actIPO').checked=false;});
 }
 
 function submitLead(){
@@ -6289,7 +6354,9 @@ function openAccEditModal(rowNum){
   html+='<label style="display:flex;align-items:center;gap:5px;font-weight:400;font-size:13px;"><input type="checkbox" id="ae_actTrading" style="width:auto;"'+((row['Trading Active']||'')==='Yes'?' checked':'')+'> Trading</label>';
   html+='<label style="display:flex;align-items:center;gap:5px;font-weight:400;font-size:13px;"><input type="checkbox" id="ae_actSIP" style="width:auto;"'+((row['SIP Active']||'')==='Yes'?' checked':'')+'> SIP</label>';
   html+='<label style="display:flex;align-items:center;gap:5px;font-weight:400;font-size:13px;"><input type="checkbox" id="ae_actInvestment" style="width:auto;"'+((row['Investment Active']||'')==='Yes'?' checked':'')+'> Investment</label>';
+  html+='<label style="display:flex;align-items:center;gap:5px;font-weight:400;font-size:13px;"><input type="checkbox" id="ae_actIPO" style="width:auto;"'+((row['IPO Active']||'')==='Yes'?' checked':'')+'> IPO</label>';
   html+='</div><div style="font-size:11px;color:var(--muted,#8a94a6);margin-top:4px;">If none selected, the account will be marked Inactive</div></div>';
+  html+='<div class="form-group"><label>Remarks</label><textarea id="ae_remarks">'+(row['Remarks']||'')+'</textarea></div>';
   html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-danger" onclick="confirmDel(\'Accounts\','+rowNum+')">Delete</button><button class="btn-save" onclick="saveAccEditModal('+rowNum+')">Save</button></div>';
   document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
 }
@@ -6297,13 +6364,15 @@ function saveAccEditModal(rowNum){
   var actTrading=document.getElementById('ae_actTrading').checked?'Yes':'No';
   var actSIP=document.getElementById('ae_actSIP').checked?'Yes':'No';
   var actInv=document.getElementById('ae_actInvestment').checked?'Yes':'No';
-  var statusComputed=(actTrading==='Yes'||actSIP==='Yes'||actInv==='Yes')?'Active':'Inactive';
+  var actIPO=document.getElementById('ae_actIPO').checked?'Yes':'No';
+  var statusComputed=(actTrading==='Yes'||actSIP==='Yes'||actInv==='Yes'||actIPO==='Yes')?'Active':'Inactive';
   var vals={
     'Date':document.getElementById('ae_date').value,
     'Client Name':(document.getElementById('ae_cname').value||'').trim(),
     'Client ID':(document.getElementById('ae_cid').value||'').trim(),
     'Client Phone':(document.getElementById('ae_cphone').value||'').trim(),
-    'Trading Active':actTrading,'SIP Active':actSIP,'Investment Active':actInv,
+    'Trading Active':actTrading,'SIP Active':actSIP,'Investment Active':actInv,'IPO Active':actIPO,
+    'Remarks':(document.getElementById('ae_remarks').value||'').trim(),
     'Status':statusComputed
   };
   postData({action:'editRow',sheet:'Accounts',rowNum:rowNum,vals:vals}).then(function(r){
