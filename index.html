@@ -1913,9 +1913,10 @@ function onRefTypeChange(prefix){
 }
 function refEligibleEmployees(){
   /* v50: "Which Employee Referred?" list ab sirf viewer ke apne sub-employees dikhata h - poori company ki list nahi.
-     Admin hi ek aisa role h jise sabhi employees dikhte h (kyunki admin kisi ek parent ka sub-team nahi h, sabki oversight h). */
+     Admin/finance-role/finance-access wale (financeWideAccess) company-wide kaam handle karte h isliye unhe sabhi employees dikhte h;
+     baaki team-parent sirf apne khud ke sub-employees dekh paate h. */
   if(!currentUser)return [];
-  if(currentUser.role==='admin')return (employees||[]).filter(function(e){return (e['Status']||'Active')==='Active';});
+  if(financeWideAccess())return (employees||[]).filter(function(e){return (e['Status']||'Active')==='Active';});
   return teamMembersOf(currentUser.userId);
 }
 function populateRefEmpPicker(selId){
@@ -1943,11 +1944,16 @@ function computeRefAndFe(prefix,defaultFe){
   }
   return {refBy:refBy,fe:fe};
 }
-/* v49: "Employee Referral" option sirf admin, finance-access log aur team-parent (jinke sub-employee h) ko dikhna chahiye -
+/* v49: "Employee Referral" option sirf admin, finance-role/finance-access log aur team-parent (jinke sub-employee h) ko dikhna chahiye -
    normal employee apne khud ke entry me kisi aur employee ko reference kyu dalega, unki entry to already unhi ki h.
    Isliye normal employee ke liye ye option hata dete h - Direct / Other (aur Student form me Student) bache rehte h. */
+function financeWideAccess(){
+  /* admin, khud finance-role wala banda, ya jisko admin ne FinanceAccess de rakha h (ya jiske under koi finance sub-employee h) -
+     ye sab company-wide entries handle karte h, isliye inhe poori employee list dikhti h (kisi ek sub-team tak limited nahi) */
+  return !!(currentUser&&(currentUser.role==='admin'||currentUser.role==='finance'||canAddFinance()));
+}
 function canRefEmployee(){
-  return !!(currentUser&&(currentUser.role==='admin'||canAddFinance()||isTeamParent()));
+  return !!(currentUser&&(financeWideAccess()||isTeamParent()));
 }
 function applyRefPermission(prefix){
   var sel=document.getElementById(prefix+'_reftype');
