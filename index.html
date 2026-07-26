@@ -1911,13 +1911,19 @@ function onRefTypeChange(prefix){
   if(refEmpGroup)refEmpGroup.style.display=(t==='Employee')?'':'none';
   if(refOtherGroup)refOtherGroup.style.display=(t==='Other')?'':'none';
 }
+function refEligibleEmployees(){
+  /* v50: "Which Employee Referred?" list ab sirf viewer ke apne sub-employees dikhata h - poori company ki list nahi.
+     Admin hi ek aisa role h jise sabhi employees dikhte h (kyunki admin kisi ek parent ka sub-team nahi h, sabki oversight h). */
+  if(!currentUser)return [];
+  if(currentUser.role==='admin')return (employees||[]).filter(function(e){return (e['Status']||'Active')==='Active';});
+  return teamMembersOf(currentUser.userId);
+}
 function populateRefEmpPicker(selId){
   var sel=document.getElementById(selId);
   if(!sel)return;
   var cur=sel.value;
   sel.innerHTML='<option value="">-- Select Employee --</option>';
-  (employees||[]).forEach(function(e){
-    if((e['Status']||'Active')!=='Active')return;
+  refEligibleEmployees().forEach(function(e){
     var o=document.createElement('option');o.value=e['Name'];o.textContent=e['Name'];sel.appendChild(o);
   });
   if(cur)sel.value=cur;
@@ -4882,8 +4888,7 @@ function populateStRefPickers(){
   var sel=document.getElementById('st_refEmp');
   if(sel){
     sel.innerHTML='<option value="">-- Select Employee --</option>';
-    (employees||[]).forEach(function(e){
-      if((e['Status']||'Active')!=='Active')return;
+    refEligibleEmployees().forEach(function(e){
       var o=document.createElement('option');o.value=e['Name'];o.textContent=e['Name'];sel.appendChild(o);
     });
   }
