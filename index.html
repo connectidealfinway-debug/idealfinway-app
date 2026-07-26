@@ -1937,6 +1937,27 @@ function computeRefAndFe(prefix,defaultFe){
   }
   return {refBy:refBy,fe:fe};
 }
+/* v49: "Employee Referral" option sirf admin, finance-access log aur team-parent (jinke sub-employee h) ko dikhna chahiye -
+   normal employee apne khud ke entry me kisi aur employee ko reference kyu dalega, unki entry to already unhi ki h.
+   Isliye normal employee ke liye ye option hata dete h - Direct / Other (aur Student form me Student) bache rehte h. */
+function canRefEmployee(){
+  return !!(currentUser&&(currentUser.role==='admin'||canAddFinance()||isTeamParent()));
+}
+function applyRefPermission(prefix){
+  var sel=document.getElementById(prefix+'_reftype');
+  if(!sel)return;
+  var allowed=canRefEmployee();
+  var empOpt=sel.querySelector('option[value="Employee"]');
+  if(allowed){
+    if(!empOpt){
+      var o=document.createElement('option');o.value='Employee';o.textContent='Employee Referral';
+      sel.insertBefore(o,sel.options[1]||null);
+    }
+  } else if(empOpt){
+    if(sel.value==='Employee'){sel.value='Direct';onRefTypeChange(prefix);}
+    empOpt.remove();
+  }
+}
 function populateForEmpPickers(){
   if(!currentUser)return;
   var team=teamMembersOf(currentUser.userId);
@@ -2092,9 +2113,9 @@ function renderPage(id){
   else if(id==='adminPoints')renderPoints();
   else if(id==='addPoints')initPointsForm();
   else if(id==='addBrok')initBrokForm();
-  else if(id==='addSIP'){var e=document.getElementById('s_date');if(e&&!e.value)e.value=td();populateRefEmpPicker('s_refEmp');}
-  else if(id==='addIns'){var e=document.getElementById('i_date');if(e&&!e.value)e.value=td();populateRefEmpPicker('i_refEmp');}
-  else if(id==='addAcc'){var e=document.getElementById('a_date');if(e&&!e.value)e.value=td();populateRefEmpPicker('a_refEmp');}
+  else if(id==='addSIP'){var e=document.getElementById('s_date');if(e&&!e.value)e.value=td();populateRefEmpPicker('s_refEmp');applyRefPermission('s');}
+  else if(id==='addIns'){var e=document.getElementById('i_date');if(e&&!e.value)e.value=td();populateRefEmpPicker('i_refEmp');applyRefPermission('i');}
+  else if(id==='addAcc'){var e=document.getElementById('a_date');if(e&&!e.value)e.value=td();populateRefEmpPicker('a_refEmp');applyRefPermission('a');}
   else if(id==='addLead'){var e=document.getElementById('l_date');if(e&&!e.value)e.value=td();}
   else if(id==='addMeeting')initMeetingForm();
   else if(id==='addStudent'){var e=document.getElementById('st_date');if(e&&!e.value)e.value=td();populateStRefPickers();}
@@ -4875,6 +4896,7 @@ function populateStRefPickers(){
     });
     dl.innerHTML=h;
   }
+  applyRefPermission('st');
 }
 /* v46: mobile number ab compulsory hai, isliye duplicate check ab PRIMARILY phone number se hota hai (naam se nahi) -
    kyunki naam ki spelling alag ho sakti hai (admin/parent employee ne daala vs employee khud daale) lekin
