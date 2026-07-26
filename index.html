@@ -5010,6 +5010,9 @@ function getCommission(uid){
   var c=e?parseFloat(e['Commission']):NaN;
   return isNaN(c)?50:c;
 }
+/* v51: FIX - "parseFloat(x)||50" jaisa pattern galat h kyunki 0 bhi JS me falsy hota h, isliye jab admin Commission % ko
+   0 set karta tha to woh silently 50 ban jata tha. numOrDefault() sirf tab default deta h jab value genuinely NaN/khaali ho. */
+function numOrDefault(v,def){var n=parseFloat(v);return isNaN(n)?def:n;}
 /* ===== v28: partner ka "My Share" ab pool-based net profit share h, sirf raw brokerage ka % nahi — Monthly Hisab/Finance Dashboard jaisa hi ===== */
 function getEmpRole(uid){
   var e=employees.find(function(x){return (x['Employee ID']||'').trim().toLowerCase()===String(uid).trim().toLowerCase();});
@@ -5047,7 +5050,7 @@ function computeHisabTotals(mo){
   (allData.Hisab||[]).forEach(function(r){
     if(r['Month']!==mo)return;
     var lines=[];try{lines=JSON.parse(r['Details']||'[]');}catch(e){lines=[];}
-    savedRows[r['Employee ID']]={lines:lines,pct:parseFloat(r['Commission %'])||getCommission(r['Employee ID']),status:r['Status']||'Pending',savedBrok:parseFloat(r['Brokerage'])||0};
+    savedRows[r['Employee ID']]={lines:lines,pct:numOrDefault(r['Commission %'],getCommission(r['Employee ID'])),status:r['Status']||'Pending',savedBrok:parseFloat(r['Brokerage'])||0};
   });
   var cbMonth=fMonth(allData.ClientBrokerage||[],mo);
   var totBrok=r2(cbMonth.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0));
@@ -5577,7 +5580,7 @@ function renderHisab(){
     (allData.Hisab||[]).forEach(function(r){
       if(r['Month']!==mo)return;
       var lines=[];try{lines=JSON.parse(r['Details']||'[]');}catch(e){lines=[];}
-      hisabSt.rows[r['Employee ID']]={lines:lines,pct:parseFloat(r['Commission %'])||getCommission(r['Employee ID']),status:r['Status']||'Pending',paidDate:r['Paid Date']||'',saved:true,savedBrok:parseFloat(r['Brokerage'])||0};
+      hisabSt.rows[r['Employee ID']]={lines:lines,pct:numOrDefault(r['Commission %'],getCommission(r['Employee ID'])),status:r['Status']||'Pending',paidDate:r['Paid Date']||'',saved:true,savedBrok:parseFloat(r['Brokerage'])||0};
     });
   }
   var cbMonth=fMonth(allData.ClientBrokerage||[],mo);
@@ -5946,7 +5949,7 @@ function addEmployee(){
   var id=document.getElementById('ne_id').value.trim(),name=document.getElementById('ne_name').value.trim(),pass=document.getElementById('ne_pass').value.trim();
   if(!id||!name||!pass){showToast('ID, Name and Password required','error');return;}
   if(employees.find(function(e){return e['Employee ID']===id;})){showToast('ID already exists','error');return;}
-  var p={action:'addEmployee','Employee ID':id,'Name':name,'Branch':document.getElementById('ne_branch').value,'Role':document.getElementById('ne_role').value,'Password':pass,'Status':'Active','Commission':parseFloat(document.getElementById('ne_comm').value)||50,'Email':document.getElementById('ne_email').value.trim(),'Salary':parseFloat(document.getElementById('ne_sal').value)||0,'Parent ID':Array.prototype.slice.call(document.querySelectorAll('.ne_parent_cb:checked')).map(function(el){return el.value;}).join(',')};
+  var p={action:'addEmployee','Employee ID':id,'Name':name,'Branch':document.getElementById('ne_branch').value,'Role':document.getElementById('ne_role').value,'Password':pass,'Status':'Active','Commission':numOrDefault(document.getElementById('ne_comm').value,50),'Email':document.getElementById('ne_email').value.trim(),'Salary':parseFloat(document.getElementById('ne_sal').value)||0,'Parent ID':Array.prototype.slice.call(document.querySelectorAll('.ne_parent_cb:checked')).map(function(el){return el.value;}).join(',')};
   postData(p).then(function(r){closeModal();if(r&&r.success){showToast('Employee added!','success');loadEmps();}else showToast('Failed: '+(r&&r.error||''),'error');}).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
 }
 
@@ -5975,14 +5978,14 @@ function editEmpModal(empId){
 
 function saveEmp(empId){
   var emp=employees.find(function(e){return e['Employee ID']===empId;});if(!emp)return;
-  var p={action:'updateEmployee','Employee ID':empId,_rowNum:emp._rowNum,'Name':document.getElementById('ee_name').value.trim(),'Branch':document.getElementById('ee_branch').value,'Role':document.getElementById('ee_role').value||'employee','Status':emp['Status']||'Active','Commission':parseFloat(document.getElementById('ee_comm').value)||50,'Email':document.getElementById('ee_email').value.trim(),'Salary':parseFloat(document.getElementById('ee_sal').value)||0,'Parent ID':Array.prototype.slice.call(document.querySelectorAll('.ee_parent_cb:checked')).map(function(el){return el.value;}).join(','),'FinanceAccess':document.getElementById('ee_finaccess').checked?'Yes':'No'};
+  var p={action:'updateEmployee','Employee ID':empId,_rowNum:emp._rowNum,'Name':document.getElementById('ee_name').value.trim(),'Branch':document.getElementById('ee_branch').value,'Role':document.getElementById('ee_role').value||'employee','Status':emp['Status']||'Active','Commission':numOrDefault(document.getElementById('ee_comm').value,50),'Email':document.getElementById('ee_email').value.trim(),'Salary':parseFloat(document.getElementById('ee_sal').value)||0,'Parent ID':Array.prototype.slice.call(document.querySelectorAll('.ee_parent_cb:checked')).map(function(el){return el.value;}).join(','),'FinanceAccess':document.getElementById('ee_finaccess').checked?'Yes':'No'};
   var np=document.getElementById('ee_pass').value.trim();if(np)p['Password']=np;
   postData(p).then(function(r){closeModal();if(r&&r.success){showToast('Updated!','success');loadEmps();}else showToast('Failed','error');}).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
 }
 
 function toggleEmp(empId,newStat){
   var emp=employees.find(function(e){return e['Employee ID']===empId;});if(!emp)return;
-  var p={action:'updateEmployee','Employee ID':empId,_rowNum:emp._rowNum,'Name':emp['Name'],'Branch':emp['Branch'],'Role':emp['Role']||'employee','Password':emp['Password']||'','Status':newStat,'Commission':emp['Commission']!==''&&emp['Commission']!==undefined?emp['Commission']:50};
+  var p={action:'updateEmployee','Employee ID':empId,_rowNum:emp._rowNum,'Name':emp['Name'],'Branch':emp['Branch'],'Role':emp['Role']||'employee','Password':emp['Password']||'','Status':newStat,'Commission':numOrDefault(emp['Commission'],50)};
   postData(p).then(function(r){if(r&&r.success){showToast('Status updated!','success');loadEmps();}}).catch(function(){});
 }
 function toggleEmpBtn(btn){toggleEmp(btn.dataset.id, btn.dataset.act);}
