@@ -2366,7 +2366,6 @@ function submitWatchlist(){
       allData.Watchlist.push(p);
       renderWatchlistPage();
       setTimeout(function(){loadAll(2);},600);
-      goToMainAfterSave();
     }
     else showToast('Failed: '+(r&&r.error||''),'error');
   }).catch(function(e){showToast('Error: '+e.message,'error');});
