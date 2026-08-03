@@ -6208,7 +6208,7 @@ function toggleEmpBtn(btn){toggleEmp(btn.dataset.id, btn.dataset.act);}
 function myProfileMissing(){
   if(!currentUser)return[];
   var emp=employees.find(function(e){return e['Employee ID']===currentUser.userId;});
-  if(!emp)return[];
+  if(!emp)return[]; // director/owner accounts have no Employee sheet row - nothing to nudge
   var missing=[];
   if(!(emp['Email']||'').trim())missing.push('Gmail ID');
   if(!(emp['PAN']||'').trim())missing.push('PAN');
@@ -6225,7 +6225,11 @@ function renderMyProfile(){
   var box=document.getElementById('myProfileBox');
   if(!box||!currentUser)return;
   var emp=employees.find(function(e){return e['Employee ID']===currentUser.userId;});
-  if(!emp){box.innerHTML='<div class="no-data">Profile still loading - please wait a moment and reopen this page.</div>';return;}
+  if(!emp){
+    if(employees.length===0){box.innerHTML='<div class="no-data">Profile still loading - please wait a moment and reopen this page.</div>';}
+    else box.innerHTML='<div class="no-data">This login is a director/owner account and is not linked to a team-member profile row, so there is nothing to fill in here.</div>';
+    return;
+  }
   var missing=myProfileMissing();
   var h='';
   if(missing.length)h+='<div class="prev-err" style="margin-bottom:14px;">&#9888; Please complete: <b>'+missing.join(', ')+'</b> - needed for salary slips, KYC and compliance.</div>';
