@@ -352,6 +352,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
         <div class="nav-item" onclick="showPage('myPoints')">&#11088; My Points</div>
       </div>
     </div>
+    <div class="nav-item" id="navMyProfile" onclick="showPage('myProfile')" style="margin:0 12px 8px;border-radius:8px;">&#128100; My Profile <span id="myProfileAlert" style="display:none;color:var(--danger);font-weight:700;">&#9679;</span></div>
     <div class="sidebar-bottom"><button class="theme-switch" id="themeSwitchBtn" onclick="toggleTheme()">&#9788; Light Mode</button><button class="btn-logout" onclick="logout()">&#8592; Logout</button></div>
   </nav>
 
@@ -420,6 +421,12 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
         <button class="filter-btn" onclick="setF('all',this,'bizOverview')">All Time</button>
       </div>
       <div id="bizOverviewCards"></div>
+    </div>
+
+    <!-- MY PROFILE (self-service KYC completion: Gmail, PAN, Aadhaar) -->
+    <div class="page" id="page-myProfile">
+      <div class="page-header"><h1>My Profile</h1><p>Keep your Gmail ID, PAN &amp; Aadhaar up to date - required for salary slips, KYC and compliance</p></div>
+      <div id="myProfileBox"></div>
     </div>
 
     <!-- CLIENT 360 (search + full profile, Choice Connect Client Details Report style) -->
@@ -1911,6 +1918,7 @@ function loadEmps(){
       var navAI=document.getElementById('navAddIncome');if(navAI)navAI.style.display=canAddFinance()?'flex':'none';
       var navAE=document.getElementById('navAddExpense');if(navAE)navAE.style.display=canAddFinance()?'flex':'none';
       populateForEmpPickers();
+      checkMyProfileAlert();
       renderPage(curPage());
     }
   }).catch(function(){});
@@ -2189,6 +2197,7 @@ function renderPage(id){
   else if(id==='contest')renderContestPage();
   else if(id==='bizOverview')renderBizOverview();
   else if(id==='client360'){var e=document.getElementById('c360_q');if(e)e.value='';document.getElementById('c360_results').innerHTML='';document.getElementById('c360_profile').innerHTML='';}
+  else if(id==='myProfile')renderMyProfile();
 }
 
 function mkStats(cards){var h='';cards.forEach(function(c){h+='<div class="stat-card '+(c.color||'green')+'"'+(c.onclick?' style="cursor:pointer" onclick="'+c.onclick+'"':'')+'><div class="stat-label">'+c.label+'</div><div class="stat-value">'+c.value+'</div><div class="stat-sub">'+(c.sub||'')+'</div></div>';});return h;}
@@ -6129,10 +6138,8 @@ function showAddEmpModal(){
   h+='<div class="form-group"><label>Role</label><select id="ne_role"><option value="employee">Employee</option><option value="finance">Finance (Hisab &amp; Income/Expense)</option><option value="partner">Partner (% of net profit)</option><option value="admin">Admin</option></select></div>';
   h+='<div class="form-group"><label>Commission % (employee: % of brokerage &#183; partner: % of net profit)</label><input type="number" id="ne_comm" value="50" min="0" max="100"></div>';
   h+='<div class="form-group"><label>Fixed Salary (&#8377;/month, 0 if none)</label><input type="number" id="ne_sal" value="0"></div>';
-  h+='<div class="form-group"><label>Gmail ID <span style="color:var(--danger);">*</span></label><input type="email" id="ne_email" placeholder="employee@gmail.com" required></div>';
-  h+='<div class="form-group"><label>PAN Number <span style="color:var(--danger);">*</span></label><input type="text" id="ne_pan" placeholder="ABCDE1234F" maxlength="10" style="text-transform:uppercase;" required></div>';
-  h+='<div class="form-group"><label>Aadhaar Number <span style="color:var(--danger);">*</span></label><input type="text" id="ne_aadhaar" placeholder="XXXX XXXX XXXX" maxlength="12" required></div>';
   h+='<div class="form-group"><label>Password</label><input type="text" id="ne_pass"></div>';
+  h+='<div style="color:var(--muted);font-size:12px;margin:-4px 0 6px;">Gmail ID, PAN &amp; Aadhaar are not filled here - the employee will complete their own profile (My Profile page) after their first login.</div>';
   h+='<div class="form-group"><label>Sub-team Of (Parents) - you can select multiple</label><div style="max-height:160px;overflow-y:auto;border:1px solid var(--border,rgba(255,255,255,.15));border-radius:8px;padding:8px;">';
   employees.forEach(function(e){h+='<label style="display:flex;align-items:center;gap:6px;font-weight:400;font-size:13px;padding:3px 0;"><input type="checkbox" class="ne_parent_cb" value="'+e['Employee ID']+'" style="width:auto;"> '+e['Name']+' ('+e['Employee ID']+')</label>';});
   h+='</div></div>';
@@ -6146,16 +6153,10 @@ function isValidEmail(v){return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((v||'').trim()
 
 function addEmployee(){
   var id=document.getElementById('ne_id').value.trim(),name=document.getElementById('ne_name').value.trim(),pass=document.getElementById('ne_pass').value.trim();
-  var email=document.getElementById('ne_email').value.trim();
-  var pan=document.getElementById('ne_pan').value.trim().toUpperCase();
-  var aadhaar=document.getElementById('ne_aadhaar').value.trim();
   if(!id||!name||!pass){showToast('ID, Name and Password required','error');return;}
   if(employees.find(function(e){return e['Employee ID']===id;})){showToast('ID already exists','error');return;}
-  if(!email||!isValidEmail(email)){showToast('Valid Gmail ID is required','error');return;}
-  if(!pan||!isValidPAN(pan)){showToast('Valid PAN Number is required (format: ABCDE1234F)','error');return;}
-  if(!aadhaar||!isValidAadhaar(aadhaar)){showToast('Valid 12-digit Aadhaar Number is required','error');return;}
-  var p={action:'addEmployee','Employee ID':id,'Name':name,'Branch':document.getElementById('ne_branch').value,'Role':document.getElementById('ne_role').value,'Password':pass,'Status':'Active','Commission':numOrDefault(document.getElementById('ne_comm').value,50),'Email':email,'Salary':parseFloat(document.getElementById('ne_sal').value)||0,'Parent ID':Array.prototype.slice.call(document.querySelectorAll('.ne_parent_cb:checked')).map(function(el){return el.value;}).join(','),'PAN':pan,'Aadhaar':aadhaar};
-  postData(p).then(function(r){closeModal();if(r&&r.success){showToast('Employee added!','success');loadEmps();}else showToast('Failed: '+(r&&r.error||''),'error');}).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
+  var p={action:'addEmployee','Employee ID':id,'Name':name,'Branch':document.getElementById('ne_branch').value,'Role':document.getElementById('ne_role').value,'Password':pass,'Status':'Active','Commission':numOrDefault(document.getElementById('ne_comm').value,50),'Email':'','Salary':parseFloat(document.getElementById('ne_sal').value)||0,'Parent ID':Array.prototype.slice.call(document.querySelectorAll('.ne_parent_cb:checked')).map(function(el){return el.value;}).join(',')};
+  postData(p).then(function(r){closeModal();if(r&&r.success){showToast('Employee added! They can complete Gmail/PAN/Aadhaar from My Profile after login.','success');loadEmps();}else showToast('Failed: '+(r&&r.error||''),'error');}).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
 }
 
 function editEmpModal(empId){
@@ -6170,9 +6171,9 @@ function editEmpModal(empId){
   h+='</select></div>';
   h+='<div class="form-group"><label>Commission % (employee: % of brokerage &#183; partner: % of net profit)</label><input type="number" id="ee_comm" value="'+(emp['Commission']!==''&&emp['Commission']!==undefined?emp['Commission']:50)+'" min="0" max="100"></div>';
   h+='<div class="form-group"><label>Fixed Salary (&#8377;/month)</label><input type="number" id="ee_sal" value="'+(parseFloat(emp['Salary'])||0)+'"></div>';
-  h+='<div class="form-group"><label>Gmail ID <span style="color:var(--danger);">*</span></label><input type="email" id="ee_email" value="'+(emp['Email']||'')+'" placeholder="employee@gmail.com" required></div>';
-  h+='<div class="form-group"><label>PAN Number <span style="color:var(--danger);">*</span></label><input type="text" id="ee_pan" value="'+(emp['PAN']||'')+'" placeholder="ABCDE1234F" maxlength="10" style="text-transform:uppercase;" required></div>';
-  h+='<div class="form-group"><label>Aadhaar Number <span style="color:var(--danger);">*</span></label><input type="text" id="ee_aadhaar" value="'+(emp['Aadhaar']||'')+'" placeholder="XXXX XXXX XXXX" maxlength="12" required></div>';
+  h+='<div class="form-group"><label>Gmail ID <span style="color:var(--muted);font-weight:400;">(employee fills via My Profile)</span></label><input type="email" id="ee_email" value="'+(emp['Email']||'')+'" placeholder="employee@gmail.com"></div>';
+  h+='<div class="form-group"><label>PAN Number <span style="color:var(--muted);font-weight:400;">(employee fills via My Profile)</span></label><input type="text" id="ee_pan" value="'+(emp['PAN']||'')+'" placeholder="ABCDE1234F" maxlength="10" style="text-transform:uppercase;"></div>';
+  h+='<div class="form-group"><label>Aadhaar Number <span style="color:var(--muted);font-weight:400;">(employee fills via My Profile)</span></label><input type="text" id="ee_aadhaar" value="'+(emp['Aadhaar']||'')+'" placeholder="XXXX XXXX XXXX" maxlength="12"></div>';
   h+='<div class="form-group"><label>New Password (blank = keep)</label><input type="text" id="ee_pass" placeholder="Leave blank to keep"></div>';
   h+='<div class="form-group"><label>Sub-team Of (Parents) - you can select multiple</label><div style="max-height:160px;overflow-y:auto;border:1px solid var(--border,rgba(255,255,255,.15));border-radius:8px;padding:8px;">';
   var curParentIds=parentIdsOf(emp);
@@ -6188,9 +6189,9 @@ function saveEmp(empId){
   var email=document.getElementById('ee_email').value.trim();
   var pan=document.getElementById('ee_pan').value.trim().toUpperCase();
   var aadhaar=document.getElementById('ee_aadhaar').value.trim();
-  if(!email||!isValidEmail(email)){showToast('Valid Gmail ID is required','error');return;}
-  if(!pan||!isValidPAN(pan)){showToast('Valid PAN Number is required (format: ABCDE1234F)','error');return;}
-  if(!aadhaar||!isValidAadhaar(aadhaar)){showToast('Valid 12-digit Aadhaar Number is required','error');return;}
+  if(email&&!isValidEmail(email)){showToast('Gmail ID looks invalid - fix it or leave blank','error');return;}
+  if(pan&&!isValidPAN(pan)){showToast('PAN format looks invalid (expected ABCDE1234F) - fix it or leave blank','error');return;}
+  if(aadhaar&&!isValidAadhaar(aadhaar)){showToast('Aadhaar must be 12 digits - fix it or leave blank','error');return;}
   var p={action:'updateEmployee','Employee ID':empId,_rowNum:emp._rowNum,'Name':document.getElementById('ee_name').value.trim(),'Branch':document.getElementById('ee_branch').value,'Role':document.getElementById('ee_role').value||'employee','Status':emp['Status']||'Active','Commission':numOrDefault(document.getElementById('ee_comm').value,50),'Email':email,'Salary':parseFloat(document.getElementById('ee_sal').value)||0,'Parent ID':Array.prototype.slice.call(document.querySelectorAll('.ee_parent_cb:checked')).map(function(el){return el.value;}).join(','),'FinanceAccess':document.getElementById('ee_finaccess').checked?'Yes':'No','PAN':pan,'Aadhaar':aadhaar};
   var np=document.getElementById('ee_pass').value.trim();if(np)p['Password']=np;
   postData(p).then(function(r){closeModal();if(r&&r.success){showToast('Updated!','success');loadEmps();}else showToast('Failed','error');}).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
@@ -6202,6 +6203,57 @@ function toggleEmp(empId,newStat){
   postData(p).then(function(r){if(r&&r.success){showToast('Status updated!','success');loadEmps();}}).catch(function(){});
 }
 function toggleEmpBtn(btn){toggleEmp(btn.dataset.id, btn.dataset.act);}
+
+/* ===== MY PROFILE (self-service Gmail/PAN/Aadhaar completion) ===== */
+function myProfileMissing(){
+  if(!currentUser)return[];
+  var emp=employees.find(function(e){return e['Employee ID']===currentUser.userId;});
+  if(!emp)return[];
+  var missing=[];
+  if(!(emp['Email']||'').trim())missing.push('Gmail ID');
+  if(!(emp['PAN']||'').trim())missing.push('PAN');
+  if(!(emp['Aadhaar']||'').trim())missing.push('Aadhaar');
+  return missing;
+}
+function checkMyProfileAlert(){
+  var dot=document.getElementById('myProfileAlert');
+  if(!dot)return;
+  var missing=myProfileMissing();
+  dot.style.display=missing.length?'inline':'none';
+}
+function renderMyProfile(){
+  var box=document.getElementById('myProfileBox');
+  if(!box||!currentUser)return;
+  var emp=employees.find(function(e){return e['Employee ID']===currentUser.userId;});
+  if(!emp){box.innerHTML='<div class="no-data">Profile still loading - please wait a moment and reopen this page.</div>';return;}
+  var missing=myProfileMissing();
+  var h='';
+  if(missing.length)h+='<div class="prev-err" style="margin-bottom:14px;">&#9888; Please complete: <b>'+missing.join(', ')+'</b> - needed for salary slips, KYC and compliance.</div>';
+  else h+='<div class="prev-ok" style="margin-bottom:14px;">&#10003; Your profile is complete.</div>';
+  h+='<div class="form-card">';
+  h+='<div class="form-group"><label>Employee ID</label><input type="text" value="'+(emp['Employee ID']||'')+'" disabled></div>';
+  h+='<div class="form-group"><label>Full Name</label><input type="text" value="'+(emp['Name']||'')+'" disabled></div>';
+  h+='<div class="form-group"><label>Branch</label><input type="text" value="'+(emp['Branch']||'')+'" disabled></div>';
+  h+='<div class="form-group"><label>Gmail ID <span style="color:var(--danger);">*</span></label><input type="email" id="mp_email" value="'+(emp['Email']||'')+'" placeholder="you@gmail.com"></div>';
+  h+='<div class="form-group"><label>PAN Number <span style="color:var(--danger);">*</span></label><input type="text" id="mp_pan" value="'+(emp['PAN']||'')+'" placeholder="ABCDE1234F" maxlength="10" style="text-transform:uppercase;"></div>';
+  h+='<div class="form-group"><label>Aadhaar Number <span style="color:var(--danger);">*</span></label><input type="text" id="mp_aadhaar" value="'+(emp['Aadhaar']||'')+'" placeholder="XXXX XXXX XXXX" maxlength="12"></div>';
+  h+='<div class="form-group"><label>Change Password (blank = keep current)</label><input type="text" id="mp_pass" placeholder="Leave blank to keep"></div>';
+  h+='<button class="btn-save" onclick="saveMyProfile()">Save My Profile</button>';
+  h+='</div>';
+  box.innerHTML=h;
+}
+function saveMyProfile(){
+  var emp=employees.find(function(e){return e['Employee ID']===currentUser.userId;});if(!emp)return;
+  var email=document.getElementById('mp_email').value.trim();
+  var pan=document.getElementById('mp_pan').value.trim().toUpperCase();
+  var aadhaar=document.getElementById('mp_aadhaar').value.trim();
+  if(!email||!isValidEmail(email)){showToast('Valid Gmail ID is required','error');return;}
+  if(!pan||!isValidPAN(pan)){showToast('Valid PAN Number is required (format: ABCDE1234F)','error');return;}
+  if(!aadhaar||!isValidAadhaar(aadhaar)){showToast('Valid 12-digit Aadhaar Number is required','error');return;}
+  var p={action:'updateEmployee','Employee ID':emp['Employee ID'],_rowNum:emp._rowNum,'Name':emp['Name'],'Branch':emp['Branch'],'Role':emp['Role']||'employee','Status':emp['Status']||'Active','Commission':numOrDefault(emp['Commission'],50),'Email':email,'Salary':parseFloat(emp['Salary'])||0,'Parent ID':parentIdsOf(emp).join(','),'FinanceAccess':emp['FinanceAccess']==='Yes'?'Yes':'No','PAN':pan,'Aadhaar':aadhaar};
+  var np=document.getElementById('mp_pass').value.trim();if(np)p['Password']=np;
+  postData(p).then(function(r){if(r&&r.success){showToast('Profile updated!','success');loadEmps();setTimeout(function(){checkMyProfileAlert();},1200);}else showToast('Failed: '+(r&&r.error||''),'error');}).catch(function(e){showToast('Error: '+e.message,'error');});
+}
 
 function initEmpLoad(attempt){
   attempt=attempt||1;
