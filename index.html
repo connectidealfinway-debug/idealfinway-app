@@ -697,6 +697,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
     <div class="page" id="page-manageEmps">
       <div class="page-header"><h1>Manage Employees</h1><p>Add, edit or deactivate employees</p></div>
       <div style="margin-bottom:16px;"><button class="btn-submit" onclick="showAddEmpModal()">+ Add Employee</button></div>
+      <div id="pendingResignBox"></div>
       <div class="table-wrap"><div class="table-inner" id="manageEmpTable"></div></div>
     </div>
 
@@ -1496,7 +1497,7 @@ var ADMIN_ID='directorravikant.idealfinway';
 var OFFICE_ID='ideal.office';
 var ADMIN_PASS='drrk@1401';
 var currentUser=null;
-var allData={Brokerage:[],ClientBrokerage:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[],Meetings:[],Income:[],Expense:[],Hisab:[],TradingJournal:[],CallTrade:[],CallClients:[],Watchlist:[],Reminders:[],Announcements:[],ClientDocuments:[]};
+var allData={Brokerage:[],ClientBrokerage:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[],Meetings:[],Income:[],Expense:[],Hisab:[],TradingJournal:[],CallTrade:[],CallClients:[],Watchlist:[],Reminders:[],Announcements:[],ClientDocuments:[],Resignations:[],EmployeeDataMoves:[]};
 var employees=[];
 var filters={};
 var accStat='all',myAccStat='all',dashF='today',accDupOnly=false,teamWorkingOnly=false,bizScope='own';
@@ -2004,7 +2005,9 @@ function loadAll(attempt){
         Reminders:r.reminders||r.Reminders||[],
         Announcements:r.announcements||r.Announcements||[],
         Contests:r.contests||r.Contests||[],
-        ClientDocuments:r.clientDocuments||r.ClientDocuments||[]
+        ClientDocuments:r.clientDocuments||r.ClientDocuments||[],
+        Resignations:r.resignations||r.Resignations||[],
+        EmployeeDataMoves:r.employeeDataMoves||r.EmployeeDataMoves||[]
       };
       saveCache();checkSIPAlerts();autoPunchIn();renderPage(curPage());loadEmps();setTimeout(checkDueTomorrowPopup,600);setTimeout(check315Reminder,900);renderAnnounceBanner();
     }else if(attempt<3){
@@ -6263,10 +6266,87 @@ function renderManageEmps(){
     var photoHTML=photoUrl?'<img src="'+photoUrl+'" style="width:36px;height:36px;border-radius:50%;object-fit:cover;">':'<div style="width:36px;height:36px;border-radius:50%;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--muted);">'+initialsOf(e['Name'])+'</div>';
     h+='<tr><td style="cursor:pointer;" data-id="'+e['Employee ID']+'" onclick="editEmpModal(this.dataset.id)" title="Click to view/edit">'+photoHTML+'</td><td>'+(e['Employee ID']||'-')+'</td><td style="font-weight:600;">'+(e['Name']||'-')+'</td><td>'+(e['Branch']||'-')+'</td><td>'+(e['Role']||'employee')+'</td><td>'+pLabel+'</td><td style="font-weight:700;color:var(--accent);">'+(e['Commission']!==''&&e['Commission']!==undefined?e['Commission']+'%':'50%')+'</td><td>'+(parseFloat(e['Salary'])>0?fmt(e['Salary']):'-')+'</td><td>'+(em?em:'<span class="badge red" title="Email missing - salary slip email will not be sent">&#9888; missing</span>')+'</td><td>'+kycLabel+'</td><td><span class="badge '+(isAct?'green':'red')+'">'+(isAct?'Active':'Inactive')+'</span></td><td>';
     h+='<button class="btn-edit" data-id="'+e['Employee ID']+'" onclick="editEmpModal(this.dataset.id)">&#9998; Edit</button>';
-    h+='<button class="btn-del" data-id="'+e['Employee ID']+'" data-act="'+(isAct?'Inactive':'Active')+'" onclick="toggleEmpBtn(this)">'+( isAct?'Deactivate':'Activate')+'</button>';
+    h+='<button class="btn-edit" data-id="'+e['Employee ID']+'" onclick="viewEmpDocsModal(this.dataset.id)">&#128193; Docs</button>';
+    if(isAct){
+      h+='<button class="btn-del" data-id="'+e['Employee ID']+'" data-act="Inactive" onclick="toggleEmpBtn(this)">Deactivate</button>';
+    }else{
+      h+='<button class="btn-del" data-id="'+e['Employee ID']+'" data-act="Active" onclick="toggleEmpBtn(this)">Activate</button>';
+      h+='<button class="btn-save" data-id="'+e['Employee ID']+'" onclick="rejoinEmpBtn(this)" title="Restores all their old client data (SIP/Accounts/Insurance/Students/Leads/Meetings) back from Office">&#8635; Rejoin &amp; Restore Data</button>';
+    }
     h+='</td></tr>';
   });
   document.getElementById('manageEmpTable').innerHTML=h+'</tbody></table>';
+  renderPendingResignations();
+}
+
+function viewEmpDocsModal(empId){
+  var emp=employees.find(function(e){return e['Employee ID']===empId;});if(!emp)return;
+  var docs=empDocsOf(empId).sort(function(a,b){return (a['Date']||'')<(b['Date']||'')?1:-1;});
+  var h='<div class="modal-title">Documents - '+(emp['Name']||empId)+'</div>';
+  h+='<div style="margin-bottom:10px;font-size:13px;color:var(--muted);">PAN: <b style="color:var(--text);">'+(emp['PAN']||'-')+'</b> &#183; Aadhaar: <b style="color:var(--text);">'+(emp['Aadhaar']||'-')+'</b> &#183; Gmail: <b style="color:var(--text);">'+(emp['Email']||'-')+'</b></div>';
+  if(!docs.length){
+    h+='<div class="no-data">No documents uploaded by this employee yet.</div>';
+  }else{
+    h+='<div class="table-inner"><table><thead><tr><th>Date</th><th>Doc Type</th><th>File Name</th><th>Actions</th></tr></thead><tbody>';
+    docs.forEach(function(d){
+      h+='<tr><td>'+(d['Date']||'-')+'</td><td>'+(d['Doc Type']||'-')+'</td><td>'+(d['File Name']||'-')+'</td><td>'+
+        '<a href="'+(d['Drive URL']||'#')+'" target="_blank" class="btn-edit" style="text-decoration:none;display:inline-block;">&#128065; View / Verify</a>'+
+        '</td></tr>';
+    });
+    h+='</tbody></table></div>';
+  }
+  h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Close</button></div>';
+  document.getElementById('modalBox').innerHTML=h;document.getElementById('modal').className='show';
+}
+
+function rejoinEmpBtn(btn){rejoinEmp(btn.dataset.id);}
+function rejoinEmp(empId){
+  var emp=employees.find(function(e){return e['Employee ID']===empId;});if(!emp)return;
+  if(!confirm('Rejoin '+(emp['Name']||empId)+'? Their old client data (SIP/Accounts/Insurance/Students/Leads/Meetings) that was moved to Office will be restored back to them exactly as it was, and their login will be reactivated.'))return;
+  postData({action:'rejoinEmployee','Employee ID':empId}).then(function(r){
+    if(r&&r.success){
+      var restored=r.restored||{};
+      var parts=Object.keys(restored).filter(function(k){return restored[k]>0;}).map(function(k){return restored[k]+' '+k;});
+      showToast('Rejoined! '+(parts.length?('Restored: '+parts.join(', ')):'No old data to restore')+'.','success');
+      loadEmps();
+    }else showToast('Failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+
+function renderPendingResignations(){
+  var host=document.getElementById('pendingResignBox');
+  if(!host)return;
+  var pending=(allData.Resignations||[]).filter(function(r){return (r['Status']||'Pending')==='Pending';});
+  if(!pending.length){host.innerHTML='';return;}
+  var h='<div class="form-card" style="margin-bottom:16px;border:1px solid #e05;"><div style="font-weight:700;margin-bottom:10px;">&#9888; Pending Resignations ('+pending.length+')</div>';
+  h+='<div class="table-inner"><table><thead><tr><th>Date</th><th>Employee</th><th>Branch</th><th>Reason</th><th>Notice</th><th>Last Working Day</th><th>Remarks</th><th>Actions</th></tr></thead><tbody>';
+  pending.forEach(function(r){
+    h+='<tr><td>'+(r['Date']||'-')+'</td><td style="font-weight:600;">'+(r['Employee Name']||r['Employee ID']||'-')+'</td><td>'+(r['Branch']||'-')+'</td><td>'+(r['Reason']||'-')+'</td><td>'+(r['Notice Period']||'-')+'</td><td>'+(r['Last Working Day']||'-')+'</td><td>'+(r['Remarks']||'-')+'</td>'+
+      '<td><button class="btn-save" data-row="'+r._rowNum+'" onclick="approveResignBtn(this)">&#10003; Approve</button> '+
+      '<button class="btn-del" data-row="'+r._rowNum+'" onclick="rejectResignBtn(this)">&#10007; Reject</button></td></tr>';
+  });
+  h+='</tbody></table></div></div>';
+  host.innerHTML=h;
+}
+function approveResignBtn(btn){approveResign(btn.dataset.row);}
+function rejectResignBtn(btn){rejectResign(btn.dataset.row);}
+function approveResign(rowNum){
+  if(!confirm('Approve this resignation? This will immediately deactivate the employee login and move all their client data (SIP/Accounts/Insurance/Students/Leads/Meetings) to Office.'))return;
+  postData({action:'approveResignation','_rowNum':rowNum}).then(function(r){
+    if(r&&r.success){
+      var moved=r.moved||{};
+      var parts=Object.keys(moved).filter(function(k){return moved[k]>0;}).map(function(k){return moved[k]+' '+k;});
+      showToast('Approved! '+(parts.length?('Moved to Office: '+parts.join(', ')):'No client data to move')+'.','success');
+      loadAll();loadEmps();
+    }else showToast('Failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+function rejectResign(rowNum){
+  if(!confirm('Reject this resignation request?'))return;
+  postData({action:'rejectResignation','_rowNum':rowNum}).then(function(r){
+    if(r&&r.success){showToast('Resignation rejected.','success');loadAll();}
+    else showToast('Failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
 
 function showAddEmpModal(){
@@ -6461,8 +6541,38 @@ function renderMyProfile(){
      '</div>';
   h+='<div id="mp_docsList">Loading documents...</div>';
   h+='</div>';
+  h+=renderResignSection(emp);
   box.innerHTML=h;
   renderMyProfileDocs(emp['Employee ID']);
+}
+
+function renderResignSection(emp){
+  if((emp['Status']||'Active')!=='Active')return '';
+  var myResigns=(allData.Resignations||[]).filter(function(r){return r['Employee ID']===emp['Employee ID'];}).sort(function(a,b){return (a._rowNum||0)<(b._rowNum||0)?1:-1;});
+  var pending=myResigns.find(function(r){return (r['Status']||'Pending')==='Pending';});
+  var h='<div class="form-card" style="margin-top:16px;">';
+  h+='<div style="font-weight:700;margin-bottom:10px;">&#128203; Resignation</div>';
+  if(pending){
+    h+='<div class="prev-err">Your resignation request submitted on <b>'+(pending['Date']||'-')+'</b> is <b>Pending admin approval</b>. Last Working Day (if approved): <b>'+(pending['Last Working Day']||'-')+'</b>. Reason: '+(pending['Reason']||'-')+'</div>';
+  }else{
+    var todayPlus30=(function(){var d=new Date();d.setDate(d.getDate()+30);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');})();
+    h+='<div style="color:var(--muted);font-size:13px;margin-bottom:10px;">If you wish to resign, please fill this out. Standard notice period is <b style="color:var(--text);">1 Month</b> from the date of submission (Last Working Day would be approximately <b style="color:var(--text);">'+todayPlus30+'</b>). Your resignation goes to the admin for approval - nothing changes until it is approved.</div>';
+    h+='<div class="form-group"><label>Reason for Resigning</label><select id="rs_reason"><option>Better Opportunity</option><option>Higher Studies</option><option>Personal / Family Reasons</option><option>Relocation</option><option>Health Reasons</option><option>Compensation</option><option>Other</option></select></div>';
+    h+='<div class="form-group"><label>Notice Period</label><input type="text" value="1 Month" disabled></div>';
+    h+='<div class="form-group"><label>Remarks (optional)</label><textarea id="rs_remarks" rows="2" placeholder="Anything you would like to add..."></textarea></div>';
+    h+='<button class="btn-del" onclick="submitMyResign()">Submit Resignation</button>';
+  }
+  h+='</div>';
+  return h;
+}
+function submitMyResign(){
+  var emp=employees.find(function(e){return e['Employee ID']===currentUser.userId;});if(!emp)return;
+  if(!confirm('Submit your resignation with 1 month notice period? This will go to the admin for approval.'))return;
+  var p={action:'submitResignation','Employee ID':emp['Employee ID'],'Employee Name':emp['Name'],'Branch':emp['Branch'],'Reason':document.getElementById('rs_reason').value,'Remarks':document.getElementById('rs_remarks').value.trim()};
+  postData(p).then(function(r){
+    if(r&&r.success){showToast('Resignation submitted. Last Working Day (if approved): '+r.lastWorkingDay,'success');loadAll();setTimeout(renderMyProfile,1000);}
+    else showToast('Failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
 function renderMyProfileDocs(empId){
   var el=document.getElementById('mp_docsList');
