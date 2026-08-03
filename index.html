@@ -1396,6 +1396,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
       </div>
       <div class="stats-grid" id="hisabSummary"></div>
       <div id="hisabPL"></div>
+      <div id="hisabPLDetail"></div>
       <div class="sec-title">Employee-wise Hisab</div>
       <div id="hisabCards"></div>
     </div>
@@ -5714,17 +5715,31 @@ function renderHisab(){
     {label:'Student Referral Commission',value:fmt(totalRefComm),sub:'10% auto (this month)',color:'purple'}
   ]);
   var netProfit=r2(totBrok+tInc-tExp-totPay);
+  window._hisabPLCache={brok:cbMonth,income:inc,expense:exp,payEmp:emps.map(function(e){var st=hisabSt.rows[e['Employee ID']];var c=st?calc(st):{net:0};return {'Employee ID':e['Employee ID'],'Employee Name':e['Name'],'Branch':e['Branch'],'Role':(e['Role']||'employee'),'Net Payable':c.net,'Pay Status':st?st.status:'Pending'};})};
+  document.getElementById('hisabPLDetail').innerHTML='';
   if(isAdm){
     document.getElementById('hisabPL').innerHTML='<div class="brok-cal"><div class="cal-title" style="margin-bottom:12px;">'+mo+' &#8212; Company P&amp;L</div>'+
     '<div class="stats-grid" style="margin-bottom:0;">'+mkStats([
-      {label:'Brokerage Income',value:fmt(totBrok),sub:'Choice uploads (REMESHIRE)',color:'green'},
-      {label:'Other Income',value:fmt(tInc),sub:'course/insurance/etc',color:'blue'},
-      {label:'Office Expense',value:fmt(tExp),sub:exp.length+' entries',color:'red'},
-      {label:'Team Payout',value:fmt(totPay),sub:'staff + partners',color:'amber'},
+      {label:'Brokerage Income',value:fmt(totBrok),sub:cbMonth.length+' client entries — click to view',color:'green',onclick:"showHisabPLStat('brok')"},
+      {label:'Other Income',value:fmt(tInc),sub:inc.length+' entries (course/insurance/etc) — click to view',color:'blue',onclick:"showHisabPLStat('income')"},
+      {label:'Office Expense',value:fmt(tExp),sub:exp.length+' entries — click to view',color:'red',onclick:"showHisabPLStat('expense')"},
+      {label:'Team Payout',value:fmt(totPay),sub:'staff + partners — click to view',color:'amber',onclick:"showHisabPLStat('payout')"},
       {label:'Profit Pool',value:fmt(pool),sub:'income - exp - staff pay (partner base)',color:'purple'},
       {label:'NET PROFIT',value:fmt(netProfit),sub:netProfit>=0?'&#9650; profit':'&#9660; loss',color:netProfit>=0?'green':'red'}
     ])+'</div></div>';
   }else{document.getElementById('hisabPL').innerHTML='';}
+}
+function showHisabPLStat(kind){
+  var c=window._hisabPLCache||{brok:[],income:[],expense:[],payEmp:[]};
+  if(kind==='brok'){
+    renderStatDetail('hisabPLDetail','Brokerage Income Entries',c.brok,[{k:'Date',l:'Date'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Client ID'},{k:'Employee Name',l:'Employee'},{k:'Branch',l:'Branch'},{k:'Amount',l:'Amount',money:true}]);
+  }else if(kind==='income'){
+    renderStatDetail('hisabPLDetail','Other Income Entries (course/insurance/etc)',c.income,[{k:'Date',l:'Date'},{k:'Category',l:'Category'},{k:'Name',l:'Name/Client'},{k:'Reference',l:'Reference'},{k:'Amount',l:'Amount',money:true},{k:'Entered By',l:'Entered By'}]);
+  }else if(kind==='expense'){
+    renderStatDetail('hisabPLDetail','Office Expense Entries',c.expense,[{k:'Date',l:'Date'},{k:'Category',l:'Category'},{k:'Description',l:'Description'},{k:'Paid By',l:'Paid By'},{k:'Branch',l:'Branch'},{k:'Amount',l:'Amount',money:true}]);
+  }else if(kind==='payout'){
+    renderStatDetail('hisabPLDetail','Team Payout - Staff + Partners',c.payEmp,[{k:'Employee Name',l:'Name'},{k:'Branch',l:'Branch'},{k:'Role',l:'Role'},{k:'Net Payable',l:'Net Payable',money:true},{k:'Pay Status',l:'Status'}]);
+  }
 }
 function setHisabPct(eid,v){var st=hisabSt.rows[eid];if(!st)return;st.pct=parseFloat(v)||0;renderHisab();}
 function setHisabBrok(eid,v){var st=hisabSt.rows[eid];if(!st)return;st.brok=r2(v);st.manual=true;renderHisab();}
