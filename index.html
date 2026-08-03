@@ -249,12 +249,23 @@ try{if(localStorage.getItem('idf_theme')==='light')document.body.classList.add('
 if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(e){});});}
 </script>
 <div id="loginWrap">
-  <div class="login-box">
+  <div class="login-box" id="loginBoxNormal">
     <div class="login-logo"><h1>IdealFinway</h1><p>Performance System</p></div>
     <div class="form-group"><label>Employee / Admin ID</label><input type="text" id="loginId" placeholder="Enter your ID" autocomplete="off"></div>
     <div class="form-group"><label>Password</label><input type="password" id="loginPass" placeholder="Enter password"></div>
     <button class="btn-primary" onclick="login()">Login</button>
     <div class="login-err" id="loginErr">Invalid ID or Password</div>
+    <div style="text-align:center;margin-top:12px;"><a href="javascript:void(0)" onclick="showForgotPassword()" style="color:var(--accent,#3fbf7f);font-size:13px;text-decoration:none;">Forgot Password?</a></div>
+  </div>
+  <div class="login-box" id="loginBoxForgot" style="display:none;">
+    <div class="login-logo"><h1>Reset Password</h1><p>Verify with your registered Gmail ID</p></div>
+    <div class="form-group"><label>Employee / Admin ID</label><input type="text" id="fp_id" placeholder="Enter your ID" autocomplete="off"></div>
+    <div class="form-group"><label>Registered Gmail ID</label><input type="email" id="fp_email" placeholder="Gmail ID saved in My Profile"></div>
+    <div class="form-group"><label>New Password</label><input type="text" id="fp_newpass" placeholder="Enter new password"></div>
+    <div class="form-group"><label>Confirm New Password</label><input type="text" id="fp_confirmpass" placeholder="Re-enter new password"></div>
+    <button class="btn-primary" onclick="submitForgotPassword()">Reset Password</button>
+    <div class="login-err" id="fp_err"></div>
+    <div style="text-align:center;margin-top:12px;"><a href="javascript:void(0)" onclick="showNormalLogin()" style="color:var(--muted,#8a94a6);font-size:13px;text-decoration:none;">&#8592; Back to Login</a></div>
   </div>
 </div>
 
@@ -262,6 +273,9 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
   <nav id="sidebar">
     <div class="sidebar-logo"><span>IdealFinway</span><small>Performance System</small></div>
     <div class="sidebar-user">
+      <div id="sidebarAvatarWrap" style="cursor:pointer;margin-bottom:8px;" onclick="showPage('myProfile')" title="Click to open My Profile">
+        <div id="sidebarAvatarImgBox" style="width:52px;height:52px;border-radius:50%;overflow:hidden;background:var(--card2);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;color:var(--accent);border:2px solid var(--accent);">-</div>
+      </div>
       <div class="uname" id="sidebarName">-</div>
       <div class="urole" id="sidebarRole">-</div>
       <div class="ubranch" id="sidebarBranch">-</div>
@@ -1605,6 +1619,49 @@ function login(){
   });
 }
 
+function showForgotPassword(){
+  document.getElementById('loginBoxNormal').style.display='none';
+  document.getElementById('loginBoxForgot').style.display='block';
+  document.getElementById('fp_err').style.display='none';
+  document.getElementById('fp_id').value=(document.getElementById('loginId').value||'').trim();
+}
+function showNormalLogin(){
+  document.getElementById('loginBoxForgot').style.display='none';
+  document.getElementById('loginBoxNormal').style.display='block';
+}
+function submitForgotPassword(){
+  var id=(document.getElementById('fp_id').value||'').trim();
+  var email=(document.getElementById('fp_email').value||'').trim().toLowerCase();
+  var np=(document.getElementById('fp_newpass').value||'').trim();
+  var cp=(document.getElementById('fp_confirmpass').value||'').trim();
+  var err=document.getElementById('fp_err');
+  err.style.display='none';
+  function showErr(msg){err.textContent=msg;err.style.display='block';}
+  if(!id||!email||!np||!cp){showErr('Please fill in all fields');return;}
+  if(np!==cp){showErr('New Password and Confirm Password do not match');return;}
+  if(np.length<4){showErr('Password should be at least 4 characters');return;}
+  if(id===ADMIN_ID){showErr('This admin account cannot be reset here - contact IdealFinway support.');return;}
+  function tryReset(){
+    var emp=employees.find(function(e){return e['Employee ID']===id;});
+    if(!emp){showErr('ID not found');return;}
+    if((emp['Email']||'').trim().toLowerCase()!==email){showErr('ID and Gmail ID do not match our records. Please contact admin if you have not yet set your Gmail ID in My Profile.');return;}
+    var p={action:'updateEmployee','Employee ID':id,_rowNum:emp._rowNum,'Name':emp['Name'],'Branch':emp['Branch'],'Role':emp['Role']||'employee','Status':emp['Status']||'Active','Commission':numOrDefault(emp['Commission'],50),'Email':emp['Email']||'','Salary':parseFloat(emp['Salary'])||0,'Parent ID':parentIdsOf(emp).join(','),'FinanceAccess':emp['FinanceAccess']==='Yes'?'Yes':'No','PAN':emp['PAN']||'','Aadhaar':emp['Aadhaar']||'','Password':np};
+    postData(p).then(function(r){
+      if(r&&r.success){
+        emp['Password']=np;
+        showNormalLogin();
+        document.getElementById('loginId').value=id;
+        document.getElementById('loginPass').value='';
+        showToast('Password reset! Please login with your new password.','success');
+      }else showErr('Reset failed: '+(r&&r.error||'try again'));
+    }).catch(function(e){showErr('Network error: '+e.message);});
+  }
+  if(employees&&employees.length)tryReset();
+  else{
+    fetchEmployees().then(function(r){if(r&&r.success)employees=r.employees||[];tryReset();}).catch(function(){showErr('Network error - could not load records, try again');});
+  }
+}
+
 /* ===== v28: NOTIFICATION SYSTEM — bell icon sidebar me hamesha visible (badge count), + din me ek baar auto-popup ===== */
 /* SIP due tomorrow + aaj ki meeting (Meetings sheet 'Next Meeting') + student fees pending, calendar (nextDue) se juda hua */
 function playAlertSound(){
@@ -1803,6 +1860,7 @@ function startApp(){
   document.getElementById('sidebarName').textContent=currentUser.name;
   document.getElementById('sidebarRole').textContent=currentUser.role==='employee'?'':currentUser.role.toUpperCase();
   document.getElementById('sidebarBranch').textContent=currentUser.branch;
+  renderSidebarAvatar();
   syncThemeBtn();
   showGreeting(currentUser.name);
   var c=loadCache();
@@ -6142,15 +6200,18 @@ function renderManageEmps(){
   var missing=employees.filter(function(e){return (e['Status']||'Active')==='Active'&&!(e['Email']||'').trim();});
   var h='';
   if(missing.length)h+='<div class="prev-err" style="margin-bottom:10px;">&#9888; <b>'+missing.length+' employee(s) do not have an Email set</b> - they will NOT receive a salary slip email when marked Paid: '+missing.map(function(e){return e['Name']||e['Employee ID'];}).join(', ')+'</div>';
-  h+='<table><thead><tr><th>Employee ID</th><th>Name</th><th>Branch</th><th>Role</th><th>Sub-team Of</th><th>Commission %</th><th>Salary</th><th>Email</th><th>KYC (PAN/Aadhaar)</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+  h+='<table><thead><tr><th>Photo</th><th>Employee ID</th><th>Name</th><th>Branch</th><th>Role</th><th>Sub-team Of</th><th>Commission %</th><th>Salary</th><th>Email</th><th>KYC (PAN/Aadhaar)</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
   employees.forEach(function(e){
     var isAct=(e['Status']||'Active')==='Active';
     var em=(e['Email']||'').trim();
     var pids=parentIdsOf(e);
     var pLabel=pids.length?pids.map(function(pid){var pEmp=employees.find(function(x){return x['Employee ID']===pid;});return pEmp?pEmp['Name']:pid;}).join(', '):'<span style="color:var(--muted);">&#8212;</span>';
     var panV=(e['PAN']||'').trim(),aadV=(e['Aadhaar']||'').trim();
-    var kycLabel=(panV&&aadV)?('<span class="badge green" title="PAN: '+panV+' &#183; Aadhaar: XXXX-XXXX-'+aadV.slice(-4)+'">&#10003; Verified</span>'):'<span class="badge red" title="PAN/Aadhaar missing">&#9888; incomplete</span>';
-    h+='<tr><td>'+(e['Employee ID']||'-')+'</td><td style="font-weight:600;">'+(e['Name']||'-')+'</td><td>'+(e['Branch']||'-')+'</td><td>'+(e['Role']||'employee')+'</td><td>'+pLabel+'</td><td style="font-weight:700;color:var(--accent);">'+(e['Commission']!==''&&e['Commission']!==undefined?e['Commission']+'%':'50%')+'</td><td>'+(parseFloat(e['Salary'])>0?fmt(e['Salary']):'-')+'</td><td>'+(em?em:'<span class="badge red" title="Email missing - salary slip email will not be sent">&#9888; missing</span>')+'</td><td>'+kycLabel+'</td><td><span class="badge '+(isAct?'green':'red')+'">'+(isAct?'Active':'Inactive')+'</span></td><td>';
+    var allDocsOk=panV&&aadV&&empHasDoc(e['Employee ID'],'Photo')&&empHasDoc(e['Employee ID'],'PAN Card')&&empHasDoc(e['Employee ID'],'Aadhaar Card');
+    var kycLabel=allDocsOk?('<span class="badge green" title="PAN: '+panV+' &#183; Aadhaar: XXXX-XXXX-'+aadV.slice(-4)+' &#183; Photo/PAN/Aadhaar docs uploaded">&#10003; Verified</span>'):'<span class="badge red" title="PAN/Aadhaar/Photo/documents incomplete">&#9888; incomplete</span>';
+    var photoUrl=empPhotoUrl(e['Employee ID']);
+    var photoHTML=photoUrl?'<img src="'+photoUrl+'" style="width:36px;height:36px;border-radius:50%;object-fit:cover;">':'<div style="width:36px;height:36px;border-radius:50%;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--muted);">'+initialsOf(e['Name'])+'</div>';
+    h+='<tr><td style="cursor:pointer;" data-id="'+e['Employee ID']+'" onclick="editEmpModal(this.dataset.id)" title="Click to view/edit">'+photoHTML+'</td><td>'+(e['Employee ID']||'-')+'</td><td style="font-weight:600;">'+(e['Name']||'-')+'</td><td>'+(e['Branch']||'-')+'</td><td>'+(e['Role']||'employee')+'</td><td>'+pLabel+'</td><td style="font-weight:700;color:var(--accent);">'+(e['Commission']!==''&&e['Commission']!==undefined?e['Commission']+'%':'50%')+'</td><td>'+(parseFloat(e['Salary'])>0?fmt(e['Salary']):'-')+'</td><td>'+(em?em:'<span class="badge red" title="Email missing - salary slip email will not be sent">&#9888; missing</span>')+'</td><td>'+kycLabel+'</td><td><span class="badge '+(isAct?'green':'red')+'">'+(isAct?'Active':'Inactive')+'</span></td><td>';
     h+='<button class="btn-edit" data-id="'+e['Employee ID']+'" onclick="editEmpModal(this.dataset.id)">&#9998; Edit</button>';
     h+='<button class="btn-del" data-id="'+e['Employee ID']+'" data-act="'+(isAct?'Inactive':'Active')+'" onclick="toggleEmpBtn(this)">'+( isAct?'Deactivate':'Activate')+'</button>';
     h+='</td></tr>';
@@ -6233,15 +6294,43 @@ function toggleEmp(empId,newStat){
 function toggleEmpBtn(btn){toggleEmp(btn.dataset.id, btn.dataset.act);}
 
 /* ===== MY PROFILE (self-service Gmail/PAN/Aadhaar completion) ===== */
+function empDocsOf(empId){
+  var idT=(empId||'').trim().toUpperCase();
+  return (allData.ClientDocuments||[]).filter(function(d){return (d['Client ID']||'').trim().toUpperCase()===idT;});
+}
+function empHasDoc(empId,docType){
+  return empDocsOf(empId).some(function(d){return (d['Doc Type']||'')===docType;});
+}
+function empPhotoUrl(empId){
+  var docs=empDocsOf(empId).filter(function(d){return (d['Doc Type']||'')==='Photo';}).sort(function(a,b){return (a['Date']||'')<(b['Date']||'')?1:-1;});
+  if(!docs.length)return null;
+  var fid=docs[0]['Drive File ID'];
+  if(!fid)return null;
+  return 'https://lh3.googleusercontent.com/d/'+fid+'=s96';
+}
 function myProfileMissing(){
   if(!currentUser)return[];
   var emp=employees.find(function(e){return e['Employee ID']===currentUser.userId;});
   if(!emp)return[]; // director/owner accounts have no Employee sheet row - nothing to nudge
   var missing=[];
   if(!(emp['Email']||'').trim())missing.push('Gmail ID');
-  if(!(emp['PAN']||'').trim())missing.push('PAN');
-  if(!(emp['Aadhaar']||'').trim())missing.push('Aadhaar');
+  if(!(emp['PAN']||'').trim())missing.push('PAN Number');
+  if(!(emp['Aadhaar']||'').trim())missing.push('Aadhaar Number');
+  if(!empHasDoc(emp['Employee ID'],'Photo'))missing.push('Photo');
+  if(!empHasDoc(emp['Employee ID'],'PAN Card'))missing.push('PAN Card (document)');
+  if(!empHasDoc(emp['Employee ID'],'Aadhaar Card'))missing.push('Aadhaar Card (document)');
   return missing;
+}
+function initialsOf(name){
+  var parts=(name||'?').trim().split(/\s+/);
+  return ((parts[0]||'?')[0]+(parts[1]?parts[1][0]:'')).toUpperCase();
+}
+function renderSidebarAvatar(){
+  var box=document.getElementById('sidebarAvatarImgBox');
+  if(!box||!currentUser)return;
+  var url=empPhotoUrl(currentUser.userId);
+  if(url)box.innerHTML='<img src="'+url+'" style="width:100%;height:100%;object-fit:cover;" alt="Photo">';
+  else box.textContent=initialsOf(currentUser.name);
 }
 var profileGateActive=false;
 function checkMyProfileAlert(){
@@ -6251,6 +6340,7 @@ function checkMyProfileAlert(){
   var wasActive=profileGateActive;
   profileGateActive=missing.length>0;
   applyProfileGate();
+  renderSidebarAvatar();
   if(profileGateActive&&!wasActive)showPage('myProfile');
 }
 function applyProfileGate(){
@@ -6286,6 +6376,19 @@ function renderMyProfile(){
   var h='';
   if(missing.length)h+='<div class="prev-err" style="margin-bottom:14px;">&#9888; Please complete: <b>'+missing.join(', ')+'</b> - needed for salary slips, KYC and compliance.</div>';
   else h+='<div class="prev-ok" style="margin-bottom:14px;">&#10003; Your profile is complete.</div>';
+  var checkItems=[
+    ['Gmail ID',!!(emp['Email']||'').trim()],
+    ['PAN Number',!!(emp['PAN']||'').trim()],
+    ['Aadhaar Number',!!(emp['Aadhaar']||'').trim()],
+    ['Photo uploaded',empHasDoc(emp['Employee ID'],'Photo')],
+    ['PAN Card document uploaded',empHasDoc(emp['Employee ID'],'PAN Card')],
+    ['Aadhaar Card document uploaded',empHasDoc(emp['Employee ID'],'Aadhaar Card')]
+  ];
+  h+='<div class="form-card" style="margin-bottom:14px;"><div style="font-weight:700;margin-bottom:8px;">Completion Checklist</div>';
+  checkItems.forEach(function(it){
+    h+='<div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;">'+(it[1]?'<span style="color:var(--accent);">&#10003;</span>':'<span style="color:var(--danger);">&#10007;</span>')+' <span'+(it[1]?'':' style="color:var(--muted);"')+'>'+it[0]+'</span></div>';
+  });
+  h+='</div>';
   h+='<div class="form-card">';
   h+='<div class="form-group"><label>Employee ID</label><input type="text" value="'+(emp['Employee ID']||'')+'" disabled></div>';
   h+='<div class="form-group"><label>Full Name</label><input type="text" value="'+(emp['Name']||'')+'" disabled></div>';
