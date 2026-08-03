@@ -6260,8 +6260,8 @@ function renderManageEmps(){
     var pids=parentIdsOf(e);
     var pLabel=pids.length?pids.map(function(pid){var pEmp=employees.find(function(x){return x['Employee ID']===pid;});return pEmp?pEmp['Name']:pid;}).join(', '):'<span style="color:var(--muted);">&#8212;</span>';
     var panV=(e['PAN']||'').trim(),aadV=(e['Aadhaar']||'').trim();
-    var allDocsOk=panV&&aadV&&empHasDoc(e['Employee ID'],'Photo')&&empHasDoc(e['Employee ID'],'PAN Card')&&empHasDoc(e['Employee ID'],'Aadhaar Card');
-    var kycLabel=allDocsOk?('<span class="badge green" title="PAN: '+panV+' &#183; Aadhaar: XXXX-XXXX-'+aadV.slice(-4)+' &#183; Photo/PAN/Aadhaar docs uploaded">&#10003; Verified</span>'):'<span class="badge red" title="PAN/Aadhaar/Photo/documents incomplete">&#9888; incomplete</span>';
+    var allDocsOk=panV&&aadV&&empHasDoc(e['Employee ID'],'Photo')&&empHasDoc(e['Employee ID'],'PAN Card')&&empHasAadhaarBoth(e['Employee ID']);
+    var kycLabel=allDocsOk?('<span class="badge green" title="PAN: '+panV+' &#183; Aadhaar: XXXX-XXXX-'+aadV.slice(-4)+' &#183; Photo/PAN/Aadhaar (front+back) docs uploaded">&#10003; Verified</span>'):'<span class="badge red" title="PAN/Aadhaar/Photo/documents incomplete - Aadhaar needs both Front and Back">&#9888; incomplete</span>';
     var photoUrl=empPhotoUrl(e['Employee ID']);
     var photoHTML=photoUrl?'<img src="'+photoUrl+'" style="width:36px;height:36px;border-radius:50%;object-fit:cover;">':'<div style="width:36px;height:36px;border-radius:50%;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--muted);">'+initialsOf(e['Name'])+'</div>';
     h+='<tr><td style="cursor:pointer;" data-id="'+e['Employee ID']+'" onclick="editEmpModal(this.dataset.id)" title="Click to view/edit">'+photoHTML+'</td><td>'+(e['Employee ID']||'-')+'</td><td style="font-weight:600;">'+(e['Name']||'-')+'</td><td>'+(e['Branch']||'-')+'</td><td>'+(e['Role']||'employee')+'</td><td>'+pLabel+'</td><td style="font-weight:700;color:var(--accent);">'+(e['Commission']!==''&&e['Commission']!==undefined?e['Commission']+'%':'50%')+'</td><td>'+(parseFloat(e['Salary'])>0?fmt(e['Salary']):'-')+'</td><td>'+(em?em:'<span class="badge red" title="Email missing - salary slip email will not be sent">&#9888; missing</span>')+'</td><td>'+kycLabel+'</td><td><span class="badge '+(isAct?'green':'red')+'">'+(isAct?'Active':'Inactive')+'</span></td><td>';
@@ -6431,6 +6431,12 @@ function empDocsOf(empId){
 function empHasDoc(empId,docType){
   return empDocsOf(empId).some(function(d){return (d['Doc Type']||'')===docType;});
 }
+function empHasAadhaarBoth(empId){
+  // legacy single "Aadhaar Card" upload still counts (grandfathered) so older verified profiles don't suddenly go incomplete;
+  // going forward we ask for front + back separately.
+  if(empHasDoc(empId,'Aadhaar Card'))return true;
+  return empHasDoc(empId,'Aadhaar Card (Front)')&&empHasDoc(empId,'Aadhaar Card (Back)');
+}
 function empPhotoUrl(empId){
   var docs=empDocsOf(empId).filter(function(d){return (d['Doc Type']||'')==='Photo';}).sort(function(a,b){return (a['Date']||'')<(b['Date']||'')?1:-1;});
   if(!docs.length)return null;
@@ -6448,7 +6454,7 @@ function myProfileMissing(){
   if(!(emp['Aadhaar']||'').trim())missing.push('Aadhaar Number');
   if(!empHasDoc(emp['Employee ID'],'Photo'))missing.push('Photo');
   if(!empHasDoc(emp['Employee ID'],'PAN Card'))missing.push('PAN Card (document)');
-  if(!empHasDoc(emp['Employee ID'],'Aadhaar Card'))missing.push('Aadhaar Card (document)');
+  if(!empHasAadhaarBoth(emp['Employee ID']))missing.push('Aadhaar Card - Front & Back (documents)');
   return missing;
 }
 function initialsOf(name){
@@ -6512,7 +6518,8 @@ function renderMyProfile(){
     ['Aadhaar Number',!!(emp['Aadhaar']||'').trim()],
     ['Photo uploaded',empHasDoc(emp['Employee ID'],'Photo')],
     ['PAN Card document uploaded',empHasDoc(emp['Employee ID'],'PAN Card')],
-    ['Aadhaar Card document uploaded',empHasDoc(emp['Employee ID'],'Aadhaar Card')]
+    ['Aadhaar Card - Front uploaded',empHasDoc(emp['Employee ID'],'Aadhaar Card')||empHasDoc(emp['Employee ID'],'Aadhaar Card (Front)')],
+    ['Aadhaar Card - Back uploaded',empHasDoc(emp['Employee ID'],'Aadhaar Card')||empHasDoc(emp['Employee ID'],'Aadhaar Card (Back)')]
   ];
   h+='<div class="form-card" style="margin-bottom:14px;"><div style="font-weight:700;margin-bottom:8px;">Completion Checklist</div>';
   checkItems.forEach(function(it){
@@ -6535,7 +6542,7 @@ function renderMyProfile(){
        '<div style="color:var(--muted);font-size:12px;">Photo, PDF, any file - select multiple at once</div>'+
      '</div>';
   h+='<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">'+
-       '<select id="mp_docType" style="width:auto;"><option>Photo</option><option>PAN Card</option><option>Aadhaar Card</option><option>Bank Proof</option><option>Other</option></select>'+
+       '<select id="mp_docType" style="width:auto;"><option>Photo</option><option>PAN Card</option><option>Aadhaar Card (Front)</option><option>Aadhaar Card (Back)</option><option>Bank Proof</option><option>Other</option></select>'+
        '<input type="file" id="mp_docFile" style="width:auto;" multiple>'+
        '<button class="btn-save" id="mp_uploadBtn" onclick="uploadMyProfileDocs()">&#8593; Upload</button>'+
      '</div>';
