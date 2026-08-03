@@ -21,6 +21,7 @@ body.light-theme{transition:background .2s,color .2s;}
 body.light-theme .login-box,body.light-theme .stat-card,body.light-theme .table-wrap,body.light-theme .form-card,body.light-theme .modal-box,body.light-theme #toast,body.light-theme .brok-cal,body.light-theme .hisab-card,body.light-theme .emp-card,body.light-theme .contest-card,body.light-theme .day-detail{box-shadow:0 1px 4px rgba(20,30,50,.08);}
 .theme-switch{width:100%;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:8px;font-size:12px;cursor:pointer;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:6px;}
 .theme-switch:hover{border-color:var(--accent);color:var(--accent);}
+.nav-gate-hidden{display:none!important;}
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
 input,select,textarea,button{font-family:inherit;}
@@ -1831,6 +1832,7 @@ function logout(){
 }
 
 function showPage(id){
+  if(profileGateActive&&id!=='myProfile')id='myProfile';
   document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
   document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active');});
   var pg=document.getElementById('page-'+id);if(pg)pg.classList.add('active');
@@ -4317,10 +4319,11 @@ function showClient360Profile(cid,name){
   h+='<div class="form-card" id="c360_vaultCard" style="margin-bottom:16px;">'+
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'+
       '<div style="font-weight:700;">&#128193; Document Vault</div>'+
+      '<div style="color:var(--muted);font-size:12px;">Photo, PDF, any file - select multiple at once</div>'+
     '</div>'+
     '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">'+
       '<select id="c360_docType" style="width:auto;"><option>KYC</option><option>PAN Card</option><option>Aadhaar Card</option><option>Bank Proof</option><option>Signature</option><option>Agreement</option><option>Other</option></select>'+
-      '<input type="file" id="c360_docFile" style="width:auto;">'+
+      '<input type="file" id="c360_docFile" style="width:auto;" multiple>'+
       '<button class="btn-save" onclick="uploadClient360Doc(\''+vaultCid+'\',\''+vaultName+'\')" id="c360_uploadBtn">&#8593; Upload</button>'+
     '</div>'+
     '<div id="c360_docsList">Loading documents...</div>'+
@@ -4347,25 +4350,50 @@ function renderClient360Docs(cid){
   el.innerHTML=h;
 }
 
+function readFileAsBase64(file){
+  return new Promise(function(resolve,reject){
+    var reader=new FileReader();
+    reader.onload=function(){resolve(reader.result.split(',')[1]);};
+    reader.onerror=reject;
+    reader.readAsDataURL(file);
+  });
+}
+function uploadDocsBatch(files,cid,cname,docType,btn,onDone){
+  var list=Array.prototype.slice.call(files);
+  var oversized=list.filter(function(f){return f.size>15*1024*1024;});
+  if(oversized.length){showToast(oversized.length+' file(s) skipped - over 15MB: '+oversized.map(function(f){return f.name;}).join(', '),'error');}
+  list=list.filter(function(f){return f.size<=15*1024*1024;});
+  if(!list.length){showToast('Please choose at least one file','error');return;}
+  if(btn)btn.disabled=true;
+  var done=0,failed=0;
+  function uploadNext(i){
+    if(i>=list.length){
+      if(btn){btn.disabled=false;btn.textContent='↑ Upload';}
+      showToast(done+' document(s) uploaded'+(failed?', '+failed+' failed':'')+'!',failed?'error':'success');
+      if(onDone)onDone();
+      return;
+    }
+    var file=list[i];
+    if(btn)btn.textContent='Uploading '+(i+1)+'/'+list.length+'...';
+    readFileAsBase64(file).then(function(base64){
+      var p={action:'uploadClientDocument','Client ID':cid,'Client Name':cname,'Doc Type':docType,'FileName':file.name,'MimeType':file.type||'application/octet-stream','FileData':base64,'Uploaded By':(currentUser&&currentUser.name)||'','Employee ID':(currentUser&&currentUser.userId)||''};
+      return postData(p);
+    }).then(function(r){
+      if(r&&r.success)done++;else failed++;
+      uploadNext(i+1);
+    }).catch(function(){failed++;uploadNext(i+1);});
+  }
+  uploadNext(0);
+}
 function uploadClient360Doc(cid,cname){
   var fileEl=document.getElementById('c360_docFile');
   var docType=document.getElementById('c360_docType').value;
-  var file=fileEl&&fileEl.files&&fileEl.files[0];
-  if(!file){showToast('Please choose a file first','error');return;}
-  if(file.size>15*1024*1024){showToast('File too large (max 15MB)','error');return;}
+  var files=fileEl&&fileEl.files;
+  if(!files||!files.length){showToast('Please choose at least one file','error');return;}
   var btn=document.getElementById('c360_uploadBtn');
-  if(btn){btn.disabled=true;btn.textContent='Uploading...';}
-  var reader=new FileReader();
-  reader.onload=function(){
-    var base64=reader.result.split(',')[1];
-    var p={action:'uploadClientDocument','Client ID':cid,'Client Name':cname,'Doc Type':docType,'FileName':file.name,'MimeType':file.type||'application/octet-stream','FileData':base64,'Uploaded By':(currentUser&&currentUser.name)||'','Employee ID':(currentUser&&currentUser.userId)||''};
-    postData(p).then(function(r){
-      if(btn){btn.disabled=false;btn.textContent='↑ Upload';}
-      if(r&&r.success){showToast('Document uploaded!','success');fileEl.value='';loadAll();setTimeout(function(){renderClient360Docs(cid);},1200);}
-      else showToast('Upload failed: '+(r&&r.error||''),'error');
-    }).catch(function(e){if(btn){btn.disabled=false;btn.textContent='↑ Upload';}showToast('Error: '+e.message,'error');});
-  };
-  reader.readAsDataURL(file);
+  uploadDocsBatch(files,cid,cname,docType,btn,function(){
+    fileEl.value='';loadAll();setTimeout(function(){renderClient360Docs(cid);},1200);
+  });
 }
 
 function deleteClient360Doc(rowNum,driveFileId,cid){
@@ -6215,11 +6243,35 @@ function myProfileMissing(){
   if(!(emp['Aadhaar']||'').trim())missing.push('Aadhaar');
   return missing;
 }
+var profileGateActive=false;
 function checkMyProfileAlert(){
   var dot=document.getElementById('myProfileAlert');
-  if(!dot)return;
   var missing=myProfileMissing();
-  dot.style.display=missing.length?'inline':'none';
+  if(dot)dot.style.display=missing.length?'inline':'none';
+  var wasActive=profileGateActive;
+  profileGateActive=missing.length>0;
+  applyProfileGate();
+  if(profileGateActive&&!wasActive)showPage('myProfile');
+}
+function applyProfileGate(){
+  ['adminNav','finNav','empNav'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(!el)return;
+    el.querySelectorAll('.nav-item,.nav-sec,.nav-grp,.nav-section').forEach(function(n){n.classList.toggle('nav-gate-hidden',profileGateActive);});
+  });
+  var gateMsg=document.getElementById('profileGateMsg');
+  if(profileGateActive){
+    if(!gateMsg){
+      gateMsg=document.createElement('div');
+      gateMsg.id='profileGateMsg';
+      gateMsg.style.cssText='background:linear-gradient(90deg,#f59e0b,#ef4444);color:#111;font-weight:700;padding:10px 16px;border-radius:8px;margin-bottom:14px;';
+      gateMsg.textContent='Please complete your Gmail ID, PAN & Aadhaar below to unlock the rest of the app.';
+      var main=document.getElementById('main');
+      if(main)main.insertBefore(gateMsg,main.firstChild);
+    }
+  }else if(gateMsg){
+    gateMsg.remove();
+  }
 }
 function renderMyProfile(){
   var box=document.getElementById('myProfileBox');
@@ -6244,7 +6296,54 @@ function renderMyProfile(){
   h+='<div class="form-group"><label>Change Password (blank = keep current)</label><input type="text" id="mp_pass" placeholder="Leave blank to keep"></div>';
   h+='<button class="btn-save" onclick="saveMyProfile()">Save My Profile</button>';
   h+='</div>';
+  h+='<div class="form-card" style="margin-top:16px;">';
+  h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'+
+       '<div style="font-weight:700;">&#128193; My Documents (PAN photo, Aadhaar photo, profile photo, etc.)</div>'+
+       '<div style="color:var(--muted);font-size:12px;">Photo, PDF, any file - select multiple at once</div>'+
+     '</div>';
+  h+='<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">'+
+       '<select id="mp_docType" style="width:auto;"><option>Photo</option><option>PAN Card</option><option>Aadhaar Card</option><option>Bank Proof</option><option>Other</option></select>'+
+       '<input type="file" id="mp_docFile" style="width:auto;" multiple>'+
+       '<button class="btn-save" id="mp_uploadBtn" onclick="uploadMyProfileDocs()">&#8593; Upload</button>'+
+     '</div>';
+  h+='<div id="mp_docsList">Loading documents...</div>';
+  h+='</div>';
   box.innerHTML=h;
+  renderMyProfileDocs(emp['Employee ID']);
+}
+function renderMyProfileDocs(empId){
+  var el=document.getElementById('mp_docsList');
+  if(!el)return;
+  var idT=(empId||'').trim().toUpperCase();
+  var docs=(allData.ClientDocuments||[]).filter(function(d){return (d['Client ID']||'').trim().toUpperCase()===idT;}).sort(function(a,b){return (a['Date']||'')<(b['Date']||'')?1:-1;});
+  if(!docs.length){el.innerHTML='<div class="no-data">No documents uploaded yet.</div>';return;}
+  var h='<div class="table-inner"><table><thead><tr><th>Date</th><th>Doc Type</th><th>File Name</th><th>Actions</th></tr></thead><tbody>';
+  docs.forEach(function(d){
+    h+='<tr><td>'+(d['Date']||'-')+'</td><td>'+(d['Doc Type']||'-')+'</td><td>'+(d['File Name']||'-')+'</td><td>'+
+      '<a href="'+(d['Drive URL']||'#')+'" target="_blank" class="btn-edit" style="text-decoration:none;display:inline-block;">&#128065; View</a> '+
+      '<button class="btn-del" onclick="deleteMyProfileDoc(\''+d._rowNum+'\',\''+(d['Drive File ID']||'')+'\',\''+(empId||'').replace(/'/g,"\\\\'")+'\')">Delete</button>'+
+      '</td></tr>';
+  });
+  h+='</tbody></table></div>';
+  el.innerHTML=h;
+}
+function uploadMyProfileDocs(){
+  var emp=employees.find(function(e){return e['Employee ID']===currentUser.userId;});if(!emp)return;
+  var fileEl=document.getElementById('mp_docFile');
+  var docType=document.getElementById('mp_docType').value;
+  var files=fileEl&&fileEl.files;
+  if(!files||!files.length){showToast('Please choose at least one file','error');return;}
+  var btn=document.getElementById('mp_uploadBtn');
+  uploadDocsBatch(files,emp['Employee ID'],emp['Name'],docType,btn,function(){
+    fileEl.value='';loadAll();setTimeout(function(){renderMyProfileDocs(emp['Employee ID']);},1200);
+  });
+}
+function deleteMyProfileDoc(rowNum,driveFileId,empId){
+  if(!confirm('Delete this document? This cannot be undone.'))return;
+  postData({action:'deleteClientDocument','rowNum':rowNum,'Drive File ID':driveFileId}).then(function(r){
+    if(r&&r.success){showToast('Document deleted','success');loadAll();setTimeout(function(){renderMyProfileDocs(empId);},1200);}
+    else showToast('Delete failed','error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
 function saveMyProfile(){
   var emp=employees.find(function(e){return e['Employee ID']===currentUser.userId;});if(!emp)return;
@@ -6256,7 +6355,19 @@ function saveMyProfile(){
   if(!aadhaar||!isValidAadhaar(aadhaar)){showToast('Valid 12-digit Aadhaar Number is required','error');return;}
   var p={action:'updateEmployee','Employee ID':emp['Employee ID'],_rowNum:emp._rowNum,'Name':emp['Name'],'Branch':emp['Branch'],'Role':emp['Role']||'employee','Status':emp['Status']||'Active','Commission':numOrDefault(emp['Commission'],50),'Email':email,'Salary':parseFloat(emp['Salary'])||0,'Parent ID':parentIdsOf(emp).join(','),'FinanceAccess':emp['FinanceAccess']==='Yes'?'Yes':'No','PAN':pan,'Aadhaar':aadhaar};
   var np=document.getElementById('mp_pass').value.trim();if(np)p['Password']=np;
-  postData(p).then(function(r){if(r&&r.success){showToast('Profile updated!','success');loadEmps();setTimeout(function(){checkMyProfileAlert();},1200);}else showToast('Failed: '+(r&&r.error||''),'error');}).catch(function(e){showToast('Error: '+e.message,'error');});
+  postData(p).then(function(r){
+    if(r&&r.success){
+      showToast('Profile updated!','success');
+      loadEmps();
+      setTimeout(function(){
+        checkMyProfileAlert();
+        if(!profileGateActive){
+          var home=currentUser.role==='admin'?'adminDash':(currentUser.role==='finance'?'finDash':'empDash');
+          showPage(home);
+        }
+      },1200);
+    }else showToast('Failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
 
 function initEmpLoad(attempt){
