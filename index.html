@@ -5084,8 +5084,11 @@ function computeHisabTotals(mo){
         if(b>0)st.lines.push({t:'add',l:s.label,a:r2(b*s.pct/100)});
       }
     });
-    var refComm=studentRefCommission(e);
-    if(refComm>0)st.lines.push({t:'add',l:'Student Referral Commission (10%)',a:refComm});
+    /* v52: partner ko net profit pool ka % hi milta h, alag se koi extra commission nahi - referral commission sirf staff/employee ko */
+    if((e['Role']||'').toLowerCase()!=='partner'){
+      var refComm=studentRefCommission(e);
+      if(refComm>0)st.lines.push({t:'add',l:'Student Referral Commission (10%)',a:refComm});
+    }
     return st;
   }
   function calc(base,st){
@@ -5616,8 +5619,11 @@ function renderHisab(){
         if(b>0)st.lines.push({t:'add',l:s.label,a:r2(b*s.pct/100)});
       }
     });
-    var refComm=studentRefCommission(e);
-    if(refComm>0)st.lines.push({t:'add',l:'Student Referral Commission (10%)',a:refComm});
+    /* v52: partner ko net profit pool ka % hi milta h, alag se koi extra commission nahi - referral commission sirf staff/employee ko */
+    if((e['Role']||'').toLowerCase()!=='partner'){
+      var refComm=studentRefCommission(e);
+      if(refComm>0)st.lines.push({t:'add',l:'Student Referral Commission (10%)',a:refComm});
+    }
     hisabSt.rows[eid]=st;
     return st;
   }
