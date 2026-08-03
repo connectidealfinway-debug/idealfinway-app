@@ -8,8 +8,19 @@
 <meta http-equiv="Expires" content="0">
 <title>IdealFinway - Performance System</title>
 <!-- v26.1: partners net-profit %, fixed salary, salary slip email, date-wise matrix, top-10 clients, daily chart, combined dashboard P&L, finance restrictions, picker icons -->
+<!-- v55: PWA - installable on phone home screen -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d1117">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <style>
 :root{--bg:#0d1117;--card:#161b22;--card2:#1c2128;--border:#30363d;--text:#c9d1d9;--muted:#8b949e;--accent:#3fbf7f;--danger:#ef4444;--blue:#3b82f6;--amber:#f59e0b;--purple:#8b5cf6;--pink:#ec4899;}
+/* v55: Light theme override - toggled via body.light-theme class, saved in localStorage */
+body.light-theme{--bg:#f4f6f9;--card:#ffffff;--card2:#eef1f5;--border:#dbe0e6;--text:#181c22;--muted:#5b6472;--accent:#1f8a52;--danger:#dc2626;--blue:#2563eb;--amber:#b4680a;--purple:#7c3aed;--pink:#c0247a;}
+body.light-theme{transition:background .2s,color .2s;}
+body.light-theme .login-box,body.light-theme .stat-card,body.light-theme .table-wrap,body.light-theme .form-card,body.light-theme .modal-box,body.light-theme #toast,body.light-theme .brok-cal,body.light-theme .hisab-card,body.light-theme .emp-card,body.light-theme .contest-card,body.light-theme .day-detail{box-shadow:0 1px 4px rgba(20,30,50,.08);}
+.theme-switch{width:100%;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:8px;font-size:12px;cursor:pointer;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:6px;}
+.theme-switch:hover{border-color:var(--accent);color:var(--accent);}
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
 input,select,textarea,button{font-family:inherit;}
@@ -95,7 +106,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
 /* dashboard/report cards (Require Attention, Business Overview, Client 360, Top Clients etc.) need full flex width, not the 520px form cap */
 #attentionPanel .form-card,#attentionDetail .form-card,#myAttentionPanel .form-card,#myAttentionDetail .form-card,
 #teamAttentionPanel .form-card,#teamAttentionDetail .form-card,#clientHealthPanel .form-card,#topClientsPanel .form-card,
-#bizOverviewCards .form-card,#c360_results .form-card,#c360_profile .form-card,#adminAnnounceCol .form-card{max-width:none;}
+#bizOverviewCards .form-card,#c360_results .form-card,#c360_profile .form-card,#adminAnnounceCol .form-card,#referralLeaderboardPanel .form-card{max-width:none;}
 .dash-row{display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;}
 .dash-row>div{display:flex;flex-direction:column;}
 .dash-row>div>.form-card{flex:1;}
@@ -231,7 +242,11 @@ tbody td{padding:10px 14px;vertical-align:middle;}
 </style>
 </head>
 <body>
-
+<script>/* v55: apply saved theme ASAP before paint, so there's no dark->light flash on load */
+try{if(localStorage.getItem('idf_theme')==='light')document.body.classList.add('light-theme');}catch(e){}
+/* v55: PWA - register service worker so the app is installable on phone home screen */
+if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(e){});});}
+</script>
 <div id="loginWrap">
   <div class="login-box">
     <div class="login-logo"><h1>IdealFinway</h1><p>Performance System</p></div>
@@ -337,7 +352,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <div class="nav-item" onclick="showPage('myPoints')">&#11088; My Points</div>
       </div>
     </div>
-    <div class="sidebar-bottom"><button class="btn-logout" onclick="logout()">&#8592; Logout</button></div>
+    <div class="sidebar-bottom"><button class="theme-switch" id="themeSwitchBtn" onclick="toggleTheme()">&#9788; Light Mode</button><button class="btn-logout" onclick="logout()">&#8592; Logout</button></div>
   </nav>
 
   <main id="main">
@@ -384,6 +399,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <div style="flex:1;min-width:340px;" id="clientHealthPanel"></div>
         <div style="flex:1.2;min-width:340px;" id="topClientsPanel"></div>
       </div>
+      <div id="referralLeaderboardPanel"></div>
       <div id="adminEmpCards"></div>
     </div>
 
@@ -765,6 +781,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
         <button class="filter-btn" onclick="document.getElementById('tj_specificDate').value='';renderTradingJournalPage();">Clear Date</button>
         <input class="srch" id="srch-tj" placeholder="&#128269; Search stock..." oninput="renderTradingJournalPage()">
       </div>
+      <div id="tjSessionReview"></div>
       <div class="stats-grid" id="tjStats"></div><div id="tjStatDiv"></div>
       <div id="tjEmpBreakdown"></div>
       <div class="table-wrap"><div class="table-inner" id="tjTable"></div></div>
@@ -1421,7 +1438,7 @@ var ADMIN_ID='directorravikant.idealfinway';
 var OFFICE_ID='ideal.office';
 var ADMIN_PASS='drrk@1401';
 var currentUser=null;
-var allData={Brokerage:[],ClientBrokerage:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[],Meetings:[],Income:[],Expense:[],Hisab:[],TradingJournal:[],CallTrade:[],CallClients:[],Watchlist:[],Reminders:[],Announcements:[]};
+var allData={Brokerage:[],ClientBrokerage:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[],Meetings:[],Income:[],Expense:[],Hisab:[],TradingJournal:[],CallTrade:[],CallClients:[],Watchlist:[],Reminders:[],Announcements:[],ClientDocuments:[]};
 var employees=[];
 var filters={};
 var accStat='all',myAccStat='all',dashF='today',accDupOnly=false,teamWorkingOnly=false,bizScope='own';
@@ -1457,6 +1474,18 @@ function getJSON(action){return fetch(API+'?action='+action+'&t='+Date.now()).th
 function fetchData(){return getJSON('getData').then(function(r){if(r&&r.success)return r;return postData({action:'getData'});}).catch(function(){return postData({action:'getData'});});}
 function fetchEmployees(){return getJSON('getEmployees').then(function(r){if(r&&r.success)return r;return postData({action:'getEmployees'});}).catch(function(){return postData({action:'getEmployees'});});}
 function getSrch(id){var el=document.getElementById(id);return el?(el.value||'').toLowerCase():'';}
+/* v55: Dark/Light theme toggle - saved in localStorage, applied instantly to whole app via CSS vars */
+function toggleTheme(){
+  var isLight=document.body.classList.toggle('light-theme');
+  try{localStorage.setItem('idf_theme',isLight?'light':'dark');}catch(e){}
+  syncThemeBtn();
+}
+function syncThemeBtn(){
+  var btn=document.getElementById('themeSwitchBtn');
+  if(!btn)return;
+  var isLight=document.body.classList.contains('light-theme');
+  btn.innerHTML=isLight?'&#9790; Dark Mode':'&#9788; Light Mode';
+}
 /* v24: local cache — login hote hi turant data dikhe, fresh background me aaye */
 var CACHE_KEY='ifw_cache_v1';
 var hadCache=false;
@@ -1766,6 +1795,7 @@ function startApp(){
   document.getElementById('sidebarName').textContent=currentUser.name;
   document.getElementById('sidebarRole').textContent=currentUser.role==='employee'?'':currentUser.role.toUpperCase();
   document.getElementById('sidebarBranch').textContent=currentUser.branch;
+  syncThemeBtn();
   showGreeting(currentUser.name);
   var c=loadCache();
   if(c&&c.d){allData=c.d;if(c.e&&c.e.length&&!employees.length)employees=c.e;hadCache=true;}
@@ -1784,7 +1814,7 @@ function startApp(){
 }
 
 function logout(){
-  currentUser=null;autoPunched=false;allData={Brokerage:[],ClientBrokerage:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[],Meetings:[],Income:[],Expense:[],Hisab:[],TradingJournal:[],CallTrade:[],CallClients:[],Watchlist:[],Reminders:[],Announcements:[]};
+  currentUser=null;autoPunched=false;allData={Brokerage:[],ClientBrokerage:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[],Meetings:[],Income:[],Expense:[],Hisab:[],TradingJournal:[],CallTrade:[],CallClients:[],Watchlist:[],Reminders:[],Announcements:[],ClientDocuments:[]};
   document.getElementById('loginWrap').style.display='flex';
   document.getElementById('appWrap').style.display='none';
   document.getElementById('adminNav').style.display='none';
@@ -1856,7 +1886,8 @@ function loadAll(attempt){
         Watchlist:r.watchlist||r.Watchlist||[],
         Reminders:r.reminders||r.Reminders||[],
         Announcements:r.announcements||r.Announcements||[],
-        Contests:r.contests||r.Contests||[]
+        Contests:r.contests||r.Contests||[],
+        ClientDocuments:r.clientDocuments||r.ClientDocuments||[]
       };
       saveCache();checkSIPAlerts();autoPunchIn();renderPage(curPage());loadEmps();setTimeout(checkDueTomorrowPopup,600);setTimeout(check315Reminder,900);renderAnnounceBanner();
     }else if(attempt<3){
@@ -2704,6 +2735,7 @@ function renderAdminDash(){
   }
   tch+='</div>';
   document.getElementById('topClientsPanel').innerHTML=tch;
+  renderReferralLeaderboard();
   var em={};
   function track(rows,key){rows.forEach(function(r){var id=r['Employee ID']||r['Employee Name']||'?';if(!em[id])em[id]={name:r['Employee Name']||id,branch:r['Branch']||'',brok:0,sip:0,ins:0,acc:0,stud:0};if(key==='brok')em[id].brok+=parseFloat(r['Amount']||0);else if(key==='sip')em[id].sip+=parseFloat(r['Amount']||0);else if(key==='ins')em[id].ins++;else if(key==='acc')em[id].acc++;else if(key==='stud')em[id].stud++;});}
   /* brokerage = manual Brokerage sheet + ClientBrokerage (Choice uploads, jaha se asli income aati hai) */
@@ -3865,14 +3897,26 @@ function computeAttention(scopeUid){
     var d=new Date(r['Date']||'');if(isNaN(d))return false;
     return d>=NSE_TRACK_FROM;
   });
-  return {studentFee:studentFee,sipDue:sipDue,staleLeads:staleLeads,accountsStuck:accountsStuck};
+  /* v55: Predictive drop-off - Active clients with no logged contact in 30+ days (or never called)
+     get flagged so employees can proactively reach out before the client goes cold/inactive. */
+  var dropOffLimit=new Date(today);dropOffLimit.setDate(dropOffLimit.getDate()-30);
+  var clientDropOff=(allData.Accounts||[]).filter(function(r){
+    if(!inScope(r))return false;
+    if((r['Status']||'')!=='Active')return false;
+    var lc=(r['Last Call Date']||'').trim();
+    if(!lc)return true;
+    var d=new Date(lc);if(isNaN(d))return true;
+    return d<dropOffLimit;
+  });
+  return {studentFee:studentFee,sipDue:sipDue,staleLeads:staleLeads,accountsStuck:accountsStuck,clientDropOff:clientDropOff};
 }
 function mkAttentionPanel(items,isMine){
   var rows=[
     {n:items.studentFee.length,label:'Student Fee Pending',sub:'Get in touch with your clients',key:'studentFee',color:'var(--danger)'},
     {n:items.sipDue.length,label:'SIP Due (Next 3 Days)',sub:'Call clients to remind them',key:'sipDue',color:'var(--amber)'},
     {n:items.staleLeads.length,label:'Leads with No Follow-up (15+ Days)',sub:'Reach out or mark converted',key:'staleLeads',color:'var(--blue)'},
-    {n:items.accountsStuck.length,label:'New Accounts Pending NSE Trade (since Jul 20)',sub:'Follow up to activate trading',key:'accountsStuck',color:'var(--purple)'}
+    {n:items.accountsStuck.length,label:'New Accounts Pending NSE Trade (since Jul 20)',sub:'Follow up to activate trading',key:'accountsStuck',color:'var(--purple)'},
+    {n:items.clientDropOff.length,label:'Clients With No Contact (30+ Days)',sub:'Reach out before they go cold',key:'clientDropOff',color:'var(--pink)'}
   ];
   var any=rows.some(function(r){return r.n>0;});
   var h='<div class="form-card" style="margin-bottom:16px;"><div style="font-weight:700;font-size:15px;margin-bottom:12px;">&#9888; Require Attention</div>';
@@ -3903,7 +3947,8 @@ function showAttentionDetail(key,isMine){
     studentFee:{title:'Student Fee Pending',body:mkStudentTable(items.studentFee,false)},
     sipDue:{title:'SIP Due (Next 3 Days)',body:mkTable(items.sipDue,[{k:'Date',l:'Date'},{k:'Employee Name',l:'Employee'},{k:'Client Name',l:'Client'},{k:'Client Phone',l:'Phone'},{k:'Amount',l:'Amount',money:true},{k:'SIP Due Date',l:'Due Date'}])},
     staleLeads:{title:'Leads - No Follow-up (15+ Days)',body:mkLeads(items.staleLeads,true,true)},
-    accountsStuck:{title:'New Accounts Pending NSE Trade (since Jul 20)',body:mkTable(items.accountsStuck,[{k:'Date',l:'Date'},{k:'Employee Name',l:'Employee'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Client ID'},{k:'Client Phone',l:'Phone'},{k:'Status',l:'Status'}])}
+    accountsStuck:{title:'New Accounts Pending NSE Trade (since Jul 20)',body:mkTable(items.accountsStuck,[{k:'Date',l:'Date'},{k:'Employee Name',l:'Employee'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Client ID'},{k:'Client Phone',l:'Phone'},{k:'Status',l:'Status'}])},
+    clientDropOff:{title:'Clients With No Contact (30+ Days)',body:mkTable(items.clientDropOff,[{k:'Client Name',l:'Client'},{k:'Client ID',l:'Client ID'},{k:'Client Phone',l:'Phone'},{k:'Employee Name',l:'Employee'},{k:'Last Call Date',l:'Last Call'},{k:'Date',l:'Account Opened'}])}
   };
   var m=map[key];if(!m)return;
   var divId=isMine?'myAttentionDetail':'attentionDetail';
@@ -3915,8 +3960,8 @@ function computeTeamAttention(parentUid){
   var members=teamMembersOf(parentUid);
   return members.map(function(m){
     var items=computeAttention(m['Employee ID']);
-    var studentFee=items.studentFee.length,sipDue=items.sipDue.length,staleLeads=items.staleLeads.length,accountsStuck=items.accountsStuck.length;
-    return {id:m['Employee ID'],name:m['Name']||m['Employee ID'],studentFee:studentFee,sipDue:sipDue,staleLeads:staleLeads,accountsStuck:accountsStuck,total:studentFee+sipDue+staleLeads+accountsStuck};
+    var studentFee=items.studentFee.length,sipDue=items.sipDue.length,staleLeads=items.staleLeads.length,accountsStuck=items.accountsStuck.length,clientDropOff=items.clientDropOff.length;
+    return {id:m['Employee ID'],name:m['Name']||m['Employee ID'],studentFee:studentFee,sipDue:sipDue,staleLeads:staleLeads,accountsStuck:accountsStuck,clientDropOff:clientDropOff,total:studentFee+sipDue+staleLeads+accountsStuck+clientDropOff};
   });
 }
 function renderTeamAttentionPanel(){
@@ -3928,12 +3973,12 @@ function renderTeamAttentionPanel(){
   var h='<div class="form-card" style="margin-bottom:16px;"><div style="font-weight:700;font-size:15px;margin-bottom:12px;">&#9888; Team Require Attention'+(totalAll?(' <span style="color:var(--danger);">('+totalAll+')</span>'):'')+'</div>';
   if(!totalAll){h+='<div class="no-data" style="padding:6px 0;">All clear across your team! &#9989;</div>';}
   else{
-    h+='<div class="table-inner"><table><thead><tr><th>Employee</th><th>Student Fee</th><th>SIP Due</th><th>Stale Leads</th><th>NSE Pending</th><th>Total</th></tr></thead><tbody>';
+    h+='<div class="table-inner"><table><thead><tr><th>Employee</th><th>Student Fee</th><th>SIP Due</th><th>Stale Leads</th><th>NSE Pending</th><th>Drop-off</th><th>Total</th></tr></thead><tbody>';
     rows.slice().sort(function(a,b){return b.total-a.total;}).forEach(function(r){
       if(!r.total)return;
       h+='<tr style="cursor:pointer;" onclick="showTeamMemberAttention(\''+r.id+'\')">'+
          '<td style="font-weight:600;">'+r.name+'</td>'+
-         '<td>'+(r.studentFee||'-')+'</td><td>'+(r.sipDue||'-')+'</td><td>'+(r.staleLeads||'-')+'</td><td>'+(r.accountsStuck||'-')+'</td>'+
+         '<td>'+(r.studentFee||'-')+'</td><td>'+(r.sipDue||'-')+'</td><td>'+(r.staleLeads||'-')+'</td><td>'+(r.accountsStuck||'-')+'</td><td>'+(r.clientDropOff||'-')+'</td>'+
          '<td style="font-weight:700;color:var(--danger);">'+r.total+'</td></tr>';
     });
     h+='</tbody></table></div>';
@@ -3951,9 +3996,47 @@ function showTeamMemberAttention(empId){
   if(items.sipDue.length){any=true;h+='<div style="font-weight:700;margin:14px 0 6px;color:var(--amber);">SIP Due Next 3 Days ('+items.sipDue.length+')</div>'+mkTable(items.sipDue,[{k:'Date',l:'Date'},{k:'Client Name',l:'Client'},{k:'Client Phone',l:'Phone'},{k:'Amount',l:'Amount',money:true},{k:'SIP Due Date',l:'Due Date'}]);}
   if(items.staleLeads.length){any=true;h+='<div style="font-weight:700;margin:14px 0 6px;color:var(--blue);">Leads - No Follow-up ('+items.staleLeads.length+')</div>'+mkLeads(items.staleLeads,false,true);}
   if(items.accountsStuck.length){any=true;h+='<div style="font-weight:700;margin:14px 0 6px;color:var(--purple);">New Accounts Pending NSE Trade ('+items.accountsStuck.length+')</div>'+mkTable(items.accountsStuck,[{k:'Date',l:'Date'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Client ID'},{k:'Client Phone',l:'Phone'},{k:'Status',l:'Status'}]);}
+  if(items.clientDropOff.length){any=true;h+='<div style="font-weight:700;margin:14px 0 6px;color:var(--pink);">Clients With No Contact 30+ Days ('+items.clientDropOff.length+')</div>'+mkTable(items.clientDropOff,[{k:'Client Name',l:'Client'},{k:'Client ID',l:'Client ID'},{k:'Client Phone',l:'Phone'},{k:'Last Call Date',l:'Last Call'}]);}
   if(!any)h+='<div class="no-data">All clear for this employee.</div>';
   h+='</div>';
   document.getElementById('teamAttentionDetail').innerHTML=h;
+}
+/* v55: Client Referral Leaderboard - reuses the existing "Reference" field on Accounts
+   (Direct / Employee: <name> / free-text Other). Free-text entries are usually an existing
+   client or contact's name who brought this new client in - group & rank them, no backend
+   schema change needed. Admin-only, shown on the Admin Dashboard below Top Clients. */
+function computeReferralLeaderboard(){
+  var counts={};
+  (allData.Accounts||[]).forEach(function(r){
+    var ref=(r['Reference']||'').trim();
+    if(!ref)return;
+    var low=ref.toLowerCase();
+    if(low==='direct (no reference)'||low==='direct'||low.indexOf('employee:')===0)return; /* skip Direct + employee-attributed, that's a separate existing leaderboard */
+    var key=ref; /* keep original casing for display, group case-insensitively */
+    var found=Object.keys(counts).find(function(k){return k.toLowerCase()===low;});
+    if(found)counts[found].n++;
+    else counts[key]={n:1};
+  });
+  return Object.keys(counts).map(function(k){return {name:k,n:counts[k].n};}).sort(function(a,b){return b.n-a.n;}).filter(function(r){return r.n>=1;});
+}
+function renderReferralLeaderboard(){
+  var el=document.getElementById('referralLeaderboardPanel');
+  if(!el)return;
+  var rows=computeReferralLeaderboard().slice(0,10);
+  var h='<div class="form-card" style="margin-bottom:16px;">'+
+    '<div style="font-weight:700;font-size:15px;margin-bottom:4px;">&#127942; Top Referring Clients</div>'+
+    '<div style="font-size:11px;color:var(--muted);margin-bottom:12px;">Based on the "Reference" field entered when adding a new client - who referred them</div>';
+  if(!rows.length){h+='<div class="no-data">No client-referral entries yet - fill "Reference" with the referring client\'s name on Add Account to start tracking.</div>';}
+  else{
+    h+='<div class="table-inner"><table><thead><tr><th>#</th><th>Referrer</th><th>New Clients Brought</th></tr></thead><tbody>';
+    rows.forEach(function(r,i){
+      var medal=i===0?'&#129351;':(i===1?'&#129352;':(i===2?'&#129353;':(i+1)));
+      h+='<tr><td>'+medal+'</td><td style="font-weight:600;">'+r.name+'</td><td class="money">'+r.n+'</td></tr>';
+    });
+    h+='</tbody></table></div>';
+  }
+  h+='</div>';
+  el.innerHTML=h;
 }
 
 /* ===== BUSINESS OVERVIEW (Choice Connect "My Business" style, segment-wise) ===== */
@@ -4221,7 +4304,67 @@ function showClient360Profile(cid,name){
   h+='<div class="form-card" style="margin-bottom:16px;"><div style="font-weight:700;margin-bottom:10px;">Insurance Policies</div><div class="table-inner">'+
     mkTable(insRows,[{k:'Date',l:'Date'},{k:'Type',l:'Type'},{k:'Premium',l:'Premium',money:true},{k:'Employee Name',l:'Employee'}])+'</div></div>';
 
+  var vaultCid=(displayId||'').replace(/'/g,"\\'"), vaultName=(displayName||'').replace(/'/g,"\\'");
+  h+='<div class="form-card" id="c360_vaultCard" style="margin-bottom:16px;">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'+
+      '<div style="font-weight:700;">&#128193; Document Vault</div>'+
+    '</div>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">'+
+      '<select id="c360_docType" style="width:auto;"><option>KYC</option><option>PAN Card</option><option>Aadhaar Card</option><option>Bank Proof</option><option>Signature</option><option>Agreement</option><option>Other</option></select>'+
+      '<input type="file" id="c360_docFile" style="width:auto;">'+
+      '<button class="btn-save" onclick="uploadClient360Doc(\''+vaultCid+'\',\''+vaultName+'\')" id="c360_uploadBtn">&#8593; Upload</button>'+
+    '</div>'+
+    '<div id="c360_docsList">Loading documents...</div>'+
+  '</div>';
+
   document.getElementById('c360_profile').innerHTML=h;
+  renderClient360Docs(displayId);
+}
+
+function renderClient360Docs(cid){
+  var el=document.getElementById('c360_docsList');
+  if(!el)return;
+  var cidT=(cid||'').trim().toUpperCase();
+  var docs=(allData.ClientDocuments||[]).filter(function(d){return (d['Client ID']||'').trim().toUpperCase()===cidT;}).sort(function(a,b){return (a['Date']||'')<(b['Date']||'')?1:-1;});
+  if(!docs.length){el.innerHTML='<div class="no-data">No documents uploaded yet for this client.</div>';return;}
+  var h='<div class="table-inner"><table><thead><tr><th>Date</th><th>Doc Type</th><th>File Name</th><th>Uploaded By</th><th>Actions</th></tr></thead><tbody>';
+  docs.forEach(function(d){
+    h+='<tr><td>'+(d['Date']||'-')+'</td><td>'+(d['Doc Type']||'-')+'</td><td>'+(d['File Name']||'-')+'</td><td>'+(d['Uploaded By']||'-')+'</td><td>'+
+      '<a href="'+(d['Drive URL']||'#')+'" target="_blank" class="btn-edit" style="text-decoration:none;display:inline-block;">&#128065; View</a> '+
+      '<button class="btn-del" onclick="deleteClient360Doc(\''+d._rowNum+'\',\''+(d['Drive File ID']||'')+'\',\''+(cid||'').replace(/'/g,"\\\\'")+'\')">Delete</button>'+
+      '</td></tr>';
+  });
+  h+='</tbody></table></div>';
+  el.innerHTML=h;
+}
+
+function uploadClient360Doc(cid,cname){
+  var fileEl=document.getElementById('c360_docFile');
+  var docType=document.getElementById('c360_docType').value;
+  var file=fileEl&&fileEl.files&&fileEl.files[0];
+  if(!file){showToast('Please choose a file first','error');return;}
+  if(file.size>15*1024*1024){showToast('File too large (max 15MB)','error');return;}
+  var btn=document.getElementById('c360_uploadBtn');
+  if(btn){btn.disabled=true;btn.textContent='Uploading...';}
+  var reader=new FileReader();
+  reader.onload=function(){
+    var base64=reader.result.split(',')[1];
+    var p={action:'uploadClientDocument','Client ID':cid,'Client Name':cname,'Doc Type':docType,'FileName':file.name,'MimeType':file.type||'application/octet-stream','FileData':base64,'Uploaded By':(currentUser&&currentUser.name)||'','Employee ID':(currentUser&&currentUser.userId)||''};
+    postData(p).then(function(r){
+      if(btn){btn.disabled=false;btn.textContent='↑ Upload';}
+      if(r&&r.success){showToast('Document uploaded!','success');fileEl.value='';loadAll();setTimeout(function(){renderClient360Docs(cid);},1200);}
+      else showToast('Upload failed: '+(r&&r.error||''),'error');
+    }).catch(function(e){if(btn){btn.disabled=false;btn.textContent='↑ Upload';}showToast('Error: '+e.message,'error');});
+  };
+  reader.readAsDataURL(file);
+}
+
+function deleteClient360Doc(rowNum,driveFileId,cid){
+  if(!confirm('Delete this document? This cannot be undone.'))return;
+  postData({action:'deleteClientDocument','rowNum':rowNum,'Drive File ID':driveFileId}).then(function(r){
+    if(r&&r.success){showToast('Document deleted','success');loadAll();setTimeout(function(){renderClient360Docs(cid);},1200);}
+    else showToast('Delete failed','error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
 
 function renderBizOverview(){
@@ -5650,11 +5793,39 @@ function renderHisab(){
   var pool=r2(totBrok+tInc-tExp-staffPay);
   var totPay=0,paidAmt=0,pendAmt=0,paidN=0;
   var cardsH='';
+  /* v55: Anomaly Detection - flag Commission % or Additions that deviate sharply from this
+     employee's own history, so mistakes get caught before payout instead of after (admin only). */
+  function hisabAnomalyCheck(eid,st,c){
+    var past=(allData.Hisab||[]).filter(function(r){return r['Employee ID']===eid&&r['Month']!==mo;});
+    if(past.length<2)return [];
+    var pcts=[],addSums=[];
+    past.forEach(function(r){
+      var p=numOrDefault(r['Commission %'],null);
+      if(p!==null&&!isNaN(p))pcts.push(parseFloat(p));
+      var lines=[];try{lines=JSON.parse(r['Details']||'[]');}catch(e){lines=[];}
+      var addSum=lines.filter(function(l){return l.t==='add';}).reduce(function(s,l){return s+(parseFloat(l.a)||0);},0);
+      addSums.push(addSum);
+    });
+    var warnings=[];
+    if(pcts.length>=2){
+      var avgPct=pcts.reduce(function(s,v){return s+v;},0)/pcts.length;
+      if(Math.abs((st.pct||0)-avgPct)>=15)warnings.push('Commission % ('+st.pct+'%) is unusually different from this employee\'s usual rate (avg '+Math.round(avgPct)+'% over last '+pcts.length+' months) - please double-check before paying.');
+    }
+    if(addSums.length>=2){
+      var avgAdd=addSums.reduce(function(s,v){return s+v;},0)/addSums.length;
+      if(c.adds>500&&avgAdd>=0&&c.adds>(avgAdd*1.6+500))warnings.push('Additions ('+fmt(c.adds)+') are much higher than this employee\'s usual monthly additions (avg '+fmt(r2(avgAdd))+') - please verify the line items.');
+    }
+    return warnings;
+  }
   function card(e,st,c,extra){
     var eid=e['Employee ID'];
     cardsH+='<div class="hisab-card">';
     cardsH+='<div class="hisab-head"><div><span class="emp-name">'+e['Name']+'</span> <span class="emp-meta">'+(e['Branch']||'')+(st.isPartner?' &#183; <b style="color:var(--purple);">PARTNER</b>':'')+'</span></div>';
     cardsH+='<span class="badge '+(st.status==='Paid'?'green':'amber')+'">'+st.status+(st.paidDate?' &#183; '+st.paidDate:'')+'</span></div>';
+    if(isAdm){
+      var warnings=hisabAnomalyCheck(eid,st,c);
+      if(warnings.length)cardsH+='<div class="prev-warn">&#9888; <b>Anomaly check:</b><br>'+warnings.join('<br>')+'</div>';
+    }
     cardsH+='<div class="hisab-grid">';
     if(st.isPartner){
       cardsH+='<div class="hisab-cell"><div class="lbl">Net Profit Pool</div><div class="val">'+fmt(st.pool)+'</div></div>';
@@ -5934,13 +6105,15 @@ function renderManageEmps(){
   var missing=employees.filter(function(e){return (e['Status']||'Active')==='Active'&&!(e['Email']||'').trim();});
   var h='';
   if(missing.length)h+='<div class="prev-err" style="margin-bottom:10px;">&#9888; <b>'+missing.length+' employee(s) do not have an Email set</b> - they will NOT receive a salary slip email when marked Paid: '+missing.map(function(e){return e['Name']||e['Employee ID'];}).join(', ')+'</div>';
-  h+='<table><thead><tr><th>Employee ID</th><th>Name</th><th>Branch</th><th>Role</th><th>Sub-team Of</th><th>Commission %</th><th>Salary</th><th>Email</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+  h+='<table><thead><tr><th>Employee ID</th><th>Name</th><th>Branch</th><th>Role</th><th>Sub-team Of</th><th>Commission %</th><th>Salary</th><th>Email</th><th>KYC (PAN/Aadhaar)</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
   employees.forEach(function(e){
     var isAct=(e['Status']||'Active')==='Active';
     var em=(e['Email']||'').trim();
     var pids=parentIdsOf(e);
     var pLabel=pids.length?pids.map(function(pid){var pEmp=employees.find(function(x){return x['Employee ID']===pid;});return pEmp?pEmp['Name']:pid;}).join(', '):'<span style="color:var(--muted);">&#8212;</span>';
-    h+='<tr><td>'+(e['Employee ID']||'-')+'</td><td style="font-weight:600;">'+(e['Name']||'-')+'</td><td>'+(e['Branch']||'-')+'</td><td>'+(e['Role']||'employee')+'</td><td>'+pLabel+'</td><td style="font-weight:700;color:var(--accent);">'+(e['Commission']!==''&&e['Commission']!==undefined?e['Commission']+'%':'50%')+'</td><td>'+(parseFloat(e['Salary'])>0?fmt(e['Salary']):'-')+'</td><td>'+(em?em:'<span class="badge red" title="Email missing - salary slip email will not be sent">&#9888; missing</span>')+'</td><td><span class="badge '+(isAct?'green':'red')+'">'+(isAct?'Active':'Inactive')+'</span></td><td>';
+    var panV=(e['PAN']||'').trim(),aadV=(e['Aadhaar']||'').trim();
+    var kycLabel=(panV&&aadV)?('<span class="badge green" title="PAN: '+panV+' &#183; Aadhaar: XXXX-XXXX-'+aadV.slice(-4)+'">&#10003; Verified</span>'):'<span class="badge red" title="PAN/Aadhaar missing">&#9888; incomplete</span>';
+    h+='<tr><td>'+(e['Employee ID']||'-')+'</td><td style="font-weight:600;">'+(e['Name']||'-')+'</td><td>'+(e['Branch']||'-')+'</td><td>'+(e['Role']||'employee')+'</td><td>'+pLabel+'</td><td style="font-weight:700;color:var(--accent);">'+(e['Commission']!==''&&e['Commission']!==undefined?e['Commission']+'%':'50%')+'</td><td>'+(parseFloat(e['Salary'])>0?fmt(e['Salary']):'-')+'</td><td>'+(em?em:'<span class="badge red" title="Email missing - salary slip email will not be sent">&#9888; missing</span>')+'</td><td>'+kycLabel+'</td><td><span class="badge '+(isAct?'green':'red')+'">'+(isAct?'Active':'Inactive')+'</span></td><td>';
     h+='<button class="btn-edit" data-id="'+e['Employee ID']+'" onclick="editEmpModal(this.dataset.id)">&#9998; Edit</button>';
     h+='<button class="btn-del" data-id="'+e['Employee ID']+'" data-act="'+(isAct?'Inactive':'Active')+'" onclick="toggleEmpBtn(this)">'+( isAct?'Deactivate':'Activate')+'</button>';
     h+='</td></tr>';
@@ -5956,7 +6129,9 @@ function showAddEmpModal(){
   h+='<div class="form-group"><label>Role</label><select id="ne_role"><option value="employee">Employee</option><option value="finance">Finance (Hisab &amp; Income/Expense)</option><option value="partner">Partner (% of net profit)</option><option value="admin">Admin</option></select></div>';
   h+='<div class="form-group"><label>Commission % (employee: % of brokerage &#183; partner: % of net profit)</label><input type="number" id="ne_comm" value="50" min="0" max="100"></div>';
   h+='<div class="form-group"><label>Fixed Salary (&#8377;/month, 0 if none)</label><input type="number" id="ne_sal" value="0"></div>';
-  h+='<div class="form-group"><label>Email (for salary slip)</label><input type="email" id="ne_email" placeholder="employee@gmail.com"></div>';
+  h+='<div class="form-group"><label>Gmail ID <span style="color:var(--danger);">*</span></label><input type="email" id="ne_email" placeholder="employee@gmail.com" required></div>';
+  h+='<div class="form-group"><label>PAN Number <span style="color:var(--danger);">*</span></label><input type="text" id="ne_pan" placeholder="ABCDE1234F" maxlength="10" style="text-transform:uppercase;" required></div>';
+  h+='<div class="form-group"><label>Aadhaar Number <span style="color:var(--danger);">*</span></label><input type="text" id="ne_aadhaar" placeholder="XXXX XXXX XXXX" maxlength="12" required></div>';
   h+='<div class="form-group"><label>Password</label><input type="text" id="ne_pass"></div>';
   h+='<div class="form-group"><label>Sub-team Of (Parents) - you can select multiple</label><div style="max-height:160px;overflow-y:auto;border:1px solid var(--border,rgba(255,255,255,.15));border-radius:8px;padding:8px;">';
   employees.forEach(function(e){h+='<label style="display:flex;align-items:center;gap:6px;font-weight:400;font-size:13px;padding:3px 0;"><input type="checkbox" class="ne_parent_cb" value="'+e['Employee ID']+'" style="width:auto;"> '+e['Name']+' ('+e['Employee ID']+')</label>';});
@@ -5965,11 +6140,21 @@ function showAddEmpModal(){
   document.getElementById('modalBox').innerHTML=h;document.getElementById('modal').className='show';
 }
 
+function isValidPAN(v){return /^[A-Z]{5}[0-9]{4}[A-Z]$/.test((v||'').trim().toUpperCase());}
+function isValidAadhaar(v){return /^\d{12}$/.test((v||'').replace(/\s/g,''));}
+function isValidEmail(v){return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((v||'').trim());}
+
 function addEmployee(){
   var id=document.getElementById('ne_id').value.trim(),name=document.getElementById('ne_name').value.trim(),pass=document.getElementById('ne_pass').value.trim();
+  var email=document.getElementById('ne_email').value.trim();
+  var pan=document.getElementById('ne_pan').value.trim().toUpperCase();
+  var aadhaar=document.getElementById('ne_aadhaar').value.trim();
   if(!id||!name||!pass){showToast('ID, Name and Password required','error');return;}
   if(employees.find(function(e){return e['Employee ID']===id;})){showToast('ID already exists','error');return;}
-  var p={action:'addEmployee','Employee ID':id,'Name':name,'Branch':document.getElementById('ne_branch').value,'Role':document.getElementById('ne_role').value,'Password':pass,'Status':'Active','Commission':numOrDefault(document.getElementById('ne_comm').value,50),'Email':document.getElementById('ne_email').value.trim(),'Salary':parseFloat(document.getElementById('ne_sal').value)||0,'Parent ID':Array.prototype.slice.call(document.querySelectorAll('.ne_parent_cb:checked')).map(function(el){return el.value;}).join(',')};
+  if(!email||!isValidEmail(email)){showToast('Valid Gmail ID is required','error');return;}
+  if(!pan||!isValidPAN(pan)){showToast('Valid PAN Number is required (format: ABCDE1234F)','error');return;}
+  if(!aadhaar||!isValidAadhaar(aadhaar)){showToast('Valid 12-digit Aadhaar Number is required','error');return;}
+  var p={action:'addEmployee','Employee ID':id,'Name':name,'Branch':document.getElementById('ne_branch').value,'Role':document.getElementById('ne_role').value,'Password':pass,'Status':'Active','Commission':numOrDefault(document.getElementById('ne_comm').value,50),'Email':email,'Salary':parseFloat(document.getElementById('ne_sal').value)||0,'Parent ID':Array.prototype.slice.call(document.querySelectorAll('.ne_parent_cb:checked')).map(function(el){return el.value;}).join(','),'PAN':pan,'Aadhaar':aadhaar};
   postData(p).then(function(r){closeModal();if(r&&r.success){showToast('Employee added!','success');loadEmps();}else showToast('Failed: '+(r&&r.error||''),'error');}).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
 }
 
@@ -5985,7 +6170,9 @@ function editEmpModal(empId){
   h+='</select></div>';
   h+='<div class="form-group"><label>Commission % (employee: % of brokerage &#183; partner: % of net profit)</label><input type="number" id="ee_comm" value="'+(emp['Commission']!==''&&emp['Commission']!==undefined?emp['Commission']:50)+'" min="0" max="100"></div>';
   h+='<div class="form-group"><label>Fixed Salary (&#8377;/month)</label><input type="number" id="ee_sal" value="'+(parseFloat(emp['Salary'])||0)+'"></div>';
-  h+='<div class="form-group"><label>Email (for salary slip)</label><input type="email" id="ee_email" value="'+(emp['Email']||'')+'" placeholder="employee@gmail.com"></div>';
+  h+='<div class="form-group"><label>Gmail ID <span style="color:var(--danger);">*</span></label><input type="email" id="ee_email" value="'+(emp['Email']||'')+'" placeholder="employee@gmail.com" required></div>';
+  h+='<div class="form-group"><label>PAN Number <span style="color:var(--danger);">*</span></label><input type="text" id="ee_pan" value="'+(emp['PAN']||'')+'" placeholder="ABCDE1234F" maxlength="10" style="text-transform:uppercase;" required></div>';
+  h+='<div class="form-group"><label>Aadhaar Number <span style="color:var(--danger);">*</span></label><input type="text" id="ee_aadhaar" value="'+(emp['Aadhaar']||'')+'" placeholder="XXXX XXXX XXXX" maxlength="12" required></div>';
   h+='<div class="form-group"><label>New Password (blank = keep)</label><input type="text" id="ee_pass" placeholder="Leave blank to keep"></div>';
   h+='<div class="form-group"><label>Sub-team Of (Parents) - you can select multiple</label><div style="max-height:160px;overflow-y:auto;border:1px solid var(--border,rgba(255,255,255,.15));border-radius:8px;padding:8px;">';
   var curParentIds=parentIdsOf(emp);
@@ -5998,7 +6185,13 @@ function editEmpModal(empId){
 
 function saveEmp(empId){
   var emp=employees.find(function(e){return e['Employee ID']===empId;});if(!emp)return;
-  var p={action:'updateEmployee','Employee ID':empId,_rowNum:emp._rowNum,'Name':document.getElementById('ee_name').value.trim(),'Branch':document.getElementById('ee_branch').value,'Role':document.getElementById('ee_role').value||'employee','Status':emp['Status']||'Active','Commission':numOrDefault(document.getElementById('ee_comm').value,50),'Email':document.getElementById('ee_email').value.trim(),'Salary':parseFloat(document.getElementById('ee_sal').value)||0,'Parent ID':Array.prototype.slice.call(document.querySelectorAll('.ee_parent_cb:checked')).map(function(el){return el.value;}).join(','),'FinanceAccess':document.getElementById('ee_finaccess').checked?'Yes':'No'};
+  var email=document.getElementById('ee_email').value.trim();
+  var pan=document.getElementById('ee_pan').value.trim().toUpperCase();
+  var aadhaar=document.getElementById('ee_aadhaar').value.trim();
+  if(!email||!isValidEmail(email)){showToast('Valid Gmail ID is required','error');return;}
+  if(!pan||!isValidPAN(pan)){showToast('Valid PAN Number is required (format: ABCDE1234F)','error');return;}
+  if(!aadhaar||!isValidAadhaar(aadhaar)){showToast('Valid 12-digit Aadhaar Number is required','error');return;}
+  var p={action:'updateEmployee','Employee ID':empId,_rowNum:emp._rowNum,'Name':document.getElementById('ee_name').value.trim(),'Branch':document.getElementById('ee_branch').value,'Role':document.getElementById('ee_role').value||'employee','Status':emp['Status']||'Active','Commission':numOrDefault(document.getElementById('ee_comm').value,50),'Email':email,'Salary':parseFloat(document.getElementById('ee_sal').value)||0,'Parent ID':Array.prototype.slice.call(document.querySelectorAll('.ee_parent_cb:checked')).map(function(el){return el.value;}).join(','),'FinanceAccess':document.getElementById('ee_finaccess').checked?'Yes':'No','PAN':pan,'Aadhaar':aadhaar};
   var np=document.getElementById('ee_pass').value.trim();if(np)p['Password']=np;
   postData(p).then(function(r){closeModal();if(r&&r.success){showToast('Updated!','success');loadEmps();}else showToast('Failed','error');}).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
 }
@@ -6190,12 +6383,60 @@ function tjFilterToEmployee(empId){
   var sel=document.getElementById('tj_empFilter');
   if(sel){sel.value=empId;renderTradingJournalPage();sel.scrollIntoView({behavior:'smooth',block:'center'});}
 }
+/* v55: Auto-Session Review - plain-English end-of-day summary computed from existing
+   TradingJournal data (no backend/AI needed). Shows for today by default, or whatever
+   date is picked in "Check a specific date". Employee sees their own; Admin sees a
+   team-wide review + can drill into an employee via the breakdown table below it. */
+function tjBestStrategy(rows){
+  var byStrat={};
+  rows.forEach(function(r){
+    var s=(r['Strategy']||'').trim()||'Unspecified';
+    if(!byStrat[s])byStrat[s]={wins:0,losses:0,net:0};
+    var st=r['Status'];
+    if(st==='Target Done'||st==='2nd Target Done'){byStrat[s].wins++;}
+    else if(st==='SL Done'){byStrat[s].losses++;}
+    byStrat[s].net+=(parseFloat(r['Result'])||0);
+  });
+  var keys=Object.keys(byStrat).filter(function(k){return byStrat[k].wins+byStrat[k].losses>0;});
+  if(!keys.length)return null;
+  keys.sort(function(a,b){return byStrat[b].net-byStrat[a].net;});
+  var top=keys[0];
+  return {name:top,wins:byStrat[top].wins,losses:byStrat[top].losses,net:byStrat[top].net};
+}
+function renderTJSessionReview(dayRows,isAdmTJ,reviewDate){
+  var el=document.getElementById('tjSessionReview');
+  if(!el)return;
+  if(!dayRows||!dayRows.length){
+    el.innerHTML='<div class="form-card" style="margin-bottom:16px;border-style:dashed;"><div style="font-size:13px;color:var(--muted);">&#128202; <b>Session Review &#183; '+reviewDate+':</b> No trades logged for this date'+(isAdmTJ?' by the team':'')+' yet.</div></div>';
+    return;
+  }
+  var closed=dayRows.filter(function(r){return ['Open','1st Target Done'].indexOf(r['Status'])===-1;});
+  var targets=closed.filter(function(r){return r['Status']==='Target Done'||r['Status']==='2nd Target Done';});
+  var sls=closed.filter(function(r){return r['Status']==='SL Done';});
+  var base=targets.length+sls.length;
+  var winRate=base?Math.round(targets.length/base*100):null;
+  var netPL=closed.reduce(function(s,r){return s+(parseFloat(r['Result'])||0);},0);
+  var worst=closed.slice().sort(function(a,b){return (parseFloat(a['Result'])||0)-(parseFloat(b['Result'])||0);})[0];
+  var best=tjBestStrategy(dayRows);
+  var empCount={};dayRows.forEach(function(r){empCount[r['Employee ID']||r['Employee Name']]=1;});
+  var parts=[];
+  parts.push((isAdmTJ?('Team logged '+dayRows.length+' trade'+(dayRows.length!==1?'s':'')+' across '+Object.keys(empCount).length+' employee'+(Object.keys(empCount).length!==1?'s':'')):('You logged '+dayRows.length+' trade'+(dayRows.length!==1?'s':'')))+'.');
+  if(winRate!==null)parts.push('Win rate '+winRate+'% ('+targets.length+' Target vs '+sls.length+' SL).');
+  if(closed.length)parts.push('Net '+(netPL>=0?'profit':'loss')+' of '+fmt(Math.abs(netPL))+' on '+closed.length+' closed trade'+(closed.length!==1?'s':'')+'.');
+  if(best&&(best.wins+best.losses)>0)parts.push('Best strategy: <b>'+best.name+'</b> ('+best.wins+'/'+(best.wins+best.losses)+' wins, '+fmt(best.net)+' net).');
+  if(worst&&(parseFloat(worst['Result'])||0)<0)parts.push('Biggest loss: <b>'+(worst['Stock']||'-')+'</b> '+fmt(Math.abs(parseFloat(worst['Result'])||0))+(isAdmTJ?(' by '+(worst['Employee Name']||'-')):'')+'.');
+  var openCount=dayRows.length-closed.length;
+  if(openCount)parts.push(openCount+' trade'+(openCount!==1?'s':'')+' still open.');
+  el.innerHTML='<div class="form-card" style="margin-bottom:16px;border-left:3px solid var(--accent);"><div style="font-weight:700;font-size:14px;margin-bottom:6px;">&#128202; Session Review &#183; '+reviewDate+'</div><div style="font-size:13px;color:var(--text);line-height:1.7;">'+parts.join(' ')+'</div></div>';
+}
 function renderTradingJournalPage(){
   initTradingJournalForm();
   var isAdmTJ=currentUser&&currentUser.role==='admin';
   var specificDate=document.getElementById('tj_specificDate')?document.getElementById('tj_specificDate').value:'';
   var allScopedRows=isAdmTJ?(allData.TradingJournal||[]):fEmpStrict(allData.TradingJournal||[],currentUser.userId);
   var dateFilteredAll=specificDate?allScopedRows.filter(function(r){return (r['Date']||'')===specificDate;}):fDate(allScopedRows,filters['tj']||'all');
+  var reviewDate=specificDate||td();
+  renderTJSessionReview(allScopedRows.filter(function(r){return (r['Date']||'')===reviewDate;}),isAdmTJ,reviewDate);
   renderTJEmpBreakdown(dateFilteredAll);
   var rows=tjRows();
   rows=specificDate?rows.filter(function(r){return (r['Date']||'')===specificDate;}):fDate(rows,filters['tj']||'all');
