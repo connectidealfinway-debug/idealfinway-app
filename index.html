@@ -7899,7 +7899,7 @@ function ipoInlineTextCell(r,field,placeholder,upper){
 }
 function mkIPOAppsTable(rows,dupCounts,ipo){
   if(!rows||!rows.length)return '<div class="no-data">No applications</div>';
-  var h='<table><thead><tr><th>PAN</th><th>Name</th><th>Mobile</th><th>Reference</th><th>Category</th><th>Broker</th><th>Buy Rate</th><th>Status</th><th>Client Net</th><th>IPO Profit</th><th>Client Payment</th><th>Resale</th><th>Actions</th></tr></thead><tbody>';
+  var h='<table><thead><tr><th>PAN</th><th>Name</th><th>Mobile</th><th>Client ID</th><th>Reference</th><th>Category</th><th>Broker</th><th>Buy Rate</th><th>Status</th><th>Client Net</th><th>IPO Profit</th><th>Client Payment</th><th>Resale</th><th>Actions</th></tr></thead><tbody>';
   rows.slice().reverse().forEach(function(r){
     var pan=(r['PAN']||'').trim().toUpperCase();
     var isDup=!!(pan&&dupCounts[pan]>1);
@@ -7915,6 +7915,7 @@ function mkIPOAppsTable(rows,dupCounts,ipo){
     h+='<td>'+(isDup?'<span class="dup-badge">&#9888;</span>':'')+ipoInlineTextCell(r,'PAN','Enter PAN',true)+(isDup?'<div style="font-size:10px;color:var(--danger);">Duplicate PAN, already added</div>':'')+'</td>';
     h+='<td>'+ipoInlineTextCell(r,'Client_Name','Enter name',false)+'</td>';
     h+='<td>'+ipoInlineTextCell(r,'Mobile','Enter mobile',false)+'</td>';
+    h+='<td>'+((r['Broker']||'Choice')==='Choice'?ipoInlineTextCell(r,'Client_ID','Enter Client ID',true):'<span style="color:var(--muted);">-</span>')+'</td>';
     h+='<td style="cursor:pointer;color:var(--accent);" onclick="filterIPOByReference(\''+String(r['Reference']||'').replace(/'/g,"\\\\'")+'\')" title="Filter by this reference">'+(r['Reference']||'-')+'</td>';
     h+='<td><span class="badge blue">'+(r['Category']||'-')+'</span></td>';
     h+='<td>'+(resold?(r['Broker']||'-'):brokerSel)+'</td>';
@@ -7931,13 +7932,34 @@ function mkIPOAppsTable(rows,dupCounts,ipo){
 }
 function inlineSaveIPOApp(rowNum,field,rawVal){
   var val=rawVal==null?'':String(rawVal).trim();
-  if(field==='PAN')val=val.toUpperCase();
-  if((field==='PAN'||field==='Client_Name'||field==='Mobile')&&!val)return; // don't save a blank first entry
+  if(field==='PAN'||field==='Client_ID')val=val.toUpperCase();
+  if((field==='PAN'||field==='Client_Name'||field==='Mobile'||field==='Client_ID')&&!val)return; // don't save a blank first entry
   var row=(allData.IPO_Applications||[]).find(function(r){return String(r['_rowNum'])===String(rowNum);});
   if(row&&String(row[field]||'')===val)return; // no change
   var vals={};vals[field]=val;vals['Updated_Date']=td();
+  // Auto-fetch: PAN match against any other IPO application already on file -> pull Name/Mobile/Client_ID.
+  if(field==='PAN'){
+    var matchApp=(allData.IPO_Applications||[]).find(function(r){return String(r['_rowNum'])!==String(rowNum)&&(r['PAN']||'').trim().toUpperCase()===val&&(r['Client_Name']||r['Mobile']);});
+    if(matchApp){
+      if(!row||!row['Client_Name'])vals['Client_Name']=matchApp['Client_Name']||'';
+      if(!row||!row['Mobile'])vals['Mobile']=matchApp['Mobile']||'';
+      if((!row||!row['Client_ID'])&&matchApp['Client_ID'])vals['Client_ID']=matchApp['Client_ID'];
+    }
+  }
+  // Auto-fetch: Client ID match against Accounts (demat) sheet -> pull Name/Mobile.
+  if(field==='Client_ID'){
+    var acc=(allData.Accounts||[]).find(function(a){return (a['Client ID']||'').trim().toUpperCase()===val;});
+    if(acc){
+      if(!row||!row['Client_Name'])vals['Client_Name']=acc['Client Name']||'';
+      if(!row||!row['Mobile'])vals['Mobile']=acc['Client Phone']||'';
+    }
+  }
   postData({action:'editRow',sheet:'IPO_Applications',rowNum:rowNum,vals:vals}).then(function(r){
-    if(r&&r.success){patchRowLocal('IPO_Applications',rowNum,vals);renderIPOTabBody();}
+    if(r&&r.success){
+      patchRowLocal('IPO_Applications',rowNum,vals);
+      renderIPOTabBody();
+      if(vals['Client_Name']||vals['Mobile'])showToast('Client detail auto-filled','success');
+    }
     else{showToast('Save failed: '+(r&&r.error||''),'error');renderIPOTabBody();}
   }).catch(function(e){showToast('Error: '+e.message,'error');renderIPOTabBody();});
 }
@@ -7968,6 +7990,7 @@ function openIPOAppEditModal(rowNum){
   html+='<div class="form-group"><label>PAN</label><input type="text" id="ipe_pan" value="'+(row['PAN']||'')+'" style="text-transform:uppercase;"></div>';
   html+='<div class="form-group"><label>Client Name</label><input type="text" id="ipe_name" value="'+(row['Client_Name']||'')+'"></div>';
   html+='<div class="form-group"><label>Mobile</label><input type="text" id="ipe_mobile" value="'+(row['Mobile']||'')+'"></div>';
+  html+='<div class="form-group"><label>Client ID (Choice/demat)</label><input type="text" id="ipe_clientid" value="'+(row['Client_ID']||'')+'" style="text-transform:uppercase;"></div>';
   html+='<div class="form-group"><label>Reference</label><input type="text" id="ipe_ref" value="'+(row['Reference']||'')+'"></div>';
   html+='<div class="form-group"><label>Category</label><select id="ipe_cat">';
   ['Retail','sHNI','bHNI'].forEach(function(c){html+='<option'+(row['Category']===c?' selected':'')+'>'+c+'</option>';});
@@ -7999,6 +8022,7 @@ function saveIPOAppEdit(rowNum){
   var vals={
     'PAN':(document.getElementById('ipe_pan').value||'').trim().toUpperCase(),
     'Client_Name':(document.getElementById('ipe_name').value||'').trim(),
+    'Client_ID':(document.getElementById('ipe_clientid').value||'').trim().toUpperCase(),
     'Mobile':(document.getElementById('ipe_mobile').value||'').trim(),
     'Reference':(document.getElementById('ipe_ref').value||'').trim(),
     'Category':document.getElementById('ipe_cat').value,
