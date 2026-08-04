@@ -329,6 +329,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       <div class="nav-item" onclick="showPage('adminEmps')">&#128101; Employee Performance</div>
       <div class="nav-item" onclick="showPage('contest')">&#127942; Contests</div>
       <div class="nav-item" onclick="showPage('finDash')">&#128176; Finance Dashboard</div>
+      <div class="nav-item" onclick="showPage('ipo')">&#128200; IPO</div>
       <div class="nav-sec" onclick="toggleGrp('gRep',this)"><span class="arr">&#9656;</span>Reports</div>
       <div class="nav-grp" id="gRep" style="display:none">
         <div class="nav-item" onclick="showPage('adminBrok')">&#36; Brokerage</div>
@@ -364,6 +365,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       <div class="nav-item" onclick="showPage('addExpense')">&#43; Add Expense</div>
       <div class="nav-item" onclick="showPage('finRecords')">&#8377; Income &amp; Expense</div>
       <div class="nav-item" onclick="showPage('hisab')">&#9878; Monthly Hisab</div>
+      <div class="nav-item" id="navIPOFin" style="display:none" onclick="showPage('ipo')">&#128200; IPO</div>
       <div class="nav-section">Attendance</div>
       <div class="nav-item" onclick="showPage('markAttendance')">&#9711; My Attendance</div>
     </div>
@@ -379,6 +381,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       <div class="nav-item" onclick="showPage('reminders')">&#128276; Reminders</div>
       <div class="nav-item" onclick="showPage('contest')">&#127942; Contests</div>
       <div class="nav-item" id="navMyTeam" style="display:none" onclick="showPage('myTeam')">&#128101; My Team</div>
+      <div class="nav-item" id="navIPO" style="display:none" onclick="showPage('ipo')">&#128200; IPO</div>
       <div class="nav-sec" onclick="toggleGrp('gAdd',this)"><span class="arr">&#9656;</span>Add Entry</div>
       <div class="nav-grp" id="gAdd" style="display:none">
         <div class="nav-item" onclick="showPage('addSIP')">&#43; Mutual Fund</div>
@@ -1483,6 +1486,84 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       <div id="myHisabCards"></div>
     </div>
 
+    <!-- ===== v62: IPO MODULE — fully separate module; IPO figures are NEVER added into any
+         other income/expense/dashboard total anywhere in this app. Own P&L shown only here. ===== -->
+    <div class="page" id="page-ipo">
+      <div class="page-header"><h1>IPO</h1><p>Application-wise IPO tracking &amp; profit/loss — a fully separate module, never mixed with main Income/Expense figures</p></div>
+
+      <div class="form-card form-grid" style="margin-bottom:16px;">
+        <div class="form-group"><label>Select IPO</label><select id="ipo_select" onchange="onIPOSelectChange()"></select></div>
+        <div class="form-group"><label>&nbsp;</label><button class="btn-mini add" onclick="openNewIPOModal()">&#43; New IPO</button></div>
+      </div>
+
+      <div id="ipoNoneMsg" class="no-data" style="display:none;">No IPO created yet. Click "+ New IPO" above to create the first one.</div>
+
+      <div id="ipoBody" style="display:none;">
+        <div class="tab-btns">
+          <button class="tab-btn active" id="ipoTabApps" onclick="setIPOTab('apps')">Applications</button>
+          <button class="tab-btn" id="ipoTabRef" onclick="setIPOTab('ref')">Reference-wise</button>
+          <button class="tab-btn" id="ipoTabBuyer" onclick="setIPOTab('buyer')">Resale / Buyer-wise</button>
+          <button class="tab-btn" id="ipoTabPay" onclick="setIPOTab('pay')">Payment Handled By</button>
+          <button class="tab-btn" id="ipoTabCalc" onclick="setIPOTab('calc')">What-if Calculator</button>
+        </div>
+
+        <div id="ipoTabBodyApps">
+          <div class="filter-bar">
+            <span class="ipoCatGrp" style="display:flex;gap:8px;">
+              <button class="filter-btn active" onclick="setIPOCat('All',this)">All</button>
+              <button class="filter-btn" onclick="setIPOCat('Retail',this)">Retail</button>
+              <button class="filter-btn" onclick="setIPOCat('sHNI',this)">sHNI</button>
+              <button class="filter-btn" onclick="setIPOCat('bHNI',this)">bHNI</button>
+            </span>
+            <span class="ipoBrokerGrp" style="display:flex;gap:8px;">
+              <button class="filter-btn active" onclick="setIPOBroker('All',this)">All Brokers</button>
+              <button class="filter-btn" onclick="setIPOBroker('Choice',this)">Choice</button>
+              <button class="filter-btn" onclick="setIPOBroker('Other',this)">Other</button>
+            </span>
+            <input class="srch" id="srch-ipo" placeholder="&#128269; Search PAN/name/mobile/reference..." oninput="renderIPOAppsTable()">
+          </div>
+          <div id="ipoRefFilterBar"></div>
+          <div class="stats-grid" id="ipoStats"></div>
+          <div class="form-card" style="margin-bottom:16px;max-width:none;">
+            <div style="font-weight:700;margin-bottom:10px;">&#43; Add Application(s)</div>
+            <div class="form-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:6px 20px;">
+              <div class="form-group"><label>Quantity (applications)</label><input type="number" id="ipoAdd_qty" value="1" min="1"></div>
+              <div class="form-group"><label>Reference</label><input type="text" id="ipoAdd_ref" placeholder="Employee / client / anyone"></div>
+              <div class="form-group"><label>Category</label><select id="ipoAdd_cat"><option>Retail</option><option>sHNI</option><option>bHNI</option></select></div>
+              <div class="form-group"><label>Broker</label><select id="ipoAdd_broker"><option>Choice</option><option>Other</option></select></div>
+              <div class="form-group"><label>Buy Rate (&#8377;/application)</label><input type="number" id="ipoAdd_buyrate" placeholder="e.g. 15000"></div>
+              <div class="form-group" style="align-self:end;"><button class="btn-submit" onclick="submitIPOApplications()">Add</button></div>
+            </div>
+          </div>
+          <div class="table-wrap"><div class="table-inner" id="ipoAppsTable"></div></div>
+        </div>
+
+        <div id="ipoTabBodyRef" style="display:none;">
+          <div class="table-wrap"><div class="table-inner" id="ipoRefTable"></div></div>
+        </div>
+
+        <div id="ipoTabBodyBuyer" style="display:none;">
+          <button class="btn-mini add" style="margin-bottom:12px;" onclick="openIPOBulkResellModal()">&#43; Bulk Mark Resold</button>
+          <div class="table-wrap"><div class="table-inner" id="ipoBuyerTable"></div></div>
+        </div>
+
+        <div id="ipoTabBodyPay" style="display:none;">
+          <div class="table-wrap"><div class="table-inner" id="ipoPayHandlerTable"></div></div>
+        </div>
+
+        <div id="ipoTabBodyCalc" style="display:none;">
+          <div class="form-card form-grid">
+            <div class="form-group"><label>Total Applications</label><input type="number" id="ipoCalc_total" value="0" oninput="renderIPOWhatIf()"></div>
+            <div class="form-group"><label>Allotted Count</label><input type="number" id="ipoCalc_allotted" value="0" oninput="renderIPOWhatIf()"></div>
+            <div class="form-group"><label>Buy Rate / App</label><input type="number" id="ipoCalc_buyrate" value="0" oninput="renderIPOWhatIf()"></div>
+            <div class="form-group"><label>Listing Gain / App</label><input type="number" id="ipoCalc_gain" value="0" oninput="renderIPOWhatIf()"></div>
+          </div>
+          <div class="stats-grid" id="ipoCalcResult"></div>
+          <p style="color:var(--muted);font-size:12px;">Scratchpad only - nothing here is saved, it's just an instant what-if projection.</p>
+        </div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -1497,13 +1578,14 @@ var ADMIN_ID='directorravikant.idealfinway';
 var OFFICE_ID='ideal.office';
 var ADMIN_PASS='drrk@1401';
 var currentUser=null;
-var allData={Brokerage:[],ClientBrokerage:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[],Meetings:[],Income:[],Expense:[],Hisab:[],TradingJournal:[],CallTrade:[],CallClients:[],Watchlist:[],Reminders:[],Announcements:[],ClientDocuments:[],Resignations:[],EmployeeDataMoves:[]};
+var allData={Brokerage:[],ClientBrokerage:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[],Meetings:[],Income:[],Expense:[],Hisab:[],TradingJournal:[],CallTrade:[],CallClients:[],Watchlist:[],Reminders:[],Announcements:[],ClientDocuments:[],Resignations:[],EmployeeDataMoves:[],IPO_Master:[],IPO_Applications:[]};
 var employees=[];
 var filters={};
 var accStat='all',myAccStat='all',dashF='today',accDupOnly=false,teamWorkingOnly=false,bizScope='own';
 var leadCatF='all',myLeadCatF='all';
 var leadConvF='all',myLeadConvF='all',meetConvF='all',myMeetConvF='all';
 var wlStatF='all';
+var ipoSelId=null,ipoCatF='All',ipoBrokerF='All',ipoRefF=null,ipoTab='apps';
 function setLeadConv(v,varName){if(varName==='leadConvF')leadConvF=v;else myLeadConvF=v;renderPage(curPage());}
 function setMeetConv(v,varName){if(varName==='meetConvF')meetConvF=v;else myMeetConvF=v;renderPage(curPage());}
 var finTab='income';
@@ -1642,14 +1724,14 @@ function login(){
   err.textContent='Invalid ID or Password';err.style.display='none';
   if(id===ADMIN_ID&&pass===ADMIN_PASS){currentUser={id:id,name:'Ravikant Sharma',branch:'Hisar',role:'admin',userId:id};startApp();return;}
   var emp=findEmpLogin(id,pass);
-  if(emp){currentUser={id:emp['Employee ID'],name:emp['Name'],branch:emp['Branch'],role:emp['Role']||'employee',userId:emp['Employee ID'],FinanceAccess:emp['FinanceAccess']||'No'};startApp();return;}
+  if(emp){currentUser={id:emp['Employee ID'],name:emp['Name'],branch:emp['Branch'],role:emp['Role']||'employee',userId:emp['Employee ID'],FinanceAccess:emp['FinanceAccess']||'No',IPO_Access:emp['IPO_Access']||'No'};startApp();return;}
   /* employees list abhi load nahi hui (ya fail ho gayi) — abhi fetch karke dobara try karo */
   err.textContent='Connecting... please wait';err.style.color='var(--accent,#3fb27f)';err.style.display='block';
   fetchEmployees().then(function(r){
     if(r&&r.success)employees=r.employees||[];
     err.style.color='';
     var e2=findEmpLogin(id,pass);
-    if(e2){err.style.display='none';currentUser={id:e2['Employee ID'],name:e2['Name'],branch:e2['Branch'],role:e2['Role']||'employee',userId:e2['Employee ID'],FinanceAccess:e2['FinanceAccess']||'No'};startApp();}
+    if(e2){err.style.display='none';currentUser={id:e2['Employee ID'],name:e2['Name'],branch:e2['Branch'],role:e2['Role']||'employee',userId:e2['Employee ID'],FinanceAccess:e2['FinanceAccess']||'No',IPO_Access:e2['IPO_Access']||'No'};startApp();}
     else{err.textContent='Invalid ID or Password';err.style.display='block';}
   }).catch(function(){
     err.style.color='';err.textContent='Network error - check internet & try again';err.style.display='block';
@@ -1917,7 +1999,7 @@ function startApp(){
 }
 
 function logout(){
-  currentUser=null;autoPunched=false;allData={Brokerage:[],ClientBrokerage:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[],Meetings:[],Income:[],Expense:[],Hisab:[],TradingJournal:[],CallTrade:[],CallClients:[],Watchlist:[],Reminders:[],Announcements:[],ClientDocuments:[]};
+  currentUser=null;autoPunched=false;allData={Brokerage:[],ClientBrokerage:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[],Meetings:[],Income:[],Expense:[],Hisab:[],TradingJournal:[],CallTrade:[],CallClients:[],Watchlist:[],Reminders:[],Announcements:[],ClientDocuments:[],IPO_Master:[],IPO_Applications:[]};
   document.getElementById('loginWrap').style.display='flex';
   document.getElementById('appWrap').style.display='none';
   document.getElementById('adminNav').style.display='none';
@@ -2007,7 +2089,9 @@ function loadAll(attempt){
         Contests:r.contests||r.Contests||[],
         ClientDocuments:r.clientDocuments||r.ClientDocuments||[],
         Resignations:r.resignations||r.Resignations||[],
-        EmployeeDataMoves:r.employeeDataMoves||r.EmployeeDataMoves||[]
+        EmployeeDataMoves:r.employeeDataMoves||r.EmployeeDataMoves||[],
+        IPO_Master:r.ipoMaster||r.IPO_Master||[],
+        IPO_Applications:r.ipoApplications||r.IPO_Applications||[]
       };
       saveCache();checkSIPAlerts();autoPunchIn();renderPage(curPage());loadEmps();setTimeout(checkDueTomorrowPopup,600);setTimeout(check315Reminder,900);renderAnnounceBanner();
     }else if(attempt<3){
@@ -2030,6 +2114,8 @@ function loadEmps(){
       var navTeam=document.getElementById('navMyTeam');if(navTeam)navTeam.style.display=isTeamParent()?'flex':'none';
       var navAI=document.getElementById('navAddIncome');if(navAI)navAI.style.display=canAddFinance()?'flex':'none';
       var navAE=document.getElementById('navAddExpense');if(navAE)navAE.style.display=canAddFinance()?'flex':'none';
+      var navIPO=document.getElementById('navIPO');if(navIPO)navIPO.style.display=canIPOAccess()?'flex':'none';
+      var navIPOFin=document.getElementById('navIPOFin');if(navIPOFin)navIPOFin.style.display=canIPOAccess()?'flex':'none';
       populateForEmpPickers();
       checkMyProfileAlert();
       renderPage(curPage());
@@ -2047,6 +2133,10 @@ function teamMembersOf(uid){
 function isTeamParent(){return !!(currentUser&&teamMembersOf(currentUser.userId).length>0);}
 function hasFinanceSubEmployee(){return !!(currentUser&&teamMembersOf(currentUser.userId).some(function(e){return e['Role']==='finance';}));}
 function canAddFinance(){return !!(currentUser&&(hasFinanceSubEmployee()||currentUser['FinanceAccess']==='Yes'));}
+/* v62: IPO module access gate — same pattern as FinanceAccess. Admin always has full IPO access;
+   everyone else (employee or finance role) needs the admin-granted IPO_Access flag on their
+   Employee row. Nav item + whole page are hidden client-side when this is false. */
+function canIPOAccess(){return !!(currentUser&&(currentUser.role==='admin'||currentUser['IPO_Access']==='Yes'));}
 function forEmpObj(selId){
   var sel=document.getElementById(selId);
   var v=sel?sel.value:'';
@@ -2311,6 +2401,7 @@ function renderPage(id){
   else if(id==='bizOverview')renderBizOverview();
   else if(id==='client360'){var e=document.getElementById('c360_q');if(e)e.value='';document.getElementById('c360_results').innerHTML='';document.getElementById('c360_profile').innerHTML='';}
   else if(id==='myProfile')renderMyProfile();
+  else if(id==='ipo')renderIPOPage();
 }
 
 function mkStats(cards){var h='';cards.forEach(function(c){h+='<div class="stat-card '+(c.color||'green')+'"'+(c.onclick?' style="cursor:pointer" onclick="'+c.onclick+'"':'')+'><div class="stat-label">'+c.label+'</div><div class="stat-value">'+c.value+'</div><div class="stat-sub">'+(c.sub||'')+'</div></div>';});return h;}
@@ -6460,6 +6551,7 @@ function editEmpModal(empId){
   employees.forEach(function(e){if(e['Employee ID']===empId)return;h+='<label style="display:flex;align-items:center;gap:6px;font-weight:400;font-size:13px;padding:3px 0;"><input type="checkbox" class="ee_parent_cb" value="'+e['Employee ID']+'" style="width:auto;"'+(curParentIds.indexOf(e['Employee ID'])!==-1?' checked':'')+'> '+e['Name']+' ('+e['Employee ID']+')</label>';});
   h+='</div></div>';
   h+='<div class="form-group"><label style="display:flex;align-items:center;gap:6px;font-weight:600;"><input type="checkbox" id="ee_finaccess" style="width:auto;"'+(emp['FinanceAccess']==='Yes'?' checked':'')+'> Income/Expense Access (admin granted) - this employee will get the Add Income/Add Expense option, even without a finance ID in their sub-team</label></div>';
+  h+='<div class="form-group"><label style="display:flex;align-items:center;gap:6px;font-weight:600;"><input type="checkbox" id="ee_ipoaccess" style="width:auto;"'+(emp['IPO_Access']==='Yes'?' checked':'')+'> IPO Access (admin granted) - this employee will get the IPO nav item with full read/write on the IPO module</label></div>';
   h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" data-eid="'+empId+'" onclick="saveEmp(this.dataset.eid)">Save</button></div>';
   document.getElementById('modalBox').innerHTML=h;document.getElementById('modal').className='show';
 }
@@ -6472,7 +6564,7 @@ function saveEmp(empId){
   if(email&&!isValidEmail(email)){showToast('Gmail ID looks invalid - fix it or leave blank','error');return;}
   if(pan&&!isValidPAN(pan)){showToast('PAN format looks invalid (expected ABCDE1234F) - fix it or leave blank','error');return;}
   if(aadhaar&&!isValidAadhaar(aadhaar)){showToast('Aadhaar must be 12 digits - fix it or leave blank','error');return;}
-  var p={action:'updateEmployee','Employee ID':empId,_rowNum:emp._rowNum,'Name':document.getElementById('ee_name').value.trim(),'Branch':document.getElementById('ee_branch').value,'Role':document.getElementById('ee_role').value||'employee','Status':emp['Status']||'Active','Commission':numOrDefault(document.getElementById('ee_comm').value,50),'Email':email,'Salary':parseFloat(document.getElementById('ee_sal').value)||0,'Parent ID':Array.prototype.slice.call(document.querySelectorAll('.ee_parent_cb:checked')).map(function(el){return el.value;}).join(','),'FinanceAccess':document.getElementById('ee_finaccess').checked?'Yes':'No','PAN':pan,'Aadhaar':aadhaar};
+  var p={action:'updateEmployee','Employee ID':empId,_rowNum:emp._rowNum,'Name':document.getElementById('ee_name').value.trim(),'Branch':document.getElementById('ee_branch').value,'Role':document.getElementById('ee_role').value||'employee','Status':emp['Status']||'Active','Commission':numOrDefault(document.getElementById('ee_comm').value,50),'Email':email,'Salary':parseFloat(document.getElementById('ee_sal').value)||0,'Parent ID':Array.prototype.slice.call(document.querySelectorAll('.ee_parent_cb:checked')).map(function(el){return el.value;}).join(','),'FinanceAccess':document.getElementById('ee_finaccess').checked?'Yes':'No','IPO_Access':document.getElementById('ee_ipoaccess').checked?'Yes':'No','PAN':pan,'Aadhaar':aadhaar};
   var np=document.getElementById('ee_pass').value.trim();if(np)p['Password']=np;
   postData(p).then(function(r){closeModal();if(r&&r.success){showToast('Updated!','success');loadEmps();}else showToast('Failed','error');}).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
 }
@@ -7654,6 +7746,456 @@ function saveCallTradeModal(rowNum){
     else showToast('Update failed','error');
   }).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
 }
+
+/* ===================================================================
+   ===== v62: IPO MODULE ==============================================
+   Fully separate section, own P&L, gated by IPO_Access (same pattern as
+   FinanceAccess). Admin always has full access. IPO_Master / IPO_Applications
+   use the existing generic editRow/deleteRow routes for every field edit and
+   every row delete - only creation + bulk-resell get dedicated postData actions,
+   same convention as addClientBrokerageBatch/addContest elsewhere in this file.
+   IPO numbers are computed and shown only inside this section - never folded
+   into renderAdminDash/renderEmpDash/renderFinDash/finRecords/hisab totals.
+   =================================================================== */
+function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+function currentIPO(){return (allData.IPO_Master||[]).find(function(ip){return ip['IPO_ID']===ipoSelId;});}
+function currentIPOApps(){return (allData.IPO_Applications||[]).filter(function(a){return a['IPO_ID']===ipoSelId;});}
+function ipoCategoryGain(ipo,cat){
+  if(!ipo)return 0;
+  if(cat==='Retail')return parseFloat(ipo['Retail_Gain'])||0;
+  if(cat==='sHNI')return parseFloat(ipo['sHNI_Gain'])||0;
+  if(cat==='bHNI')return parseFloat(ipo['bHNI_Gain'])||0;
+  return 0;
+}
+/* Confirmed business formula (per individual application, 1 PAN = 1 application):
+   - resold to a third party        -> clientNet = buyRate (unaffected), profit = resaleRate - buyRate
+   - Status = Pending                -> clientNet = null, profit = null (nothing payable yet)
+   - Status = Allotted                -> clientNet = buyRate - categoryListingGain, profit = categoryListingGain
+   - Status = Not Allotted            -> clientNet = buyRate, profit = 0
+   - Status = Rejection (invalid app) -> clientNet = buyRate - manualPenalty, profit = manualPenalty  */
+function ipoAppCalc(row,ipo){
+  var buyRate=parseFloat(row['Buy_Rate'])||0;
+  if(row['Resold']==='Yes'){
+    var resaleRate=parseFloat(row['Resale_Rate'])||0;
+    return {clientNet:buyRate,profit:resaleRate-buyRate};
+  }
+  var status=row['Status']||'Pending';
+  if(status==='Pending')return {clientNet:null,profit:null};
+  if(status==='Allotted'){var gain=ipoCategoryGain(ipo,row['Category']);return {clientNet:buyRate-gain,profit:gain};}
+  if(status==='Not Allotted')return {clientNet:buyRate,profit:0};
+  if(status==='Rejection'){var pen=parseFloat(row['Penalty'])||0;return {clientNet:buyRate-pen,profit:pen};}
+  return {clientNet:null,profit:null};
+}
+function ipoDupPANCounts(rows){
+  var counts={};
+  rows.forEach(function(r){var p=(r['PAN']||'').trim().toUpperCase();if(p)counts[p]=(counts[p]||0)+1;});
+  return counts;
+}
+function renderIPOPage(){
+  var ipos=allData.IPO_Master||[];
+  var sel=document.getElementById('ipo_select');
+  if(!sel)return;
+  var cur=ipoSelId;
+  sel.innerHTML='';
+  ipos.forEach(function(ip){var o=document.createElement('option');o.value=ip['IPO_ID'];o.textContent=ip['IPO_Name'];sel.appendChild(o);});
+  if(!ipos.length){
+    document.getElementById('ipoNoneMsg').style.display='block';
+    document.getElementById('ipoBody').style.display='none';
+    return;
+  }
+  document.getElementById('ipoNoneMsg').style.display='none';
+  document.getElementById('ipoBody').style.display='block';
+  if(cur&&ipos.some(function(ip){return ip['IPO_ID']===cur;}))sel.value=cur;
+  else sel.value=ipos[ipos.length-1]['IPO_ID'];
+  ipoSelId=sel.value;
+  renderIPOTabBody();
+}
+function onIPOSelectChange(){ipoSelId=document.getElementById('ipo_select').value;ipoRefF=null;renderIPOTabBody();}
+function setIPOTab(t){
+  ipoTab=t;
+  ['apps','ref','buyer','pay','calc'].forEach(function(k){
+    var btn=document.getElementById('ipoTab'+cap(k)),body=document.getElementById('ipoTabBody'+cap(k));
+    if(btn)btn.className='tab-btn'+(k===t?' active':'');
+    if(body)body.style.display=(k===t?'block':'none');
+  });
+  renderIPOTabBody();
+}
+function renderIPOTabBody(){
+  if(!ipoSelId)return;
+  if(ipoTab==='apps')renderIPOAppsTable();
+  else if(ipoTab==='ref')renderIPORefTable();
+  else if(ipoTab==='buyer')renderIPOBuyerTable();
+  else if(ipoTab==='pay')renderIPOPayHandlerTable();
+  else if(ipoTab==='calc')renderIPOWhatIf();
+}
+function setIPOCat(c,btn){ipoCatF=c;btn.closest('.ipoCatGrp').querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');renderIPOAppsTable();}
+function setIPOBroker(b,btn){ipoBrokerF=b;btn.closest('.ipoBrokerGrp').querySelectorAll('.filter-btn').forEach(function(x){x.classList.remove('active');});btn.classList.add('active');renderIPOAppsTable();}
+function filterIPOByReference(ref){ipoRefF=ref||'';setIPOTab('apps');}
+function clearIPORefFilter(){ipoRefF=null;renderIPOAppsTable();}
+
+function renderIPOAppsTable(){
+  var ipo=currentIPO();
+  var allRows=currentIPOApps();
+  var rows=allRows;
+  if(ipoCatF!=='All')rows=rows.filter(function(r){return r['Category']===ipoCatF;});
+  if(ipoBrokerF!=='All')rows=rows.filter(function(r){return (r['Broker']||'Choice')===ipoBrokerF;});
+  if(ipoRefF!==null)rows=rows.filter(function(r){return (r['Reference']||'')===ipoRefF;});
+  var q=getSrch('srch-ipo');
+  rows=srchFilter(rows,q,['PAN','Client_Name','Mobile','Reference']);
+
+  var dupCounts=ipoDupPANCounts(allRows); // duplicate PAN check across the whole IPO, not just the current filter
+
+  var totalApps=rows.length;
+  var buyCostTotal=rows.reduce(function(s,r){return s+(parseFloat(r['Buy_Rate'])||0);},0);
+  var avgBuy=totalApps?buyCostTotal/totalApps:0;
+  var netPayableTotal=0,profitTotal=0;
+  rows.forEach(function(r){var c=ipoAppCalc(r,ipo);if(c.profit!==null)profitTotal+=c.profit;if(c.clientNet!==null)netPayableTotal+=c.clientNet;});
+
+  document.getElementById('ipoStats').innerHTML=mkStats([
+    {label:'Applications',value:totalApps,sub:ipoCatF==='All'?'all categories':ipoCatF,color:'blue'},
+    {label:'Avg Buy Price',value:fmt(avgBuy),sub:'current filter',color:'purple'},
+    {label:'Total Buy Cost',value:fmt(buyCostTotal),sub:'current filter',color:'amber'},
+    {label:'Net Client Payable',value:fmt(netPayableTotal),sub:'resolved apps only',color:'green'},
+    {label:'IPO Profit',value:fmt(profitTotal),sub:'separate P&L, not in main dashboard',color:'pink'}
+  ]);
+
+  document.getElementById('ipoRefFilterBar').innerHTML=(ipoRefF!==null)?('<div class="prev-warn">Filtered by Reference: <b>'+(ipoRefF||'(no reference)')+'</b> &nbsp;<button class="btn-mini" onclick="clearIPORefFilter()">&#10005; Clear filter</button></div>'):'';
+
+  document.getElementById('ipoAppsTable').innerHTML=mkIPOAppsTable(rows,dupCounts,ipo);
+}
+
+function mkIPOAppsTable(rows,dupCounts,ipo){
+  if(!rows||!rows.length)return '<div class="no-data">No applications</div>';
+  var h='<table><thead><tr><th>PAN</th><th>Name</th><th>Mobile</th><th>Reference</th><th>Category</th><th>Broker</th><th>Buy Rate</th><th>Status</th><th>Client Net</th><th>IPO Profit</th><th>Client Payment</th><th>Resale</th><th>Actions</th></tr></thead><tbody>';
+  rows.slice().reverse().forEach(function(r){
+    var pan=(r['PAN']||'').trim().toUpperCase();
+    var isDup=!!(pan&&dupCounts[pan]>1);
+    var calc=ipoAppCalc(r,ipo);
+    var resold=r['Resold']==='Yes';
+    var statusBadge=resold?'<span class="badge purple">Resold</span>':('<span class="badge '+(r['Status']==='Allotted'?'green':(r['Status']==='Pending'?'amber':(r['Status']==='Rejection'?'red':'blue')))+'">'+(r['Status']||'Pending')+'</span>');
+    h+='<tr'+(isDup?' class="dup-row"':'')+'>';
+    h+='<td>'+(isDup?'<span class="dup-badge">&#9888;</span>':'')+(r['PAN']||'-')+(isDup?'<div style="font-size:10px;color:var(--danger);">Duplicate PAN, already added</div>':'')+'</td>';
+    h+='<td>'+(r['Client_Name']||'-')+'</td>';
+    h+='<td>'+(r['Mobile']||'-')+'</td>';
+    h+='<td style="cursor:pointer;color:var(--accent);" onclick="filterIPOByReference(\''+String(r['Reference']||'').replace(/'/g,"\\\\'")+'\')" title="Filter by this reference">'+(r['Reference']||'-')+'</td>';
+    h+='<td><span class="badge blue">'+(r['Category']||'-')+'</span></td>';
+    h+='<td>'+(r['Broker']||'-')+'</td>';
+    h+='<td class="money">'+fmt(r['Buy_Rate'])+'</td>';
+    h+='<td>'+statusBadge+'</td>';
+    h+='<td class="money">'+(calc.clientNet===null?'-':fmt(calc.clientNet))+'</td>';
+    h+='<td class="money">'+(calc.profit===null?'-':fmt(calc.profit))+'</td>';
+    h+='<td>'+ipoPaymentChip(r,calc)+'</td>';
+    h+='<td>'+(resold?('<div style="font-size:11px;">'+(r['Resale_Buyer']||'-')+' @ '+fmt(r['Resale_Rate'])+'<br>'+ipoResalePaymentChip(r)+' <button class="btn-mini" onclick="unmarkIPOResold('+r._rowNum+')">Undo</button></div>'):'<button class="btn-mini" onclick="openIPOResellModal('+r._rowNum+')">Mark Resold</button>')+'</td>';
+    h+='<td><button class="btn-edit" onclick="openIPOAppEditModal('+r._rowNum+')">&#9998;</button><button class="btn-del" onclick="confirmDel(\'IPO_Applications\','+r._rowNum+')">&#128465;</button></td>';
+    h+='</tr>';
+  });
+  return h+'</tbody></table>';
+}
+
+/* Client-payment ledger chip. clientNet>=0 => company owes client (Payable/Paid);
+   clientNet<0 => client owes company (Receivable/Received) - e.g. a manual penalty larger
+   than the buy rate. Both directions use the same Payment_Done/Payment_Account/Payment_By
+   fields, just labelled per the sign, matching the spec's "Payable/Receivable chip". */
+function ipoPaymentChip(r,calc){
+  if(calc.clientNet===null)return '<span style="color:var(--muted);font-size:11px;">Not yet payable</span>';
+  var isReceivable=calc.clientNet<0;
+  var doneLabel=isReceivable?'Received':'Paid';
+  var pendingLabel=isReceivable?'Receivable':'Payable';
+  if(r['Payment_Done']==='Yes')return '<span class="badge green">'+doneLabel+'</span><div style="font-size:10px;color:var(--muted);">'+(r['Payment_Account']||'-')+' &#183; '+(r['Payment_By']||'-')+'</div>';
+  return '<button class="btn-mini amber" onclick="openIPOPaymentModal('+r._rowNum+')">'+pendingLabel+' &#8594; Mark '+doneLabel+'</button>';
+}
+function ipoResalePaymentChip(r){
+  if(r['Resale_Payment_Done']==='Yes')return '<span class="badge green">Received</span>';
+  return '<button class="btn-mini amber" onclick="openIPOResalePaymentModal('+r._rowNum+')">Pending &#8594; Mark Received</button>';
+}
+
+function openIPOAppEditModal(rowNum){
+  var row=(allData.IPO_Applications||[]).find(function(r){return String(r['_rowNum'])===String(rowNum);});
+  if(!row){showToast('Application not found - reloading','error');loadAll();return;}
+  var resold=row['Resold']==='Yes';
+  var acctOpts=['','Cash','HDFC','SBI','UPI','Other'];
+  var html='<div class="modal-title">Edit IPO Application</div>';
+  html+='<div class="form-group"><label>PAN</label><input type="text" id="ipe_pan" value="'+(row['PAN']||'')+'" style="text-transform:uppercase;"></div>';
+  html+='<div class="form-group"><label>Client Name</label><input type="text" id="ipe_name" value="'+(row['Client_Name']||'')+'"></div>';
+  html+='<div class="form-group"><label>Mobile</label><input type="text" id="ipe_mobile" value="'+(row['Mobile']||'')+'"></div>';
+  html+='<div class="form-group"><label>Reference</label><input type="text" id="ipe_ref" value="'+(row['Reference']||'')+'"></div>';
+  html+='<div class="form-group"><label>Category</label><select id="ipe_cat">';
+  ['Retail','sHNI','bHNI'].forEach(function(c){html+='<option'+(row['Category']===c?' selected':'')+'>'+c+'</option>';});
+  html+='</select></div>';
+  html+='<div class="form-group"><label>Broker</label><select id="ipe_broker">';
+  ['Choice','Other'].forEach(function(b){html+='<option'+(row['Broker']===b?' selected':'')+'>'+b+'</option>';});
+  html+='</select></div>';
+  html+='<div class="form-group"><label>Buy Rate</label><input type="number" id="ipe_buyrate" value="'+(parseFloat(row['Buy_Rate'])||0)+'"></div>';
+  html+='<div class="form-group"><label>Status'+(resold?' <span style="color:var(--muted);font-weight:400;">(disabled - resold, client always gets full buy rate)</span>':'')+'</label><select id="ipe_status"'+(resold?' disabled':'')+'>';
+  ['Pending','Allotted','Not Allotted','Rejection'].forEach(function(s){html+='<option'+(row['Status']===s?' selected':'')+'>'+s+'</option>';});
+  html+='</select></div>';
+  html+='<div class="form-group"><label>Penalty (used only when Status = Rejection)</label><input type="number" id="ipe_penalty" value="'+(parseFloat(row['Penalty'])||0)+'"></div>';
+  html+='<div class="form-group"><label>Payment Account</label><select id="ipe_payacc">';
+  acctOpts.forEach(function(a){html+='<option value="'+a+'"'+(row['Payment_Account']===a?' selected':'')+'>'+(a||'-- select --')+'</option>';});
+  html+='</select></div>';
+  html+='<div class="form-group"><label>Payment Handled By</label><input type="text" id="ipe_payby" value="'+(row['Payment_By']||'')+'"></div>';
+  if(resold){
+    html+='<div class="form-group"><label>Resale Buyer</label><input type="text" id="ipe_resbuyer" value="'+(row['Resale_Buyer']||'')+'"></div>';
+    html+='<div class="form-group"><label>Resale Rate</label><input type="number" id="ipe_resrate" value="'+(parseFloat(row['Resale_Rate'])||0)+'"></div>';
+    html+='<div class="form-group"><label>Resale Payment Account</label><select id="ipe_resacc">';
+    acctOpts.forEach(function(a){html+='<option value="'+a+'"'+(row['Resale_Account']===a?' selected':'')+'>'+(a||'-- select --')+'</option>';});
+    html+='</select></div>';
+    html+='<div class="form-group"><label>Resale Payment Handled By</label><input type="text" id="ipe_resby" value="'+(row['Resale_By']||'')+'"></div>';
+  }
+  html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-danger" onclick="confirmDel(\'IPO_Applications\','+rowNum+')">Delete</button><button class="btn-save" onclick="saveIPOAppEdit('+rowNum+')">Save</button></div>';
+  document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
+}
+function saveIPOAppEdit(rowNum){
+  var vals={
+    'PAN':(document.getElementById('ipe_pan').value||'').trim().toUpperCase(),
+    'Client_Name':(document.getElementById('ipe_name').value||'').trim(),
+    'Mobile':(document.getElementById('ipe_mobile').value||'').trim(),
+    'Reference':(document.getElementById('ipe_ref').value||'').trim(),
+    'Category':document.getElementById('ipe_cat').value,
+    'Broker':document.getElementById('ipe_broker').value,
+    'Buy_Rate':parseFloat(document.getElementById('ipe_buyrate').value)||0,
+    'Penalty':parseFloat(document.getElementById('ipe_penalty').value)||0,
+    'Payment_Account':document.getElementById('ipe_payacc').value,
+    'Payment_By':(document.getElementById('ipe_payby').value||'').trim(),
+    'Updated_Date':td()
+  };
+  var statusEl=document.getElementById('ipe_status');
+  if(statusEl&&!statusEl.disabled)vals['Status']=statusEl.value;
+  var resEl=document.getElementById('ipe_resbuyer');
+  if(resEl){
+    vals['Resale_Buyer']=(resEl.value||'').trim();
+    vals['Resale_Rate']=parseFloat(document.getElementById('ipe_resrate').value)||0;
+    vals['Resale_Account']=document.getElementById('ipe_resacc').value;
+    vals['Resale_By']=(document.getElementById('ipe_resby').value||'').trim();
+  }
+  postData({action:'editRow',sheet:'IPO_Applications',rowNum:rowNum,vals:vals}).then(function(r){
+    closeModal();
+    if(r&&r.success){showToast('Application updated','success');patchRowLocal('IPO_Applications',rowNum,vals);renderIPOTabBody();}
+    else showToast('Update failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
+}
+
+function openIPOPaymentModal(rowNum){
+  var html='<div class="modal-title">Mark Client Payment Settled</div>';
+  html+='<div class="form-group"><label>Account</label><select id="ipp_acc"><option value="Cash">Cash</option><option value="HDFC">HDFC</option><option value="SBI">SBI</option><option value="UPI">UPI</option><option value="Other">Other</option></select></div>';
+  html+='<div class="form-group"><label>Handled By</label><input type="text" id="ipp_by" placeholder="Employee name"></div>';
+  html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="saveIPOPayment('+rowNum+')">Mark Settled</button></div>';
+  document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
+}
+function saveIPOPayment(rowNum){
+  var vals={'Payment_Done':'Yes','Payment_Account':document.getElementById('ipp_acc').value,'Payment_By':(document.getElementById('ipp_by').value||'').trim(),'Updated_Date':td()};
+  postData({action:'editRow',sheet:'IPO_Applications',rowNum:rowNum,vals:vals}).then(function(r){
+    closeModal();
+    if(r&&r.success){showToast('Payment marked','success');patchRowLocal('IPO_Applications',rowNum,vals);renderIPOTabBody();}
+    else showToast('Failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
+}
+function openIPOResalePaymentModal(rowNum){
+  var html='<div class="modal-title">Mark Resale Payment Received</div>';
+  html+='<div class="form-group"><label>Account</label><select id="iprp_acc"><option value="Cash">Cash</option><option value="HDFC">HDFC</option><option value="SBI">SBI</option><option value="UPI">UPI</option><option value="Other">Other</option></select></div>';
+  html+='<div class="form-group"><label>Received By</label><input type="text" id="iprp_by" placeholder="Employee name"></div>';
+  html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="saveIPOResalePayment('+rowNum+')">Mark Received</button></div>';
+  document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
+}
+function saveIPOResalePayment(rowNum){
+  var vals={'Resale_Payment_Done':'Yes','Resale_Account':document.getElementById('iprp_acc').value,'Resale_By':(document.getElementById('iprp_by').value||'').trim(),'Updated_Date':td()};
+  postData({action:'editRow',sheet:'IPO_Applications',rowNum:rowNum,vals:vals}).then(function(r){
+    closeModal();
+    if(r&&r.success){showToast('Resale payment marked received','success');patchRowLocal('IPO_Applications',rowNum,vals);renderIPOTabBody();}
+    else showToast('Failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
+}
+function openIPOResellModal(rowNum){
+  var html='<div class="modal-title">Mark Application Resold</div>';
+  html+='<div class="form-group"><label>Buyer Name</label><input type="text" id="ipr_buyer" placeholder="Free text"></div>';
+  html+='<div class="form-group"><label>Resale Rate</label><input type="number" id="ipr_rate" placeholder="e.g. 16500"></div>';
+  html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="saveIPOResell('+rowNum+')">Mark Resold</button></div>';
+  document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
+}
+function saveIPOResell(rowNum){
+  var buyer=(document.getElementById('ipr_buyer').value||'').trim();
+  var rate=parseFloat(document.getElementById('ipr_rate').value);
+  if(!buyer){showToast('Buyer name required','error');return;}
+  if(isNaN(rate)){showToast('Resale rate required','error');return;}
+  var vals={'Resold':'Yes','Resale_Buyer':buyer,'Resale_Rate':rate,'Updated_Date':td()};
+  postData({action:'editRow',sheet:'IPO_Applications',rowNum:rowNum,vals:vals}).then(function(r){
+    closeModal();
+    if(r&&r.success){showToast('Marked resold','success');patchRowLocal('IPO_Applications',rowNum,vals);renderIPOTabBody();}
+    else showToast('Failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
+}
+function unmarkIPOResold(rowNum){
+  if(!confirm('Undo resale on this application? Status will go back to being editable.'))return;
+  var vals={'Resold':'No','Resale_Buyer':'','Resale_Rate':'','Resale_Payment_Done':'No','Resale_Account':'','Resale_By':'','Updated_Date':td()};
+  postData({action:'editRow',sheet:'IPO_Applications',rowNum:rowNum,vals:vals}).then(function(r){
+    if(r&&r.success){showToast('Resale unmarked','success');patchRowLocal('IPO_Applications',rowNum,vals);renderIPOTabBody();}
+    else showToast('Failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+function openIPOBulkResellModal(){
+  var html='<div class="modal-title">Bulk Mark Resold</div>';
+  html+='<p style="color:var(--muted);font-size:12px;margin-bottom:12px;">Marks this many not-yet-resold applications from the current filtered Applications view (category / broker / search / reference filters currently applied on the Applications tab).</p>';
+  html+='<div class="form-group"><label>Buyer Name</label><input type="text" id="ipbr_buyer" placeholder="Free text"></div>';
+  html+='<div class="form-group"><label>Resale Rate</label><input type="number" id="ipbr_rate" placeholder="e.g. 16500"></div>';
+  html+='<div class="form-group"><label>Quantity</label><input type="number" id="ipbr_qty" value="1" min="1"></div>';
+  html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="submitIPOBulkResell()">Mark Resold</button></div>';
+  document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
+}
+function submitIPOBulkResell(){
+  var buyer=(document.getElementById('ipbr_buyer').value||'').trim();
+  var rate=parseFloat(document.getElementById('ipbr_rate').value);
+  var qty=parseInt(document.getElementById('ipbr_qty').value,10)||0;
+  if(!buyer){showToast('Buyer name required','error');return;}
+  if(isNaN(rate)){showToast('Resale rate required','error');return;}
+  if(qty<1){showToast('Quantity must be at least 1','error');return;}
+  var rows=currentIPOApps();
+  if(ipoCatF!=='All')rows=rows.filter(function(r){return r['Category']===ipoCatF;});
+  if(ipoBrokerF!=='All')rows=rows.filter(function(r){return (r['Broker']||'Choice')===ipoBrokerF;});
+  if(ipoRefF!==null)rows=rows.filter(function(r){return (r['Reference']||'')===ipoRefF;});
+  var q=getSrch('srch-ipo');
+  rows=srchFilter(rows,q,['PAN','Client_Name','Mobile','Reference']);
+  var eligible=rows.filter(function(r){return r['Resold']!=='Yes';});
+  if(!eligible.length){showToast('No not-yet-resold applications in the current filtered view','error');return;}
+  var pick=eligible.slice(0,qty);
+  var rowNums=pick.map(function(r){return r._rowNum;});
+  postData({action:'bulkResellIPOApplications',rowNums:rowNums,'Resale_Buyer':buyer,'Resale_Rate':rate}).then(function(r){
+    closeModal();
+    if(r&&r.success){
+      showToast(r.updated+' application(s) marked resold','success');
+      pick.forEach(function(row){patchRowLocal('IPO_Applications',row._rowNum,{'Resold':'Yes','Resale_Buyer':buyer,'Resale_Rate':rate});});
+      renderIPOTabBody();
+    } else showToast('Failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
+}
+
+function renderIPORefTable(){
+  var ipo=currentIPO();
+  var rows=currentIPOApps();
+  var byRef={};
+  rows.forEach(function(r){
+    var ref=r['Reference']||'';
+    var key=ref||'(no reference)';
+    if(!byRef[key])byRef[key]={ref:ref,label:key,count:0,buyCost:0,netPayable:0};
+    byRef[key].count++;
+    byRef[key].buyCost+=parseFloat(r['Buy_Rate'])||0;
+    var c=ipoAppCalc(r,ipo);
+    if(c.clientNet!==null)byRef[key].netPayable+=c.clientNet;
+  });
+  var list=Object.keys(byRef).map(function(k){return byRef[k];}).sort(function(a,b){return b.count-a.count;});
+  if(!list.length){document.getElementById('ipoRefTable').innerHTML='<div class="no-data">No applications yet</div>';return;}
+  var h='<table><thead><tr><th>Reference</th><th>Applications</th><th>Buy Cost</th><th>Net Client Payable</th></tr></thead><tbody>';
+  list.forEach(function(x){
+    h+='<tr style="cursor:pointer;" onclick="filterIPOByReference(\''+x.ref.replace(/'/g,"\\\\'")+'\')"><td>'+x.label+'</td><td>'+x.count+'</td><td class="money">'+fmt(x.buyCost)+'</td><td class="money">'+fmt(x.netPayable)+'</td></tr>';
+  });
+  h+='</tbody></table>';
+  document.getElementById('ipoRefTable').innerHTML=h;
+}
+
+function renderIPOBuyerTable(){
+  var rows=currentIPOApps().filter(function(r){return r['Resold']==='Yes';});
+  var byBuyer={};
+  rows.forEach(function(r){
+    var b=r['Resale_Buyer']||'(unknown)';
+    if(!byBuyer[b])byBuyer[b]={buyer:b,qty:0,totalResale:0,totalProfit:0,received:0};
+    var buyRate=parseFloat(r['Buy_Rate'])||0,resaleRate=parseFloat(r['Resale_Rate'])||0;
+    byBuyer[b].qty++;
+    byBuyer[b].totalResale+=resaleRate;
+    byBuyer[b].totalProfit+=(resaleRate-buyRate);
+    if(r['Resale_Payment_Done']==='Yes')byBuyer[b].received+=resaleRate;
+  });
+  var list=Object.keys(byBuyer).map(function(k){return byBuyer[k];});
+  var h='';
+  if(!list.length)h='<div class="no-data">No resold applications yet</div>';
+  else{
+    h='<table><thead><tr><th>Buyer</th><th>Qty</th><th>Total Resale Value</th><th>Total Profit</th><th>Received</th><th>Pending</th></tr></thead><tbody>';
+    list.forEach(function(x){
+      h+='<tr><td>'+x.buyer+'</td><td>'+x.qty+'</td><td class="money">'+fmt(x.totalResale)+'</td><td class="money">'+fmt(x.totalProfit)+'</td><td class="money">'+fmt(x.received)+'</td><td class="money">'+fmt(x.totalResale-x.received)+'</td></tr>';
+    });
+    h+='</tbody></table>';
+  }
+  document.getElementById('ipoBuyerTable').innerHTML=h;
+}
+
+/* Per-person summary for the CLIENT payment ledger only (spec's ledger #1) - settled entries
+   only. clientNet>=0 buckets under "paid out" (company pays client), clientNet<0 buckets
+   under "received" (client owes company, e.g. penalty bigger than the buy rate). The resale
+   ledger already has its own received-vs-total view in the buyer-wise table above. */
+function renderIPOPayHandlerTable(){
+  var ipo=currentIPO();
+  var rows=currentIPOApps().filter(function(r){return r['Payment_Done']==='Yes';});
+  var byPerson={};
+  rows.forEach(function(r){
+    var c=ipoAppCalc(r,ipo);
+    if(c.clientNet===null)return;
+    var name=r['Payment_By']||'(unspecified)';
+    if(!byPerson[name])byPerson[name]={name:name,paidOut:0,received:0};
+    if(c.clientNet>=0)byPerson[name].paidOut+=c.clientNet;
+    else byPerson[name].received+=Math.abs(c.clientNet);
+  });
+  var list=Object.keys(byPerson).map(function(k){return byPerson[k];});
+  var h='';
+  if(!list.length)h='<div class="no-data">No settled client payments yet</div>';
+  else{
+    h='<table><thead><tr><th>Handled By</th><th>Total Paid Out</th><th>Total Received</th></tr></thead><tbody>';
+    list.forEach(function(x){h+='<tr><td>'+x.name+'</td><td class="money">'+fmt(x.paidOut)+'</td><td class="money">'+fmt(x.received)+'</td></tr>';});
+    h+='</tbody></table>';
+  }
+  document.getElementById('ipoPayHandlerTable').innerHTML=h;
+}
+
+function renderIPOWhatIf(){
+  var totalEl=document.getElementById('ipoCalc_total');
+  if(!totalEl)return;
+  var total=parseFloat(totalEl.value)||0;
+  var allotted=parseFloat(document.getElementById('ipoCalc_allotted').value)||0;
+  var buyRate=parseFloat(document.getElementById('ipoCalc_buyrate').value)||0;
+  var gain=parseFloat(document.getElementById('ipoCalc_gain').value)||0;
+  var netPayable=(buyRate*total)-(gain*allotted);
+  document.getElementById('ipoCalcResult').innerHTML=mkStats([
+    {label:'Projected Net Payable',value:fmt(netPayable),sub:'buyRate×total - gain×allotted',color:'green'},
+    {label:'Total Buy Cost',value:fmt(buyRate*total),sub:'buyRate×total',color:'blue'},
+    {label:'Total Listing Gain',value:fmt(gain*allotted),sub:'gain×allotted',color:'amber'}
+  ]);
+}
+
+function openNewIPOModal(){
+  var html='<div class="modal-title">Create New IPO</div>';
+  html+='<div class="form-group"><label>IPO Name</label><input type="text" id="ipn_name" placeholder="e.g. Tata Capital IPO"></div>';
+  html+='<div class="form-group"><label>Retail Listing Gain (&#8377;/application)</label><input type="number" id="ipn_retail" value="0"></div>';
+  html+='<div class="form-group"><label>sHNI Listing Gain (&#8377;/application)</label><input type="number" id="ipn_shni" value="0"></div>';
+  html+='<div class="form-group"><label>bHNI Listing Gain (&#8377;/application)</label><input type="number" id="ipn_bhni" value="0"></div>';
+  html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="submitNewIPO()">Create</button></div>';
+  document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
+}
+function submitNewIPO(){
+  var name=(document.getElementById('ipn_name').value||'').trim();
+  if(!name){showToast('IPO Name required','error');return;}
+  var p={action:'addIPOMaster','IPO_Name':name,'Retail_Gain':parseFloat(document.getElementById('ipn_retail').value)||0,'sHNI_Gain':parseFloat(document.getElementById('ipn_shni').value)||0,'bHNI_Gain':parseFloat(document.getElementById('ipn_bhni').value)||0,'Created_By':currentUser.name};
+  postData(p).then(function(r){
+    closeModal();
+    if(r&&r.success){showToast('IPO created','success');ipoSelId=r.ipoId;loadAll();}
+    else showToast('Failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
+}
+
+function submitIPOApplications(){
+  if(!ipoSelId){showToast('Select or create an IPO first','error');return;}
+  var qty=parseInt(document.getElementById('ipoAdd_qty').value,10)||0;
+  var ref=(document.getElementById('ipoAdd_ref').value||'').trim();
+  var cat=document.getElementById('ipoAdd_cat').value;
+  var broker=document.getElementById('ipoAdd_broker').value;
+  var buyRate=parseFloat(document.getElementById('ipoAdd_buyrate').value)||0;
+  if(qty<1){showToast('Quantity must be at least 1','error');return;}
+  var p={action:'addIPOApplications','IPO_ID':ipoSelId,'Qty':qty,'Reference':ref,'Category':cat,'Broker':broker,'Buy_Rate':buyRate};
+  postData(p).then(function(r){
+    if(r&&r.success){
+      showToast(r.added+' application(s) added','success');
+      document.getElementById('ipoAdd_qty').value=1;document.getElementById('ipoAdd_ref').value='';document.getElementById('ipoAdd_buyrate').value='';
+      loadAll();
+    } else showToast('Failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+/* ===== END IPO MODULE ===== */
 
 (function(){
   var c=loadCache();
