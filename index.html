@@ -1494,6 +1494,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       <div class="form-card form-grid" style="margin-bottom:16px;">
         <div class="form-group"><label>Select IPO</label><select id="ipo_select" onchange="onIPOSelectChange()"></select></div>
         <div class="form-group"><label>&nbsp;</label><button class="btn-mini add" onclick="openNewIPOModal()">&#43; New IPO</button></div>
+        <div class="form-group"><label>&nbsp;</label><button class="btn-mini" onclick="openEditIPOGainsModal()">&#9998; Edit Listing Gains</button></div>
       </div>
 
       <div id="ipoNoneMsg" class="no-data" style="display:none;">No IPO created yet. Click "+ New IPO" above to create the first one.</div>
@@ -1530,10 +1531,10 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
               <div class="form-group"><label>Quantity (applications)</label><input type="number" id="ipoAdd_qty" value="1" min="1"></div>
               <div class="form-group"><label>Reference</label><input type="text" id="ipoAdd_ref" placeholder="Employee / client / anyone"></div>
               <div class="form-group"><label>Category</label><select id="ipoAdd_cat"><option>Retail</option><option>sHNI</option><option>bHNI</option></select></div>
-              <div class="form-group"><label>Broker</label><select id="ipoAdd_broker"><option>Choice</option><option>Other</option></select></div>
               <div class="form-group"><label>Buy Rate (&#8377;/application)</label><input type="number" id="ipoAdd_buyrate" placeholder="e.g. 15000"></div>
               <div class="form-group" style="align-self:end;"><button class="btn-submit" onclick="submitIPOApplications()">Add</button></div>
             </div>
+            <p style="color:var(--muted);font-size:11px;margin-top:6px;">Broker (Choice/Other) is set per application below the table, since one batch can split across brokers.</p>
           </div>
           <div class="table-wrap"><div class="table-inner" id="ipoAppsTable"></div></div>
         </div>
@@ -7857,13 +7858,28 @@ function renderIPOAppsTable(){
   var buyCostTotal=rows.reduce(function(s,r){return s+(parseFloat(r['Buy_Rate'])||0);},0);
   var avgBuy=totalApps?buyCostTotal/totalApps:0;
   var netPayableTotal=0,profitTotal=0;
-  rows.forEach(function(r){var c=ipoAppCalc(r,ipo);if(c.profit!==null)profitTotal+=c.profit;if(c.clientNet!==null)netPayableTotal+=c.clientNet;});
+  var cAllotted=0,cNotAllotted=0,cRejected=0,cPending=0;
+  rows.forEach(function(r){
+    var c=ipoAppCalc(r,ipo);
+    if(c.profit!==null)profitTotal+=c.profit;
+    if(c.clientNet!==null)netPayableTotal+=c.clientNet;
+    var st=r['Status']||'Pending';
+    if(st==='Allotted')cAllotted++;
+    else if(st==='Not Allotted')cNotAllotted++;
+    else if(st==='Rejection')cRejected++;
+    else cPending++;
+  });
 
   document.getElementById('ipoStats').innerHTML=mkStats([
     {label:'Applications',value:totalApps,sub:ipoCatF==='All'?'all categories':ipoCatF,color:'blue'},
+    {label:'Allotted',value:cAllotted,sub:'confirmed listed',color:'green'},
+    {label:'Not Allotted',value:cNotAllotted,sub:'refunded, no gain',color:'purple'},
+    {label:'Rejected',value:cRejected,sub:'penalty applies',color:'red'},
+    {label:'Pending',value:cPending,sub:'awaiting result',color:'amber'},
     {label:'Avg Buy Price',value:fmt(avgBuy),sub:'current filter',color:'purple'},
     {label:'Total Buy Cost',value:fmt(buyCostTotal),sub:'current filter',color:'amber'},
-    {label:'Net Client Payable',value:fmt(netPayableTotal),sub:'resolved apps only',color:'green'},
+    {label:'Net Payable',value:fmt(netPayableTotal>0?netPayableTotal:0),sub:'we owe client, resolved apps',color:'green'},
+    {label:'Net Receivable',value:fmt(netPayableTotal<0?-netPayableTotal:0),sub:'client owes us, resolved apps',color:'red'},
     {label:'IPO Profit',value:fmt(profitTotal),sub:'separate P&L, not in main dashboard',color:'pink'}
   ]);
 
@@ -7872,6 +7888,12 @@ function renderIPOAppsTable(){
   document.getElementById('ipoAppsTable').innerHTML=mkIPOAppsTable(rows,dupCounts,ipo);
 }
 
+function ipoInlineTextCell(r,field,placeholder,upper){
+  var val=r[field]||'';
+  if(val)return '<div>'+val+'</div>'; // filled once -> locked, use Edit (pencil) to change
+  var attrs='type="text" placeholder="'+placeholder+'" style="width:100%;min-width:90px;'+(upper?'text-transform:uppercase;':'')+'" onblur="inlineSaveIPOApp('+r._rowNum+',\''+field+'\',this.value)" onkeydown="if(event.key===\'Enter\')this.blur();"';
+  return '<input '+attrs+'>';
+}
 function mkIPOAppsTable(rows,dupCounts,ipo){
   if(!rows||!rows.length)return '<div class="no-data">No applications</div>';
   var h='<table><thead><tr><th>PAN</th><th>Name</th><th>Mobile</th><th>Reference</th><th>Category</th><th>Broker</th><th>Buy Rate</th><th>Status</th><th>Client Net</th><th>IPO Profit</th><th>Client Payment</th><th>Resale</th><th>Actions</th></tr></thead><tbody>';
@@ -7880,16 +7902,21 @@ function mkIPOAppsTable(rows,dupCounts,ipo){
     var isDup=!!(pan&&dupCounts[pan]>1);
     var calc=ipoAppCalc(r,ipo);
     var resold=r['Resold']==='Yes';
-    var statusBadge=resold?'<span class="badge purple">Resold</span>':('<span class="badge '+(r['Status']==='Allotted'?'green':(r['Status']==='Pending'?'amber':(r['Status']==='Rejection'?'red':'blue')))+'">'+(r['Status']||'Pending')+'</span>');
+    var statusSel='<select'+(resold?' disabled':'')+' onchange="inlineSaveIPOApp('+r._rowNum+',\'Status\',this.value)" style="min-width:110px;">';
+    ['Pending','Allotted','Not Allotted','Rejection'].forEach(function(s){statusSel+='<option'+((r['Status']||'Pending')===s?' selected':'')+'>'+s+'</option>';});
+    statusSel+='</select>';
+    var brokerSel='<select onchange="inlineSaveIPOApp('+r._rowNum+',\'Broker\',this.value)" style="min-width:90px;">';
+    ['Choice','Other'].forEach(function(b){brokerSel+='<option'+((r['Broker']||'Choice')===b?' selected':'')+'>'+b+'</option>';});
+    brokerSel+='</select>';
     h+='<tr'+(isDup?' class="dup-row"':'')+'>';
-    h+='<td>'+(isDup?'<span class="dup-badge">&#9888;</span>':'')+(r['PAN']||'-')+(isDup?'<div style="font-size:10px;color:var(--danger);">Duplicate PAN, already added</div>':'')+'</td>';
-    h+='<td>'+(r['Client_Name']||'-')+'</td>';
-    h+='<td>'+(r['Mobile']||'-')+'</td>';
+    h+='<td>'+(isDup?'<span class="dup-badge">&#9888;</span>':'')+ipoInlineTextCell(r,'PAN','Enter PAN',true)+(isDup?'<div style="font-size:10px;color:var(--danger);">Duplicate PAN, already added</div>':'')+'</td>';
+    h+='<td>'+ipoInlineTextCell(r,'Client_Name','Enter name',false)+'</td>';
+    h+='<td>'+ipoInlineTextCell(r,'Mobile','Enter mobile',false)+'</td>';
     h+='<td style="cursor:pointer;color:var(--accent);" onclick="filterIPOByReference(\''+String(r['Reference']||'').replace(/'/g,"\\\\'")+'\')" title="Filter by this reference">'+(r['Reference']||'-')+'</td>';
     h+='<td><span class="badge blue">'+(r['Category']||'-')+'</span></td>';
-    h+='<td>'+(r['Broker']||'-')+'</td>';
+    h+='<td>'+(resold?(r['Broker']||'-'):brokerSel)+'</td>';
     h+='<td class="money">'+fmt(r['Buy_Rate'])+'</td>';
-    h+='<td>'+statusBadge+'</td>';
+    h+='<td>'+(resold?'<span class="badge purple">Resold</span>':statusSel)+'</td>';
     h+='<td class="money">'+(calc.clientNet===null?'-':fmt(calc.clientNet))+'</td>';
     h+='<td class="money">'+(calc.profit===null?'-':fmt(calc.profit))+'</td>';
     h+='<td>'+ipoPaymentChip(r,calc)+'</td>';
@@ -7898,6 +7925,18 @@ function mkIPOAppsTable(rows,dupCounts,ipo){
     h+='</tr>';
   });
   return h+'</tbody></table>';
+}
+function inlineSaveIPOApp(rowNum,field,rawVal){
+  var val=rawVal==null?'':String(rawVal).trim();
+  if(field==='PAN')val=val.toUpperCase();
+  if((field==='PAN'||field==='Client_Name'||field==='Mobile')&&!val)return; // don't save a blank first entry
+  var row=(allData.IPO_Applications||[]).find(function(r){return String(r['_rowNum'])===String(rowNum);});
+  if(row&&String(row[field]||'')===val)return; // no change
+  var vals={};vals[field]=val;vals['Updated_Date']=td();
+  postData({action:'editRow',sheet:'IPO_Applications',rowNum:rowNum,vals:vals}).then(function(r){
+    if(r&&r.success){patchRowLocal('IPO_Applications',rowNum,vals);renderIPOTabBody();}
+    else{showToast('Save failed: '+(r&&r.error||''),'error');renderIPOTabBody();}
+  }).catch(function(e){showToast('Error: '+e.message,'error');renderIPOTabBody();});
 }
 
 /* Client-payment ledger chip. clientNet>=0 => company owes client (Payable/Paid);
@@ -8083,17 +8122,20 @@ function renderIPORefTable(){
   rows.forEach(function(r){
     var ref=r['Reference']||'';
     var key=ref||'(no reference)';
-    if(!byRef[key])byRef[key]={ref:ref,label:key,count:0,buyCost:0,netPayable:0};
+    if(!byRef[key])byRef[key]={ref:ref,label:key,count:0,pending:0,buyCost:0,net:0};
     byRef[key].count++;
     byRef[key].buyCost+=parseFloat(r['Buy_Rate'])||0;
     var c=ipoAppCalc(r,ipo);
-    if(c.clientNet!==null)byRef[key].netPayable+=c.clientNet;
+    if(c.clientNet!==null)byRef[key].net+=c.clientNet;
+    else byRef[key].pending++;
   });
   var list=Object.keys(byRef).map(function(k){return byRef[k];}).sort(function(a,b){return b.count-a.count;});
   if(!list.length){document.getElementById('ipoRefTable').innerHTML='<div class="no-data">No applications yet</div>';return;}
-  var h='<table><thead><tr><th>Reference</th><th>Applications</th><th>Buy Cost</th><th>Net Client Payable</th></tr></thead><tbody>';
+  var h='<table><thead><tr><th>Reference</th><th>Applications</th><th>Buy Cost</th><th>Net Payable <span style="font-weight:400;color:var(--muted);">(we owe client)</span></th><th>Net Receivable <span style="font-weight:400;color:var(--muted);">(client owes us)</span></th></tr></thead><tbody>';
   list.forEach(function(x){
-    h+='<tr style="cursor:pointer;" onclick="filterIPOByReference(\''+x.ref.replace(/'/g,"\\\\'")+'\')"><td>'+x.label+'</td><td>'+x.count+'</td><td class="money">'+fmt(x.buyCost)+'</td><td class="money">'+fmt(x.netPayable)+'</td></tr>';
+    var payable=x.net>0?x.net:0;
+    var receivable=x.net<0?-x.net:0;
+    h+='<tr style="cursor:pointer;" onclick="filterIPOByReference(\''+x.ref.replace(/'/g,"\\\\'")+'\')"><td>'+x.label+'</td><td>'+x.count+(x.pending?' <span style="color:var(--muted);font-size:11px;">('+x.pending+' pending)</span>':'')+'</td><td class="money">'+fmt(x.buyCost)+'</td><td class="money">'+(payable?fmt(payable):'-')+'</td><td class="money">'+(receivable?fmt(receivable):'-')+'</td></tr>';
   });
   h+='</tbody></table>';
   document.getElementById('ipoRefTable').innerHTML=h;
@@ -8158,9 +8200,9 @@ function renderIPOWhatIf(){
   var allotted=parseFloat(document.getElementById('ipoCalc_allotted').value)||0;
   var buyRate=parseFloat(document.getElementById('ipoCalc_buyrate').value)||0;
   var gain=parseFloat(document.getElementById('ipoCalc_gain').value)||0;
-  var netPayable=(buyRate*total)-(gain*allotted);
+  var netProfit=(gain*allotted)-(buyRate*total);
   document.getElementById('ipoCalcResult').innerHTML=mkStats([
-    {label:'Projected Net Payable',value:fmt(netPayable),sub:'buyRate×total - gain×allotted',color:'green'},
+    {label:'Projected Net Profit',value:fmt(netProfit),sub:'gain×allotted - buyRate×total',color:'green'},
     {label:'Total Buy Cost',value:fmt(buyRate*total),sub:'buyRate×total',color:'blue'},
     {label:'Total Listing Gain',value:fmt(gain*allotted),sub:'gain×allotted',color:'amber'}
   ]);
@@ -8186,15 +8228,37 @@ function submitNewIPO(){
   }).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
 }
 
+function openEditIPOGainsModal(){
+  var ipo=currentIPO();
+  if(!ipo){showToast('Select an IPO first','error');return;}
+  var html='<div class="modal-title">Edit Listing Gains — '+(ipo['IPO_Name']||'')+'</div>';
+  html+='<p style="color:var(--muted);font-size:12px;margin-bottom:10px;">&#8377;/application gain used to auto-calculate profit &amp; client net for Allotted applications in this IPO.</p>';
+  html+='<div class="form-group"><label>Retail Listing Gain (&#8377;/application)</label><input type="number" id="ipg_retail" value="'+(parseFloat(ipo['Retail_Gain'])||0)+'"></div>';
+  html+='<div class="form-group"><label>sHNI Listing Gain (&#8377;/application)</label><input type="number" id="ipg_shni" value="'+(parseFloat(ipo['sHNI_Gain'])||0)+'"></div>';
+  html+='<div class="form-group"><label>bHNI Listing Gain (&#8377;/application)</label><input type="number" id="ipg_bhni" value="'+(parseFloat(ipo['bHNI_Gain'])||0)+'"></div>';
+  html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="saveIPOGains('+ipo['_rowNum']+')">Save</button></div>';
+  document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
+}
+function saveIPOGains(rowNum){
+  var vals={
+    'Retail_Gain':parseFloat(document.getElementById('ipg_retail').value)||0,
+    'sHNI_Gain':parseFloat(document.getElementById('ipg_shni').value)||0,
+    'bHNI_Gain':parseFloat(document.getElementById('ipg_bhni').value)||0
+  };
+  postData({action:'editRow',sheet:'IPO_Master',rowNum:rowNum,vals:vals}).then(function(r){
+    closeModal();
+    if(r&&r.success){showToast('Listing gains updated','success');patchRowLocal('IPO_Master',rowNum,vals);renderIPOTabBody();}
+    else showToast('Failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
+}
 function submitIPOApplications(){
   if(!ipoSelId){showToast('Select or create an IPO first','error');return;}
   var qty=parseInt(document.getElementById('ipoAdd_qty').value,10)||0;
   var ref=(document.getElementById('ipoAdd_ref').value||'').trim();
   var cat=document.getElementById('ipoAdd_cat').value;
-  var broker=document.getElementById('ipoAdd_broker').value;
   var buyRate=parseFloat(document.getElementById('ipoAdd_buyrate').value)||0;
   if(qty<1){showToast('Quantity must be at least 1','error');return;}
-  var p={action:'addIPOApplications','IPO_ID':ipoSelId,'Qty':qty,'Reference':ref,'Category':cat,'Broker':broker,'Buy_Rate':buyRate};
+  var p={action:'addIPOApplications','IPO_ID':ipoSelId,'Qty':qty,'Reference':ref,'Category':cat,'Buy_Rate':buyRate};
   postData(p).then(function(r){
     if(r&&r.success){
       showToast(r.added+' application(s) added','success');
