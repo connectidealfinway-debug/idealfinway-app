@@ -36,6 +36,9 @@ input::-webkit-calendar-picker-indicator{filter:invert(0.8);cursor:pointer;opaci
 .form-group input,.form-group select,.form-group textarea{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:14px;outline:none;transition:border-color 0.2s;}
 .form-group input:focus,.form-group select:focus{border-color:var(--accent);}
 .form-group select option{background:var(--card);}
+table input.tbl-input,table select.tbl-select{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text);font-size:13px;outline:none;}
+table input.tbl-input:focus,table select.tbl-select:focus{border-color:var(--accent);}
+table select.tbl-select option{background:var(--card);color:var(--text);}
 .btn-primary{width:100%;background:var(--accent);color:#000;border:none;border-radius:8px;padding:12px;font-size:15px;font-weight:700;cursor:pointer;}
 .login-err{color:var(--danger);font-size:13px;margin-top:10px;text-align:center;display:none;}
 #appWrap{display:none;min-height:100vh;}
@@ -7891,7 +7894,7 @@ function renderIPOAppsTable(){
 function ipoInlineTextCell(r,field,placeholder,upper){
   var val=r[field]||'';
   if(val)return '<div>'+val+'</div>'; // filled once -> locked, use Edit (pencil) to change
-  var attrs='type="text" placeholder="'+placeholder+'" style="width:100%;min-width:90px;'+(upper?'text-transform:uppercase;':'')+'" onblur="inlineSaveIPOApp('+r._rowNum+',\''+field+'\',this.value)" onkeydown="if(event.key===\'Enter\')this.blur();"';
+  var attrs='type="text" class="tbl-input" placeholder="'+placeholder+'" style="width:100%;min-width:90px;'+(upper?'text-transform:uppercase;':'')+'" onblur="inlineSaveIPOApp('+r._rowNum+',\''+field+'\',this.value)" onkeydown="if(event.key===\'Enter\')this.blur();"';
   return '<input '+attrs+'>';
 }
 function mkIPOAppsTable(rows,dupCounts,ipo){
@@ -7902,10 +7905,10 @@ function mkIPOAppsTable(rows,dupCounts,ipo){
     var isDup=!!(pan&&dupCounts[pan]>1);
     var calc=ipoAppCalc(r,ipo);
     var resold=r['Resold']==='Yes';
-    var statusSel='<select'+(resold?' disabled':'')+' onchange="inlineSaveIPOApp('+r._rowNum+',\'Status\',this.value)" style="min-width:110px;">';
+    var statusSel='<select class="tbl-select"'+(resold?' disabled':'')+' onchange="inlineSaveIPOApp('+r._rowNum+',\'Status\',this.value)" style="min-width:110px;">';
     ['Pending','Allotted','Not Allotted','Rejection'].forEach(function(s){statusSel+='<option'+((r['Status']||'Pending')===s?' selected':'')+'>'+s+'</option>';});
     statusSel+='</select>';
-    var brokerSel='<select onchange="inlineSaveIPOApp('+r._rowNum+',\'Broker\',this.value)" style="min-width:90px;">';
+    var brokerSel='<select class="tbl-select" onchange="inlineSaveIPOApp('+r._rowNum+',\'Broker\',this.value)" style="min-width:90px;">';
     ['Choice','Other'].forEach(function(b){brokerSel+='<option'+((r['Broker']||'Choice')===b?' selected':'')+'>'+b+'</option>';});
     brokerSel+='</select>';
     h+='<tr'+(isDup?' class="dup-row"':'')+'>';
