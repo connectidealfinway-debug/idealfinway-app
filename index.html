@@ -2510,19 +2510,25 @@ function submitWatchlist(){
   var p={action:'addGeneric',sheet:'Watchlist',
     'Date Added':td(),'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch,
     'Stock':stock,'Notes':notes,'Pattern':pattern,'Starred':starred,'Traded':'No','Status':'Active'};
+  document.getElementById('wl_stock').value='';document.getElementById('wl_notes').value='';
+  document.getElementById('wl_star').checked=false;
+  var po=document.getElementById('wl_patternOther');if(po)po.value='';
+  if(!allData.Watchlist)allData.Watchlist=[];
+  var localRow=Object.assign({},p,{_rowNum:'_local'+Date.now()});
+  allData.Watchlist.push(localRow);
+  showToast('Added to watchlist!','success');
+  renderWatchlistPage();
   postData(p).then(function(r){
-    if(r&&r.success){
-      showToast('Added to watchlist','success');
-      document.getElementById('wl_stock').value='';document.getElementById('wl_notes').value='';
-      document.getElementById('wl_star').checked=false;
-      var po=document.getElementById('wl_patternOther');if(po)po.value='';
-      if(!allData.Watchlist)allData.Watchlist=[];
-      allData.Watchlist.push(p);
+    if(!r||!r.success){
+      var idx=allData.Watchlist.indexOf(localRow);if(idx!==-1)allData.Watchlist.splice(idx,1);
+      showToast('Save failed - removed: '+(r&&r.error||''),'error');
       renderWatchlistPage();
-      setTimeout(function(){loadAll(2);},600);
-    }
-    else showToast('Failed: '+(r&&r.error||''),'error');
-  }).catch(function(e){showToast('Error: '+e.message,'error');});
+    }else{setTimeout(function(){loadAll(2);},600);}
+  }).catch(function(e){
+    var idx=allData.Watchlist.indexOf(localRow);if(idx!==-1)allData.Watchlist.splice(idx,1);
+    showToast('Network error - removed: '+e.message,'error');
+    renderWatchlistPage();
+  });
 }
 function toggleWatchlistStar(rowNum,current){
   var v=current==='Yes'?'No':'Yes';
@@ -2600,18 +2606,24 @@ function submitReminder(){
   var p={action:'addGeneric',sheet:'Reminders',
     'Date Added':td(),'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch,
     'Client Name':client,'Client ID':cid,'Note':note,'Reminder Date':date,'Reminder Time':time,'Status':'Pending'};
+  document.getElementById('rem_client').value='';document.getElementById('rem_cid').value='';document.getElementById('rem_note').value='';document.getElementById('rem_date').value='';document.getElementById('rem_time').value='';
+  if(!allData.Reminders)allData.Reminders=[];
+  var localRow=Object.assign({},p,{_rowNum:'_local'+Date.now()});
+  allData.Reminders.push(localRow);
+  showToast('Reminder set!','success');
+  renderRemindersPage();
+  goToMainAfterSave();
   postData(p).then(function(r){
-    if(r&&r.success){
-      showToast('Reminder set','success');
-      document.getElementById('rem_client').value='';document.getElementById('rem_cid').value='';document.getElementById('rem_note').value='';document.getElementById('rem_date').value='';document.getElementById('rem_time').value='';
-      if(!allData.Reminders)allData.Reminders=[];
-      allData.Reminders.push(p);
+    if(!r||!r.success){
+      var idx=allData.Reminders.indexOf(localRow);if(idx!==-1)allData.Reminders.splice(idx,1);
+      showToast('Save failed - removed: '+(r&&r.error||''),'error');
       renderRemindersPage();
-      setTimeout(function(){loadAll(2);},600);
-      goToMainAfterSave();
-    }
-    else showToast('Failed: '+(r&&r.error||''),'error');
-  }).catch(function(e){showToast('Error: '+e.message,'error');});
+    }else{setTimeout(function(){loadAll(2);},600);}
+  }).catch(function(e){
+    var idx=allData.Reminders.indexOf(localRow);if(idx!==-1)allData.Reminders.splice(idx,1);
+    showToast('Network error - removed: '+e.message,'error');
+    renderRemindersPage();
+  });
 }
 function markReminderDone(rowNum){
   patchRowLocal('Reminders',rowNum,{'Status':'Done'});renderRemindersPage();
@@ -4958,12 +4970,31 @@ function goToMainAfterSave(){
   else showPage('empDash');
 }
 function doSubmit(payload,sheet,btnEl,btnTxt,clearFn){
-  btnEl.disabled=true;btnEl.textContent='Adding...';
+  /* v65: TRUE optimistic save - reflect in UI and confirm to the user INSTANTLY (before the
+     network call even returns), instead of waiting 1-5s for the Apps Script round trip.
+     If the save actually fails in the background, the optimistic row is removed and a clear
+     error toast is shown so nothing gets silently lost. */
+  if(btnEl.dataset.busy==='1')return; // guard against rapid double-click creating 2 entries
+  btnEl.dataset.busy='1';
+  if(!allData[sheet])allData[sheet]=[];
+  var localRow=Object.assign({},payload,{_rowNum:'_local'+Date.now()+Math.random()});
+  allData[sheet].push(localRow);
+  showToast('Added!','success');
+  if(clearFn)clearFn();
+  renderPage(curPage());
+  goToMainAfterSave();
+  setTimeout(function(){btnEl.dataset.busy='0';},800);
   postData(payload).then(function(r){
-    btnEl.disabled=false;btnEl.textContent=btnTxt;
-    if(r&&r.success){showToast('Added successfully!','success');allData[sheet].push(payload);if(clearFn)clearFn();setTimeout(function(){loadAll(2);},600);goToMainAfterSave();}
-    else showToast('Failed: '+(r&&r.error||'Unknown'),'error');
-  }).catch(function(e){btnEl.disabled=false;btnEl.textContent=btnTxt;showToast('Error: '+e.message,'error');});
+    if(!r||!r.success){
+      var idx=allData[sheet].indexOf(localRow);if(idx!==-1)allData[sheet].splice(idx,1);
+      showToast('Save failed, entry removed - please try again: '+(r&&r.error||'Unknown'),'error');
+      renderPage(curPage());
+    }else{setTimeout(function(){loadAll(2);},600);}
+  }).catch(function(e){
+    var idx=allData[sheet].indexOf(localRow);if(idx!==-1)allData[sheet].splice(idx,1);
+    showToast('Network error, entry removed - please try again: '+e.message,'error');
+    renderPage(curPage());
+  });
 }
 
 var empRange=null;
@@ -5258,33 +5289,63 @@ function submitStudent(){
   var remarks=document.getElementById('st_remarks').value.trim();
   var p={action:'addStudentWithFee','Date':document.getElementById('st_date').value||td(),'Employee ID':fe.id,'Employee Name':fe.name,'Branch':fe.branch,'Student Name':sn,'Student Phone':stPhone,'Batch':document.getElementById('st_batchno').value.trim(),'Course':document.getElementById('st_course').value,'Reference By':refBy,'Status':document.getElementById('st_status').value,'Total Fee':tf,'Demat Opened':document.getElementById('st_demat').value,'FeesReceived':fr,'Pending':pending,'Place':place,'Credited To':credit,'Remarks':remarks,'Entered By':currentUser.name};
   var btn=document.querySelector('#page-addStudent .btn-submit');
-  btn.disabled=true;btn.textContent='Adding...';
+  if(btn.dataset.busy==='1')return;
+  btn.dataset.busy='1';
+  var localStudent={'Date':p['Date'],'Employee ID':p['Employee ID'],'Employee Name':p['Employee Name'],'Branch':p['Branch'],'Student Name':p['Student Name'],'Student Phone':p['Student Phone'],'Batch':p['Batch'],'Course':p['Course'],'Reference By':p['Reference By'],'Status':p['Status'],'Total Fee':p['Total Fee'],'Demat Opened':p['Demat Opened'],'Demat Client ID':'','_rowNum':'_local'+Date.now()};
+  var localIncome={'Date':p['Date'],'Category':'Student Fee','Name':p['Student Name'],'Place':p['Place'],'Phone':p['Student Phone'],'Course':p['Batch'],'Total Fee':p['Total Fee'],'Pending':p['Pending'],'Reference':p['Reference By'],'Credited To':p['Credited To'],'Amount':p['FeesReceived'],'Remarks':p['Remarks'],'Entered By':p['Entered By'],'_rowNum':'_local'+Date.now()+1};
+  allData.Students=allData.Students||[];
+  allData.Students.push(localStudent);
+  allData.Income=allData.Income||[];
+  allData.Income.push(localIncome);
+  ['st_name','st_phone','st_batchno','st_ref','st_refStud','st_totfee','st_demat','st_feesreceived','st_place','st_remarks'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('st_course').value='Intraday';
+  document.getElementById('st_credit').value='Office Account';
+  document.getElementById('st_reftype').value='Direct';
+  if(document.getElementById('st_refEmp'))document.getElementById('st_refEmp').value='';
+  onStRefTypeChange();
+  document.getElementById('st_pendingGroup').style.display='none';
+  showToast('Student added and fee entry recorded!','success');
+  renderPage(curPage());
+  goToMainAfterSave();
+  setTimeout(function(){btn.dataset.busy='0';},800);
   postData(p).then(function(r){
-    btn.disabled=false;btn.textContent='Add Student';
-    if(r&&r.success){
-      showToast('Student added and fee entry recorded - no need to add it again in Income','success');
-      allData.Students=allData.Students||[];
-      allData.Students.push({'Date':p['Date'],'Employee ID':p['Employee ID'],'Employee Name':p['Employee Name'],'Branch':p['Branch'],'Student Name':p['Student Name'],'Student Phone':p['Student Phone'],'Batch':p['Batch'],'Course':p['Course'],'Reference By':p['Reference By'],'Status':p['Status'],'Total Fee':p['Total Fee'],'Demat Opened':p['Demat Opened'],'Demat Client ID':''});
-      allData.Income=allData.Income||[];
-      allData.Income.push({'Date':p['Date'],'Category':'Student Fee','Name':p['Student Name'],'Place':p['Place'],'Phone':p['Student Phone'],'Course':p['Batch'],'Total Fee':p['Total Fee'],'Pending':p['Pending'],'Reference':p['Reference By'],'Credited To':p['Credited To'],'Amount':p['FeesReceived'],'Remarks':p['Remarks'],'Entered By':p['Entered By']});
-      ['st_name','st_phone','st_batchno','st_ref','st_refStud','st_totfee','st_demat','st_feesreceived','st_place','st_remarks'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
-      document.getElementById('st_course').value='Intraday';
-      document.getElementById('st_credit').value='Office Account';
-      document.getElementById('st_reftype').value='Direct';
-      if(document.getElementById('st_refEmp'))document.getElementById('st_refEmp').value='';
-      onStRefTypeChange();
-      document.getElementById('st_pendingGroup').style.display='none';
-      setTimeout(function(){loadAll(2);},600);
-      goToMainAfterSave();
-    } else showToast('Save failed: '+(r&&r.error||'Unknown'),'error');
-  }).catch(function(e){btn.disabled=false;btn.textContent='Add Student';showToast('Error: '+e.message,'error');});
+    if(!r||!r.success){
+      var i1=allData.Students.indexOf(localStudent);if(i1!==-1)allData.Students.splice(i1,1);
+      var i2=allData.Income.indexOf(localIncome);if(i2!==-1)allData.Income.splice(i2,1);
+      showToast('Save failed, entry removed - please try again: '+(r&&r.error||'Unknown'),'error');
+      renderPage(curPage());
+    }else{setTimeout(function(){loadAll(2);},600);}
+  }).catch(function(e){
+    var i1=allData.Students.indexOf(localStudent);if(i1!==-1)allData.Students.splice(i1,1);
+    var i2=allData.Income.indexOf(localIncome);if(i2!==-1)allData.Income.splice(i2,1);
+    showToast('Network error, entry removed - please try again: '+e.message,'error');
+    renderPage(curPage());
+  });
 }
 
 function submitAttendance(){
   var p={action:'addAttendance','Date':document.getElementById('att_date').value||td(),'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch,'In Time':document.getElementById('att_in').value||'','Out Time':document.getElementById('att_out').value||'','Status':document.getElementById('att_status').value,'Remarks':document.getElementById('att_remarks').value.trim()};
   var btn=document.querySelector('#page-markAttendance .btn-submit');
-  btn.disabled=true;btn.textContent='Marking...';
-  postData(p).then(function(r){btn.disabled=false;btn.textContent='Mark Attendance';if(r&&r.success){showToast('Attendance marked!','success');allData.Attendance.push(p);renderMyAttendance();goToMainAfterSave();}else showToast('Failed: '+(r&&r.error||''),'error');}).catch(function(e){btn.disabled=false;btn.textContent='Mark Attendance';showToast('Error: '+e.message,'error');});
+  if(btn.dataset.busy==='1')return;
+  btn.dataset.busy='1';
+  allData.Attendance=allData.Attendance||[];
+  var localRow=Object.assign({},p,{_rowNum:'_local'+Date.now()});
+  allData.Attendance.push(localRow);
+  showToast('Attendance marked!','success');
+  renderMyAttendance();
+  goToMainAfterSave();
+  setTimeout(function(){btn.dataset.busy='0';},800);
+  postData(p).then(function(r){
+    if(!r||!r.success){
+      var idx=allData.Attendance.indexOf(localRow);if(idx!==-1)allData.Attendance.splice(idx,1);
+      showToast('Save failed - removed: '+(r&&r.error||''),'error');
+      renderMyAttendance();
+    }else{setTimeout(function(){loadAll(2);},600);}
+  }).catch(function(e){
+    var idx=allData.Attendance.indexOf(localRow);if(idx!==-1)allData.Attendance.splice(idx,1);
+    showToast('Network error - removed: '+e.message,'error');
+    renderMyAttendance();
+  });
 }
 
 function initBrokForm(){
@@ -6755,14 +6816,24 @@ function submitTrade(){
     'Target2':t2v?parseFloat(t2v):'',
     'Qty':qty,'Status':'Open','Remarks':(document.getElementById('tj_remarks').value||'').trim()
   };
+  ['tj_stock','tj_entry','tj_sl','tj_t1','tj_t2','tj_qty','tj_remarks','tj_strategyOther','tj_strike'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  if(!allData.TradingJournal)allData.TradingJournal=[];
+  var localRow=Object.assign({},p,{_rowNum:'_local'+Date.now()});
+  allData.TradingJournal.push(localRow);
+  showToast('Trade added!','success');
+  renderPage(curPage());
+  goToMainAfterSave();
   postData(p).then(function(r){
-    if(r&&r.success){
-      showToast('Trade added successfully','success');
-      ['tj_stock','tj_entry','tj_sl','tj_t1','tj_t2','tj_qty','tj_remarks','tj_strategyOther','tj_strike'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
-      loadAll();
-      goToMainAfterSave();
-    } else showToast('Failed to add trade: '+(r&&r.error||''),'error');
-  }).catch(function(e){showToast('Error: '+e.message,'error');});
+    if(!r||!r.success){
+      var idx=allData.TradingJournal.indexOf(localRow);if(idx!==-1)allData.TradingJournal.splice(idx,1);
+      showToast('Save failed - removed: '+(r&&r.error||''),'error');
+      renderPage(curPage());
+    }else{setTimeout(function(){loadAll(2);},600);}
+  }).catch(function(e){
+    var idx=allData.TradingJournal.indexOf(localRow);if(idx!==-1)allData.TradingJournal.splice(idx,1);
+    showToast('Network error - removed: '+e.message,'error');
+    renderPage(curPage());
+  });
 }
 function tjRows(){
   var isAdm=currentUser&&currentUser.role==='admin';
@@ -7094,17 +7165,24 @@ function submitCallClient(){
     'Added Date':td(),'Status':'Active',
     'Remarks':(document.getElementById('ccl_remarks').value||'').trim()
   };
+  ['ccl_cid','ccl_cname','ccl_cphone','ccl_remarks'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  if(!allData.CallClients)allData.CallClients=[];
+  var localRow=Object.assign({},p,{_rowNum:'_local'+Date.now()});
+  allData.CallClients.push(localRow);
+  var cclCard=document.getElementById('cclFormCard');if(cclCard)cclCard.style.display='none';
+  showToast('Client added to calling list!','success');
+  renderCallTradePage();
   postData(p).then(function(r){
-    if(r&&r.success){
-      showToast('Client added to calling list','success');
-      ['ccl_cid','ccl_cname','ccl_cphone','ccl_remarks'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
-      if(!allData.CallClients)allData.CallClients=[];
-      allData.CallClients.push(p);
-      var cclCard=document.getElementById('cclFormCard');if(cclCard)cclCard.style.display='none';
+    if(!r||!r.success){
+      var idx=allData.CallClients.indexOf(localRow);if(idx!==-1)allData.CallClients.splice(idx,1);
+      showToast('Save failed - removed: '+(r&&r.error||''),'error');
       renderCallTradePage();
-      setTimeout(function(){loadAll(2);},600);
-    } else showToast('Failed to add client: '+(r&&r.error||''),'error');
-  }).catch(function(e){showToast('Error: '+e.message,'error');});
+    }else{setTimeout(function(){loadAll(2);},600);}
+  }).catch(function(e){
+    var idx=allData.CallClients.indexOf(localRow);if(idx!==-1)allData.CallClients.splice(idx,1);
+    showToast('Network error - removed: '+e.message,'error');
+    renderCallTradePage();
+  });
 }
 function cclRows(){
   var rows=cclRosterScoped();
@@ -7243,20 +7321,26 @@ function saveNewCallLog(){
     'Traded In':tradeDone==='Yes'?(document.getElementById('lm_tradedIn').value||'').trim():'',
     'Remarks':(document.getElementById('lm_remarks').value||'').trim()
   };
+  var optimistic={};for(var k in p){if(k!=='action')optimistic[k]=p[k];}optimistic._rowNum='_local'+Date.now();
+  allData.CallTrade=allData.CallTrade||[];
+  allData.CallTrade.push(optimistic);
+  document.getElementById('lm_callStatus').value='Not Called';toggleLMCallStatus();
+  document.getElementById('lm_remarks').value='';
+  var ti=document.getElementById('lm_tradedIn');if(ti)ti.value='';
+  showToast('Entry saved!','success');
+  renderLMHistory();
+  renderCallTradePage();
   postData(p).then(function(r){
-    if(r&&r.success){
-      showToast('Entry saved','success');
-      var optimistic={};for(var k in p){if(k!=='action')optimistic[k]=p[k];}optimistic._rowNum=0;
-      allData.CallTrade=allData.CallTrade||[];
-      allData.CallTrade.push(optimistic);
-      document.getElementById('lm_callStatus').value='Not Called';toggleLMCallStatus();
-      document.getElementById('lm_remarks').value='';
-      var ti=document.getElementById('lm_tradedIn');if(ti)ti.value='';
-      renderLMHistory();
-      renderCallTradePage();
-      setTimeout(function(){loadAll(2);},600);
-    } else showToast('Failed to save: '+(r&&r.error||''),'error');
-  }).catch(function(e){showToast('Error: '+e.message,'error');});
+    if(!r||!r.success){
+      var idx=allData.CallTrade.indexOf(optimistic);if(idx!==-1)allData.CallTrade.splice(idx,1);
+      showToast('Save failed - removed: '+(r&&r.error||''),'error');
+      renderLMHistory();renderCallTradePage();
+    }else{setTimeout(function(){loadAll(2);},600);}
+  }).catch(function(e){
+    var idx=allData.CallTrade.indexOf(optimistic);if(idx!==-1)allData.CallTrade.splice(idx,1);
+    showToast('Network error - removed: '+e.message,'error');
+    renderLMHistory();renderCallTradePage();
+  });
 }
 function openCCLManageModal(rowNum){
   var row=(allData.CallClients||[]).find(function(r){return String(r['_rowNum'])===String(rowNum);});
