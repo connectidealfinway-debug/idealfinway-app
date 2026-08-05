@@ -2948,12 +2948,26 @@ function renderAdminDash(){
   var totalBrokMTD=r2(brokMTD+cbrokMTD);
   var avgPerDay=daysElapsed?r2(totalBrokMTD/daysElapsed):0;
   var projectedMonthEnd=r2(avgPerDay*daysInMonth);
+  // All-time / Year / Quarter avg-per-day, using every Brokerage+ClientBrokerage row on file (not just this month).
+  var allBrokRows=(allData.Brokerage||[]).concat(allData.ClientBrokerage||[]);
+  function periodAvg(startDate){
+    var total=allBrokRows.filter(function(r){var d=new Date(r['Date']||'');return !isNaN(d)&&d>=startDate&&d<=now;}).reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
+    var days=Math.max(1,Math.round((now-startDate)/86400000)+1);
+    return {total:r2(total),avg:days?r2(total/days):0,days:days};
+  }
+  var qStart=getRange('quarter').start, yStart=getRange('year').start;
+  var allDates=allBrokRows.map(function(r){return new Date(r['Date']||'');}).filter(function(d){return !isNaN(d);});
+  var earliestDate=allDates.length?new Date(Math.min.apply(null,allDates)):now;
+  var qStat=periodAvg(qStart), yStat=periodAvg(yStart), allStat=periodAvg(earliestDate);
   document.getElementById('clientHealthPanel').innerHTML='<div class="form-card" style="margin-bottom:16px;">'+
     '<div style="font-weight:700;font-size:15px;margin-bottom:12px;">&#128202; Client Health &amp; Projections (This Month)</div>'+
     '<div class="stats-grid">'+mkStats([
       {label:'Active Client %',value:actPct+'%',sub:allAccLive.filter(function(r){return (r['Status']||'Active')==='Active';}).length+' of '+allAccLive.length+' accounts active',color:actPct>=70?'green':(actPct>=40?'amber':'red')},
-      {label:'Avg Brokerage / Day',value:fmt(avgPerDay),sub:'MTD total: '+fmt(totalBrokMTD)+' ('+daysElapsed+' days)',color:'blue'},
-      {label:'Projected Month-End Brokerage',value:fmt(projectedMonthEnd),sub:'at current daily pace',color:'purple'}
+      {label:'Avg Brokerage / Day (MTD)',value:fmt(avgPerDay),sub:'MTD total: '+fmt(totalBrokMTD)+' ('+daysElapsed+' days)',color:'blue'},
+      {label:'Projected Month-End Brokerage',value:fmt(projectedMonthEnd),sub:'at current daily pace',color:'purple'},
+      {label:'Avg Brokerage / Day (Quarter)',value:fmt(qStat.avg),sub:'quarter total: '+fmt(qStat.total)+' ('+qStat.days+' days)',color:'amber'},
+      {label:'Avg Brokerage / Day (Year)',value:fmt(yStat.avg),sub:'year total: '+fmt(yStat.total)+' ('+yStat.days+' days)',color:'green'},
+      {label:'Avg Brokerage / Day (All-Time)',value:fmt(allStat.avg),sub:'since '+earliestDate.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})+' &#183; total '+fmt(allStat.total),color:'pink'}
     ])+'</div></div>';
   var topClients=aggByClient(cbrok).slice(0,10);
   var tch='<div class="form-card" style="margin-bottom:16px;">'+
