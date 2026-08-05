@@ -2015,7 +2015,6 @@ function logout(){
 }
 
 function showPage(id){
-  if(profileGateActive&&id!=='myProfile')id='myProfile';
   document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
   document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active');});
   var pg=document.getElementById('page-'+id);if(pg)pg.classList.add('active');
@@ -6526,7 +6525,8 @@ function showAddEmpModal(){
   h+='<div class="form-group"><label>Employee ID</label><input type="text" id="ne_id" placeholder="e.g. Ideal.name"></div>';
   h+='<div class="form-group"><label>Full Name</label><input type="text" id="ne_name"></div>';
   h+='<div class="form-group"><label>Branch</label><select id="ne_branch"><option>Hisar</option><option>Adampur</option><option>Rohtak</option><option>Tohana</option></select></div>';
-  h+='<div class="form-group"><label>Role</label><select id="ne_role"><option value="employee">Employee</option><option value="finance">Finance (Hisab &amp; Income/Expense)</option><option value="partner">Partner (% of net profit)</option><option value="admin">Admin</option></select></div>';
+  h+='<div class="form-group"><label>Role</label><select id="ne_role" onchange="toggleNeDesignation()"><option value="employee">Employee</option><option value="finance">Finance (Hisab &amp; Income/Expense)</option><option value="partner">Partner (% of net profit)</option><option value="admin">Admin</option></select></div>';
+  h+='<div class="form-group" id="ne_desig_wrap"><label>Designation (shown on salary slip)</label><select id="ne_desig"><option value="">-- none --</option><option>Relationship Manager</option><option>Advisor</option><option>Leader</option><option>Partner</option></select></div>';
   h+='<div class="form-group"><label>Commission % (employee: % of brokerage &#183; partner: % of net profit)</label><input type="number" id="ne_comm" value="50" min="0" max="100"></div>';
   h+='<div class="form-group"><label>Fixed Salary (&#8377;/month, 0 if none)</label><input type="number" id="ne_sal" value="0"></div>';
   h+='<div class="form-group"><label>Password</label><input type="text" id="ne_pass"></div>';
@@ -6536,8 +6536,17 @@ function showAddEmpModal(){
   h+='</div></div>';
   h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="addEmployee()">Add</button></div>';
   document.getElementById('modalBox').innerHTML=h;document.getElementById('modal').className='show';
+  toggleNeDesignation();
 }
 
+function toggleNeDesignation(){
+  var r=document.getElementById('ne_role'),w=document.getElementById('ne_desig_wrap');
+  if(r&&w)w.style.display=(r.value==='employee'||r.value==='partner')?'block':'none';
+}
+function toggleEeDesignation(){
+  var r=document.getElementById('ee_role'),w=document.getElementById('ee_desig_wrap');
+  if(r&&w)w.style.display=(r.value==='employee'||r.value==='partner')?'block':'none';
+}
 function isValidPAN(v){return /^[A-Z]{5}[0-9]{4}[A-Z]$/.test((v||'').trim().toUpperCase());}
 function isValidAadhaar(v){return /^\d{12}$/.test((v||'').replace(/\s/g,''));}
 function isValidEmail(v){return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((v||'').trim());}
@@ -6546,7 +6555,7 @@ function addEmployee(){
   var id=document.getElementById('ne_id').value.trim(),name=document.getElementById('ne_name').value.trim(),pass=document.getElementById('ne_pass').value.trim();
   if(!id||!name||!pass){showToast('ID, Name and Password required','error');return;}
   if(employees.find(function(e){return e['Employee ID']===id;})){showToast('ID already exists','error');return;}
-  var p={action:'addEmployee','Employee ID':id,'Name':name,'Branch':document.getElementById('ne_branch').value,'Role':document.getElementById('ne_role').value,'Password':pass,'Status':'Active','Commission':numOrDefault(document.getElementById('ne_comm').value,50),'Email':'','Salary':parseFloat(document.getElementById('ne_sal').value)||0,'Parent ID':Array.prototype.slice.call(document.querySelectorAll('.ne_parent_cb:checked')).map(function(el){return el.value;}).join(',')};
+  var p={action:'addEmployee','Employee ID':id,'Name':name,'Branch':document.getElementById('ne_branch').value,'Role':document.getElementById('ne_role').value,'Designation':document.getElementById('ne_desig')?document.getElementById('ne_desig').value:'','Password':pass,'Status':'Active','Commission':numOrDefault(document.getElementById('ne_comm').value,50),'Email':'','Salary':parseFloat(document.getElementById('ne_sal').value)||0,'Parent ID':Array.prototype.slice.call(document.querySelectorAll('.ne_parent_cb:checked')).map(function(el){return el.value;}).join(',')};
   postData(p).then(function(r){closeModal();if(r&&r.success){showToast('Employee added! They can complete Gmail/PAN/Aadhaar from My Profile after login.','success');loadEmps();}else showToast('Failed: '+(r&&r.error||''),'error');}).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
 }
 
@@ -6557,8 +6566,11 @@ function editEmpModal(empId){
   h+='<div class="form-group"><label>Branch</label><select id="ee_branch">';
   ['Hisar','Adampur','Rohtak','Tohana'].forEach(function(b){h+='<option'+(emp['Branch']===b?' selected':'')+'>'+b+'</option>';});
   h+='</select></div>';
-  h+='<div class="form-group"><label>Role</label><select id="ee_role">';
+  h+='<div class="form-group"><label>Role</label><select id="ee_role" onchange="toggleEeDesignation()">';
   [['employee','Employee'],['finance','Finance'],['partner','Partner (net profit %)'],['admin','Admin']].forEach(function(r){h+='<option value="'+r[0]+'"'+((emp['Role']||'employee').toLowerCase()===r[0]?' selected':'')+'>'+r[1]+'</option>';});
+  h+='</select></div>';
+  h+='<div class="form-group" id="ee_desig_wrap"><label>Designation (shown on salary slip)</label><select id="ee_desig">';
+  ['','Relationship Manager','Advisor','Leader','Partner'].forEach(function(d){h+='<option value="'+d+'"'+((emp['Designation']||'')===d?' selected':'')+'>'+(d||'-- none --')+'</option>';});
   h+='</select></div>';
   h+='<div class="form-group"><label>Commission % (employee: % of brokerage &#183; partner: % of net profit)</label><input type="number" id="ee_comm" value="'+(emp['Commission']!==''&&emp['Commission']!==undefined?emp['Commission']:50)+'" min="0" max="100"></div>';
   h+='<div class="form-group"><label>Fixed Salary (&#8377;/month)</label><input type="number" id="ee_sal" value="'+(parseFloat(emp['Salary'])||0)+'"></div>';
@@ -6574,6 +6586,7 @@ function editEmpModal(empId){
   h+='<div class="form-group"><label style="display:flex;align-items:center;gap:6px;font-weight:600;"><input type="checkbox" id="ee_ipoaccess" style="width:auto;"'+(emp['IPO_Access']==='Yes'?' checked':'')+'> IPO Access (admin granted) - this employee will get the IPO nav item with full read/write on the IPO module</label></div>';
   h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" data-eid="'+empId+'" onclick="saveEmp(this.dataset.eid)">Save</button></div>';
   document.getElementById('modalBox').innerHTML=h;document.getElementById('modal').className='show';
+  toggleEeDesignation();
 }
 
 function saveEmp(empId){
@@ -6584,7 +6597,7 @@ function saveEmp(empId){
   if(email&&!isValidEmail(email)){showToast('Gmail ID looks invalid - fix it or leave blank','error');return;}
   if(pan&&!isValidPAN(pan)){showToast('PAN format looks invalid (expected ABCDE1234F) - fix it or leave blank','error');return;}
   if(aadhaar&&!isValidAadhaar(aadhaar)){showToast('Aadhaar must be 12 digits - fix it or leave blank','error');return;}
-  var p={action:'updateEmployee','Employee ID':empId,_rowNum:emp._rowNum,'Name':document.getElementById('ee_name').value.trim(),'Branch':document.getElementById('ee_branch').value,'Role':document.getElementById('ee_role').value||'employee','Status':emp['Status']||'Active','Commission':numOrDefault(document.getElementById('ee_comm').value,50),'Email':email,'Salary':parseFloat(document.getElementById('ee_sal').value)||0,'Parent ID':Array.prototype.slice.call(document.querySelectorAll('.ee_parent_cb:checked')).map(function(el){return el.value;}).join(','),'FinanceAccess':document.getElementById('ee_finaccess').checked?'Yes':'No','IPO_Access':document.getElementById('ee_ipoaccess').checked?'Yes':'No','PAN':pan,'Aadhaar':aadhaar};
+  var p={action:'updateEmployee','Employee ID':empId,_rowNum:emp._rowNum,'Name':document.getElementById('ee_name').value.trim(),'Branch':document.getElementById('ee_branch').value,'Role':document.getElementById('ee_role').value||'employee','Designation':document.getElementById('ee_desig')?document.getElementById('ee_desig').value:'','Status':emp['Status']||'Active','Commission':numOrDefault(document.getElementById('ee_comm').value,50),'Email':email,'Salary':parseFloat(document.getElementById('ee_sal').value)||0,'Parent ID':Array.prototype.slice.call(document.querySelectorAll('.ee_parent_cb:checked')).map(function(el){return el.value;}).join(','),'FinanceAccess':document.getElementById('ee_finaccess').checked?'Yes':'No','IPO_Access':document.getElementById('ee_ipoaccess').checked?'Yes':'No','PAN':pan,'Aadhaar':aadhaar};
   var np=document.getElementById('ee_pass').value.trim();if(np)p['Password']=np;
   postData(p).then(function(r){closeModal();if(r&&r.success){showToast('Updated!','success');loadEmps();}else showToast('Failed','error');}).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
 }
@@ -6646,25 +6659,19 @@ function checkMyProfileAlert(){
   var dot=document.getElementById('myProfileAlert');
   var missing=myProfileMissing();
   if(dot)dot.style.display=missing.length?'inline':'none';
-  var wasActive=profileGateActive;
   profileGateActive=missing.length>0;
   applyProfileGate();
   renderSidebarAvatar();
-  if(profileGateActive&&!wasActive)showPage('myProfile');
 }
 function applyProfileGate(){
-  ['adminNav','finNav','empNav'].forEach(function(id){
-    var el=document.getElementById(id);
-    if(!el)return;
-    el.querySelectorAll('.nav-item,.nav-sec,.nav-grp,.nav-section').forEach(function(n){n.classList.toggle('nav-gate-hidden',profileGateActive);});
-  });
   var gateMsg=document.getElementById('profileGateMsg');
   if(profileGateActive){
     if(!gateMsg){
       gateMsg=document.createElement('div');
       gateMsg.id='profileGateMsg';
-      gateMsg.style.cssText='background:linear-gradient(90deg,#f59e0b,#ef4444);color:#111;font-weight:700;padding:10px 16px;border-radius:8px;margin-bottom:14px;';
-      gateMsg.textContent='Please complete your Gmail ID, PAN & Aadhaar below to unlock the rest of the app.';
+      gateMsg.style.cssText='background:linear-gradient(90deg,#f59e0b,#ef4444);color:#111;font-weight:700;padding:10px 16px;border-radius:8px;margin-bottom:14px;cursor:pointer;';
+      gateMsg.textContent='Reminder: your Gmail ID, PAN & Aadhaar documents are not uploaded - your salary slip (hisab) will not be sent until these are completed. Tap to complete your profile.';
+      gateMsg.onclick=function(){showPage('myProfile');};
       var main=document.getElementById('main');
       if(main)main.insertBefore(gateMsg,main.firstChild);
     }
