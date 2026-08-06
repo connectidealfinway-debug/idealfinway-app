@@ -1551,7 +1551,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
         </div>
 
         <div id="ipoTabBodyBuyer" style="display:none;">
-          <button class="btn-mini add" style="margin-bottom:12px;" onclick="openIPOBulkResellModal()">&#43; Bulk Mark Resold</button>
+          <button class="btn-mini add" style="margin-bottom:12px;" onclick="openIPOBulkResellModal()">&#43; Bulk Mark Resold</button><button class="btn-mini danger" style="margin-bottom:12px;" onclick="openIPOBulkUndoResaleModal()">&#8635; Bulk Undo Resale</button>
           <div class="table-wrap"><div class="table-inner" id="ipoBuyerTable"></div></div>
         </div>
 
@@ -8272,6 +8272,41 @@ function submitIPOBulkResell(){
     } else showToast('Failed: '+(r&&r.error||''),'error');
   }).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
 }
+/* Undo Resale is deliberately separate from Bulk Delete below - this only clears the resale
+   fields (Resold/Resale_Buyer/Resale_Rate/etc) so the application itself is kept intact and
+   goes back to being a normal Pending/Allotted/etc application. It does NOT delete the row. */
+function openIPOBulkUndoResaleModal(){
+  var resold=ipoFilteredRows().filter(function(r){return r['Resold']==='Yes';});
+  var html='<div class="modal-title">Bulk Undo Resale</div>';
+  html+='<p style="color:var(--muted);font-size:12px;">This only removes the "resold" mark and buyer/rate info - the application itself stays, it just goes back to its normal status.</p>';
+  if(!resold.length){
+    html+='<div class="no-data">No resold applications in the current filtered view.</div>';
+  } else {
+    html+='<div class="form-group"><label style="display:flex;align-items:center;justify-content:space-between;">Select which to un-resell (<span id="ipbu_cbCount">0</span> selected)<button type="button" class="btn-mini" onclick="toggleIPOChecklistAll(\'ipbu_cb\')">Select/Clear All</button></label>';
+    html+='<div style="max-height:280px;overflow-y:auto;border:1px solid var(--border,rgba(255,255,255,.15));border-radius:8px;padding:8px;">';
+    html+=mkIPOAppChecklist(resold,'ipbu_cb');
+    html+='</div></div>';
+  }
+  html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-danger" onclick="submitIPOBulkUndoResale()">Undo Resale on Selected</button></div>';
+  document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
+  updateIPOChecklistCount('ipbu_cb');
+}
+function submitIPOBulkUndoResale(){
+  var rowNums=Array.prototype.slice.call(document.querySelectorAll('.ipbu_cb:checked')).map(function(el){return parseInt(el.value,10);});
+  if(!rowNums.length){showToast('Select at least one application to undo resale on','error');return;}
+  if(!confirm('Undo resale on '+rowNums.length+' application(s)? The application(s) will stay, only the resale info is cleared.'))return;
+  var vals={'Resold':'No','Resale_Buyer':'','Resale_Rate':'','Resale_Payment_Done':'No','Resale_Account':'','Resale_By':'','Updated_Date':td()};
+  Promise.all(rowNums.map(function(rn){
+    return postData({action:'editRow',sheet:'IPO_Applications',rowNum:rn,vals:vals}).catch(function(){return {success:false};});
+  })).then(function(results){
+    closeModal();
+    var okCount=results.filter(function(r){return r&&r.success;}).length;
+    if(okCount)showToast('Resale undone on '+okCount+' of '+rowNums.length+' application(s)','success');
+    if(okCount<rowNums.length)showToast((rowNums.length-okCount)+' failed','error');
+    rowNums.forEach(function(rn,i){if(results[i]&&results[i].success)patchRowLocal('IPO_Applications',rn,vals);});
+    renderIPOTabBody();
+  });
+}
 function openIPOBulkDeleteModal(){
   var rows=ipoFilteredRows();
   var html='<div class="modal-title">Bulk Delete Applications</div>';
@@ -8344,11 +8379,11 @@ function renderIPORefTable(){
       '</div>';
     var payCell='-';
     if(payable>0){
-      payCell=x.payUnpaid>0?('<button class="btn-mini amber" onclick="event.stopPropagation();openIPORefPaymentModal(\''+refEsc+'\',\'payable\')">Payable &#8594; Mark Paid</button>'):('<span class="badge green">Paid</span> <button class="btn-mini" onclick="event.stopPropagation();filterIPOByReference(\''+refEsc+'\')" title="Open applications to correct/undo a settlement">&#9998; Edit</button>');
+      payCell=x.payUnpaid>0?('<button class="btn-mini amber" onclick="event.stopPropagation();openIPORefPaymentModal(\''+refEsc+'\',\'payable\')">Payable &#8594; Mark Paid</button>'):('<span class="badge green">Paid</span> <button class="btn-mini" onclick="event.stopPropagation();openIPORefPaymentEditModal(\''+refEsc+'\',\'payable\')" title="Edit who/how this was paid, right here">&#9998; Edit</button>');
     }
     var recvCell='-';
     if(receivable>0){
-      recvCell=x.recvUnpaid>0?('<button class="btn-mini amber" onclick="event.stopPropagation();openIPORefPaymentModal(\''+refEsc+'\',\'receivable\')">Receivable &#8594; Mark Received</button>'):('<span class="badge green">Received</span> <button class="btn-mini" onclick="event.stopPropagation();filterIPOByReference(\''+refEsc+'\')" title="Open applications to correct/undo a settlement">&#9998; Edit</button>');
+      recvCell=x.recvUnpaid>0?('<button class="btn-mini amber" onclick="event.stopPropagation();openIPORefPaymentModal(\''+refEsc+'\',\'receivable\')">Receivable &#8594; Mark Received</button>'):('<span class="badge green">Received</span> <button class="btn-mini" onclick="event.stopPropagation();openIPORefPaymentEditModal(\''+refEsc+'\',\'receivable\')" title="Edit who/how this was received, right here">&#9998; Edit</button>');
     }
     var resaleCell='-';
     if(x.resoldCount>0){
@@ -8397,6 +8432,60 @@ function submitIPORefPayment(ref,kind){
       renderIPOTabBody();
     } else showToast('Failed: '+(r&&r.error||''),'error');
   }).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
+}
+
+/* Editing an already-settled reference-wise payment stays right here in Reference-wise -
+   it does NOT jump to the Applications tab. Lets you correct who handled it / which account,
+   or undo the settlement entirely if it was marked by mistake. */
+function ipoRefSettledTarget(ref,kind){
+  var ipo=currentIPO();
+  return currentIPOApps().filter(function(r){
+    if((r['Reference']||'')!==ref)return false;
+    var c=ipoAppCalc(r,ipo);
+    if(c.clientNet===null||r['Payment_Done']!=='Yes')return false;
+    return kind==='payable'?c.clientNet>0:c.clientNet<0;
+  });
+}
+function openIPORefPaymentEditModal(ref,kind){
+  var target=ipoRefSettledTarget(ref,kind);
+  if(!target.length){showToast('Nothing settled to edit for this reference','error');return;}
+  var totalAmt=target.reduce(function(s,r){var ipo=currentIPO();return s+Math.abs(ipoAppCalc(r,ipo).clientNet);},0);
+  var refEsc=ref.replace(/'/g,"\\\\'");
+  var html='<div class="modal-title">Edit Settled '+(kind==='payable'?'Payable':'Receivable')+' — '+(ref||'(no reference)')+'</div>';
+  html+='<p style="color:var(--muted);font-size:12px;">'+target.length+' application(s) already settled, total &#8377;'+fmt(totalAmt)+'. Saving updates who/how it was '+(kind==='payable'?'paid':'received')+' for all of them.</p>';
+  html+='<div class="form-group"><label>Account</label><select id="iprfe_acc">';
+  ['Cash','HDFC','SBI','UPI','Other'].forEach(function(a){html+='<option value="'+a+'"'+((target[0]['Payment_Account']||'Cash')===a?' selected':'')+'>'+a+'</option>';});
+  html+='</select></div>';
+  html+='<div class="form-group"><label>Handled By</label><input type="text" id="iprfe_by" value="'+(target[0]['Payment_By']||'')+'" placeholder="Employee name"></div>';
+  html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-danger" onclick="undoIPORefPaymentSettlement(\''+refEsc+'\',\''+kind+'\')">Undo Settlement</button><button class="btn-save" onclick="saveIPORefPaymentEdit(\''+refEsc+'\',\''+kind+'\')">Save</button></div>';
+  document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
+}
+function saveIPORefPaymentEdit(ref,kind){
+  var target=ipoRefSettledTarget(ref,kind);
+  var rowNums=target.map(function(r){return r._rowNum;});
+  var account=document.getElementById('iprfe_acc').value;
+  var by=(document.getElementById('iprfe_by').value||'').trim();
+  postData({action:'bulkMarkIPOPayment',rowNums:rowNums,Payment_Account:account,Payment_By:by}).then(function(r){
+    closeModal();
+    if(r&&r.success){
+      showToast('Updated who/how '+rowNums.length+' application(s) were settled','success');
+      rowNums.forEach(function(rn){patchRowLocal('IPO_Applications',rn,{'Payment_Done':'Yes','Payment_Account':account,'Payment_By':by});});
+      renderIPOTabBody();
+    } else showToast('Failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
+}
+function undoIPORefPaymentSettlement(ref,kind){
+  var target=ipoRefSettledTarget(ref,kind);
+  if(!confirm('Undo settlement on '+target.length+' application(s)? They will go back to pending.'))return;
+  Promise.all(target.map(function(r){
+    return postData({action:'editRow',sheet:'IPO_Applications',rowNum:r._rowNum,vals:{'Payment_Done':'No'}}).catch(function(){return {success:false};});
+  })).then(function(results){
+    closeModal();
+    var okCount=results.filter(function(r){return r&&r.success;}).length;
+    if(okCount)showToast(okCount+' application(s) reverted to pending','success');
+    target.forEach(function(r,i){if(results[i]&&results[i].success)patchRowLocal('IPO_Applications',r._rowNum,{'Payment_Done':'No'});});
+    renderIPOTabBody();
+  });
 }
 
 function renderIPOBuyerTable(){
