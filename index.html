@@ -205,6 +205,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
 .btn-mini:hover{border-color:var(--accent);color:var(--accent);}
 .btn-mini.add{color:var(--accent);border-color:rgba(63,191,127,.4);}
 .btn-mini.ded{color:var(--amber);border-color:rgba(245,158,11,.4);}
+.btn-mini.danger{color:var(--danger);border-color:rgba(239,68,68,.4);}
 .tab-btns{display:flex;gap:8px;margin-bottom:16px;}
 .tab-btn{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:8px 22px;font-size:13px;font-weight:700;cursor:pointer;}
 .tab-btn.active{background:var(--accent);border-color:var(--accent);color:#000;}
@@ -1541,6 +1542,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
             </div>
             <p style="color:var(--muted);font-size:11px;margin-top:6px;">Broker (Choice/Other) is set per application below the table, since one batch can split across brokers.</p>
           </div>
+          <button class="btn-mini danger" style="margin-bottom:12px;" onclick="openIPOBulkDeleteModal()">&#128465; Bulk Delete</button>
           <div class="table-wrap"><div class="table-inner" id="ipoAppsTable"></div></div>
         </div>
 
@@ -1878,9 +1880,11 @@ function buildReminderHTML(r){
   }
   if(r.dueReminders&&r.dueReminders.length){
     h+='<div style="font-weight:700;color:var(--danger,#ef4444);margin:4px 0 8px;">&#128276; Reminder Due:</div>';
-    h+='<div style="max-height:170px;overflow:auto;margin-bottom:14px;">'+r.dueReminders.map(function(rr){
+    h+='<div style="max-height:220px;overflow:auto;margin-bottom:14px;">'+r.dueReminders.map(function(rr){
       return '<div style="padding:8px 4px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:13px;">'
-        +'<b>'+(rr['Client Name']||'-')+'</b> &#183; '+(rr['Note']||'')+' <span style="color:var(--muted,#8a94a6);font-size:11px;">('+(rr['Reminder Date']||'')+')</span>'
+        +'<div style="margin-bottom:6px;"><b>'+(rr['Client Name']||'-')+'</b> &#183; '+(rr['Note']||'')+' <span style="color:var(--muted,#8a94a6);font-size:11px;">('+(rr['Reminder Date']||'')+')</span></div>'
+        +'<button class="btn-mini" onclick="openRemindAgainModal('+rr['_rowNum']+')">&#8635; Remind Again</button> '
+        +'<button class="btn-mini" onclick="doneReminderFromPopup('+rr['_rowNum']+')">&#10003; Done</button>'
         +'</div>';
     }).join('')+'</div>';
   }
@@ -1973,7 +1977,7 @@ function checkReminderTimes(){
     var h2='<div class="modal-title">&#128276; Reminder &#8212; '+t+'</div>';
     h2+='<div style="margin-bottom:6px;font-size:14px;font-weight:600;">'+(r['Client Name']||'-')+(r['Client ID']?' &#8212; '+r['Client ID']:'')+'</div>';
     h2+='<div style="color:var(--muted,#8a94a6);margin-bottom:14px;font-size:13px;">'+(r['Note']||'')+'</div>';
-    h2+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Later</button><button class="btn-save" onclick="markReminderDone('+r['_rowNum']+');closeModal();">Mark Done</button></div>';
+    h2+='<div class="modal-actions"><button class="btn-cancel" onclick="openRemindAgainModal('+r['_rowNum']+')">&#8635; Remind Again</button><button class="btn-save" onclick="markReminderDone('+r['_rowNum']+');closeModal();">Mark Done</button></div>';
     document.getElementById('modalBox').innerHTML=h2;
     document.getElementById('modal').className='show';
     break;
@@ -2727,6 +2731,39 @@ function markReminderDone(rowNum){
   postData({action:'editRow',sheet:'Reminders',rowNum:rowNum,vals:{'Status':'Done'}}).then(function(r){
     if(!r||!r.success){showToast('Failed: '+(r&&r.error||''),'error');patchRowLocal('Reminders',rowNum,{'Status':'Pending'});renderRemindersPage();}
     else setTimeout(function(){loadAll(2);},600);
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+/* Quick actions used from the reminder popup (bell/daily digest/exact-time alert) so a reminder
+   doesn't just sit there forever - Done removes it immediately, Remind Again reschedules it. */
+function doneReminderFromPopup(rowNum){
+  markReminderDone(rowNum);
+  renderNotifBell();
+  showReminderModal();
+}
+function openRemindAgainModal(rowNum){
+  var row=(allData.Reminders||[]).find(function(r){return String(r['_rowNum'])===String(rowNum);});
+  if(!row){showToast('Reminder not found - reloading','error');loadAll();return;}
+  var tmr=new Date();tmr.setDate(tmr.getDate()+1);
+  var tmrStr=tmr.toISOString().split('T')[0];
+  var html='<div class="modal-title">Remind Again</div>';
+  html+='<div style="color:var(--muted);font-size:12px;margin-bottom:10px;"><b>'+(row['Client Name']||'-')+'</b> &#183; '+(row['Note']||'')+'</div>';
+  html+='<div class="form-group"><label>Remind me on</label><input type="date" id="ra_date" value="'+tmrStr+'"></div>';
+  html+='<div class="form-group"><label>Time (optional)</label><input type="time" id="ra_time" value="'+(row['Reminder Time']||'')+'"></div>';
+  html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="saveRemindAgain('+rowNum+')">Save</button></div>';
+  document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
+}
+function saveRemindAgain(rowNum){
+  var date=document.getElementById('ra_date').value;
+  var time=document.getElementById('ra_time').value||'';
+  if(!date){showToast('Pick a date','error');return;}
+  var vals={'Reminder Date':date,'Reminder Time':time,'Status':'Pending'};
+  postData({action:'editRow',sheet:'Reminders',rowNum:rowNum,vals:vals}).then(function(r){
+    if(r&&r.success){
+      patchRowLocal('Reminders',rowNum,vals);
+      showToast('Reminder rescheduled to '+date,'success');
+      renderRemindersPage();renderNotifBell();
+      showReminderModal();
+    } else showToast('Failed: '+(r&&r.error||''),'error');
   }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
 function mkRemindersTable(rows,showEmp){
@@ -8154,40 +8191,70 @@ function unmarkIPOResold(rowNum){
     else showToast('Failed: '+(r&&r.error||''),'error');
   }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
-function openIPOBulkResellModal(){
+/* Shared checklist builder used by both Bulk Mark Resold and Bulk Delete - groups the
+   applications by Reference with a per-reference "select all of this" quick-toggle (e.g. pick
+   every one of Gaurav CA's apps in one click, or just some of them), plus a master
+   Select/Clear All and a live selected-count. cbClass keeps each modal's checkboxes/state
+   independent so the two pickers never interfere with each other. Reference groups are
+   addressed by index (not by name) so we never have to worry about escaping quotes in
+   reference text inside onclick handlers. */
+function mkIPOAppChecklist(rows,cbClass){
+  var byRef={},order=[];
+  rows.forEach(function(r){
+    var ref=r['Reference']||'(no reference)';
+    if(!byRef[ref]){byRef[ref]=[];order.push(ref);}
+    byRef[ref].push(r);
+  });
+  window['__ipoChecklistRefs_'+cbClass]=order;
+  var html='';
+  order.forEach(function(ref,ri){
+    html+='<div style="margin:10px 0 4px;display:flex;align-items:center;justify-content:space-between;"><b style="font-size:12px;color:var(--muted);">'+ref+' ('+byRef[ref].length+')</b><button type="button" class="btn-mini" onclick="toggleIPOChecklistRef(\''+cbClass+'\','+ri+')">Select all of this</button></div>';
+    byRef[ref].forEach(function(r){
+      html+='<label class="ipochkref_'+cbClass+'_'+ri+'" style="display:flex;align-items:center;gap:8px;font-weight:400;font-size:13px;padding:4px 0;border-bottom:1px solid var(--border,rgba(255,255,255,.08));"><input type="checkbox" class="'+cbClass+'" value="'+r._rowNum+'" style="width:auto;" onchange="updateIPOChecklistCount(\''+cbClass+'\')"> <span style="flex:1;">'+(r['PAN']||'(no PAN)')+' - '+(r['Client_Name']||'-')+'</span><span class="money">'+fmt(r['Buy_Rate'])+'</span></label>';
+    });
+  });
+  return html;
+}
+function updateIPOChecklistCount(cbClass){
+  var el=document.getElementById(cbClass+'Count');
+  if(el)el.textContent=document.querySelectorAll('.'+cbClass+':checked').length;
+}
+function toggleIPOChecklistAll(cbClass){
+  var boxes=document.querySelectorAll('.'+cbClass);
+  var allChecked=boxes.length && Array.prototype.every.call(boxes,function(b){return b.checked;});
+  boxes.forEach(function(b){b.checked=!allChecked;});
+  updateIPOChecklistCount(cbClass);
+}
+function toggleIPOChecklistRef(cbClass,ri){
+  var boxes=Array.prototype.slice.call(document.querySelectorAll('.ipochkref_'+cbClass+'_'+ri+' .'+cbClass));
+  var allChecked=boxes.length && boxes.every(function(b){return b.checked;});
+  boxes.forEach(function(b){b.checked=!allChecked;});
+  updateIPOChecklistCount(cbClass);
+}
+function ipoFilteredRows(){
   var rows=currentIPOApps();
   if(ipoCatF!=='All')rows=rows.filter(function(r){return r['Category']===ipoCatF;});
   if(ipoBrokerF!=='All')rows=rows.filter(function(r){return (r['Broker']||'Choice')===ipoBrokerF;});
   if(ipoRefF!==null)rows=rows.filter(function(r){return (r['Reference']||'')===ipoRefF;});
   var q=getSrch('srch-ipo');
-  rows=srchFilter(rows,q,['PAN','Client_Name','Mobile','Reference']);
-  var eligible=rows.filter(function(r){return r['Resold']!=='Yes';});
+  return srchFilter(rows,q,['PAN','Client_Name','Mobile','Reference']);
+}
+function openIPOBulkResellModal(){
+  var eligible=ipoFilteredRows().filter(function(r){return r['Resold']!=='Yes';});
   var html='<div class="modal-title">Bulk Mark Resold</div>';
   html+='<div class="form-group"><label>Buyer Name</label><input type="text" id="ipbr_buyer" placeholder="Free text"></div>';
   html+='<div class="form-group"><label>Resale Rate (per application)</label><input type="number" id="ipbr_rate" placeholder="e.g. 16500"></div>';
   if(!eligible.length){
     html+='<div class="no-data">No not-yet-resold applications in the current filtered view (category / broker / search / reference filters currently applied on the Applications tab).</div>';
   } else {
-    html+='<div class="form-group"><label style="display:flex;align-items:center;justify-content:space-between;">Select which applications were resold (<span id="ipbrCount">0</span> selected)<button type="button" class="btn-mini" onclick="toggleIPOBulkResellAll()">Select/Clear All</button></label>';
-    html+='<div style="max-height:260px;overflow-y:auto;border:1px solid var(--border,rgba(255,255,255,.15));border-radius:8px;padding:8px;">';
-    eligible.forEach(function(r){
-      html+='<label style="display:flex;align-items:center;gap:8px;font-weight:400;font-size:13px;padding:4px 0;border-bottom:1px solid var(--border,rgba(255,255,255,.08));"><input type="checkbox" class="ipbr_cb" value="'+r._rowNum+'" style="width:auto;" onchange="updateIPOBulkResellCount()"> <span style="flex:1;">'+(r['PAN']||'(no PAN)')+' - '+(r['Client_Name']||'-')+'</span><span style="color:var(--muted);">'+(r['Reference']||'-')+'</span><span class="money">'+fmt(r['Buy_Rate'])+'</span></label>';
-    });
+    html+='<div class="form-group"><label style="display:flex;align-items:center;justify-content:space-between;">Select which applications were resold (<span id="ipbr_cbCount">0</span> selected)<button type="button" class="btn-mini" onclick="toggleIPOChecklistAll(\'ipbr_cb\')">Select/Clear All</button></label>';
+    html+='<div style="max-height:280px;overflow-y:auto;border:1px solid var(--border,rgba(255,255,255,.15));border-radius:8px;padding:8px;">';
+    html+=mkIPOAppChecklist(eligible,'ipbr_cb');
     html+='</div></div>';
   }
   html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="submitIPOBulkResell()">Mark Resold</button></div>';
   document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
-  updateIPOBulkResellCount();
-}
-function updateIPOBulkResellCount(){
-  var el=document.getElementById('ipbrCount');
-  if(el)el.textContent=document.querySelectorAll('.ipbr_cb:checked').length;
-}
-function toggleIPOBulkResellAll(){
-  var boxes=document.querySelectorAll('.ipbr_cb');
-  var allChecked=Array.prototype.every.call(boxes,function(b){return b.checked;});
-  boxes.forEach(function(b){b.checked=!allChecked;});
-  updateIPOBulkResellCount();
+  updateIPOChecklistCount('ipbr_cb');
 }
 function submitIPOBulkResell(){
   var buyer=(document.getElementById('ipbr_buyer').value||'').trim();
@@ -8204,6 +8271,36 @@ function submitIPOBulkResell(){
       renderIPOTabBody();
     } else showToast('Failed: '+(r&&r.error||''),'error');
   }).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
+}
+function openIPOBulkDeleteModal(){
+  var rows=ipoFilteredRows();
+  var html='<div class="modal-title">Bulk Delete Applications</div>';
+  html+='<div class="prev-warn" style="margin-bottom:10px;">This permanently deletes the selected applications - this cannot be undone.</div>';
+  if(!rows.length){
+    html+='<div class="no-data">No applications in the current filtered view.</div>';
+  } else {
+    html+='<div class="form-group"><label style="display:flex;align-items:center;justify-content:space-between;">Select applications to delete (<span id="ipbd_cbCount">0</span> selected)<button type="button" class="btn-mini" onclick="toggleIPOChecklistAll(\'ipbd_cb\')">Select/Clear All</button></label>';
+    html+='<div style="max-height:280px;overflow-y:auto;border:1px solid var(--border,rgba(255,255,255,.15));border-radius:8px;padding:8px;">';
+    html+=mkIPOAppChecklist(rows,'ipbd_cb');
+    html+='</div></div>';
+  }
+  html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-danger" onclick="submitIPOBulkDelete()">Delete Selected</button></div>';
+  document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
+  updateIPOChecklistCount('ipbd_cb');
+}
+function submitIPOBulkDelete(){
+  var rowNums=Array.prototype.slice.call(document.querySelectorAll('.ipbd_cb:checked')).map(function(el){return parseInt(el.value,10);});
+  if(!rowNums.length){showToast('Select at least one application to delete','error');return;}
+  if(!confirm('Permanently delete '+rowNums.length+' application(s)? This cannot be undone.'))return;
+  Promise.all(rowNums.map(function(rn){
+    return postData({action:'deleteRow',sheet:'IPO_Applications',rowNum:rn}).catch(function(){return {success:false};});
+  })).then(function(results){
+    closeModal();
+    var okCount=results.filter(function(r){return r&&r.success;}).length;
+    if(okCount)showToast(okCount+' of '+rowNums.length+' application(s) deleted','success');
+    if(okCount<rowNums.length)showToast((rowNums.length-okCount)+' failed to delete','error');
+    loadAll();
+  });
 }
 
 function renderIPORefTable(){
