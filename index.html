@@ -1696,7 +1696,7 @@ function fEmp(rows,uid){
   var name=currentUser?currentUser.name:'';
   return rows.filter(function(r){return (r['Employee ID']||'').trim()===uid.trim()||(r['Employee Name']||'').trim().toLowerCase()===name.trim().toLowerCase();});
 }
-function fEmpStrict(rows,uid){
+function fEmpStrict(rows,uid){if(Array.isArray(uid)){var __s={};uid.forEach(function(u){__s[String(u).trim()]=1;});return rows.filter(function(r){return __s[(r['Employee ID']||'').trim()];});}
   return rows.filter(function(r){return (r['Employee ID']||'').trim()===String(uid).trim();});
 }
 function calcGrowth(allRows,uid,valueField,isCount){
@@ -2280,14 +2280,14 @@ function populateTeamEmpSelect(){
   var sel=document.getElementById('team_emp');if(!sel)return;
   var team=teamMembersOf(currentUser.userId);
   var cur=sel.value;
-  sel.innerHTML='<option value="">-- Select --</option>';
+  sel.innerHTML='<option value="">-- Select --</option><option value="__ALL__">\uD83D\uDC65 All Team Members (Combined)</option>';
   team.forEach(function(e){var o=document.createElement('option');o.value=e['Employee ID'];o.textContent=e['Name'];sel.appendChild(o);});
   if(cur&&team.some(function(e){return e['Employee ID']===cur;}))sel.value=cur;
 }
 function renderMyTeamPage(){populateTeamEmpSelect();renderMyTeamData();}
 function renderMyTeamData(){
   var sel=document.getElementById('team_emp');
-  var uid=sel?sel.value:'';
+  var uid=sel?sel.value:'';if(uid==='__ALL__')uid=teamMembersOf(currentUser.userId).map(function(e){return e['Employee ID'];});
   if(!uid){
     document.getElementById('teamStats').innerHTML='<div class="no-data">Select a team member above</div>';
     document.getElementById('teamBrokTable').innerHTML='';document.getElementById('teamAccTable').innerHTML='';document.getElementById('teamHoldStats').innerHTML='';document.getElementById('teamHoldTable').innerHTML='';document.getElementById('teamSIPTable').innerHTML='';
@@ -2331,9 +2331,9 @@ function renderMyTeamData(){
     bh+='</tbody></table>';
   } else bh='<div class="no-data">No client brokerage yet</div>';
   document.getElementById('teamBrokTable').innerHTML=bh;
-  document.getElementById('teamAccTable').innerHTML=mkAccTable(accDisplay,{});   var teamHold=fEmpStrict(allData.ClientHolding||[],uid);   var teamHoldAgg=holdingClientAgg(teamHold);   var teamHoldValue=teamHoldAgg.reduce(function(s,c){return s+c.totalValue;},0);   var teamHoldLedger=teamHoldAgg.reduce(function(s,c){return s+c.ledger;},0);   document.getElementById('teamHoldStats').innerHTML=mkStats([     {label:'Clients with Holding',value:teamHoldAgg.length,sub:'uploaded data',color:'blue'},     {label:'Total Holding Value',value:fmt(teamHoldValue),sub:'combined',color:'green'},     {label:'Total Ledger Balance',value:fmt(teamHoldLedger),sub:(teamHoldLedger>=0?'net credit':'net debit'),color:teamHoldLedger>=0?'green':'red'}   ]);   document.getElementById('teamHoldTable').innerHTML=mkHoldingTable(teamHoldAgg,false);
-  document.getElementById('teamSIPTable').innerHTML=mkTable(sip,[{k:'Date',l:'Date'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Client ID'},{k:'Client Phone',l:'Phone'},{k:'Type',l:'Type'},{k:'Amount',l:'Amount',money:true},{k:'SIP Due Date',l:'Due Date'}],'SIP');
-  document.getElementById('teamInsTable').innerHTML=mkTable(ins,[{k:'Date',l:'Date'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Policy ID'},{k:'Client Phone',l:'Phone'},{k:'Type',l:'Type'},{k:'Premium',l:'Premium',money:true}],'Insurance');
+  document.getElementById('teamAccTable').innerHTML=mkAccTable(accDisplay,{});   var teamHold=fEmpStrict(allData.ClientHolding||[],uid);   var teamHoldAgg=holdingClientAgg(teamHold);   var teamHoldValue=teamHoldAgg.reduce(function(s,c){return s+c.totalValue;},0);   var teamHoldLedger=teamHoldAgg.reduce(function(s,c){return s+c.ledger;},0);   document.getElementById('teamHoldStats').innerHTML=mkStats([     {label:'Clients with Holding',value:teamHoldAgg.length,sub:'uploaded data',color:'blue'},     {label:'Total Holding Value',value:fmt(teamHoldValue),sub:'combined',color:'green'},     {label:'Total Ledger Balance',value:fmt(teamHoldLedger),sub:(teamHoldLedger>=0?'net credit':'net debit'),color:teamHoldLedger>=0?'green':'red'}   ]);   document.getElementById('teamHoldTable').innerHTML=mkHoldingTable(teamHoldAgg,true);
+  document.getElementById('teamSIPTable').innerHTML=mkTable(sip,[{k:'Date',l:'Date'},{k:'Employee Name',l:'Employee'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Client ID'},{k:'Client Phone',l:'Phone'},{k:'Type',l:'Type'},{k:'Amount',l:'Amount',money:true},{k:'SIP Due Date',l:'Due Date'}],'SIP');
+  document.getElementById('teamInsTable').innerHTML=mkTable(ins,[{k:'Date',l:'Date'},{k:'Employee Name',l:'Employee'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Policy ID'},{k:'Client Phone',l:'Phone'},{k:'Type',l:'Type'},{k:'Premium',l:'Premium',money:true}],'Insurance');
   document.getElementById('teamStudTable').innerHTML=mkStudentTable(stud,true);
 
   var cclAll=fEmpStrict(allData.CallClients||[],uid);
@@ -2368,10 +2368,10 @@ function renderMyTeamData(){
   document.getElementById('teamCCLTable').innerHTML=mkCallClientTable(cclAll);
   document.getElementById('teamCTTable').innerHTML=mkCallTradeTable(ctAll.slice().sort(function(a,b){return (a['Date']||'').localeCompare(b['Date']||'');}).slice(-100));
 
-  var uidEmp=employees.find(function(e){return e['Employee ID']===uid;});
+  var uidEmp=Array.isArray(uid)?null:employees.find(function(e){return e['Employee ID']===uid;});var uidNames=Array.isArray(uid)?employees.filter(function(e){return uid.indexOf(e['Employee ID'])!==-1;}).map(function(e){return e['Name'];}):[];
   var uidName=uidEmp?uidEmp['Name']:'';
-  var teamInc=(allData.Income||[]).filter(function(r){return (r['Entered By']||'')===uidName;});
-  var teamExp=(allData.Expense||[]).filter(function(r){return (r['Entered By']||'')===uidName;});
+  var teamInc=(allData.Income||[]).filter(function(r){return Array.isArray(uid)?uidNames.indexOf(r['Entered By']||'')!==-1:(r['Entered By']||'')===uidName;});
+  var teamExp=(allData.Expense||[]).filter(function(r){return Array.isArray(uid)?uidNames.indexOf(r['Entered By']||'')!==-1:(r['Entered By']||'')===uidName;});
   var tInc2=teamInc.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
   var tExp2=teamExp.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
   document.getElementById('teamFinStats').innerHTML=mkStats([
@@ -7721,7 +7721,7 @@ function mkCallClientTable(rows){
   var isAdm=currentUser&&currentUser.role==='admin';
   var team=currentUser?teamMembersOf(currentUser.userId):[];
   var canManage=isAdm||team.length>0;
-  var h='<table><thead><tr><th>Client ID</th><th>Client Name</th><th>Phone</th><th>Type</th>'+(isAdm?'<th>Employee</th>':'')+'<th>Today Status</th><th>Manage</th></tr></thead><tbody>';
+  var h='<table><thead><tr><th>Client ID</th><th>Client Name</th><th>Phone</th><th>Type</th>'+(canManage?'<th>Employee</th>':'')+'<th>Today Status</th><th>Manage</th></tr></thead><tbody>';
   rows.forEach(function(r){
     var cid=(r['Client ID']||'').trim();
     var status=r['Status']||'Active';
@@ -7731,8 +7731,7 @@ function mkCallClientTable(rows){
     h+='<td style="font-weight:600;">'+(r['Client ID']||'-')+'</td>';
     h+='<td>'+(r['Client Name']||'-')+(r['Remarks']?'<br><span style="font-size:10px;color:var(--muted,#8a94a6);">'+r['Remarks']+'</span>':'')+'</td>';
     h+='<td>'+(r['Client Phone']||'-')+'</td>';
-    h+='<td>'+(r['Trading Type']||'-')+'</td>';
-    if(isAdm)h+='<td>'+(r['Employee Name']||'-')+'</td>';
+    h+='<td>'+(r['Trading Type']||'-')+'</td>';if(canManage)h+='<td>'+(r['Employee Name']||'-')+'</td>';
     if(onBreak){
       h+='<td><span class="badge amber">&#9208; On Break</span></td>';
     } else {
@@ -8084,12 +8083,11 @@ function showCallDay(ds){
 function mkCallTradeTable(rows){
   if(!rows||!rows.length)return '<div class="no-data">No entries found</div>';
   var isAdm=currentUser&&currentUser.role==='admin';
-  var h='<table><thead><tr><th>Date</th>'+(isAdm?'<th>Employee</th>':'')+'<th>Client ID</th><th>Client Name</th><th>Phone</th><th>Trading Type</th><th>Status</th><th>Traded In</th><th>Remarks</th><th>Actions</th></tr></thead><tbody>';
+  var h='<table><thead><tr><th>Date</th>'+((isAdm||teamMembersOf(currentUser.userId).length>0)?'<th>Employee</th>':'')+'<th>Client ID</th><th>Client Name</th><th>Phone</th><th>Trading Type</th><th>Status</th><th>Traded In</th><th>Remarks</th><th>Actions</th></tr></thead><tbody>';
   rows.slice().reverse().forEach(function(r){
     h+='<tr>';
     h+='<td>'+(r['Date']||'-')+'</td>';
-    if(isAdm)h+='<td>'+(r['Employee Name']||'-')+'</td>';
-    h+='<td style="font-weight:600;">'+(r['Client ID']||'-')+'</td>';
+    if(isAdm||teamMembersOf(currentUser.userId).length>0)h+='<td>'+(r['Employee Name']||'-')+'</td>';    h+='<td style="font-weight:600;">'+(r['Client ID']||'-')+'</td>';
     h+='<td>'+(r['Client Name']||'-')+'</td>';
     h+='<td>'+(r['Client Phone']||'-')+'</td>';
     h+='<td>'+(r['Trading Type']||'-')+'</td>';
