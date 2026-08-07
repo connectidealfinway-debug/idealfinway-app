@@ -332,6 +332,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       <div class="nav-item" onclick="showPage('watchlist')">&#11088; Watchlist</div>
       <div class="nav-item" onclick="showPage('reminders')">&#128276; Reminders</div>
       <div class="nav-item" onclick="showPage('clientHolding')">&#128188; Client Holding</div>
+      <div class="nav-item" onclick="showPage('settlement')">&#128184; Settlement</div>
       <div class="nav-item" onclick="showPage('adminEmps')">&#128101; Employee Performance</div>
       <div class="nav-item" onclick="showPage('contest')">&#127942; Contests</div>
       <div class="nav-item" onclick="showPage('finDash')">&#128176; Finance Dashboard</div>
@@ -386,6 +387,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       <div class="nav-item" onclick="showPage('watchlist')">&#11088; Watchlist</div>
       <div class="nav-item" onclick="showPage('reminders')">&#128276; Reminders</div>
       <div class="nav-item" onclick="showPage('clientHolding')">&#128188; Client Holding</div>
+      <div class="nav-item" onclick="showPage('settlement')">&#128184; Settlement</div>
       <div class="nav-item" onclick="showPage('contest')">&#127942; Contests</div>
       <div class="nav-item" id="navMyTeam" style="display:none" onclick="showPage('myTeam')">&#128101; My Team</div>
       <div class="nav-item" id="navIPO" style="display:none" onclick="showPage('ipo')">&#128200; IPO</div>
@@ -949,6 +951,41 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
         </select>
       </div>
       <div class="table-wrap"><div class="table-inner" id="hldTable"></div></div>
+    </div>
+
+    <!-- SETTLEMENT -->
+    <div class="page" id="page-settlement">
+      <div class="page-header"><h1>Settlement</h1><p>Monthly &amp; Quarterly client fund payout list &#8212; alerts start the 1st Wednesday before the 1st Friday payout</p></div>
+      <div id="stlAdminUpload" style="display:none;max-width:760px;margin-bottom:18px;">
+        <div class="form-group" style="max-width:260px;">
+          <label>Payout Type for this upload</label>
+          <select id="stlUploadType">
+            <option value="Monthly">Monthly Settlement</option>
+            <option value="Quarterly">Quarterly Settlement</option>
+          </select>
+        </div>
+        <label class="upload-box" for="stlFiles">
+          <div class="upload-icon">&#128184;</div>
+          <div style="font-weight:700;font-size:15px;">Choose 1 or more settlement sheets (CSV)</div>
+          <div style="color:var(--muted);font-size:12px;margin-top:4px;">Select the type above first &#8212; you can select multiple CSV files at once (5-10 or more, all same type). This replaces the previous list of that type and auto-deletes after 7 days.</div>
+          <input type="file" id="stlFiles" accept=".csv" multiple onchange="handleSettlementFiles(this)">
+        </label>
+        <div id="settlementPreview"></div>
+      </div>
+      <div id="stlTeamBar" style="display:none;max-width:320px;margin-bottom:14px;">
+        <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">Team View</label>
+        <select id="stl_teamEmp" onchange="renderSettlementPage()"></select>
+      </div>
+      <div class="filter-bar">
+        <button class="filter-btn active" data-type="Monthly" onclick="setSettlementType('Monthly',this)">Monthly</button>
+        <button class="filter-btn" data-type="Quarterly" onclick="setSettlementType('Quarterly',this)">Quarterly</button>
+      </div>
+      <div class="stats-grid" id="stlStats"></div>
+      <div class="filter-bar">
+        <input class="srch" id="stl_search" placeholder="&#128269; Search Client ID / Name..." oninput="renderSettlementPage()">
+        <select id="stl_empFilter" style="display:none;max-width:200px;" onchange="renderSettlementPage()"><option value="">All Employees</option></select>
+      </div>
+      <div class="table-wrap"><div class="table-inner" id="stlTable"></div></div>
     </div>
 
     <!-- REMINDERS -->
@@ -1861,7 +1898,16 @@ function computeReminders(){
   var starredWatch=wlRows.filter(function(r){return r['Starred']==='Yes'&&(r['Status']||'Active')==='Active';});
   var holdRows=isAdm?(allData.ClientHolding||[]):fEmpStrict(allData.ClientHolding||[],currentUser.userId);
   var holdingAlerts=holdRows.filter(function(r){var c=parseFloat(r['Change %']);return !isNaN(c)&&Math.abs(c)>=5;});
-  return {sipTomorrow:sipTomorrow,meetToday:meetToday,pendStud:pendStud,tomorrow:tomorrow,tradeAlerts:tradeAlerts,dueReminders:dueReminders,starredWatch:starredWatch,holdingAlerts:holdingAlerts};
+  var stlRows=isAdm?(allData.Settlement||[]):fEmpStrict(allData.Settlement||[],currentUser.userId);
+  function stlFirstFriday(y,m){var d=new Date(y,m,1);while(d.getDay()!==5)d.setDate(d.getDate()+1);return d;}
+  var stlNow=new Date();stlNow.setHours(0,0,0,0);
+  var stlMonFri=stlFirstFriday(stlNow.getFullYear(),stlNow.getMonth());
+  var stlQFri=stlFirstFriday(stlNow.getFullYear(),Math.floor(stlNow.getMonth()/3)*3);
+  function stlInWindow(fri){var w=new Date(fri);w.setDate(w.getDate()-2);w.setHours(0,0,0,0);var f=new Date(fri);f.setHours(0,0,0,0);return stlNow>=w&&stlNow<=f;}
+  var settlementAlerts=[];
+  if(stlInWindow(stlMonFri))settlementAlerts=settlementAlerts.concat(stlRows.filter(function(r){return (r['Type']||'')==='Monthly';}));
+  if(stlInWindow(stlQFri))settlementAlerts=settlementAlerts.concat(stlRows.filter(function(r){return (r['Type']||'')==='Quarterly';}));
+  return {sipTomorrow:sipTomorrow,meetToday:meetToday,pendStud:pendStud,tomorrow:tomorrow,tradeAlerts:tradeAlerts,dueReminders:dueReminders,starredWatch:starredWatch,holdingAlerts:holdingAlerts,settlementAlerts:settlementAlerts};
 }
 function buildReminderHTML(r){
   var isAdm=currentUser&&currentUser.role==='admin';
@@ -1917,6 +1963,15 @@ function buildReminderHTML(r){
         +'</div>';
     }).join('')+'</div>';
   }
+  if(r.settlementAlerts && r.settlementAlerts.length){
+    h+='<div style="font-weight:700;color:#f59e0b;margin:4px 0 8px;">&#128184; Settlement Payout Alert &#8212; get client to buy &amp; hold funds:</div>';
+    h+='<div style="max-height:170px;overflow:auto;margin-bottom:14px;">'+r.settlementAlerts.map(function(sd){
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 4px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:13px;">'
+        +'<span>'+(sd['Client Name']||'-')+' &#183; '+(sd['Type']||'')+(isAdm?' <span style="color:var(--muted,#8a94a6);font-size:11px;">('+(sd['Employee Name']||'')+')</span>':'')+'</span>'
+        +'<span style="font-weight:700;color:#f59e0b;">'+fmt(sd['Amount']||0)+'</span>'
+        +'</div>';
+    }).join('')+'</div>';
+  }
   if(r.dueReminders&&r.dueReminders.length){
     h+='<div style="font-weight:700;color:var(--danger,#ef4444);margin:4px 0 8px;">&#128276; Reminder Due:</div>';
     h+='<div style="max-height:220px;overflow:auto;margin-bottom:14px;">'+r.dueReminders.map(function(rr){
@@ -1935,7 +1990,7 @@ function buildReminderHTML(r){
         +'</div>';
     }).join('')+'</div>';
   }
-  if(!r.meetToday.length&&!r.sipTomorrow.length&&!r.pendStud.length&&!(r.tradeAlerts&&r.tradeAlerts.length)&&!(r.dueReminders&&r.dueReminders.length)&&!(r.starredWatch&&r.starredWatch.length)&&!(r.holdingAlerts&&r.holdingAlerts.length)){
+  if(!r.meetToday.length&&!r.sipTomorrow.length&&!r.pendStud.length&&!(r.tradeAlerts&&r.tradeAlerts.length)&&!(r.dueReminders&&r.dueReminders.length)&&!(r.starredWatch&&r.starredWatch.length)&&!(r.holdingAlerts&&r.holdingAlerts.length)&&!(r.settlementAlerts&&r.settlementAlerts.length)){
     h+='<div style="color:var(--muted,#8a94a6);padding:14px 0;">No pending reminders. All clear! &#9989;</div>';
   }
   h+='<div class="modal-actions"><button class="btn-save" onclick="closeModal()">Got it</button></div>';
@@ -1945,7 +2000,7 @@ function buildReminderHTML(r){
 function renderNotifBell(){
   var el=document.getElementById('notifBell');if(!el||!currentUser)return;
   var r=computeReminders();
-  var n=r.sipTomorrow.length+r.meetToday.length+r.pendStud.length+(r.tradeAlerts?r.tradeAlerts.length:0)+(r.dueReminders?r.dueReminders.length:0)+(r.starredWatch?r.starredWatch.length:0)+(r.holdingAlerts?r.holdingAlerts.length:0);
+  var n=r.sipTomorrow.length+r.meetToday.length+r.pendStud.length+(r.tradeAlerts?r.tradeAlerts.length:0)+(r.dueReminders?r.dueReminders.length:0)+(r.starredWatch?r.starredWatch.length:0)+(r.holdingAlerts?r.holdingAlerts.length:0)+(r.settlementAlerts?r.settlementAlerts.length:0);
   el.style.display='flex';
   el.classList.toggle('has-alert',n>0);
   var badge=document.getElementById('notifCount');
@@ -1963,7 +2018,7 @@ function checkDueTomorrowPopup(){
   if(localStorage.getItem(key))return;
   localStorage.setItem(key,'1');
   var r=computeReminders();
-  if(!r.sipTomorrow.length&&!r.meetToday.length&&!r.pendStud.length&&!(r.tradeAlerts&&r.tradeAlerts.length)&&!(r.dueReminders&&r.dueReminders.length)&&!(r.starredWatch&&r.starredWatch.length)&&!(r.holdingAlerts&&r.holdingAlerts.length))return;
+  if(!r.sipTomorrow.length&&!r.meetToday.length&&!r.pendStud.length&&!(r.tradeAlerts&&r.tradeAlerts.length)&&!(r.dueReminders&&r.dueReminders.length)&&!(r.starredWatch&&r.starredWatch.length)&&!(r.holdingAlerts&&r.holdingAlerts.length)&&!(r.settlementAlerts&&r.settlementAlerts.length))return;
   playAlertSound();
   document.getElementById('modalBox').innerHTML=buildReminderHTML(r);
   document.getElementById('modal').className='show';
@@ -2140,9 +2195,10 @@ function loadAll(attempt){
         Resignations:r.resignations||r.Resignations||[],
         EmployeeDataMoves:r.employeeDataMoves||r.EmployeeDataMoves||[],
         IPO_Master:r.ipoMaster||r.IPO_Master||[],
-        IPO_Applications:r.ipoApplications||r.IPO_Applications||[]
+        IPO_Applications:r.ipoApplications||r.IPO_Applications||[],
+        Settlement:r.settlement||r.Settlement||[]
       };
-      saveCache();checkSIPAlerts();autoPunchIn();renderPage(curPage());loadEmps();setTimeout(checkDueTomorrowPopup,600);setTimeout(check315Reminder,900);renderAnnounceBanner();
+      saveCache();checkSIPAlerts();autoPunchIn();renderPage(curPage());loadEmps();setTimeout(checkDueTomorrowPopup,600);setTimeout(check315Reminder,900);renderAnnounceBanner();if(!window._stlCleanupDone){window._stlCleanupDone=true;getJSON('cleanupOldSettlement').catch(function(){});}
     }else if(attempt<3){
       setTimeout(function(){loadAll(attempt+1);},4000);
     }else{
@@ -2438,6 +2494,7 @@ function renderPage(id){
   else if(id==='callTrade')renderCallTradePage();
   else if(id==='watchlist')renderWatchlistPage();
   else if(id==='clientHolding')renderClientHoldingPage();
+  else if(id==='settlement')renderSettlementPage();
   else if(id==='reminders')renderRemindersPage();
   else if(id==='uploadChoice')initChoiceUpload();
   else if(id==='adminCBrok')renderCBrok();
@@ -6224,6 +6281,224 @@ function openAccHoldingModal(rowNum){
 }
 
 function openHoldingModalByCid(cid){   var stocks=(allData.ClientHolding||[]).filter(function(r){return (r['Client ID']||'').trim()===cid;});   var cname=stocks.length?(stocks[0]['Client Name']||cid):cid;   var html='<div class="modal-title">&#128188; Holding &#8212; '+cname+'</div>';   html+='<p style="color:var(--muted,#8a94a6);font-size:12px;margin:-8px 0 14px;">'+cid+'</p>';   if(!stocks.length){     html+='<div class="no-data">No holding data uploaded for this client yet.</div>';   } else {     var ledger=parseFloat(stocks[0]['Ledger Balance'])||0;     var totalValue=stocks.reduce(function(s,r){return s+(parseFloat(r['Value'])||0);},0);     html+='<div style="display:flex;gap:10px;margin-bottom:12px;">';     html+='<div style="flex:1;background:rgba(255,255,255,0.04);border-radius:8px;padding:10px;text-align:center;"><div style="font-size:11px;color:var(--muted,#8a94a6);">Ledger Balance</div><div style="font-weight:700;font-size:16px;color:'+(ledger>=0?'var(--accent,#3fbf7f)':'var(--danger,#ef4444)')+';">'+fmt(ledger)+'</div></div>';     html+='<div style="flex:1;background:rgba(255,255,255,0.04);border-radius:8px;padding:10px;text-align:center;"><div style="font-size:11px;color:var(--muted,#8a94a6);">Holding Value</div><div style="font-weight:700;font-size:16px;">'+fmt(totalValue)+'</div></div>';     html+='</div>';     html+='<div style="max-height:260px;overflow:auto;"><table style="width:100%;font-size:12px;"><thead><tr><th>Stock</th><th>Qty</th><th>Price</th><th>Value</th></tr></thead><tbody>';     stocks.slice().sort(function(a,b){return (parseFloat(b['Value'])||0)-(parseFloat(a['Value'])||0);}).forEach(function(s){       html+='<tr><td>'+(s['Scrip Name']||'-')+'</td><td>'+(s['Qty']||0)+'</td><td>'+fmt(s['Price']||0)+'</td><td class="money">'+fmt(s['Value']||0)+'</td></tr>';     });     html+='</tbody></table></div>';     html+='<div style="font-size:11px;color:var(--muted,#8a94a6);margin-top:10px;">Holding as of '+(stocks[0]['Upload Date']||'-')+'</div>';   }   html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Close</button></div>';   document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show'; }  /* ===== v22: ADMIN CLIENT BROKERAGE ===== */
+/* ===== v63: Settlement (Monthly/Quarterly Payout Alert) ===== */
+var settlementParsed=[];
+var settlementActiveType='Monthly';
+function initSettlementUpload(){
+  settlementParsed=[];
+  var fi=document.getElementById('stlFiles');if(fi)fi.value='';
+  var prev=document.getElementById('settlementPreview');if(prev)prev.innerHTML='';
+}
+function stlSplitCSVLine(line){
+  var out=[],cur='',inQ=false;
+  for(var i=0;i<line.length;i++){
+    var ch=line[i];
+    if(inQ){
+      if(ch==='"'){if(line[i+1]==='"'){cur+='"';i++;}else inQ=false;}
+      else cur+=ch;
+    }else{
+      if(ch==='"')inQ=true;
+      else if(ch===','){out.push(cur);cur='';}
+      else cur+=ch;
+    }
+  }
+  out.push(cur);
+  return out.map(function(s){return s.trim();});
+}
+function parseSettlementCSVText(text){
+  var lines=text.split(/\r\n|\n|\r/).filter(function(l){return l.trim()!=='';});
+  if(!lines.length)return [];
+  var header=stlSplitCSVLine(lines[0]).map(function(h){return h.toLowerCase().replace(/[^a-z0-9]/g,'');});
+  function findCol(cands){
+    for(var i=0;i<header.length;i++){for(var j=0;j<cands.length;j++){if(header[i]===cands[j])return i;}}
+    return -1;
+  }
+  var cidCol=findCol(['clientid']);
+  var cnameCol=findCol(['clientname']);
+  var amtCol=findCol(['amounttobereleased','amount']);
+  if(cidCol===-1||amtCol===-1)return [];
+  var rows=[];
+  for(var r=1;r<lines.length;r++){
+    var cols=stlSplitCSVLine(lines[r]);
+    var cid=(cols[cidCol]||'').trim();
+    if(!cid)continue;
+    var cname=cnameCol!==-1?(cols[cnameCol]||'').trim():'';
+    var amtRaw=(cols[amtCol]||'').replace(/,/g,'').trim();
+    var amt=parseFloat(amtRaw)||0;
+    rows.push({cid:cid,cname:cname,amount:amt});
+  }
+  return rows;
+}
+function handleSettlementFiles(input){
+  var files=input.files;if(!files||!files.length)return;
+  var prev=document.getElementById('settlementPreview');
+  prev.innerHTML='<div class="prev-ok">Reading '+files.length+' file(s)...</div>';
+  var fileArr=Array.prototype.slice.call(files);
+  var readers=fileArr.map(function(file){
+    return new Promise(function(resolve){
+      var fr=new FileReader();
+      fr.onload=function(ev){
+        var text='';
+        try{text=new TextDecoder('utf-8').decode(new Uint8Array(ev.target.result));}catch(e){text='';}
+        resolve(parseSettlementCSVText(text));
+      };
+      fr.onerror=function(){resolve([]);};
+      fr.readAsArrayBuffer(file);
+    });
+  });
+  Promise.all(readers).then(function(allRows){
+    var merged=[];
+    allRows.forEach(function(rs){merged=merged.concat(rs);});
+    if(!merged.length){prev.innerHTML='<div class="prev-err">No Client ID / Amount data found in the selected file(s). Make sure the CSV has Client ID and Amount to be released columns.</div>';return;}
+    settlementParsed=merged;
+    buildSettlementPreview();
+  });
+}
+function buildSettlementPreview(){
+  var rows=settlementParsed,prev=document.getElementById('settlementPreview');
+  var typeSel=document.getElementById('stlUploadType');
+  var type=typeSel?typeSel.value:'Monthly';
+  var accMap={};
+  (allData.Accounts||[]).forEach(function(a){
+    var cid=(a['Client ID']||'').trim().toUpperCase();
+    if(cid&&!accMap[cid])accMap[cid]={id:(a['Employee ID']||'').trim(),name:a['Employee Name']||'',branch:a['Branch']||''};
+  });
+  var byCid={};
+  rows.forEach(function(r){
+    var key=r.cid.toUpperCase();
+    if(!byCid[key])byCid[key]={cid:r.cid,cname:r.cname,amount:0};
+    byCid[key].amount+=r.amount;
+    if(!byCid[key].cname&&r.cname)byCid[key].cname=r.cname;
+  });
+  var merged=Object.keys(byCid).map(function(k){return byCid[k];});
+  var totalAmt=0,matched=0,unmatched=[];
+  merged.forEach(function(c){
+    var hit=accMap[c.cid.toUpperCase()];
+    c.emp=(hit&&hit.id)?hit:{id:OFFICE_ID,name:'Office client',branch:'Hisar'};
+    if(hit&&hit.id)matched++;else unmatched.push(c.cid);
+    totalAmt+=c.amount;
+  });
+  settlementParsed=merged;
+  var h='';
+  h+='<div class="stats-grid" style="margin-top:16px;">'+mkStats([
+    {label:'Type',value:type,sub:'payout type selected',color:'blue'},
+    {label:'Clients in File(s)',value:merged.length,sub:'unique clients',color:'blue'},
+    {label:'Total Payout Amount',value:fmt(totalAmt),sub:'going to bank',color:'amber'},
+    {label:'Matched',value:matched,sub:'matched to employees',color:'purple'},
+    {label:'Unmatched',value:unmatched.length,sub:'will go to IDEAL.OFFICE',color:unmatched.length?'amber':'green'}
+  ])+'</div>';
+  if(unmatched.length){
+    h+='<div class="prev-warn"><b>Unmatched clients ('+unmatched.length+'):</b> '+unmatched.slice(0,30).join(', ')+(unmatched.length>30?'...':'')+'<br><span style="font-size:12px;">These were not found in any employee\'s Accounts - added under IDEAL.OFFICE (Office client).</span></div>';
+  }
+  h+='<div class="prev-warn"><b>&#9888; This upload REPLACES all previous '+type+' settlement data</b> - old '+type+' payout list will be cleared before this one is saved. This data auto-deletes after 7 days.</div>';
+  h+='<div style="display:flex;gap:10px;margin-top:6px;"><button class="btn-submit" onclick="confirmSettlementUpload()">&#10003; Confirm &amp; Upload '+type+'</button><button class="btn-cancel" onclick="initSettlementUpload()">Cancel</button></div>';
+  prev.innerHTML=h;
+}
+function confirmSettlementUpload(){
+  var clients=settlementParsed;if(!clients||!clients.length)return;
+  var typeSel=document.getElementById('stlUploadType');
+  var type=typeSel?typeSel.value:'Monthly';
+  var prev=document.getElementById('settlementPreview');
+  var uploadDate=td();
+  var rows=clients.map(function(c){
+    return {'Upload Date':uploadDate,'Type':type,'Client ID':c.cid,'Client Name':c.cname||c.cid,
+      'Employee ID':c.emp.id,'Employee Name':c.emp.name,'Branch':c.emp.branch,'Amount':c.amount};
+  });
+  prev.innerHTML='<div class="prev-ok">Clearing old '+type+' data...</div>';
+  postData({action:'deleteSettlementByType',type:type}).then(function(dr){
+    if(!dr||!dr.success)throw new Error('Old data could not be cleared: '+(dr&&dr.error||''));
+    var chunks=[];for(var i=0;i<rows.length;i+=150)chunks.push(rows.slice(i,i+150));
+    var seq=Promise.resolve();var done=0;
+    chunks.forEach(function(ch){
+      seq=seq.then(function(){return postData({action:'addSettlementBatch',rows:ch}).then(function(r){
+        if(!r||!r.success)throw new Error((r&&r.error)||'upload failed');
+        done+=ch.length;
+        prev.innerHTML='<div class="prev-ok">Uploading... '+done+' / '+rows.length+' done</div>';
+      });});
+    });
+    return seq;
+  }).then(function(){
+    var others=(allData.Settlement||[]).filter(function(r){return r['Type']!==type;});
+    allData.Settlement=others.concat(rows.map(function(r,i){return Object.assign({},r,{_rowNum:i+2});}));
+    showToast('Settlement upload complete! '+rows.length+' clients ('+type+')','success');
+    prev.innerHTML='<div class="prev-ok"><b>&#10003; Upload complete!</b> '+rows.length+' '+type+' payout entries saved ('+uploadDate+').</div>';
+    settlementParsed=[];var fi=document.getElementById('stlFiles');if(fi)fi.value='';
+    renderSettlementPage();
+    renderNotifBell();
+  }).catch(function(e){
+    prev.innerHTML='<div class="prev-err">Upload error: '+e.message+' - please try again.</div>';
+  });
+}
+function settlementScopedRows(type){
+  var rows=(allData.Settlement||[]).filter(function(r){return (r['Type']||'')===type;});
+  var isAdm=currentUser.role==='admin';
+  if(isAdm)return rows;
+  var team=teamMembersOf(currentUser.userId);
+  if(team.length){
+    var sel=document.getElementById('stl_teamEmp');
+    var uid=sel?sel.value:'__ALL__';
+    if(!uid||uid==='__ALL__')uid=team.map(function(e){return e['Employee ID'];}).concat([currentUser.userId]);
+    else uid=[uid];
+    return fEmpStrict(rows,uid);
+  }
+  return fEmpStrict(rows,currentUser.userId);
+}
+function setSettlementType(t,btn){
+  settlementActiveType=t;
+  if(btn){btn.parentElement.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');}
+  renderSettlementPage();
+}
+function populateSettlementEmpSelect(){
+  var sel=document.getElementById('stl_teamEmp');if(!sel)return;
+  var team=teamMembersOf(currentUser.userId);
+  var cur=sel.value;
+  sel.innerHTML='<option value="__ALL__">👥 All Team Members (Combined)</option><option value="'+currentUser.userId+'">Myself only</option>';
+  team.forEach(function(e){var o=document.createElement('option');o.value=e['Employee ID'];o.textContent=e['Name'];sel.appendChild(o);});
+  if(cur&&(cur==='__ALL__'||cur===currentUser.userId||team.some(function(e){return e['Employee ID']===cur;})))sel.value=cur;
+}
+function renderSettlementPage(){
+  if(!currentUser)return;
+  var isAdm=currentUser.role==='admin';
+  var team=teamMembersOf(currentUser.userId);
+  var upBox=document.getElementById('stlAdminUpload');
+  if(upBox)upBox.style.display=isAdm?'block':'none';
+  var teamBar=document.getElementById('stlTeamBar');
+  if(teamBar){
+    if(!isAdm&&team.length>0){teamBar.style.display='block';populateSettlementEmpSelect();}
+    else teamBar.style.display='none';
+  }
+  var esel=document.getElementById('stl_empFilter');
+  if(esel){
+    esel.style.display=isAdm?'inline-block':'none';
+    if(isAdm&&!esel.dataset.filled){
+      esel.innerHTML='<option value="">All Employees</option>';
+      employees.forEach(function(e){var o=document.createElement('option');o.value=e['Employee ID'];o.textContent=e['Name'];esel.appendChild(o);});
+      esel.dataset.filled='1';
+    }
+  }
+  var rows=settlementScopedRows(settlementActiveType);
+  if(isAdm){
+    var euid=esel?esel.value:'';
+    if(euid)rows=fEmpStrict(rows,euid);
+  }
+  var q=(document.getElementById('stl_search')&&document.getElementById('stl_search').value||'').trim().toUpperCase();
+  if(q)rows=rows.filter(function(r){return (r['Client ID']||'').toUpperCase().indexOf(q)!==-1||(r['Client Name']||'').toUpperCase().indexOf(q)!==-1;});
+  var totalAmt=rows.reduce(function(s,r){return s+(parseFloat(r['Amount'])||0);},0);
+  var uploadDate=rows.length?rows[0]['Upload Date']:'-';
+  var statsEl=document.getElementById('stlStats');
+  if(statsEl)statsEl.innerHTML=mkStats([
+    {label:settlementActiveType+' Clients',value:rows.length,sub:'payout list',color:'blue'},
+    {label:'Total Payout',value:fmt(totalAmt),sub:'going to bank',color:'amber'},
+    {label:'Upload Date',value:uploadDate,sub:'as uploaded',color:'green'}
+  ]);
+  var cols=[{k:'Client ID',l:'Client ID'},{k:'Client Name',l:'Client Name'}];
+  if(isAdm||team.length>0)cols.push({k:'Employee Name',l:'Employee'});
+  cols.push({k:'Branch',l:'Branch'});
+  cols.push({k:'Amount',l:'Amount',money:true});
+  cols.push({k:'Upload Date',l:'Uploaded'});
+  var tbl=document.getElementById('stlTable');
+  if(tbl)tbl.innerHTML=mkTable(rows,cols,null);
+}
 function renderCbrokLookup(){
   var el=document.getElementById('cbrokLookupResult');
   var box=document.getElementById('cbrokLookupBox');
