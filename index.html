@@ -3308,7 +3308,8 @@ function mkAccTable(rows,dupSet,sortMode){
     h+='<td><span class="badge '+(act?'green':'red')+'">'+(act?'Active':'Inactive')+'</span>'+chips+'</td>';
     var nseDone=(r['NSE Trade Done']||'')==='Yes';
     var nseBtn=nseDone?'<button class="badge green" style="border:none;cursor:pointer;" onclick="undoNSETradeDone('+r['_rowNum']+')" title="NSE trade done on '+(r['NSE Trade Date']||'')+' — click to undo if marked by mistake">&#10003; NSE Trade</button>':'<button class="btn-call" style="background:rgba(255,159,10,0.15);color:#ff9f0a;" onclick="markNSETradeDone('+r['_rowNum']+')" title="Click here once the client has completed an NSE trade">&#128200; Trade Done?</button>';
-    h+='<td><button class="btn-call" onclick="openAccCallModal('+r['_rowNum']+')">&#128222;</button> <button class="btn-call" style="background:rgba(139,92,246,0.15);color:#8b5cf6;" onclick="openAccHoldingModal('+r['_rowNum']+')" title="View stock holding">&#128188;</button> <button class="btn-edit" onclick="openAccEditModal('+r['_rowNum']+')">&#9998;</button> <button class="btn-del" onclick="confirmDel(\'Accounts\','+r['_rowNum']+')">&#128465;</button> '+nseBtn+'</td></tr>';
+    var mapBtn=(isDup&&currentUser&&currentUser.role==='admin')?('<button class="btn-call" style="background:rgba(63,191,127,0.15);color:#3fbf7f;" onclick="mapAccountDuplicate(\''+cid+'\','+(r['_rowNum']||0)+')" title="Keep THIS employee for this Client ID - deletes the other duplicate entry(ies)">&#128279; Map</button> '):'';
+    h+='<td>'+mapBtn+'<button class="btn-call" onclick="openAccCallModal('+r['_rowNum']+')">&#128222;</button> <button class="btn-call" style="background:rgba(139,92,246,0.15);color:#8b5cf6;" onclick="openAccHoldingModal('+r['_rowNum']+')" title="View stock holding">&#128188;</button> <button class="btn-edit" onclick="openAccEditModal('+r['_rowNum']+')">&#9998;</button> <button class="btn-del" onclick="confirmDel(\'Accounts\','+r['_rowNum']+')">&#128465;</button> '+nseBtn+'</td></tr>';
   });
   return h+'</tbody></table>';
 }
@@ -3610,6 +3611,30 @@ function findDuplicateAccount(clientName,clientPhone,clientId){
 function dupAccountMsg(d){
   return 'Already added: '+(d['Client Name']||'-')+' (ID: '+(d['Client ID']||'-')+', Phone: '+(d['Client Phone']||'-')+') by '+(d['Employee Name']||'-')+' on '+(d['Date']||'-')+'.';
 }
+/* v64: Client ID duplicate ab BLOCK nahi hota - entry ho jaati hai, lekin jisne dobara add kiya usko turant
+   popup me bata dete hain ki yeh ID kisi aur employee ke paas bhi hai, admin se contact karo. Admin Accounts
+   page pe already maujood "Duplicate IDs" card se dono/sabhi duplicate entries dekh sakta hai aur "Map" button
+   se decide kar sakta hai kisko rakhna hai - baaki duplicate employee ki entry automatic delete ho jaati hai. */
+function showDupAccountAddedPopup(existingRow){
+  var html='<div class="modal-title">&#9888; Added - but Duplicate Client ID</div>';
+  html+='<p style="margin:6px 0 10px;">Added to your list! But Client ID <b>'+(existingRow['Client ID']||'-')+'</b> ('+(existingRow['Client Name']||'-')+') is already added by <b>'+(existingRow['Employee Name']||'-')+'</b> too.</p>';
+  html+='<p style="color:var(--muted,#8a94a6);font-size:13px;">Please contact your admin to resolve this.</p>';
+  html+='<div class="modal-actions"><button class="btn-save" onclick="closeModal()">OK, got it</button></div>';
+  document.getElementById('modalBox').innerHTML=html;
+  document.getElementById('modal').className='show';
+}
+function mapAccountDuplicate(cid,keepRowNum){
+  var others=(allData.Accounts||[]).filter(function(r){return (r['Client ID']||'').trim()===cid&&r['_rowNum']!==keepRowNum;});
+  if(!others.length){showToast('No other duplicate entries found for this Client ID','error');return;}
+  var names=others.map(function(r){return r['Employee Name']||'-';}).join(', ');
+  if(!confirm('Map Client ID '+cid+' to this employee? This will DELETE the other duplicate entry(ies) added by: '+names+'. This cannot be undone.'))return;
+  var calls=others.map(function(r){return postData({action:'deleteRow',sheet:'Accounts',rowNum:r['_rowNum']});});
+  Promise.all(calls).then(function(results){
+    var okAll=results.every(function(r){return r&&r.success;});
+    if(okAll){showToast('Mapped! Duplicate entries removed.','success');loadAll();}
+    else showToast('Some deletions failed - please check and retry','error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
 /* v33.2: Contest page se hi seedha naya Account Opening entry daalo — Accounts sheet shared hai isliye
    yeh entry Accounts list me bhi automatically dikh jayegi (contestBadgeForAccountDate isko tag karega). */
 function mkContestQuickAddAccount(contestId){
@@ -3635,8 +3660,7 @@ function submitContestAccount(contestId,fid){
   var cphone=(document.getElementById('cxa_cphone_'+fid).value||'').trim();
   if(!cphone){showToast('Client mobile number is required - entry cannot be added without it','error');return;}
   var dup=findDuplicateAccount(cn,cphone,cid);
-  if(dup.byId){showToast(dupAccountMsg(dup.byId)+' Same Client ID cannot be added again.','error');return;}
-  if(dup.byName&&!confirm(dupAccountMsg(dup.byName)+' Avoid duplicate entries - add a new entry anyway?'))return;
+  if(!dup.byId&&dup.byName&&!confirm(dupAccountMsg(dup.byName)+' Avoid duplicate entries - add a new entry anyway?'))return;
   var p={action:'addAccount','Date':td(),'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch,
     'Client Name':cn,'Client ID':cid,'Client Phone':cphone,
     'Status':'Active','Trading Active':'No','SIP Active':'No','Investment Active':'No',
@@ -3650,6 +3674,7 @@ function submitContestAccount(contestId,fid){
       if(a)a.value='';if(b)b.value='';if(c)c.value='';
       renderContestPage();
       setTimeout(function(){loadAll(2);},600);
+      if(dup.byId){setTimeout(function(){showDupAccountAddedPopup(dup.byId);},400);}
     } else showToast('Failed: '+(r&&r.error||''),'error');
   }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
@@ -5421,8 +5446,7 @@ function submitAccount(){
   var cphoneChk=document.getElementById('a_cphone').value.trim();
   if(!cphoneChk){showToast('Client mobile number is required - entry cannot be added without it','error');return;}
   var dupChk=findDuplicateAccount(cn,cphoneChk,cid);
-  if(dupChk.byId){showToast(dupAccountMsg(dupChk.byId)+' Same Client ID cannot be added again.','error');return;}
-  if(dupChk.byName&&!confirm(dupAccountMsg(dupChk.byName)+' Avoid duplicate entries - add a new entry anyway?'))return;
+  if(!dupChk.byId&&dupChk.byName&&!confirm(dupAccountMsg(dupChk.byName)+' Avoid duplicate entries - add a new entry anyway?'))return;
   var fe=forEmpObj('a_forEmp');
   var ref=computeRefAndFe('a',fe);
   if(ref.error){showToast(ref.error,'error');return;}
@@ -5434,6 +5458,7 @@ function submitAccount(){
   var statusComputed=(actTrading==='Yes'||actSIP==='Yes'||actInv==='Yes'||actIPO==='Yes')?'Active':'Inactive';
   var p={action:'addAccount','Date':document.getElementById('a_date').value||td(),'Employee ID':fe.id,'Employee Name':fe.name,'Branch':fe.branch,'Client Name':cn,'Client ID':cid,'Client Phone':document.getElementById('a_cphone').value.trim(),'Status':statusComputed,'Trading Active':actTrading,'SIP Active':actSIP,'Investment Active':actInv,'IPO Active':actIPO,'Remarks':document.getElementById('a_remarks').value.trim(),'Account Type':document.getElementById('a_acctype').value,'Source':document.getElementById('a_source').value,'NSE Trade Done':'No','NSE Trade Date':'','Reference':ref.refBy};
   doSubmit(p,'Accounts',document.querySelector('#page-addAcc .btn-submit'),'Add Account',function(){document.getElementById('a_cname').value='';document.getElementById('a_cid').value='';document.getElementById('a_cphone').value='';document.getElementById('a_remarks').value='';document.getElementById('a_actTrading').checked=false;document.getElementById('a_actSIP').checked=false;document.getElementById('a_actInvestment').checked=false;document.getElementById('a_actIPO').checked=false;document.getElementById('a_reftype').value='Direct';document.getElementById('a_refOther').value='';onRefTypeChange('a');});
+  if(dupChk.byId){setTimeout(function(){showDupAccountAddedPopup(dupChk.byId);},400);}
 }
 
 function submitLead(){
