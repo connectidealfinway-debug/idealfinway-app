@@ -627,7 +627,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
         <button class="filter-btn active" onclick="setAccStat('all',this)">All</button>
         <button class="filter-btn" onclick="setAccStat('active',this)">Active</button>
         <button class="filter-btn" onclick="setAccStat('inactive',this)">Inactive</button>
-        <input class="srch" id="srch-acc" placeholder="&#128269; Search client/ID..." oninput="renderAccTable()">
+        <input class="srch" id="srch-acc" placeholder="&#128269; Search client/ID..." oninput="renderAccTable()"><select onchange="setAccSort(this.value)" style="max-width:210px;"><option value="">Sort: Recent Entry</option><option value="cid">Sort: Client ID (FBO1,2,3...)</option><option value="lastcall">Sort: Last Call (recent first)</option></select>
       </div>
       <div class="stats-grid" id="accStats"></div><div id="accStatDiv"></div>
       <div class="table-wrap"><div class="table-inner" id="accTable"></div></div>
@@ -1273,7 +1273,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
         <button class="filter-btn active" onclick="setMyAccStat('all',this)">All</button>
         <button class="filter-btn" onclick="setMyAccStat('active',this)">Active</button>
         <button class="filter-btn" onclick="setMyAccStat('inactive',this)">Inactive</button>
-        <input class="srch" id="srch-myAcc" placeholder="&#128269; Search client/ID..." oninput="renderMyAccTable()">
+        <input class="srch" id="srch-myAcc" placeholder="&#128269; Search client/ID..." oninput="renderMyAccTable()"><select onchange="setMyAccSort(this.value)" style="max-width:210px;"><option value="">Sort: Recent Entry</option><option value="cid">Sort: Client ID (FBO1,2,3...)</option><option value="lastcall">Sort: Last Call (recent first)</option></select>
       </div>
       <div class="stats-grid" id="myAccStats"></div><div id="myAccStatDiv"></div>
       <div class="table-wrap"><div class="table-inner" id="myAccTable"></div></div>
@@ -1616,7 +1616,7 @@ var currentUser=null;
 var allData={Brokerage:[],ClientBrokerage:[],ClientHolding:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[],Meetings:[],Income:[],Expense:[],Hisab:[],TradingJournal:[],CallTrade:[],CallClients:[],Watchlist:[],Reminders:[],Announcements:[],ClientDocuments:[],Resignations:[],EmployeeDataMoves:[],IPO_Master:[],IPO_Applications:[]};
 var employees=[];
 var filters={};
-var accStat='all',myAccStat='all',dashF='today',accDupOnly=false,teamWorkingOnly=false,bizScope='own';
+var accStat='all',myAccStat='all',dashF='today',accDupOnly=false,teamWorkingOnly=false,bizScope='own',accSortBy='',myAccSortBy='';
 var leadCatF='all',myLeadCatF='all';
 var leadConvF='all',myLeadConvF='all',meetConvF='all',myMeetConvF='all';
 var wlStatF='all';
@@ -2090,10 +2090,10 @@ function toggleGrp(id,hd){
 function setF(f,btn,key){filters[key]=f;if(key==='empPerf')empRange=null;btn.parentElement.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');renderPage(curPage());}
 function setDashF(f,btn){dashF=f;btn.parentElement.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');renderAdminDash();}
 function setAccStat(s,btn){accStat=s;btn.parentElement.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');renderAccTable();}
-function toggleAccDup(){accDupOnly=!accDupOnly;renderAccTable();}
+function toggleAccDup(){accDupOnly=!accDupOnly;renderAccTable();}function setAccSort(v){accSortBy=v;renderAccTable();}
 function toggleTeamWorking(){teamWorkingOnly=!teamWorkingOnly;renderMyTeamData();}
 function showAllTeamClients(){teamWorkingOnly=false;renderMyTeamData();}
-function setMyAccStat(s,btn){myAccStat=s;btn.parentElement.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');renderMyAccTable();}
+function setMyAccStat(s,btn){myAccStat=s;btn.parentElement.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');renderMyAccTable();}function setMyAccSort(v){myAccSortBy=v;renderMyAccTable();}
 function setLeadCat(v,btn,varName){if(varName==='leadCatF')leadCatF=v;else myLeadCatF=v;btn.parentElement.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');renderPage(curPage());}
 function curPage(){var p=document.querySelector('.page.active');return p?p.id.replace('page-',''):'';}
 
@@ -3223,13 +3223,13 @@ function renderAccTable(){
     {label:'Inactive',value:rows.length-active,sub:'inactive',color:'amber',onclick:"setAccStat('inactive',event.currentTarget);document.getElementById('accTable').scrollIntoView({behavior:'smooth'});"},
     {label:'Duplicate IDs',value:Object.keys(dupSet).length,sub:(accDupOnly?'showing duplicates only, click to show all':'same client ID, click to view')+' &#128064;',color:'red',onclick:'toggleAccDup()'}
   ]);
-  document.getElementById('accTable').innerHTML=mkAccTable(rows,dupSet);
+  document.getElementById('accTable').innerHTML=mkAccTable(rows,dupSet,accSortBy);
 }
 
-function mkAccTable(rows,dupSet){
+function mkAccTable(rows,dupSet,sortMode){
   if(!rows||!rows.length)return '<div class="no-data">No accounts found</div>';
   var h='<table><thead><tr><th>Date</th><th>Employee</th><th>Client</th><th>Client ID</th><th>Phone</th><th>Last Call</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
-  var ordered=rows.slice().reverse();
+  var ordered=rows.slice().reverse();if(sortMode==='cid'){ordered.sort(function(a,b){var na=parseInt((a['Client ID']||'').replace(/[^0-9]/g,''),10);var nb=parseInt((b['Client ID']||'').replace(/[^0-9]/g,''),10);if(isNaN(na))na=999999999;if(isNaN(nb))nb=999999999;return na-nb;});}else if(sortMode==='lastcall'){ordered.sort(function(a,b){var da=a['Last Call Date']?new Date(a['Last Call Date']):null;var db=b['Last Call Date']?new Date(b['Last Call Date']):null;da=(da&&!isNaN(da))?da:null;db=(db&&!isNaN(db))?db:null;if(!da&&!db)return 0;if(!da)return 1;if(!db)return -1;return db-da;});}
   ordered.sort(function(a,b){
     var da=dupSet&&dupSet[(a['Client ID']||'').trim()]?1:0;
     var db=dupSet&&dupSet[(b['Client ID']||'').trim()]?1:0;
@@ -5038,7 +5038,7 @@ function renderMyAccTable(){
   var q=getSrch('srch-myAcc');rows=srchFilter(rows,q,['Client Name','Client ID']);
   var active=rows.filter(function(r){return (r['Status']||'Active')==='Active';}).length;
   document.getElementById('myAccStats').innerHTML=mkStats([{label:'Total',value:rows.length,sub:'your accounts',color:'green',onclick:"setMyAccStat('all',event.currentTarget)"},{label:'Active',value:active,sub:'active',color:'blue',onclick:"setMyAccStat('active',event.currentTarget)"},{label:'Inactive',value:rows.length-active,sub:'inactive',color:'amber',onclick:"setMyAccStat('inactive',event.currentTarget)"}]);
-  document.getElementById('myAccTable').innerHTML=mkAccTable(rows,{});
+  document.getElementById('myAccTable').innerHTML=mkAccTable(rows,{},myAccSortBy);
 }
 
 function renderMyLeads(){
