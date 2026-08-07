@@ -766,8 +766,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       <h3 style="margin:24px 0 10px;">Brokerage (Client-wise)</h3>
       <div id="teamBrokTable"></div>
       <h3 style="margin:24px 0 10px;">Accounts</h3>
-      <div id="teamAccTable"></div>
-      <h3 style="margin:24px 0 10px;">SIP / Mutual Fund</h3>
+      <div id="teamAccTable"></div>       <h3 style="margin:24px 0 10px;">Client Holding &amp; Ledger</h3>       <div class="stats-grid" id="teamHoldStats"></div>       <div id="teamHoldTable"></div>       <h3 style="margin:24px 0 10px;">SIP / Mutual Fund</h3>
       <div id="teamSIPTable"></div>
       <h3 style="margin:24px 0 10px;">Insurance</h3>
       <div id="teamInsTable"></div>
@@ -2291,7 +2290,7 @@ function renderMyTeamData(){
   var uid=sel?sel.value:'';
   if(!uid){
     document.getElementById('teamStats').innerHTML='<div class="no-data">Select a team member above</div>';
-    document.getElementById('teamBrokTable').innerHTML='';document.getElementById('teamAccTable').innerHTML='';document.getElementById('teamSIPTable').innerHTML='';
+    document.getElementById('teamBrokTable').innerHTML='';document.getElementById('teamAccTable').innerHTML='';document.getElementById('teamHoldStats').innerHTML='';document.getElementById('teamHoldTable').innerHTML='';document.getElementById('teamSIPTable').innerHTML='';
     document.getElementById('teamInsTable').innerHTML='';document.getElementById('teamStudTable').innerHTML='';
     document.getElementById('teamCCLStats').innerHTML='';document.getElementById('teamCCLTypeStats').innerHTML='';
     document.getElementById('teamCCLTable').innerHTML='';document.getElementById('teamCTTable').innerHTML='';
@@ -2332,7 +2331,7 @@ function renderMyTeamData(){
     bh+='</tbody></table>';
   } else bh='<div class="no-data">No client brokerage yet</div>';
   document.getElementById('teamBrokTable').innerHTML=bh;
-  document.getElementById('teamAccTable').innerHTML=mkAccTable(accDisplay,{});
+  document.getElementById('teamAccTable').innerHTML=mkAccTable(accDisplay,{});   var teamHold=fEmpStrict(allData.ClientHolding||[],uid);   var teamHoldAgg=holdingClientAgg(teamHold);   var teamHoldValue=teamHoldAgg.reduce(function(s,c){return s+c.totalValue;},0);   var teamHoldLedger=teamHoldAgg.reduce(function(s,c){return s+c.ledger;},0);   document.getElementById('teamHoldStats').innerHTML=mkStats([     {label:'Clients with Holding',value:teamHoldAgg.length,sub:'uploaded data',color:'blue'},     {label:'Total Holding Value',value:fmt(teamHoldValue),sub:'combined',color:'green'},     {label:'Total Ledger Balance',value:fmt(teamHoldLedger),sub:(teamHoldLedger>=0?'net credit':'net debit'),color:teamHoldLedger>=0?'green':'red'}   ]);   document.getElementById('teamHoldTable').innerHTML=mkHoldingTable(teamHoldAgg,false);
   document.getElementById('teamSIPTable').innerHTML=mkTable(sip,[{k:'Date',l:'Date'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Client ID'},{k:'Client Phone',l:'Phone'},{k:'Type',l:'Type'},{k:'Amount',l:'Amount',money:true},{k:'SIP Due Date',l:'Due Date'}],'SIP');
   document.getElementById('teamInsTable').innerHTML=mkTable(ins,[{k:'Date',l:'Date'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Policy ID'},{k:'Client Phone',l:'Phone'},{k:'Type',l:'Type'},{k:'Premium',l:'Premium',money:true}],'Insurance');
   document.getElementById('teamStudTable').innerHTML=mkStudentTable(stud,true);
@@ -6224,7 +6223,7 @@ function openAccHoldingModal(rowNum){
   document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
 }
 
-/* ===== v22: ADMIN CLIENT BROKERAGE ===== */
+function openHoldingModalByCid(cid){   var stocks=(allData.ClientHolding||[]).filter(function(r){return (r['Client ID']||'').trim()===cid;});   var cname=stocks.length?(stocks[0]['Client Name']||cid):cid;   var html='<div class="modal-title">&#128188; Holding &#8212; '+cname+'</div>';   html+='<p style="color:var(--muted,#8a94a6);font-size:12px;margin:-8px 0 14px;">'+cid+'</p>';   if(!stocks.length){     html+='<div class="no-data">No holding data uploaded for this client yet.</div>';   } else {     var ledger=parseFloat(stocks[0]['Ledger Balance'])||0;     var totalValue=stocks.reduce(function(s,r){return s+(parseFloat(r['Value'])||0);},0);     html+='<div style="display:flex;gap:10px;margin-bottom:12px;">';     html+='<div style="flex:1;background:rgba(255,255,255,0.04);border-radius:8px;padding:10px;text-align:center;"><div style="font-size:11px;color:var(--muted,#8a94a6);">Ledger Balance</div><div style="font-weight:700;font-size:16px;color:'+(ledger>=0?'var(--accent,#3fbf7f)':'var(--danger,#ef4444)')+';">'+fmt(ledger)+'</div></div>';     html+='<div style="flex:1;background:rgba(255,255,255,0.04);border-radius:8px;padding:10px;text-align:center;"><div style="font-size:11px;color:var(--muted,#8a94a6);">Holding Value</div><div style="font-weight:700;font-size:16px;">'+fmt(totalValue)+'</div></div>';     html+='</div>';     html+='<div style="max-height:260px;overflow:auto;"><table style="width:100%;font-size:12px;"><thead><tr><th>Stock</th><th>Qty</th><th>Price</th><th>Value</th></tr></thead><tbody>';     stocks.slice().sort(function(a,b){return (parseFloat(b['Value'])||0)-(parseFloat(a['Value'])||0);}).forEach(function(s){       html+='<tr><td>'+(s['Scrip Name']||'-')+'</td><td>'+(s['Qty']||0)+'</td><td>'+fmt(s['Price']||0)+'</td><td class="money">'+fmt(s['Value']||0)+'</td></tr>';     });     html+='</tbody></table></div>';     html+='<div style="font-size:11px;color:var(--muted,#8a94a6);margin-top:10px;">Holding as of '+(stocks[0]['Upload Date']||'-')+'</div>';   }   html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Close</button></div>';   document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show'; }  /* ===== v22: ADMIN CLIENT BROKERAGE ===== */
 function renderCbrokLookup(){
   var el=document.getElementById('cbrokLookupResult');
   var box=document.getElementById('cbrokLookupBox');
@@ -7710,9 +7709,7 @@ function cclRows(){
   } else {
     if(!cclShowInactive)rows=rows.filter(function(r){return (r['Status']||'Active')==='Active';});
   }
-  return rows;
-}
-function cclTodayStatus(cid){
+  return cclSortFundFirst(rows); } function cclSortFundFirst(rows){   var lm=holdingLedgerMap();   return rows.slice().sort(function(a,b){     var la=(lm[(a['Client ID']||'').trim()]||0)>0?1:0;     var lb=(lm[(b['Client ID']||'').trim()]||0)>0?1:0;     return lb-la;   }); } function cclTodayStatus(cid){
   var todayStr=td();
   var rows=ctRows().filter(function(r){return r['Date']===todayStr&&(r['Client ID']||'').trim()===cid;});
   if(!rows.length)return {label:'Not Called',color:'blue',count:0};
@@ -7742,7 +7739,7 @@ function mkCallClientTable(rows){
       var st=cclTodayStatus(cid);
       h+='<td><span class="badge '+st.color+'">'+st.label+'</span>'+(st.count>1?' <span style="font-size:10px;color:var(--muted);">('+st.count+' entries)</span>':'')+'</td>';
     }
-    h+='<td onclick="event.stopPropagation()">'+(canManage?'<button class="btn-edit" onclick="openCCLManageModal('+r['_rowNum']+')">&#9998;</button>':'&#8212;')+'</td>';
+    h+='<td onclick="event.stopPropagation()"><button class="btn-call" style="background:rgba(139,92,246,0.15);color:#8b5cf6;" onclick="openHoldingModalByCid(\''+cid+'\')" title="View holding">&#128188;</button> '+(canManage?'<button class="btn-edit" onclick="openCCLManageModal('+r['_rowNum']+')">&#9998;</button>':'&#8212;')+'</td>';
     h+='</tr>';
   });
   return h+'</tbody></table>';
