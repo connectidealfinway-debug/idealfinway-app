@@ -4579,7 +4579,7 @@ function showClient360Profile(cid,name){
   var accRows=(allData.Accounts||[]).filter(matches);
   var cbrokRows=(allData.ClientBrokerage||[]).filter(matches).sort(function(a,b){return (a['Date']||'')<(b['Date']||'')?1:-1;});
   var sipRows=(allData.SIP||[]).filter(matches);
-  var insRows=(allData.Insurance||[]).filter(matches);
+  var insRows=(allData.Insurance||[]).filter(matches); var holdRows=(allData.ClientHolding||[]).filter(matches); var ledgerBal=holdRows.length?parseFloat(holdRows[0]['Ledger Balance'])||0:null;
   var acc=accRows[0]||{};
   var phone=acc['Client Phone']||(cbrokRows[0]&&cbrokRows[0]['Client Phone'])||'';
   var totalBrok=r2(cbrokRows.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0));
@@ -4609,7 +4609,7 @@ function showClient360Profile(cid,name){
       {label:'Total Brokerage',value:fmt(totalBrok),sub:cbrokRows.length+' entries (lifetime)',color:'green'},
       {label:'SIP Amount',value:fmt(sipAmt),sub:sipRows.filter(function(r){return (r['Type']||'SIP')==='SIP';}).length+' clients',color:'blue'},
       {label:'Lumpsum',value:fmt(lumpAmt),sub:sipRows.filter(function(r){return r['Type']==='Lumpsum';}).length+' entries',color:'amber'},
-      {label:'Insurance Premium',value:fmt(premAmt),sub:insRows.length+' policies',color:'purple'}
+      {label:'Insurance Premium',value:fmt(premAmt),sub:insRows.length+' policies',color:'purple'},{label:'Ledger Balance',value:(ledgerBal===null?'-':fmt(ledgerBal)),sub:(ledgerBal===null?'no holding data':(ledgerBal>=0?'credit - fund available':'debit')),color:(ledgerBal===null?'blue':(ledgerBal>=0?'green':'red'))}
     ])+'</div>';
   if(acc['Date']){
     h+='<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);font-size:13px;color:var(--muted);">'+
@@ -4625,7 +4625,7 @@ function showClient360Profile(cid,name){
   h+='<div class="form-card" style="margin-bottom:16px;"><div style="font-weight:700;margin-bottom:10px;">SIP / Mutual Fund</div><div class="table-inner">'+
     mkTable(sipRows,[{k:'Date',l:'Date'},{k:'Type',l:'Type'},{k:'Amount',l:'Amount',money:true},{k:'SIP Due Date',l:'Due Date'},{k:'Employee Name',l:'Employee'}])+'</div></div>';
   h+='<div class="form-card" style="margin-bottom:16px;"><div style="font-weight:700;margin-bottom:10px;">Insurance Policies</div><div class="table-inner">'+
-    mkTable(insRows,[{k:'Date',l:'Date'},{k:'Type',l:'Type'},{k:'Premium',l:'Premium',money:true},{k:'Employee Name',l:'Employee'}])+'</div></div>';
+    mkTable(insRows,[{k:'Date',l:'Date'},{k:'Type',l:'Type'},{k:'Premium',l:'Premium',money:true},{k:'Employee Name',l:'Employee'}])+'</div></div>'; h+='<div class="form-card" style="margin-bottom:16px;"><div style="font-weight:700;margin-bottom:10px;">Stock Holding'+(holdRows.length&&holdRows[0]['Upload Date']?' <span style="font-weight:400;color:var(--muted);font-size:11px;">(as of '+holdRows[0]['Upload Date']+')</span>':'')+'</div><div class="table-inner">'+(holdRows.length?mkTable(holdRows,[{k:'Scrip Name',l:'Stock'},{k:'Qty',l:'Qty'},{k:'Price',l:'Price',money:true},{k:'Value',l:'Value',money:true},{k:'Live Price',l:'Live Price',money:true},{k:'Change %',l:'Change %'}]):'<div class="no-data">No holding data uploaded for this client yet.</div>')+'</div></div>';
 
   var vaultCid=(displayId||'').replace(/'/g,"\\'"), vaultName=(displayName||'').replace(/'/g,"\\'");
   h+='<div class="form-card" id="c360_vaultCard" style="margin-bottom:16px;">'+
