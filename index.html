@@ -762,24 +762,24 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
           <select id="team_emp" onchange="renderMyTeamData()"><option value="">-- Select --</option></select>
         </div>
       </div>
-      <div class="stats-grid" id="teamStats"></div>
-      <h3 style="margin:24px 0 10px;">Brokerage (Client-wise)</h3>
+      <div class="filter-bar" id="teamJumpBar" style="position:sticky;top:0;z-index:5;background:var(--bg,#0d1117);padding:8px 4px;flex-wrap:wrap;border-radius:8px;"><button class="filter-btn" onclick="document.getElementById('teamSecBrok').scrollIntoView({behavior:'smooth',block:'start'})">💰 Brokerage</button><button class="filter-btn" onclick="document.getElementById('teamSecAcc').scrollIntoView({behavior:'smooth',block:'start'})">👤 Accounts</button><button class="filter-btn" onclick="document.getElementById('teamSecHold').scrollIntoView({behavior:'smooth',block:'start'})">💼 Holding</button><button class="filter-btn" onclick="document.getElementById('teamSecSIP').scrollIntoView({behavior:'smooth',block:'start'})">📈 SIP</button><button class="filter-btn" onclick="document.getElementById('teamSecIns').scrollIntoView({behavior:'smooth',block:'start'})">🛡 Insurance</button><button class="filter-btn" onclick="document.getElementById('teamSecStud').scrollIntoView({behavior:'smooth',block:'start'})">🎓 Students</button><button class="filter-btn" onclick="document.getElementById('teamSecCCL').scrollIntoView({behavior:'smooth',block:'start'})">📞 Call &amp; Trade</button><button class="filter-btn" onclick="document.getElementById('teamSecCT').scrollIntoView({behavior:'smooth',block:'start'})">📋 Call Log</button><button class="filter-btn" onclick="document.getElementById('teamSecFin').scrollIntoView({behavior:'smooth',block:'start'})">₹ Income/Expense</button></div><div class="stats-grid" id="teamStats"></div>
+      <h3 id="teamSecBrok" style="margin:24px 0 10px;">Brokerage (Client-wise)</h3>
       <div id="teamBrokTable"></div>
-      <h3 style="margin:24px 0 10px;">Accounts</h3>
-      <div id="teamAccTable"></div>       <h3 style="margin:24px 0 10px;">Client Holding &amp; Ledger</h3>       <div class="stats-grid" id="teamHoldStats"></div>       <div id="teamHoldTable"></div>       <h3 style="margin:24px 0 10px;">SIP / Mutual Fund</h3>
+      <h3 id="teamSecAcc" style="margin:24px 0 10px;">Accounts</h3>
+      <div id="teamAccTable"></div>       <h3 id="teamSecHold" style="margin:24px 0 10px;">Client Holding &amp; Ledger</h3>       <div class="stats-grid" id="teamHoldStats"></div>       <div id="teamHoldTable"></div>       <h3 id="teamSecSIP" style="margin:24px 0 10px;">SIP / Mutual Fund</h3>
       <div id="teamSIPTable"></div>
-      <h3 style="margin:24px 0 10px;">Insurance</h3>
+      <h3 id="teamSecIns" style="margin:24px 0 10px;">Insurance</h3>
       <div id="teamInsTable"></div>
-      <h3 style="margin:24px 0 10px;">Students</h3>
+      <h3 id="teamSecStud" style="margin:24px 0 10px;">Students</h3>
       <div id="teamStudTable"></div>
-      <h3 style="margin:24px 0 10px;">Call & Trade Summary</h3>
+      <h3 id="teamSecCCL" style="margin:24px 0 10px;">Call & Trade Summary</h3>
       <div class="stats-grid" id="teamCCLStats"></div>
       <div class="stats-grid" id="teamCCLTypeStats" style="margin-top:10px;"></div>
       <h3 style="margin:24px 0 10px;">Calling List (Clients)</h3>
       <div id="teamCCLTable"></div>
-      <h3 style="margin:24px 0 10px;">Call & Trade Log</h3>
+      <h3 id="teamSecCT" style="margin:24px 0 10px;">Call & Trade Log</h3>
       <div id="teamCTTable"></div>
-      <h3 style="margin:24px 0 10px;">Income &amp; Expense</h3>
+      <h3 id="teamSecFin" style="margin:24px 0 10px;">Income &amp; Expense</h3>
       <div class="stats-grid" id="teamFinStats"></div>
       <div class="tab-btns">
         <button class="tab-btn active" id="teamFinTabInc" onclick="setTeamFinTab('income')">&#8377; Income</button>
@@ -880,7 +880,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
         <button class="btn-submit" onclick="submitCallClient()">Add to List</button>
       </div>
 
-      <div class="stats-grid" id="ctStats"></div><div id="ctStatDiv"></div>
+      <div class="stats-grid" id="ctStats"></div><div id="ctStatDiv"></div><div id="ctTeamBreakdown"></div>
 
       <div class="stats-grid" id="cclTypeStats" style="margin-top:10px;"></div>
       <div id="cclFilterLabel" style="font-size:12px;color:var(--accent,#3fbf7f);margin:4px 0 10px;font-weight:600;"></div>
@@ -7580,7 +7580,7 @@ function saveTradeModal(rowNum,direction){
   }).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
 }
 
-function initCallTradeForm(){
+function initCallTradeFormTeam(){var team=currentUser?teamMembersOf(currentUser.userId):[];if(!team.length||(currentUser&&currentUser.role==='admin'))return;var card=document.getElementById('ctEmpFilterCard');if(card)card.style.display='block';var sel=document.getElementById('ct_empFilter');if(sel&&sel.options.length<=1){sel.innerHTML='<option value="">Myself + Team (Combined)</option>';var meOpt=document.createElement('option');meOpt.value=currentUser.userId;meOpt.textContent=currentUser.name+' (Myself)';sel.appendChild(meOpt);team.forEach(function(emp){var o=document.createElement('option');o.value=emp['Employee ID'];o.textContent=emp['Name'];sel.appendChild(o);});}}function initCallTradeForm(){
   var card=document.getElementById('ctEmpFilterCard');
   if(card)card.style.display=(currentUser&&currentUser.role==='admin')?'block':'none';
   var sel=document.getElementById('ct_empFilter');
@@ -7625,7 +7625,7 @@ function setCCLType(v){
   cclTypeF=(cclTypeF===v)?'all':v;
   renderCallTradePage();
 }
-function cclRosterScoped(){
+function cclRosterScoped(){var __team=currentUser?teamMembersOf(currentUser.userId):[];if(__team.length>0&&!(currentUser&&currentUser.role==='admin')){var __sel=document.getElementById('ct_empFilter');var __v=__sel?__sel.value:'';var __rows=allData.CallClients||[];if(__v){return fEmpStrict(__rows,__v);}var __scopeIds=[currentUser.userId].concat(__team.map(function(e){return e['Employee ID'];}));return fEmpStrict(__rows,__scopeIds);}
   var isAdm=currentUser&&currentUser.role==='admin';
   var rows=allData.CallClients||[];
   if(isAdm){
@@ -7971,7 +7971,7 @@ function saveAccCall(rowNum){
     } else showToast('Save failed','error');
   }).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
 }
-function ctRows(){
+function ctRows(){var __team2=currentUser?teamMembersOf(currentUser.userId):[];if(__team2.length>0&&!(currentUser&&currentUser.role==='admin')){var __sel2=document.getElementById('ct_empFilter');var __v2=__sel2?__sel2.value:'';var __rows2=allData.CallTrade||[];if(__v2){return fEmpStrict(__rows2,__v2);}var __scopeIds2=[currentUser.userId].concat(__team2.map(function(e){return e['Employee ID'];}));return fEmpStrict(__rows2,__scopeIds2);}
   var isAdm=currentUser&&currentUser.role==='admin';
   var rows=allData.CallTrade||[];
   if(isAdm){
@@ -7997,7 +7997,7 @@ function ctStatusLabel(r){
   return 'Called';
 }
 function renderCallTradePage(){
-  initCallTradeForm();
+  initCallTradeForm();initCallTradeFormTeam();
   renderCCLTypeStats();
   var cRows=cclRows();
   var q2=getSrch('srch-ccl');
@@ -8025,7 +8025,7 @@ function renderCallTradePage(){
     {label:'Traded Today',value:Object.keys(tradedClientSet).length,sub:'unique clients traded today',color:'green',onclick:"showCTStat('traded')"},
     {label:'Not Called Yet',value:Math.max(totalClients-calledCount,0),sub:'still pending today',color:'amber',onclick:"showCTStat('notcalled')"}
   ]);
-  window._ctStatCache={roster:cclRosterScoped().filter(function(r){return (r['Status']||'Active')==='Active';}),todayLogRows:todayLogRows};
+  window._ctStatCache={roster:cclRosterScoped().filter(function(r){return (r['Status']||'Active')==='Active';}),todayLogRows:todayLogRows};var __bd=document.getElementById('ctTeamBreakdown');if(__bd){var __teamBd=currentUser?teamMembersOf(currentUser.userId):[];var __selBd=document.getElementById('ct_empFilter');var __selValBd=__selBd?__selBd.value:'';if(__teamBd.length>0&&!__selValBd&&!(currentUser&&currentUser.role==='admin')){var __members=[{id:currentUser.userId,name:currentUser.name+' (Myself)'}].concat(__teamBd.map(function(e){return {id:e['Employee ID'],name:e['Name']};}));var __bh='<div class="table-wrap" style="margin-bottom:14px;"><div class="table-inner"><table><thead><tr><th>Employee</th><th>Total Clients</th><th>Called Today</th><th>Traded Today</th></tr></thead><tbody>';__members.forEach(function(m){var __mRoster=fEmpStrict(allData.CallClients||[],m.id).filter(function(r){return (r['Status']||'Active')==='Active';});var __mLog=fEmpStrict(allData.CallTrade||[],m.id).filter(function(r){return r['Date']===todayStr;});var __mCalled={},__mTraded={};__mLog.forEach(function(r){var __cid=(r['Client ID']||'').trim();if(r['Call Status']==='Called')__mCalled[__cid]=1;if(r['Trade Done']==='Yes')__mTraded[__cid]=1;});__bh+='<tr><td style="font-weight:600;">'+m.name+'</td><td>'+__mRoster.length+'</td><td>'+Object.keys(__mCalled).length+'</td><td>'+Object.keys(__mTraded).length+'</td></tr>';});__bh+='</tbody></table></div></div>';__bd.innerHTML=__bh;}else{__bd.innerHTML='';}}
   document.getElementById('ctCalDiv').innerHTML=mkCalendar(allRows,'ctCal',{moreLabel:'More Calls',clickFn:'showCallDay'});
   document.getElementById('ctTable').innerHTML=mkCallTradeTable(rows);
   renderCTOpenTrades();
