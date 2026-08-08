@@ -340,6 +340,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       <div class="nav-sec" onclick="toggleGrp('gRep',this)"><span class="arr">&#9656;</span>Reports</div>
       <div class="nav-grp" id="gRep" style="display:none">
         <div class="nav-item" onclick="showPage('adminBrok')">&#36; Brokerage</div>
+        <div class="nav-item" onclick="showPage('leaderCommission')">&#128081; Leader Commission</div>
         <div class="nav-item" onclick="showPage('adminCBrok')">&#128202; Client Brokerage</div>
         <div class="nav-item" onclick="showPage('adminSIP')">&#128200; Mutual Fund</div>
         <div class="nav-item" onclick="showPage('adminIns')">&#128737; Insurance</div>
@@ -709,8 +710,21 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
     <div class="page" id="page-manageEmps">
       <div class="page-header"><h1>Manage Employees</h1><p>Add, edit or deactivate employees</p></div>
       <div style="margin-bottom:16px;"><button class="btn-submit" onclick="showAddEmpModal()">+ Add Employee</button></div>
+      <div id="pendingRecruitBox"></div>
       <div id="pendingResignBox"></div>
       <div class="table-wrap"><div class="table-inner" id="manageEmpTable"></div></div>
+    </div>
+
+    <!-- LEADER COMMISSION -->
+    <div class="page" id="page-leaderCommission">
+      <div class="page-header"><h1>Leader Commission</h1><p>Jab team member/franchise partner apne niche naya advisor recruit karta hai, uska monthly commission (marginal slab) aur milestone bonus yahan track hota hai. Single-level: sirf direct recruiter ko milta hai.</p></div>
+      <div class="filter-bar">
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);">Month: <input type="month" id="lcMonth" onchange="renderLeaderCommission()"></label>
+      </div>
+      <div class="stats-grid" id="lcStats"></div>
+      <div class="table-wrap"><div class="table-inner" id="lcTable"></div></div>
+      <div class="page-header" style="margin-top:24px;"><h1 style="font-size:18px;">Account-Opening Milestone Bonus</h1><p>Recruit ke join hone ke pehle 90 din (3 mahine) ke andar 100 active accounts (last 90 din me trade) cross karne par Leader ko flat &#8377;10,000 one-time bonus.</p></div>
+      <div class="table-wrap"><div class="table-inner" id="lcMilestoneTable"></div></div>
     </div>
 
     <!-- ADD BROKERAGE -->
@@ -759,6 +773,8 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
     <!-- MY TEAM -->
     <div class="page" id="page-myTeam">
       <div class="page-header"><h1>My Team</h1><p>View and edit sub-employees' Accounts/SIP/Insurance/Students</p></div>
+      <div style="margin-bottom:16px;"><button class="btn-submit" onclick="showRecruitModal()">&#43; Naya Advisor Recruit Karein</button></div>
+      <div id="myRecruitReqBox"></div>
       <div class="form-card" style="margin-bottom:20px;">
         <div class="form-group"><label>Select Team Member</label>
           <select id="team_emp" onchange="renderMyTeamData()"><option value="">-- Select --</option></select>
@@ -2195,7 +2211,9 @@ function loadAll(attempt){
         EmployeeDataMoves:r.employeeDataMoves||r.EmployeeDataMoves||[],
         IPO_Master:r.ipoMaster||r.IPO_Master||[],
         IPO_Applications:r.ipoApplications||r.IPO_Applications||[],
-        Settlement:r.settlement||r.Settlement||[]
+        Settlement:r.settlement||r.Settlement||[],
+        LeaderMilestoneBonus:r.leaderMilestoneBonus||r.LeaderMilestoneBonus||[],
+        RecruitRequests:r.recruitRequests||r.RecruitRequests||[]
       };
       saveCache();checkSIPAlerts();autoPunchIn();renderPage(curPage());loadEmps();setTimeout(checkDueTomorrowPopup,600);setTimeout(check315Reminder,900);renderAnnounceBanner();if(!window._stlCleanupDone){window._stlCleanupDone=true;getJSON('cleanupOldSettlement').catch(function(){});}
     }else if(attempt<3){
@@ -2215,7 +2233,7 @@ function loadEmps(){
       saveCache();
       var sel=document.getElementById('attEmpFilter');
       if(sel){sel.innerHTML='<option value="">All Employees</option>';employees.forEach(function(e){var o=document.createElement('option');o.value=e['Employee ID'];o.textContent=e['Name'];sel.appendChild(o);});}
-      var navTeam=document.getElementById('navMyTeam');if(navTeam)navTeam.style.display=isTeamParent()?'flex':'none';
+      var navTeam=document.getElementById('navMyTeam');if(navTeam)navTeam.style.display=(currentUser&&currentUser.role!=='admin')?'flex':'none';
       var navAI=document.getElementById('navAddIncome');if(navAI)navAI.style.display=canAddFinance()?'flex':'none';
       var navAE=document.getElementById('navAddExpense');if(navAE)navAE.style.display=canAddFinance()?'flex':'none';
       var navIPO=document.getElementById('navIPO');if(navIPO)navIPO.style.display=canIPOAccess()?'flex':'none';
@@ -2339,7 +2357,7 @@ function populateTeamEmpSelect(){
   team.forEach(function(e){var o=document.createElement('option');o.value=e['Employee ID'];o.textContent=e['Name'];sel.appendChild(o);});
   if(cur&&team.some(function(e){return e['Employee ID']===cur;}))sel.value=cur;
 }
-function renderMyTeamPage(){populateTeamEmpSelect();renderMyTeamData();}
+function renderMyTeamPage(){populateTeamEmpSelect();renderMyTeamData();renderMyRecruitReqs();}
 function renderMyTeamData(){
   var sel=document.getElementById('team_emp');
   var uid=sel?sel.value:'';if(uid==='__ALL__')uid=teamMembersOf(currentUser.userId).map(function(e){return e['Employee ID'];});
@@ -2469,6 +2487,7 @@ function renderPage(id){
   else if(id==='adminAttendance')renderAdminAttendance();
   else if(id==='adminMeetings')renderAdminMeetings();
   else if(id==='manageEmps')renderManageEmps();
+  else if(id==='leaderCommission')renderLeaderCommission();
   else if(id==='adminPoints')renderPoints();
   else if(id==='addPoints')initPointsForm();
   else if(id==='addBrok')initBrokForm();
@@ -5679,6 +5698,69 @@ function hisabInRange(f){
   });
 }
 /* ===== v27: SHARED HISAB CALC — ek hi function jo Monthly Hisab, Finance Dashboard aur Admin Dashboard teeno use karte h, taki Team Payable kabhi mismatch na ho ===== */
+/* ===== LEADER COMMISSION SYSTEM (Aug 2026) =====
+   Jab koi existing team member/franchise partner ('Leader') apne niche ek naya advisor ('Recruit')
+   jodta hai, to us Recruit ke business ke Residual (jo advisor-share dene ke baad IdealFinway ke
+   paas bachta hai) me se Leader ko marginal/progressive (tax-slab-style) % milta hai.
+   Rules: single-level only (sirf DIRECT recruiter), har mahine fresh calculation (no carry-forward),
+   actual ClientBrokerage (Choice) data pe based. Recruiter link = Employee sheet ka 'Recruiter ID'
+   column - jaan-bujhke 'Parent ID' (My Team / handling-hierarchy) se ALAG rakha gaya hai, kyunki
+   Parent ID team-handling ke liye hai aur Recruiter ID sirf is commission ke liye. */
+var LEADER_SLABS=[[0,25000,0.05],[25000,50000,0.10],[50000,75000,0.15],[75000,100000,0.20],[100000,200000,0.25],[200000,500000,0.30],[500000,1000000,0.35],[1000000,Infinity,0.40]];
+function leaderSlabAmount(residual){
+  residual=Math.max(0,parseFloat(residual)||0);
+  var total=0;
+  LEADER_SLABS.forEach(function(s){var portion=Math.max(0,Math.min(residual,s[1])-s[0]);total+=portion*s[2];});
+  return r2(total);
+}
+function directRecruitsOf(leaderId){
+  return employees.filter(function(e){return (e['Recruiter ID']||'').trim().toLowerCase()===String(leaderId).trim().toLowerCase()&&(e['Status']||'Active')==='Active';});
+}
+/* leaderId ke sabhi DIRECT recruits ka is mahine ka Leader Commission. empBrokFn = us render-context
+   (computeHisabTotals ya renderHisab) ka local empBrok(eid) helper - alag scope me alag month-filtered
+   ClientBrokerage use hota hai isliye pass-in karna padta hai. */
+function leaderCommissionBreakdown(leaderId,empBrokFn){
+  var recruits=directRecruitsOf(leaderId),rows=[],total=0;
+  recruits.forEach(function(rx){
+    var rid=rx['Employee ID'];
+    var brok=r2(empBrokFn(rid));
+    var pct=numOrDefault(rx['Commission'],50);
+    var residual=r2(brok*(1-pct/100));
+    var comm=residual>0?leaderSlabAmount(residual):0;
+    rows.push({id:rid,name:rx['Name'],brok:brok,pct:pct,residual:residual,comm:comm});
+    total+=comm;
+  });
+  return {rows:rows,total:r2(total)};
+}
+/* ===== Milestone bonus: 100 active accounts within first 90 days (3 months) of recruit's Join Date ===== */
+function accountActiveViaTrade(clientId){
+  var cutoff=new Date();cutoff.setDate(cutoff.getDate()-90);
+  return (allData.ClientBrokerage||[]).some(function(r){
+    if((r['Client ID']||'').trim()!==(clientId||'').trim())return false;
+    var d=new Date(r['Date']);
+    return !isNaN(d)&&d>=cutoff;
+  });
+}
+function activeAccountsCountFor(empId){
+  var accs=(allData.Accounts||[]).filter(function(a){return (a['Employee ID']||'').trim().toLowerCase()===String(empId).trim().toLowerCase();});
+  var seen={};
+  accs.forEach(function(a){var cid=(a['Client ID']||'').trim();if(cid&&accountActiveViaTrade(cid))seen[cid]=1;});
+  return Object.keys(seen).length;
+}
+function daysSinceJoin(joinDateStr){
+  if(!joinDateStr)return null;
+  var d=new Date(joinDateStr);if(isNaN(d))return null;
+  return Math.floor((Date.now()-d.getTime())/86400000);
+}
+function milestoneStatusFor(recruit){
+  var days=daysSinceJoin(recruit['Join Date']||'');
+  var activeN=activeAccountsCountFor(recruit['Employee ID']);
+  var already=(allData.LeaderMilestoneBonus||[]).some(function(m){return (m['Recruit Employee ID']||'')===recruit['Employee ID']&&m['Milestone']==='100 Accounts in 3 Months';});
+  var reached=activeN>=100;
+  var withinWindow=days!==null&&days<=90;
+  return {activeN:activeN,days:days,reached:reached,withinWindow:withinWindow,already:already,eligible:reached&&withinWindow&&!already};
+}
+
 function computeHisabTotals(mo){
   var savedRows={};
   (allData.Hisab||[]).forEach(function(r){
@@ -5723,6 +5805,8 @@ function computeHisabTotals(mo){
     if((e['Role']||'').toLowerCase()!=='partner'){
       var refComm=studentRefCommission(e);
       if(refComm>0)st.lines.push({t:'add',l:'Student Referral Commission (10%)',a:refComm});
+      var lcb=leaderCommissionBreakdown(eid,empBrok);
+      if(lcb.total>0)st.lines.push({t:'add',l:'Leader Commission (Team: '+lcb.rows.filter(function(x){return x.comm>0;}).map(function(x){return x.name;}).join(', ')+')',a:lcb.total});
     }
     return st;
   }
@@ -6777,6 +6861,8 @@ function renderHisab(){
     if((e['Role']||'').toLowerCase()!=='partner'){
       var refComm=studentRefCommission(e);
       if(refComm>0)st.lines.push({t:'add',l:'Student Referral Commission (10%)',a:refComm});
+      var lcb=leaderCommissionBreakdown(eid,empBrok);
+      if(lcb.total>0)st.lines.push({t:'add',l:'Leader Commission (Team: '+lcb.rows.filter(function(x){return x.comm>0;}).map(function(x){return x.name;}).join(', ')+')',a:lcb.total});
     }
     hisabSt.rows[eid]=st;
     return st;
@@ -7115,18 +7201,21 @@ function renderManageEmps(){
   var missing=employees.filter(function(e){return (e['Status']||'Active')==='Active'&&!(e['Email']||'').trim();});
   var h='';
   if(missing.length)h+='<div class="prev-err" style="margin-bottom:10px;">&#9888; <b>'+missing.length+' employee(s) do not have an Email set</b> - they will NOT receive a salary slip email when marked Paid: '+missing.map(function(e){return e['Name']||e['Employee ID'];}).join(', ')+'</div>';
-  h+='<table><thead><tr><th>Photo</th><th>Employee ID</th><th>Name</th><th>Branch</th><th>Role</th><th>Sub-team Of</th><th>Commission %</th><th>Salary</th><th>Email</th><th>KYC (PAN/Aadhaar)</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+  h+='<table><thead><tr><th>Photo</th><th>Employee ID</th><th>Name</th><th>Branch</th><th>Role</th><th>Sub-team Of</th><th>Recruiter (Leader)</th><th>Commission %</th><th>Salary</th><th>Email</th><th>KYC (PAN/Aadhaar)</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
   employees.forEach(function(e){
     var isAct=(e['Status']||'Active')==='Active';
     var em=(e['Email']||'').trim();
     var pids=parentIdsOf(e);
     var pLabel=pids.length?pids.map(function(pid){var pEmp=employees.find(function(x){return x['Employee ID']===pid;});return pEmp?pEmp['Name']:pid;}).join(', '):'<span style="color:var(--muted);">&#8212;</span>';
+    var recEid=(e['Recruiter ID']||'').trim();
+    var recEmp=recEid?employees.find(function(x){return x['Employee ID']===recEid;}):null;
+    var recLabel=recEid?(recEmp?recEmp['Name']:recEid):'<span style="color:var(--muted);">&#8212;</span>';
     var panV=(e['PAN']||'').trim(),aadV=(e['Aadhaar']||'').trim();
     var allDocsOk=panV&&aadV&&empHasDoc(e['Employee ID'],'Photo')&&empHasDoc(e['Employee ID'],'PAN Card')&&empHasAadhaarBoth(e['Employee ID']);
     var kycLabel=allDocsOk?('<span class="badge green" title="PAN: '+panV+' &#183; Aadhaar: XXXX-XXXX-'+aadV.slice(-4)+' &#183; Photo/PAN/Aadhaar (front+back) docs uploaded">&#10003; Verified</span>'):'<span class="badge red" title="PAN/Aadhaar/Photo/documents incomplete - Aadhaar needs both Front and Back">&#9888; incomplete</span>';
     var photoUrl=empPhotoUrl(e['Employee ID']);
     var photoHTML=photoUrl?'<img src="'+photoUrl+'" style="width:36px;height:36px;border-radius:50%;object-fit:cover;">':'<div style="width:36px;height:36px;border-radius:50%;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--muted);">'+initialsOf(e['Name'])+'</div>';
-    h+='<tr><td style="cursor:pointer;" data-id="'+e['Employee ID']+'" onclick="editEmpModal(this.dataset.id)" title="Click to view/edit">'+photoHTML+'</td><td>'+(e['Employee ID']||'-')+'</td><td style="font-weight:600;">'+(e['Name']||'-')+'</td><td>'+(e['Branch']||'-')+'</td><td>'+(e['Role']||'employee')+'</td><td>'+pLabel+'</td><td style="font-weight:700;color:var(--accent);">'+(e['Commission']!==''&&e['Commission']!==undefined?e['Commission']+'%':'50%')+'</td><td>'+(parseFloat(e['Salary'])>0?fmt(e['Salary']):'-')+'</td><td>'+(em?em:'<span class="badge red" title="Email missing - salary slip email will not be sent">&#9888; missing</span>')+'</td><td>'+kycLabel+'</td><td><span class="badge '+(isAct?'green':'red')+'">'+(isAct?'Active':'Inactive')+'</span></td><td>';
+    h+='<tr><td style="cursor:pointer;" data-id="'+e['Employee ID']+'" onclick="editEmpModal(this.dataset.id)" title="Click to view/edit">'+photoHTML+'</td><td>'+(e['Employee ID']||'-')+'</td><td style="font-weight:600;">'+(e['Name']||'-')+'</td><td>'+(e['Branch']||'-')+'</td><td>'+(e['Role']||'employee')+'</td><td>'+pLabel+'</td><td>'+recLabel+'</td><td style="font-weight:700;color:var(--accent);">'+(e['Commission']!==''&&e['Commission']!==undefined?e['Commission']+'%':'50%')+'</td><td>'+(parseFloat(e['Salary'])>0?fmt(e['Salary']):'-')+'</td><td>'+(em?em:'<span class="badge red" title="Email missing - salary slip email will not be sent">&#9888; missing</span>')+'</td><td>'+kycLabel+'</td><td><span class="badge '+(isAct?'green':'red')+'">'+(isAct?'Active':'Inactive')+'</span></td><td>';
     h+='<button class="btn-edit" data-id="'+e['Employee ID']+'" onclick="editEmpModal(this.dataset.id)">&#9998; Edit</button>';
     h+='<button class="btn-edit" data-id="'+e['Employee ID']+'" onclick="viewEmpDocsModal(this.dataset.id)">&#128193; Docs</button>';
     if(isAct){
@@ -7139,8 +7228,74 @@ function renderManageEmps(){
   });
   document.getElementById('manageEmpTable').innerHTML=h+'</tbody></table>';
   renderPendingResignations();
+  renderPendingRecruitRequests();
 }
 
+function renderLeaderCommission(){
+  var inp=document.getElementById('lcMonth');
+  if(!inp.value)inp.value=curMonth();
+  var mo=inp.value;
+  var cbMonth=fMonth(allData.ClientBrokerage||[],mo);
+  function empBrokLC(eid){return r2(cbMonth.filter(function(r){return (r['Employee ID']||'').trim().toLowerCase()===String(eid).trim().toLowerCase();}).reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0));}
+  var leaders=employees.filter(function(e){return directRecruitsOf(e['Employee ID']).length>0;});
+  var grandTotal=0,h='';
+  if(!leaders.length){
+    h='<div class="no-data">Abhi koi Leader-Recruit pair set nahi hai. Manage Employees me employee edit karke "Recruiter (Leader)" field set karein.</div>';
+  }else{
+    h='<table><thead><tr><th>Leader</th><th>Recruit</th><th>Recruit Brokerage ('+mo+')</th><th>Recruit Share %</th><th>Residual</th><th>Leader Commission (Marginal Slab)</th></tr></thead><tbody>';
+    leaders.forEach(function(ld){
+      var bd=leaderCommissionBreakdown(ld['Employee ID'],empBrokLC);
+      if(!bd.rows.length)return;
+      bd.rows.forEach(function(row,i){
+        h+='<tr>';
+        if(i===0)h+='<td rowspan="'+bd.rows.length+'" style="font-weight:700;vertical-align:top;">'+ld['Name']+(bd.rows.length>1?'<br><span style="font-weight:400;font-size:12px;color:var(--accent);">Total: '+fmt(bd.total)+'</span>':'')+'</td>';
+        h+='<td>'+row.name+'</td><td>'+fmt(row.brok)+'</td><td>'+row.pct+'%</td><td>'+fmt(row.residual)+'</td><td style="font-weight:700;color:var(--accent);">'+fmt(row.comm)+'</td>';
+        h+='</tr>';
+      });
+      grandTotal+=bd.total;
+    });
+    h+='</tbody></table>';
+  }
+  document.getElementById('lcStats').innerHTML=mkStats([
+    {label:'Leaders (with active recruits)',value:leaders.filter(function(l){return directRecruitsOf(l['Employee ID']).length>0;}).length,sub:'',color:'blue'},
+    {label:'Total Leader Commission ('+mo+')',value:fmt(r2(grandTotal)),sub:"auto-added to Leader's Monthly Hisab",color:'amber'}
+  ]);
+  document.getElementById('lcTable').innerHTML=h;
+  renderLeaderMilestones();
+}
+function renderLeaderMilestones(){
+  var recruits=employees.filter(function(e){return (e['Recruiter ID']||'').trim()&&(e['Status']||'Active')==='Active';});
+  var h='';
+  if(!recruits.length){h='<div class="no-data">Koi recruit nahi mila.</div>';}
+  else{
+    h='<table><thead><tr><th>Recruit</th><th>Leader</th><th>Join Date</th><th>Active Accounts (last 90 din trade)</th><th>Status</th><th>Action</th></tr></thead><tbody>';
+    recruits.forEach(function(rc){
+      var ms=milestoneStatusFor(rc);
+      var ld=employees.find(function(x){return x['Employee ID']===rc['Recruiter ID'];});
+      var statusBadge=ms.already?'<span class="badge green">&#10003; Bonus Paid</span>':(ms.eligible?'<span class="badge amber">&#127942; Reached - Action Needed</span>':(ms.reached&&!ms.withinWindow?'<span class="badge red">Reached after 90 days - not eligible</span>':'<span class="badge">In Progress</span>'));
+      h+='<tr><td style="font-weight:600;">'+rc['Name']+'</td><td>'+(ld?ld['Name']:rc['Recruiter ID'])+'</td><td>'+(rc['Join Date']||'<span style="color:var(--muted);">not set</span>')+'</td><td>'+ms.activeN+' / 100'+(ms.days!==null?' &#183; Day '+ms.days+' of 90':'')+'</td><td>'+statusBadge+'</td><td>';
+      if(ms.eligible)h+='<button class="btn-save" data-lid="'+rc['Recruiter ID']+'" data-rid="'+rc['Employee ID']+'" data-rname="'+rc['Name']+'" onclick="logMilestoneBonus(this)">Log &#8377;10,000 Bonus</button>';
+      else h+='-';
+      h+='</td></tr>';
+    });
+    h+='</tbody></table>';
+  }
+  document.getElementById('lcMilestoneTable').innerHTML=h;
+}
+function logMilestoneBonus(btn){
+  var lid=btn.dataset.lid,rid=btn.dataset.rid,rname=btn.dataset.rname;
+  var ld=employees.find(function(x){return x['Employee ID']===lid;});
+  if(!confirm('Confirm: '+(ld?ld['Name']:lid)+' ko '+rname+' ke 100-account milestone ka ₹10,000 bonus diya ja raha hai.\n\nYe sirf LOG hoga (dobara double-count nahi hoga) - Monthly Hisab me is Leader ke current month me ek Addition line khud "Add Line" se add karni hogi taaki payout me shamil ho.'))return;
+  var p={action:'addGeneric',sheet:'LeaderMilestoneBonus','Date':td(),'Leader Employee ID':lid,'Leader Employee Name':ld?ld['Name']:lid,'Recruit Employee ID':rid,'Recruit Employee Name':rname,'Milestone':'100 Accounts in 3 Months','Bonus Amount':10000,'Notes':''};
+  postData(p).then(function(r){
+    if(r&&r.success){
+      allData.LeaderMilestoneBonus=allData.LeaderMilestoneBonus||[];
+      allData.LeaderMilestoneBonus.push({'Date':td(),'Leader Employee ID':lid,'Leader Employee Name':ld?ld['Name']:lid,'Recruit Employee ID':rid,'Recruit Employee Name':rname,'Milestone':'100 Accounts in 3 Months','Bonus Amount':'10000','Notes':''});
+      showToast('Milestone logged! Ab Monthly Hisab me is Leader ke liye manually Addition line add karein.','success');
+      renderLeaderMilestones();
+    }else showToast('Failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
 function viewEmpDocsModal(empId){
   var emp=employees.find(function(e){return e['Employee ID']===empId;});if(!emp)return;
   var docs=empDocsOf(empId).sort(function(a,b){return (a['Date']||'')<(b['Date']||'')?1:-1;});
@@ -7175,6 +7330,78 @@ function rejoinEmp(empId){
   }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
 
+function showRecruitModal(){
+  var h='<div class="modal-title">Naya Advisor Recruit Karein</div>';
+  h+='<div style="color:var(--muted);font-size:12px;margin-bottom:8px;">Yeh request Admin ko approval ke liye jayegi. Commission % aur Salary Admin approve karte waqt set karega.</div>';
+  h+='<div class="form-group"><label>New Employee ID</label><input type="text" id="rr_id" placeholder="e.g. Ideal.name"></div>';
+  h+='<div class="form-group"><label>Full Name</label><input type="text" id="rr_name"></div>';
+  h+='<div class="form-group"><label>Branch</label><select id="rr_branch"><option>Hisar</option><option>Adampur</option><option>Rohtak</option><option>Tohana</option></select></div>';
+  h+='<div class="form-group"><label>Password (advisor apna login isi se karega)</label><input type="text" id="rr_pass"></div>';
+  h+='<div class="form-group"><label>Remarks (optional)</label><input type="text" id="rr_remarks"></div>';
+  h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="submitRecruitReq()">Send for Approval</button></div>';
+  document.getElementById('modalBox').innerHTML=h;document.getElementById('modal').className='show';
+}
+function submitRecruitReq(){
+  var id=document.getElementById('rr_id').value.trim(),name=document.getElementById('rr_name').value.trim(),pass=document.getElementById('rr_pass').value.trim();
+  if(!id||!name||!pass){showToast('ID, Name and Password required','error');return;}
+  if(employees.find(function(e){return e['Employee ID']===id;})){showToast('ID already exists','error');return;}
+  var p={action:'submitRecruitRequest','Requested By ID':currentUser.userId,'Requested By Name':currentUser.name,'New Employee ID':id,'New Employee Name':name,'Branch':document.getElementById('rr_branch').value,'Role':'employee','Password':pass,'Remarks':document.getElementById('rr_remarks').value.trim()};
+  postData(p).then(function(r){closeModal();if(r&&r.success){showToast('Request bheja gaya! Admin approve karega to advisor active ho jayega.','success');loadAll();}else showToast('Failed: '+(r&&r.error||''),'error');}).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
+}
+function renderMyRecruitReqs(){
+  var host=document.getElementById('myRecruitReqBox');if(!host)return;
+  var mine=(allData.RecruitRequests||[]).filter(function(r){return (r['Requested By ID']||'')===currentUser.userId;});
+  if(!mine.length){host.innerHTML='';return;}
+  var h='<div class="table-wrap" style="margin-bottom:16px;"><div class="table-inner"><table><thead><tr><th>Date</th><th>New Advisor</th><th>Branch</th><th>Status</th></tr></thead><tbody>';
+  mine.slice().reverse().forEach(function(r){
+    var st=r['Status']||'Pending';
+    var badge=st==='Approved'?'<span class="badge green">&#10003; Approved</span>':(st==='Rejected'?'<span class="badge red">&#10007; Rejected</span>':'<span class="badge amber">&#8987; Pending Admin Approval</span>');
+    h+='<tr><td>'+(r['Date']||'-')+'</td><td style="font-weight:600;">'+(r['New Employee Name']||'-')+' ('+(r['New Employee ID']||'-')+')</td><td>'+(r['Branch']||'-')+'</td><td>'+badge+'</td></tr>';
+  });
+  h+='</tbody></table></div></div>';
+  host.innerHTML=h;
+}
+function renderPendingRecruitRequests(){
+  var host=document.getElementById('pendingRecruitBox');if(!host)return;
+  var pending=(allData.RecruitRequests||[]).filter(function(r){return (r['Status']||'Pending')==='Pending';});
+  if(!pending.length){host.innerHTML='';return;}
+  var h='<div class="form-card" style="margin-bottom:16px;border:1px solid #f59e0b;"><div style="font-weight:700;margin-bottom:10px;">&#128101; Pending Recruit Requests ('+pending.length+')</div>';
+  h+='<div class="table-inner"><table><thead><tr><th>Date</th><th>Requested By</th><th>New Advisor</th><th>Branch</th><th>Remarks</th><th>Actions</th></tr></thead><tbody>';
+  pending.forEach(function(r){
+    h+='<tr><td>'+(r['Date']||'-')+'</td><td>'+(r['Requested By Name']||r['Requested By ID']||'-')+'</td><td style="font-weight:600;">'+(r['New Employee Name']||'-')+' ('+(r['New Employee ID']||'-')+')</td><td>'+(r['Branch']||'-')+'</td><td>'+(r['Remarks']||'-')+'</td>'+
+      '<td><button class="btn-save" data-row="'+r._rowNum+'" onclick="approveRecruitReqBtn(this)">&#10003; Approve &amp; Set Commission</button> '+
+      '<button class="btn-del" data-row="'+r._rowNum+'" onclick="rejectRecruitReqBtn(this)">&#10007; Reject</button></td></tr>';
+  });
+  h+='</tbody></table></div></div>';
+  host.innerHTML=h;
+}
+function approveRecruitReqBtn(btn){showApproveRecruitModal(btn.dataset.row);}
+function rejectRecruitReqBtn(btn){
+  if(!confirm('Reject this recruit request?'))return;
+  postData({action:'rejectRecruitRequest','_rowNum':btn.dataset.row}).then(function(r){
+    if(r&&r.success){showToast('Rejected.','success');loadAll();}else showToast('Failed','error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+function showApproveRecruitModal(rowNum){
+  var req=(allData.RecruitRequests||[]).find(function(r){return String(r._rowNum)===String(rowNum);});
+  if(!req)return;
+  var h='<div class="modal-title">Approve: '+req['New Employee Name']+'</div>';
+  h+='<div style="color:var(--muted);font-size:12px;margin-bottom:8px;">Recruiter: '+(req['Requested By Name']||req['Requested By ID'])+' &#183; Branch: '+req['Branch']+'</div>';
+  h+='<div class="form-group"><label>Commission % (advisor ko brokerage ka kitna % milega)</label><input type="number" id="ar_comm" value="50" min="0" max="100"></div>';
+  h+='<div class="form-group"><label>Fixed Salary (&#8377;/month, 0 if none)</label><input type="number" id="ar_sal" value="0"></div>';
+  h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" data-row="'+rowNum+'" onclick="approveRecruitReq(this)">Approve &amp; Activate</button></div>';
+  document.getElementById('modalBox').innerHTML=h;document.getElementById('modal').className='show';
+}
+function approveRecruitReq(btn){
+  var rowNum=btn.dataset.row;
+  var comm=numOrDefault(document.getElementById('ar_comm').value,50);
+  var sal=parseFloat(document.getElementById('ar_sal').value)||0;
+  postData({action:'approveRecruitRequest','_rowNum':rowNum,'Commission':comm,'Salary':sal}).then(function(r){
+    closeModal();
+    if(r&&r.success){showToast('Approved! Advisor active ho gaya, Recruiter apne "My Team" me dekh sakega.','success');loadAll();loadEmps();}
+    else showToast('Failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
+}
 function renderPendingResignations(){
   var host=document.getElementById('pendingResignBox');
   if(!host)return;
@@ -7225,6 +7452,10 @@ function showAddEmpModal(){
   h+='<div class="form-group"><label>Sub-team Of (Parents) - you can select multiple</label><div style="max-height:160px;overflow-y:auto;border:1px solid var(--border,rgba(255,255,255,.15));border-radius:8px;padding:8px;">';
   employees.forEach(function(e){h+='<label style="display:flex;align-items:center;gap:6px;font-weight:400;font-size:13px;padding:3px 0;"><input type="checkbox" class="ne_parent_cb" value="'+e['Employee ID']+'" style="width:auto;"> '+e['Name']+' ('+e['Employee ID']+')</label>';});
   h+='</div></div>';
+  h+='<div class="form-group"><label>Recruiter (Leader) - jisne is naye advisor ko recruit kiya (Leader Commission ke liye, optional)</label><select id="ne_recruiter"><option value="">-- None --</option>';
+  employees.forEach(function(e){h+='<option value="'+e['Employee ID']+'">'+e['Name']+' ('+e['Employee ID']+')</option>';});
+  h+='</select></div>';
+  h+='<div class="form-group"><label>Join Date (milestone bonus 3-month window ke liye)</label><input type="date" id="ne_joindate" value="'+td()+'"></div>';
   h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="addEmployee()">Add</button></div>';
   document.getElementById('modalBox').innerHTML=h;document.getElementById('modal').className='show';
   toggleNeDesignation();
@@ -7246,7 +7477,7 @@ function addEmployee(){
   var id=document.getElementById('ne_id').value.trim(),name=document.getElementById('ne_name').value.trim(),pass=document.getElementById('ne_pass').value.trim();
   if(!id||!name||!pass){showToast('ID, Name and Password required','error');return;}
   if(employees.find(function(e){return e['Employee ID']===id;})){showToast('ID already exists','error');return;}
-  var p={action:'addEmployee','Employee ID':id,'Name':name,'Branch':document.getElementById('ne_branch').value,'Role':document.getElementById('ne_role').value,'Designation':document.getElementById('ne_desig')?document.getElementById('ne_desig').value:'','Password':pass,'Status':'Active','Commission':numOrDefault(document.getElementById('ne_comm').value,50),'Email':'','Salary':parseFloat(document.getElementById('ne_sal').value)||0,'Parent ID':Array.prototype.slice.call(document.querySelectorAll('.ne_parent_cb:checked')).map(function(el){return el.value;}).join(',')};
+  var p={action:'addEmployee','Employee ID':id,'Name':name,'Branch':document.getElementById('ne_branch').value,'Role':document.getElementById('ne_role').value,'Designation':document.getElementById('ne_desig')?document.getElementById('ne_desig').value:'','Password':pass,'Status':'Active','Commission':numOrDefault(document.getElementById('ne_comm').value,50),'Email':'','Salary':parseFloat(document.getElementById('ne_sal').value)||0,'Parent ID':(function(){var ids=Array.prototype.slice.call(document.querySelectorAll('.ne_parent_cb:checked')).map(function(el){return el.value;});var rid=document.getElementById('ne_recruiter').value;if(rid&&ids.indexOf(rid)===-1)ids.push(rid);return ids.join(',');})(),'Recruiter ID':document.getElementById('ne_recruiter').value||'','Join Date':document.getElementById('ne_joindate').value||''};
   postData(p).then(function(r){closeModal();if(r&&r.success){showToast('Employee added! They can complete Gmail/PAN/Aadhaar from My Profile after login.','success');loadEmps();}else showToast('Failed: '+(r&&r.error||''),'error');}).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
 }
 
@@ -7273,6 +7504,10 @@ function editEmpModal(empId){
   var curParentIds=parentIdsOf(emp);
   employees.forEach(function(e){if(e['Employee ID']===empId)return;h+='<label style="display:flex;align-items:center;gap:6px;font-weight:400;font-size:13px;padding:3px 0;"><input type="checkbox" class="ee_parent_cb" value="'+e['Employee ID']+'" style="width:auto;"'+(curParentIds.indexOf(e['Employee ID'])!==-1?' checked':'')+'> '+e['Name']+' ('+e['Employee ID']+')</label>';});
   h+='</div></div>';
+  h+='<div class="form-group"><label>Recruiter (Leader) - jisne is advisor ko recruit kiya (Leader Commission ke liye, optional)</label><select id="ee_recruiter"><option value="">-- None --</option>';
+  employees.forEach(function(e){if(e['Employee ID']===empId)return;h+='<option value="'+e['Employee ID']+'"'+((emp['Recruiter ID']||'')===e['Employee ID']?' selected':'')+'>'+e['Name']+' ('+e['Employee ID']+')</option>';});
+  h+='</select></div>';
+  h+='<div class="form-group"><label>Join Date (milestone bonus 3-month window ke liye)</label><input type="date" id="ee_joindate" value="'+(emp['Join Date']||'')+'"></div>';
   h+='<div class="form-group"><label style="display:flex;align-items:center;gap:6px;font-weight:600;"><input type="checkbox" id="ee_finaccess" style="width:auto;"'+(emp['FinanceAccess']==='Yes'?' checked':'')+'> Income/Expense Access (admin granted) - this employee will get the Add Income/Add Expense option, even without a finance ID in their sub-team</label></div>';
   h+='<div class="form-group"><label style="display:flex;align-items:center;gap:6px;font-weight:600;"><input type="checkbox" id="ee_ipoaccess" style="width:auto;"'+(emp['IPO_Access']==='Yes'?' checked':'')+'> IPO Access (admin granted) - this employee will get the IPO nav item with full read/write on the IPO module</label></div>';
   h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" data-eid="'+empId+'" onclick="saveEmp(this.dataset.eid)">Save</button></div>';
@@ -7288,7 +7523,8 @@ function saveEmp(empId){
   if(email&&!isValidEmail(email)){showToast('Gmail ID looks invalid - fix it or leave blank','error');return;}
   if(pan&&!isValidPAN(pan)){showToast('PAN format looks invalid (expected ABCDE1234F) - fix it or leave blank','error');return;}
   if(aadhaar&&!isValidAadhaar(aadhaar)){showToast('Aadhaar must be 12 digits - fix it or leave blank','error');return;}
-  var p={action:'updateEmployee','Employee ID':empId,_rowNum:emp._rowNum,'Name':document.getElementById('ee_name').value.trim(),'Branch':document.getElementById('ee_branch').value,'Role':document.getElementById('ee_role').value||'employee','Designation':document.getElementById('ee_desig')?document.getElementById('ee_desig').value:'','Status':emp['Status']||'Active','Commission':numOrDefault(document.getElementById('ee_comm').value,50),'Email':email,'Salary':parseFloat(document.getElementById('ee_sal').value)||0,'Parent ID':Array.prototype.slice.call(document.querySelectorAll('.ee_parent_cb:checked')).map(function(el){return el.value;}).join(','),'FinanceAccess':document.getElementById('ee_finaccess').checked?'Yes':'No','IPO_Access':document.getElementById('ee_ipoaccess').checked?'Yes':'No','PAN':pan,'Aadhaar':aadhaar};
+  var p={action:'updateEmployee','Employee ID':empId,_rowNum:emp._rowNum,'Name':document.getElementById('ee_name').value.trim(),'Branch':document.getElementById('ee_branch').value,'Role':document.getElementById('ee_role').value||'employee','Designation':document.getElementById('ee_desig')?document.getElementById('ee_desig').value:'','Status':emp['Status']||'Active','Commission':numOrDefault(document.getElementById('ee_comm').value,50),'Email':email,'Salary':parseFloat(document.getElementById('ee_sal').value)||0,'Parent ID':Array.prototype.slice.call(document.querySelectorAll('.ee_parent_cb:checked')).map(function(el){return el.value;}).join(','),'FinanceAccess':document.getElementById('ee_finaccess').checked?'Yes':'No','IPO_Access':document.getElementById('ee_ipoaccess').checked?'Yes':'No','PAN':pan,'Aadhaar':aadhaar,'Recruiter ID':document.getElementById('ee_recruiter')?document.getElementById('ee_recruiter').value:(emp['Recruiter ID']||''),'Join Date':document.getElementById('ee_joindate')?document.getElementById('ee_joindate').value:(emp['Join Date']||'')};
+  (function(){var rid=p['Recruiter ID'];if(rid){var ids=(p['Parent ID']||'').split(',').map(function(x){return x.trim();}).filter(Boolean);if(ids.indexOf(rid)===-1){ids.push(rid);p['Parent ID']=ids.join(',');}}})();
   var np=document.getElementById('ee_pass').value.trim();if(np)p['Password']=np;
   postData(p).then(function(r){closeModal();if(r&&r.success){showToast('Updated!','success');loadEmps();}else showToast('Failed','error');}).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
 }
