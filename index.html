@@ -913,8 +913,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       <div class="page-header"><h1>Watchlist</h1><p>Next-day trade prep — stocks to watch, star the must-buy picks</p></div>
       <div class="form-card form-grid">
         <div class="form-group"><label>Stock</label><input type="text" id="wl_stock" placeholder="e.g. RELIANCE" style="text-transform:uppercase;"></div>
-        <div class="form-group"><label>Pattern</label><select id="wl_pattern" onchange="toggleWLPatternOther()"></select></div>
-        <div class="form-group" id="wl_patternOtherGroup" style="display:none;"><label>Pattern (type)</label><input type="text" id="wl_patternOther" placeholder="Custom pattern"></div>
+        <div class="form-group"><label>Pattern</label><input type="text" id="wl_pattern" list="wl_patternList" placeholder="Type to search (e.g. Cup) or write your own" autocomplete="off"><datalist id="wl_patternList"></datalist></div>
         <div class="form-group" style="grid-column:1/-1;"><label>Notes</label><textarea id="wl_notes" placeholder="e.g. Breakout occurred, Flag & Pole pattern formed" rows="2"></textarea></div>
         <div class="form-group" style="display:flex;align-items:center;gap:8px;"><label style="margin:0;display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="wl_star" style="width:16px;height:16px;">&#11088; Must Watch (Star)</label></div>
         <button class="btn-save" style="grid-column:1/-1;" onclick="submitWatchlist()">+ Add to Watchlist</button>
@@ -2686,23 +2685,18 @@ function showMySIPDay(ds){
   var el=document.getElementById('mySipDayDiv');el.innerHTML=h;el.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 function populateWLPattern(){
-  var sel=document.getElementById('wl_pattern');
-  if(!sel||sel.options.length)return;
-  var list=TJ_STRATEGIES_SWING;
-  sel.innerHTML=list.map(function(s){return '<option value="'+s+'">'+s+'</option>';}).join('');
-}
-function toggleWLPatternOther(){
-  var sel=document.getElementById('wl_pattern');
-  var box=document.getElementById('wl_patternOtherGroup');
-  if(!sel||!box)return;
-  box.style.display=(sel.value==='Other')?'block':'none';
+  /* v67: Pattern ab ek typeable text input hai (native datalist se autocomplete) - list sirf
+     suggestion ke liye hai; jo bhi type karoge wahi save hoga, aur custom likhi hui value
+     agli baar list me permanently add nahi hoti. */
+  var dl=document.getElementById('wl_patternList');
+  if(!dl||dl.options.length)return;
+  var list=TJ_STRATEGIES_SWING.filter(function(s){return s!=='Other';});
+  dl.innerHTML=list.map(function(s){return '<option value="'+s+'"></option>';}).join('');
 }
 function submitWatchlist(){
   var stock=(document.getElementById('wl_stock').value||'').trim().toUpperCase();
   var notes=(document.getElementById('wl_notes').value||'').trim();
-  var patSel=document.getElementById('wl_pattern');
-  var pattern=patSel?patSel.value:'';
-  if(pattern==='Other')pattern=(document.getElementById('wl_patternOther').value||'').trim()||'Other';
+  var pattern=(document.getElementById('wl_pattern').value||'').trim();
   var starred=document.getElementById('wl_star').checked?'Yes':'No';
   if(!stock){showToast('Enter stock name','error');return;}
   var p={action:'addGeneric',sheet:'Watchlist',
@@ -2710,7 +2704,7 @@ function submitWatchlist(){
     'Stock':stock,'Notes':notes,'Pattern':pattern,'Starred':starred,'Traded':'No','Status':'Active'};
   document.getElementById('wl_stock').value='';document.getElementById('wl_notes').value='';
   document.getElementById('wl_star').checked=false;
-  var po=document.getElementById('wl_patternOther');if(po)po.value='';
+  var pf=document.getElementById('wl_pattern');if(pf)pf.value='';
   if(!allData.Watchlist)allData.Watchlist=[];
   var localRow=Object.assign({},p,{_rowNum:'_local'+Date.now()});
   allData.Watchlist.push(localRow);
