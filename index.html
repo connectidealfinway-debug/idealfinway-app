@@ -5234,10 +5234,10 @@ function patchRowLocal(sheet,rowNum,vals){
   }
 }
 function goToMainAfterSave(){
-  if(!currentUser)return;
-  if(currentUser.role==='admin')showPage('adminDash');
-  else if(currentUser.role==='finance')showPage('finDash');
-  else showPage('empDash');
+  /* v65: user requested that after adding ANY entry (account, SIP, insurance, reminder,
+     student, attendance, trading journal, etc.) the form should just clear and stay put
+     for the next entry - no more auto-jump to the dashboard. Applies everywhere since every
+     add-flow funnels through this one function. */
 }
 function doSubmit(payload,sheet,btnEl,btnTxt,clearFn){
   /* v65: TRUE optimistic save - reflect in UI and confirm to the user INSTANTLY (before the
