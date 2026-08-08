@@ -3660,6 +3660,10 @@ function submitContestAccount(contestId,fid){
   var cphone=(document.getElementById('cxa_cphone_'+fid).value||'').trim();
   if(!cphone){showToast('Client mobile number is required - entry cannot be added without it','error');return;}
   var dup=findDuplicateAccount(cn,cphone,cid);
+  if(dup.byId&&(dup.byId['Employee ID']||'').trim()===String(currentUser.userId).trim()){
+    showToast('You already added Client ID '+cid+' - check My Accounts to edit/avoid a duplicate.','error');
+    return;
+  }
   if(!dup.byId&&dup.byName&&!confirm(dupAccountMsg(dup.byName)+' Avoid duplicate entries - add a new entry anyway?'))return;
   var p={action:'addAccount','Date':td(),'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch,
     'Client Name':cn,'Client ID':cid,'Client Phone':cphone,
@@ -5119,8 +5123,15 @@ function renderMyAccTable(){
   if(myAccStat==='inactive')rows=rows.filter(function(r){return r['Status']==='Inactive';});
   var q=getSrch('srch-myAcc');rows=srchFilter(rows,q,['Client Name','Client ID']);
   var active=rows.filter(function(r){return (r['Status']||'Active')==='Active';}).length;
-  document.getElementById('myAccStats').innerHTML=mkStats([{label:'Total',value:rows.length,sub:'your accounts',color:'green',onclick:"setMyAccStat('all',event.currentTarget)"},{label:'Active',value:active,sub:'active',color:'blue',onclick:"setMyAccStat('active',event.currentTarget)"},{label:'Inactive',value:rows.length-active,sub:'inactive',color:'amber',onclick:"setMyAccStat('inactive',event.currentTarget)"}]);
-  document.getElementById('myAccTable').innerHTML=mkAccTable(rows,{},myAccSortBy);
+  /* v66: agar galti se same Client ID khud hi 2 baar add ho gaya ho (purani entries), to yaha
+     highlight kar dete hain taaki employee khud dekh kar extra wali entry delete kar sake -
+     delete button pehle se hi table me maujood hai, sirf visibility add ki hai. */
+  var selfDupCidCount={};
+  rows.forEach(function(r){var c=(r['Client ID']||'').trim();if(!c)return;selfDupCidCount[c]=(selfDupCidCount[c]||0)+1;});
+  var selfDup={};Object.keys(selfDupCidCount).forEach(function(c){if(selfDupCidCount[c]>1)selfDup[c]=true;});
+  var selfDupCount=Object.keys(selfDup).length;
+  document.getElementById('myAccStats').innerHTML=mkStats([{label:'Total',value:rows.length,sub:'your accounts',color:'green',onclick:"setMyAccStat('all',event.currentTarget)"},{label:'Active',value:active,sub:'active',color:'blue',onclick:"setMyAccStat('active',event.currentTarget)"},{label:'Inactive',value:rows.length-active,sub:'inactive',color:'amber',onclick:"setMyAccStat('inactive',event.currentTarget)"}].concat(selfDupCount?[{label:'Your Duplicate IDs',value:selfDupCount,sub:'same Client ID added twice by you - delete the extra one below',color:'red'}]:[]));
+  document.getElementById('myAccTable').innerHTML=mkAccTable(rows,selfDup,myAccSortBy);
 }
 
 function renderMyLeads(){
@@ -5445,12 +5456,19 @@ function submitAccount(){
   if(!cn||!cid){showToast('Client Name and ID required','error');return;}
   var cphoneChk=document.getElementById('a_cphone').value.trim();
   if(!cphoneChk){showToast('Client mobile number is required - entry cannot be added without it','error');return;}
-  var dupChk=findDuplicateAccount(cn,cphoneChk,cid);
-  if(!dupChk.byId&&dupChk.byName&&!confirm(dupAccountMsg(dupChk.byName)+' Avoid duplicate entries - add a new entry anyway?'))return;
   var fe=forEmpObj('a_forEmp');
   var ref=computeRefAndFe('a',fe);
   if(ref.error){showToast(ref.error,'error');return;}
   fe=ref.fe;
+  /* v66: SAME employee cannot re-add a Client ID they already added themselves - hard block.
+     A DIFFERENT employee adding the same Client ID is still allowed through (v64 behaviour),
+     with the popup + admin Map/resolve flow unchanged. */
+  var dupChk=findDuplicateAccount(cn,cphoneChk,cid);
+  if(dupChk.byId&&(dupChk.byId['Employee ID']||'').trim()===String(fe.id).trim()){
+    showToast('You already added Client ID '+cid+' - check My Accounts to edit/avoid a duplicate.','error');
+    return;
+  }
+  if(!dupChk.byId&&dupChk.byName&&!confirm(dupAccountMsg(dupChk.byName)+' Avoid duplicate entries - add a new entry anyway?'))return;
   var actTrading=document.getElementById('a_actTrading').checked?'Yes':'No';
   var actSIP=document.getElementById('a_actSIP').checked?'Yes':'No';
   var actInv=document.getElementById('a_actInvestment').checked?'Yes':'No';
