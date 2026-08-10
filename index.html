@@ -1922,7 +1922,11 @@ function computeReminders(){
   var settlementAlerts=[];
   if(stlInWindow(stlMonFri))settlementAlerts=settlementAlerts.concat(stlRows.filter(function(r){return (r['Type']||'')==='Monthly';}));
   if(stlInWindow(stlQFri))settlementAlerts=settlementAlerts.concat(stlRows.filter(function(r){return (r['Type']||'')==='Quarterly';}));
-  return {sipTomorrow:sipTomorrow,meetToday:meetToday,pendStud:pendStud,tomorrow:tomorrow,tradeAlerts:tradeAlerts,dueReminders:dueReminders,starredWatch:starredWatch,holdingAlerts:holdingAlerts,settlementAlerts:settlementAlerts};
+  var watchlistAlerts=[];
+  if(isAdm){
+    watchlistAlerts=(allData.Watchlist||[]).filter(function(r){return (r['Status']||'Active')==='Active' && !(r['RK Comments']||'').trim();});
+  }
+  return {sipTomorrow:sipTomorrow,meetToday:meetToday,pendStud:pendStud,tomorrow:tomorrow,tradeAlerts:tradeAlerts,dueReminders:dueReminders,starredWatch:starredWatch,holdingAlerts:holdingAlerts,settlementAlerts:settlementAlerts,watchlistAlerts:watchlistAlerts};
 }
 function buildReminderHTML(r){
   var isAdm=currentUser&&currentUser.role==='admin';
@@ -1987,6 +1991,15 @@ function buildReminderHTML(r){
         +'</div>';
     }).join('')+'</div>';
   }
+  if(r.watchlistAlerts && r.watchlistAlerts.length){
+    h+='<div style="font-weight:700;color:#8b5cf6;margin:4px 0 8px;">&#128269; New Watchlist Stocks &#8212; check &amp; add your RK Comment:</div>';
+    h+='<div style="max-height:170px;overflow:auto;margin-bottom:14px;">'+r.watchlistAlerts.map(function(w){
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 4px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:13px;">'
+        +'<span><b>'+(w['Stock']||'-')+'</b> <span style="color:var(--muted,#8a94a6);font-size:11px;">('+(w['Employee Name']||'')+')</span></span>'
+        +'<button class="btn-mini" onclick="closeModal();showPage(\'watchlist\');">&#128064; View</button>'
+        +'</div>';
+    }).join('')+'</div>';
+  }
   if(r.dueReminders&&r.dueReminders.length){
     h+='<div style="font-weight:700;color:var(--danger,#ef4444);margin:4px 0 8px;">&#128276; Reminder Due:</div>';
     h+='<div style="max-height:220px;overflow:auto;margin-bottom:14px;">'+r.dueReminders.map(function(rr){
@@ -2005,7 +2018,7 @@ function buildReminderHTML(r){
         +'</div>';
     }).join('')+'</div>';
   }
-  if(!r.meetToday.length&&!r.sipTomorrow.length&&!r.pendStud.length&&!(r.tradeAlerts&&r.tradeAlerts.length)&&!(r.dueReminders&&r.dueReminders.length)&&!(r.starredWatch&&r.starredWatch.length)&&!(r.holdingAlerts&&r.holdingAlerts.length)&&!(r.settlementAlerts&&r.settlementAlerts.length)){
+  if(!r.meetToday.length&&!r.sipTomorrow.length&&!r.pendStud.length&&!(r.tradeAlerts&&r.tradeAlerts.length)&&!(r.dueReminders&&r.dueReminders.length)&&!(r.starredWatch&&r.starredWatch.length)&&!(r.holdingAlerts&&r.holdingAlerts.length)&&!(r.settlementAlerts&&r.settlementAlerts.length)&&!(r.watchlistAlerts&&r.watchlistAlerts.length)){
     h+='<div style="color:var(--muted,#8a94a6);padding:14px 0;">No pending reminders. All clear! &#9989;</div>';
   }
   h+='<div class="modal-actions"><button class="btn-save" onclick="closeModal()">Got it</button></div>';
@@ -2015,7 +2028,7 @@ function buildReminderHTML(r){
 function renderNotifBell(){
   var el=document.getElementById('notifBell');if(!el||!currentUser)return;
   var r=computeReminders();
-  var n=r.sipTomorrow.length+r.meetToday.length+r.pendStud.length+(r.tradeAlerts?r.tradeAlerts.length:0)+(r.dueReminders?r.dueReminders.length:0)+(r.starredWatch?r.starredWatch.length:0)+(r.holdingAlerts?r.holdingAlerts.length:0)+(r.settlementAlerts?r.settlementAlerts.length:0);
+  var n=r.sipTomorrow.length+r.meetToday.length+r.pendStud.length+(r.tradeAlerts?r.tradeAlerts.length:0)+(r.dueReminders?r.dueReminders.length:0)+(r.starredWatch?r.starredWatch.length:0)+(r.holdingAlerts?r.holdingAlerts.length:0)+(r.settlementAlerts?r.settlementAlerts.length:0)+(r.watchlistAlerts?r.watchlistAlerts.length:0);
   el.style.display='flex';
   el.classList.toggle('has-alert',n>0);
   var badge=document.getElementById('notifCount');
@@ -2033,7 +2046,7 @@ function checkDueTomorrowPopup(){
   if(localStorage.getItem(key))return;
   localStorage.setItem(key,'1');
   var r=computeReminders();
-  if(!r.sipTomorrow.length&&!r.meetToday.length&&!r.pendStud.length&&!(r.tradeAlerts&&r.tradeAlerts.length)&&!(r.dueReminders&&r.dueReminders.length)&&!(r.starredWatch&&r.starredWatch.length)&&!(r.holdingAlerts&&r.holdingAlerts.length)&&!(r.settlementAlerts&&r.settlementAlerts.length))return;
+  if(!r.sipTomorrow.length&&!r.meetToday.length&&!r.pendStud.length&&!(r.tradeAlerts&&r.tradeAlerts.length)&&!(r.dueReminders&&r.dueReminders.length)&&!(r.starredWatch&&r.starredWatch.length)&&!(r.holdingAlerts&&r.holdingAlerts.length)&&!(r.settlementAlerts&&r.settlementAlerts.length)&&!(r.watchlistAlerts&&r.watchlistAlerts.length))return;
   playAlertSound();
   document.getElementById('modalBox').innerHTML=buildReminderHTML(r);
   document.getElementById('modal').className='show';
@@ -2215,7 +2228,7 @@ function loadAll(attempt){
         LeaderMilestoneBonus:r.leaderMilestoneBonus||r.LeaderMilestoneBonus||[],
         RecruitRequests:r.recruitRequests||r.RecruitRequests||[]
       };
-      saveCache();checkSIPAlerts();autoPunchIn();renderPage(curPage());loadEmps();setTimeout(checkDueTomorrowPopup,600);setTimeout(check315Reminder,900);renderAnnounceBanner();if(!window._stlCleanupDone){window._stlCleanupDone=true;getJSON('cleanupOldSettlement').catch(function(){});}
+      saveCache();checkSIPAlerts();autoPunchIn();renderPage(curPage());loadEmps();setTimeout(checkDueTomorrowPopup,600);setTimeout(check315Reminder,900);setTimeout(checkWLRKComments,1200);renderAnnounceBanner();if(!window._stlCleanupDone){window._stlCleanupDone=true;getJSON('cleanupOldSettlement').catch(function(){});}
     }else if(attempt<3){
       setTimeout(function(){loadAll(attempt+1);},4000);
     }else{
@@ -2760,12 +2773,13 @@ function toggleWatchlistTraded(rowNum,current){
 }
 function mkWatchlistTable(rows,showEmp){
   if(!rows||!rows.length)return '<div class="no-data">No stocks in watchlist</div>';
+  var isAdm=currentUser&&currentUser.role==='admin';
   var sorted=rows.slice().sort(function(a,b){
     var as=a['Starred']==='Yes'?1:0, bs=b['Starred']==='Yes'?1:0;
     if(as!==bs)return bs-as;
     return (b['Date Added']||'').localeCompare(a['Date Added']||'');
   });
-  var h='<table><thead><tr><th></th><th>Date</th>'+(showEmp?'<th>Employee</th>':'')+'<th>Stock</th><th>Pattern</th><th>Notes</th><th>Traded?</th><th>Actions</th></tr></thead><tbody>';
+  var h='<table><thead><tr><th></th><th>Date</th>'+(showEmp?'<th>Employee</th>':'')+'<th>Stock</th><th>Pattern</th><th>Notes</th><th>RK Comments</th><th>Traded?</th><th>Actions</th></tr></thead><tbody>';
   sorted.forEach(function(r){
     var starred=r['Starred']==='Yes';
     var traded=r['Traded']==='Yes';
@@ -2776,11 +2790,64 @@ function mkWatchlistTable(rows,showEmp){
     h+='<td style="font-weight:600;">'+(r['Stock']||'-')+'</td>';
     h+='<td style="font-size:11px;color:var(--muted);">'+(r['Pattern']||'-')+'</td>';
     h+='<td style="font-size:12px;color:var(--muted);white-space:normal;max-width:220px;">'+(r['Notes']||'-')+'</td>';
+    if(isAdm){
+      h+='<td style="min-width:170px;"><input type="text" class="rk-comment-input" data-rownum="'+r['_rowNum']+'" value="'+escAttr(r['RK Comments']||'')+'" placeholder="Apna comment likhein..." style="width:100%;font-size:12px;padding:5px 7px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.04);color:inherit;" oninput="saveWLRKComment(this)" onblur="wlRKCommentBlur(this)"></td>';
+    }else{
+      h+='<td style="font-size:12px;white-space:normal;max-width:220px;color:'+(r['RK Comments']?'#3fbf7f':'var(--muted)')+';">'+(r['RK Comments']?('&#128172; '+r['RK Comments']):'-')+'</td>';
+    }
     h+='<td><span class="badge '+(traded?'green':'amber')+'" style="cursor:pointer;" onclick="toggleWatchlistTraded('+r['_rowNum']+',\''+(r['Traded']||'No')+'\')">'+(traded?'&#10003; Traded':'Not Traded')+'</span></td>';
     h+='<td><button class="btn-del" onclick="confirmDel(\'Watchlist\','+r['_rowNum']+')">&#128465;</button></td>';
     h+='</tr>';
   });
   return h+'</tbody></table>';
+}
+function escAttr(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+var wlRKSaveTimers={};
+function saveWLRKComment(el){
+  var rowNum=el.getAttribute('data-rownum');
+  clearTimeout(wlRKSaveTimers[rowNum]);
+  wlRKSaveTimers[rowNum]=setTimeout(function(){doSaveWLRKComment(rowNum,el.value,el);},700);
+}
+function wlRKCommentBlur(el){
+  var rowNum=el.getAttribute('data-rownum');
+  clearTimeout(wlRKSaveTimers[rowNum]);
+  doSaveWLRKComment(rowNum,el.value,el);
+}
+function doSaveWLRKComment(rowNum,val,el){
+  patchRowLocal('Watchlist',rowNum,{'RK Comments':val});
+  postData({action:'editRow',sheet:'Watchlist',rowNum:rowNum,vals:{'RK Comments':val}}).then(function(r){
+    if(r&&r.success){
+      if(el){el.style.transition='background-color 0.3s';var orig=el.style.backgroundColor;el.style.backgroundColor='rgba(63,191,127,0.25)';setTimeout(function(){el.style.backgroundColor=orig;},500);}
+    }else{
+      showToast('RK Comment save failed: '+(r&&r.error||''),'error');
+    }
+  }).catch(function(e){showToast('Network error: '+e.message,'error');});
+}
+function checkWLRKComments(){
+  if(!currentUser||currentUser.role==='admin')return;
+  var rows=fEmpStrict(allData.Watchlist||[],currentUser.userId);
+  var newOnes=[];
+  rows.forEach(function(r){
+    var c=(r['RK Comments']||'').trim();
+    if(!c)return;
+    var key='ifw_rkseen_'+currentUser.userId+'_'+r['_rowNum'];
+    var seen=localStorage.getItem(key);
+    if(seen===c)return;
+    newOnes.push(r);
+  });
+  if(!newOnes.length)return;
+  newOnes.forEach(function(r){localStorage.setItem('ifw_rkseen_'+currentUser.userId+'_'+r['_rowNum'],(r['RK Comments']||'').trim());});
+  playAlertSound();
+  var h='<div class="modal-title">&#128172; RK Comments on Your Watchlist</div>';
+  h+='<div style="color:var(--muted,#8a94a6);margin-bottom:10px;font-size:13px;">RK ne aapke daale gaye stocks pe comment kiya hai:</div>';
+  h+='<div style="max-height:260px;overflow:auto;margin-bottom:14px;">'+newOnes.map(function(r){
+    return '<div style="padding:8px 4px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:13px;">'
+      +'<b>'+(r['Stock']||'-')+'</b><div style="color:#3fbf7f;margin-top:4px;">&#128172; '+(r['RK Comments']||'')+'</div>'
+      +'</div>';
+  }).join('')+'</div>';
+  h+='<div class="modal-actions"><button class="btn-save" onclick="closeModal()">Got it</button></div>';
+  document.getElementById('modalBox').innerHTML=h;
+  document.getElementById('modal').className='show';
 }
 function showWLDay(ds){
   var isAdm=currentUser&&currentUser.role==='admin';
