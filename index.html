@@ -7015,6 +7015,56 @@ function renderFinDash(){
 
 /* ===== v22: MONTHLY HISAB ===== */
 var hisabSt={month:'',rows:{}};
+var HISAB_SHARED=[{from:'jh_hansi',to:'ideal.himanshu',pct:25,label:'JH_HANSI (Jai Himanshu) clients (25%)'}];
+/* v73: shared by both initSt (fresh row) and recalcAutoLines (already-saved row) so auto-lines logic lives in exactly one place */
+function computeAutoLines(e,empBrokFn,incRows){
+  var eid=e['Employee ID'];
+  var lines=[];
+  var sal=parseFloat(e['Salary'])||0;
+  if(sal>0)lines.push({t:'add',l:'Fixed Salary',a:sal});
+  HISAB_SHARED.forEach(function(s){
+    if(s.to===(eid||'').trim().toLowerCase()){
+      var b=empBrokFn(s.from);
+      if(b>0)lines.push({t:'add',l:s.label,a:r2(b*s.pct/100)});
+    }
+  });
+  if((e['Role']||'').toLowerCase()!=='partner'){
+    var refTag='employee: '+(e['Name']||'').trim().toLowerCase();
+    var refSum=incRows.filter(function(r){return r['Category']==='Student Fee'&&(r['Reference']||'').trim().toLowerCase()===refTag;}).reduce(function(s,r){return s+(parseFloat(r['Amount'])||0);},0);
+    var refComm=r2(refSum*0.10);
+    if(refComm>0)lines.push({t:'add',l:'Student Referral Commission (10%)',a:refComm});
+    var lcb=leaderCommissionBreakdown(eid,empBrokFn);
+    if(lcb.total>0)lines.push({t:'add',l:'Leader Commission (Team: '+lcb.rows.filter(function(x){return x.comm>0;}).map(function(x){return x.name;}).join(', ')+')',a:lcb.total});
+  }
+  return lines;
+}
+/* v73: admin/finance clicks this on an ALREADY-SAVED/PAID Hisab row to pull in auto-lines (Leader
+   Commission, Student Referral, Shared-client, Fixed Salary) that weren't there when it was first
+   saved - e.g. because the recruit's brokerage got corrected/uploaded after this row was already paid.
+   Any OTHER manually added Addition/Deduction lines are left untouched. Does not auto-save - admin
+   must review the refreshed numbers and click Save. */
+function recalcAutoLines(eid){
+  var st=hisabSt.rows[eid];
+  if(!st){showToast('Row not found','error');return;}
+  var e=employees.find(function(x){return x['Employee ID']===eid;});
+  if(!e){showToast('Employee not found','error');return;}
+  if(!confirm('Auto-lines (Fixed Salary, Student Referral Commission, Leader Commission, Shared-client commission) is row ke liye dobara calculate honge. Baaki manually add ki gayi Additions/Deductions untouched rahengi. Continue?'))return;
+  var mo=hisabSt.month;
+  var cbMonth=fMonth(allData.ClientBrokerage||[],mo);
+  function empBrokR(id){return r2(cbMonth.filter(function(r){return (r['Employee ID']||'').trim().toLowerCase()===String(id).trim().toLowerCase();}).reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0));}
+  var incR=fMonth(allData.Income||[],mo);
+  var fresh=computeAutoLines(e,empBrokR,incR);
+  var autoExact={'Fixed Salary':1,'Student Referral Commission (10%)':1};
+  HISAB_SHARED.forEach(function(s){autoExact[s.label]=1;});
+  var keep=st.lines.filter(function(l){
+    if(autoExact[l.l])return false;
+    if(l.l.indexOf('Leader Commission (Team:')===0)return false;
+    return true;
+  });
+  st.lines=fresh.concat(keep);
+  showToast('Auto lines refresh ho gayi - check karke Save dabayein','success');
+  renderHisab();
+}
 function renderHisab(){
   var inp=document.getElementById('hisabMonth');
   if(!inp.value)inp.value=curMonth();
@@ -7034,8 +7084,6 @@ function renderHisab(){
   var tInc=r2(inc.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0));
   var tExp=r2(exp.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0));
   function empBrok(eid){return r2(cbMonth.filter(function(r){return (r['Employee ID']||'').trim().toLowerCase()===String(eid).trim().toLowerCase();}).reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0));}
-  /* shared IDs: in IDs ke clients ka % kisi aur employee ke hisab me auto-add hota hai */
-  var SHARED=[{from:'jh_hansi',to:'ideal.himanshu',pct:25,label:'JH_HANSI (Jai Himanshu) clients (25%)'}];
   var emps=employees.filter(function(e){
     var role=(e['Role']||'employee').toLowerCase();
     if((e['Status']||'Active')!=='Active'||role==='admin')return false;
@@ -7053,22 +7101,7 @@ function renderHisab(){
   function initSt(e){
     var eid=e['Employee ID'];
     if(hisabSt.rows[eid])return hisabSt.rows[eid];
-    var st={lines:[],pct:getCommission(eid),status:'Pending',paidDate:'',saved:false};
-    var sal=parseFloat(e['Salary'])||0;
-    if(sal>0)st.lines.push({t:'add',l:'Fixed Salary',a:sal});
-    SHARED.forEach(function(s){
-      if(s.to===(eid||'').trim().toLowerCase()){
-        var b=empBrok(s.from);
-        if(b>0)st.lines.push({t:'add',l:s.label,a:r2(b*s.pct/100)});
-      }
-    });
-    /* v52: partner ko net profit pool ka % hi milta h, alag se koi extra commission nahi - referral commission sirf staff/employee ko */
-    if((e['Role']||'').toLowerCase()!=='partner'){
-      var refComm=studentRefCommission(e);
-      if(refComm>0)st.lines.push({t:'add',l:'Student Referral Commission (10%)',a:refComm});
-      var lcb=leaderCommissionBreakdown(eid,empBrok);
-      if(lcb.total>0)st.lines.push({t:'add',l:'Leader Commission (Team: '+lcb.rows.filter(function(x){return x.comm>0;}).map(function(x){return x.name;}).join(', ')+')',a:lcb.total});
-    }
+    var st={lines:computeAutoLines(e,empBrok,inc),pct:getCommission(eid),status:'Pending',paidDate:'',saved:false};
     hisabSt.rows[eid]=st;
     return st;
   }
@@ -7149,6 +7182,7 @@ function renderHisab(){
     cardsH+='<button class="btn-mini add" onclick="addHisabLine(\''+eid+'\',\'add\')">+ Addition</button>';
     cardsH+='<button class="btn-mini ded" onclick="addHisabLine(\''+eid+'\',\'ded\')">&#8722; Deduction</button>';
     cardsH+='<button class="btn-mini" style="border-color:var(--blue);color:var(--blue);" onclick="saveHisabRow(\''+eid+'\')">&#128190; Save</button>';
+    cardsH+='<button class="btn-mini" style="border-color:var(--purple);color:var(--purple);" onclick="recalcAutoLines(\''+eid+'\')" title="Fixed Salary/Student Referral/Leader Commission jaise auto-lines dobara calculate karo (manual Additions/Deductions untouched rahenge)">&#128260; Recalculate</button>';
     if(st.status!=='Paid')cardsH+='<button class="btn-mini" style="border-color:var(--accent);color:var(--accent);" onclick="markHisabPaid(\''+eid+'\')">&#10003; Mark Paid</button>';
     cardsH+='</div></div>';
   }
