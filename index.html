@@ -784,6 +784,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       <h3 id="teamSecBrok" style="margin:24px 0 10px;">Brokerage (Client-wise)</h3>
       <div id="teamBrokTable"></div>
       <h3 id="teamSecAcc" style="margin:24px 0 10px;">Accounts</h3>
+      <div style="margin-bottom:10px;"><select id="team_accsort" onchange="setTeamAccSort(this.value)" style="max-width:240px;"><option value="">Sort: Working Clients First</option><option value="cid">Sort: Client ID (FBO1,2,3...)</option><option value="brokerage">Sort: Brokerage (High to Low)</option></select></div>
       <div id="teamAccTable"></div>       <h3 id="teamSecHold" style="margin:24px 0 10px;">Client Holding &amp; Ledger</h3>       <div class="stats-grid" id="teamHoldStats"></div>       <div id="teamHoldTable"></div>       <h3 id="teamSecSIP" style="margin:24px 0 10px;">SIP / Mutual Fund</h3>
       <div id="teamSIPTable"></div>
       <h3 id="teamSecIns" style="margin:24px 0 10px;">Insurance</h3>
@@ -1671,7 +1672,7 @@ var currentUser=null;
 var allData={Brokerage:[],ClientBrokerage:[],ClientHolding:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[],Meetings:[],Income:[],Expense:[],Hisab:[],TradingJournal:[],CallTrade:[],CallClients:[],Watchlist:[],Reminders:[],Announcements:[],ClientDocuments:[],Resignations:[],EmployeeDataMoves:[],IPO_Master:[],IPO_Applications:[]};
 var employees=[];
 var filters={};
-var accStat='all',myAccStat='all',dashF='today',accDupOnly=false,teamWorkingOnly=false,bizScope='own',accSortBy='',myAccSortBy='';
+var accStat='all',myAccStat='all',dashF='today',accDupOnly=false,teamWorkingOnly=false,bizScope='own',accSortBy='',myAccSortBy='',teamAccSortBy='';
 var leadCatF='all',myLeadCatF='all';
 var leadConvF='all',myLeadConvF='all',meetConvF='all',myMeetConvF='all';
 var wlStatF='all';
@@ -2179,6 +2180,7 @@ function setAccStat(s,btn){accStat=s;btn.parentElement.querySelectorAll('.filter
 function toggleAccDup(){accDupOnly=!accDupOnly;renderAccTable();}function setAccSort(v){accSortBy=v;renderAccTable();}
 function toggleTeamWorking(){teamWorkingOnly=!teamWorkingOnly;renderMyTeamData();}
 function showAllTeamClients(){teamWorkingOnly=false;renderMyTeamData();}
+function setTeamAccSort(v){teamAccSortBy=v;renderMyTeamData();}
 function setMyAccStat(s,btn){myAccStat=s;btn.parentElement.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');renderMyAccTable();}function setMyAccSort(v){myAccSortBy=v;renderMyAccTable();}
 function setLeadCat(v,btn,varName){if(varName==='leadCatF')leadCatF=v;else myLeadCatF=v;btn.parentElement.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');renderPage(curPage());}
 function curPage(){var p=document.querySelector('.page.active');return p?p.id.replace('page-',''):'';}
@@ -2413,7 +2415,11 @@ function renderMyTeamData(){
     {label:'Students',value:stud.length,sub:'referred',color:'purple'}
   ]);
   var accDisplay;
-  if(teamWorkingOnly){
+  var baseAcc=teamWorkingOnly?teamWorkingAcc:acc;
+  var cbrokAmtMap={};cbrok.forEach(function(r){var k=(r['Client ID']||'').trim().toUpperCase();cbrokAmtMap[k]=(cbrokAmtMap[k]||0)+parseFloat(r['Amount']||0);});
+  if(teamAccSortBy==='cid'||teamAccSortBy==='brokerage'){
+    accDisplay=baseAcc;
+  } else if(teamWorkingOnly){
     accDisplay=teamWorkingAcc;
   } else {
     var workIds={};teamWorkingAcc.forEach(function(r){workIds[(r['Client ID']||'').trim()]=1;});
@@ -2430,7 +2436,7 @@ function renderMyTeamData(){
     bh+='</tbody></table>';
   } else bh='<div class="no-data">No client brokerage yet</div>';
   document.getElementById('teamBrokTable').innerHTML=bh;
-  document.getElementById('teamAccTable').innerHTML=mkAccTable(accDisplay,{});   var teamHold=fEmpStrict(allData.ClientHolding||[],uid);   var teamHoldAgg=holdingClientAgg(teamHold);   var teamHoldValue=teamHoldAgg.reduce(function(s,c){return s+c.totalValue;},0);   var teamHoldLedger=teamHoldAgg.reduce(function(s,c){return s+c.ledger;},0);   document.getElementById('teamHoldStats').innerHTML=mkStats([     {label:'Clients with Holding',value:teamHoldAgg.length,sub:'uploaded data',color:'blue'},     {label:'Total Holding Value',value:fmt(teamHoldValue),sub:'combined',color:'green'},     {label:'Total Ledger Balance',value:fmt(teamHoldLedger),sub:(teamHoldLedger>=0?'net credit':'net debit'),color:teamHoldLedger>=0?'green':'red'}   ]);   document.getElementById('teamHoldTable').innerHTML=mkHoldingTable(teamHoldAgg,true);
+  document.getElementById('teamAccTable').innerHTML=mkAccTable(accDisplay,{},(teamAccSortBy==='cid'?'cid':(teamAccSortBy==='brokerage'?'brokerage':undefined)),cbrokAmtMap);   var teamHold=fEmpStrict(allData.ClientHolding||[],uid);   var teamHoldAgg=holdingClientAgg(teamHold);   var teamHoldValue=teamHoldAgg.reduce(function(s,c){return s+c.totalValue;},0);   var teamHoldLedger=teamHoldAgg.reduce(function(s,c){return s+c.ledger;},0);   document.getElementById('teamHoldStats').innerHTML=mkStats([     {label:'Clients with Holding',value:teamHoldAgg.length,sub:'uploaded data',color:'blue'},     {label:'Total Holding Value',value:fmt(teamHoldValue),sub:'combined',color:'green'},     {label:'Total Ledger Balance',value:fmt(teamHoldLedger),sub:(teamHoldLedger>=0?'net credit':'net debit'),color:teamHoldLedger>=0?'green':'red'}   ]);   document.getElementById('teamHoldTable').innerHTML=mkHoldingTable(teamHoldAgg,true);
   document.getElementById('teamSIPTable').innerHTML=mkTable(sip,[{k:'Date',l:'Date'},{k:'Employee Name',l:'Employee'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Client ID'},{k:'Client Phone',l:'Phone'},{k:'Type',l:'Type'},{k:'Amount',l:'Amount',money:true},{k:'SIP Due Date',l:'Due Date'}],'SIP');
   document.getElementById('teamInsTable').innerHTML=mkTable(ins,[{k:'Date',l:'Date'},{k:'Employee Name',l:'Employee'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Policy ID'},{k:'Client Phone',l:'Phone'},{k:'Type',l:'Type'},{k:'Premium',l:'Premium',money:true}],'Insurance');
   document.getElementById('teamStudTable').innerHTML=mkStudentTable(stud,true);
@@ -3373,10 +3379,10 @@ function renderAccTable(){
   document.getElementById('accTable').innerHTML=mkAccTable(rows,dupSet,accSortBy);
 }
 
-function mkAccTable(rows,dupSet,sortMode){
+function mkAccTable(rows,dupSet,sortMode,amtMap){
   if(!rows||!rows.length)return '<div class="no-data">No accounts found</div>';
   var h='<table><thead><tr><th>Date</th><th>Employee</th><th>Client</th><th>Client ID</th><th>Phone</th><th>Last Call</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
-  var ordered=rows.slice().reverse();if(sortMode==='cid'){ordered.sort(function(a,b){var na=parseInt((a['Client ID']||'').replace(/[^0-9]/g,''),10);var nb=parseInt((b['Client ID']||'').replace(/[^0-9]/g,''),10);if(isNaN(na))na=999999999;if(isNaN(nb))nb=999999999;return na-nb;});}else if(sortMode==='lastcall'){ordered.sort(function(a,b){var da=a['Last Call Date']?new Date(a['Last Call Date']):null;var db=b['Last Call Date']?new Date(b['Last Call Date']):null;da=(da&&!isNaN(da))?da:null;db=(db&&!isNaN(db))?db:null;if(!da&&!db)return 0;if(!da)return 1;if(!db)return -1;return db-da;});}
+  var ordered=rows.slice().reverse();if(sortMode==='cid'){ordered.sort(function(a,b){var na=parseInt((a['Client ID']||'').replace(/[^0-9]/g,''),10);var nb=parseInt((b['Client ID']||'').replace(/[^0-9]/g,''),10);if(isNaN(na))na=999999999;if(isNaN(nb))nb=999999999;return na-nb;});}else if(sortMode==='lastcall'){ordered.sort(function(a,b){var da=a['Last Call Date']?new Date(a['Last Call Date']):null;var db=b['Last Call Date']?new Date(b['Last Call Date']):null;da=(da&&!isNaN(da))?da:null;db=(db&&!isNaN(db))?db:null;if(!da&&!db)return 0;if(!da)return 1;if(!db)return -1;return db-da;});}else if(sortMode==='brokerage'&&amtMap){ordered.sort(function(a,b){var ak=(a['Client ID']||'').trim().toUpperCase(),bk=(b['Client ID']||'').trim().toUpperCase();return (amtMap[bk]||0)-(amtMap[ak]||0);});}
   ordered.sort(function(a,b){
     var da=dupSet&&dupSet[(a['Client ID']||'').trim()]?1:0;
     var db=dupSet&&dupSet[(b['Client ID']||'').trim()]?1:0;
