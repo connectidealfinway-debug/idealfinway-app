@@ -2184,15 +2184,25 @@ function setLeadCat(v,btn,varName){if(varName==='leadCatF')leadCatF=v;else myLea
 function curPage(){var p=document.querySelector('.page.active');return p?p.id.replace('page-',''):'';}
 
 var _lastKnownUpdateTs=null;
+function isUserTyping(){
+  var ae=document.activeElement;
+  return !!(ae&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA'||ae.tagName==='SELECT'));
+}
 function checkForUpdates(){
   if(!currentUser||document.hidden)return;
-  var ae=document.activeElement;
-  if(ae&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA'||ae.tagName==='SELECT'))return; /* v33.3: user kahin type/select kar raha hai — background refresh se uska in-progress edit wipe mat karo */
+  if(isUserTyping())return; /* v33.3: user kahin type/select kar raha hai — background refresh se uska in-progress edit wipe mat karo */
   getJSON('lastUpdate').then(function(r){
     if(!r||!r.success)return;
     var ts=r.ts;
     if(_lastKnownUpdateTs===null){_lastKnownUpdateTs=ts;return;}
-    if(ts!==_lastKnownUpdateTs){_lastKnownUpdateTs=ts;loadAll(2);}
+    /* v70.1: dobara check karo - jab tak yeh network call chal raha tha, user ne
+       typing shuru kar di ho sakti hai. Agar abhi bhi type kar raha hai to background
+       refresh ko yahin rok do, warna renderPage() uska adhoora comment wipe kar dega. */
+    if(ts!==_lastKnownUpdateTs){
+      _lastKnownUpdateTs=ts;
+      if(isUserTyping())return;
+      loadAll(2);
+    }
   }).catch(function(){});
 }
 function loadAll(attempt){
@@ -2794,7 +2804,7 @@ function mkWatchlistTable(rows,showEmp){
     h+='<td style="font-size:11px;color:var(--muted);">'+(r['Pattern']||'-')+'</td>';
     h+='<td style="font-size:12px;color:var(--muted);white-space:normal;max-width:220px;">'+(r['Notes']||'-')+'</td>';
     if(isAdm){
-      h+='<td style="min-width:170px;"><input type="text" class="rk-comment-input" data-rownum="'+r['_rowNum']+'" value="'+escAttr(r['RK Comments']||'')+'" placeholder="Apna comment likhein..." style="width:100%;font-size:12px;padding:5px 7px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.04);color:inherit;" oninput="saveWLRKComment(this)" onblur="wlRKCommentBlur(this)"></td>';
+      h+='<td style="min-width:170px;"><input type="text" class="rk-comment-input" data-rownum="'+r['_rowNum']+'" value="'+escAttr(r['RK Comments']||'')+'" placeholder="Apna comment likhein... (dusri jagah click karte hi save ho jayega)" style="width:100%;font-size:12px;padding:5px 7px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.04);color:inherit;" onblur="wlRKCommentBlur(this)" onkeydown="if(event.key===&#39;Enter&#39;){this.blur();}"></td>';
     }else{
       h+='<td style="font-size:12px;white-space:normal;max-width:220px;color:'+(r['RK Comments']?'#3fbf7f':'var(--muted)')+';">'+(r['RK Comments']?('&#128172; '+r['RK Comments']):'-')+'</td>';
     }
@@ -2805,19 +2815,16 @@ function mkWatchlistTable(rows,showEmp){
   return h+'</tbody></table>';
 }
 function escAttr(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-var wlRKSaveTimers={};
-function saveWLRKComment(el){
-  var rowNum=el.getAttribute('data-rownum');
-  clearTimeout(wlRKSaveTimers[rowNum]);
-  wlRKSaveTimers[rowNum]=setTimeout(function(){doSaveWLRKComment(rowNum,el.value,el);},700);
-}
 function wlRKCommentBlur(el){
   var rowNum=el.getAttribute('data-rownum');
-  clearTimeout(wlRKSaveTimers[rowNum]);
+  var savedVal=el.getAttribute('data-lastsaved');
+  if(savedVal===null)savedVal='';
+  if(el.value===savedVal)return; /* kuch naya likha hi nahi - dobara save/refresh mat karo */
   doSaveWLRKComment(rowNum,el.value,el);
 }
 function doSaveWLRKComment(rowNum,val,el){
   patchRowLocal('Watchlist',rowNum,{'RK Comments':val});
+  if(el)el.setAttribute('data-lastsaved',val);
   postData({action:'editRow',sheet:'Watchlist',rowNum:rowNum,vals:{'RK Comments':val}}).then(function(r){
     if(r&&r.success){
       if(el){el.style.transition='background-color 0.3s';var orig=el.style.backgroundColor;el.style.backgroundColor='rgba(63,191,127,0.25)';setTimeout(function(){el.style.backgroundColor=orig;},500);}
