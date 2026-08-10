@@ -3718,12 +3718,20 @@ function mapAccountDuplicate(cid,keepRowNum){
   if(!others.length){showToast('No other duplicate entries found for this Client ID','error');return;}
   var names=others.map(function(r){return r['Employee Name']||'-';}).join(', ');
   if(!confirm('Map Client ID '+cid+' to this employee? This will DELETE the other duplicate entry(ies) added by: '+names+'. This cannot be undone.'))return;
-  var calls=others.map(function(r){return postData({action:'deleteRow',sheet:'Accounts',rowNum:r['_rowNum']});});
+  var rowNums=others.map(function(r){return r['_rowNum'];});
+  /* v72: optimistic UI - remove the duplicate row(s) from local data and re-render
+     INSTANTLY instead of waiting for the full slow getData() reload (15-40s) before
+     the user sees anything change. Server deletes still happen in the background;
+     if any fail we force a reload to re-sync rather than risk a stale/wrong local view. */
+  allData.Accounts=(allData.Accounts||[]).filter(function(r){return rowNums.indexOf(r['_rowNum'])===-1;});
+  showToast('Mapped! Duplicate entries removed.','success');
+  renderPage(curPage());
+  var calls=rowNums.map(function(rn){return postData({action:'deleteRow',sheet:'Accounts',rowNum:rn});});
   Promise.all(calls).then(function(results){
     var okAll=results.every(function(r){return r&&r.success;});
-    if(okAll){showToast('Mapped! Duplicate entries removed.','success');loadAll();}
-    else showToast('Some deletions failed - please check and retry','error');
-  }).catch(function(e){showToast('Error: '+e.message,'error');});
+    if(!okAll){showToast('Some deletions failed on server - reloading to verify','error');loadAll(2);}
+    else setTimeout(function(){loadAll(2);},600);
+  }).catch(function(e){showToast('Network error, reloading to verify: '+e.message,'error');loadAll(2);});
 }
 /* v33.2: Contest page se hi seedha naya Account Opening entry daalo — Accounts sheet shared hai isliye
    yeh entry Accounts list me bhi automatically dikh jayegi (contestBadgeForAccountDate isko tag karega). */
