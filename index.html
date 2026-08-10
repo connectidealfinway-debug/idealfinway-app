@@ -3919,8 +3919,9 @@ function contestEmployeeCard(contest,empId,empName){
   var isCombo=contestIsCombo(contest);
   var metrics=contestMetricList(contest);
   var h='<div class="contest-card">';
-  h+='<div class="contest-title">&#127942; '+contest['Title']+'</div>';
+  h+='<div class="contest-title">&#127942; '+contest['Title']+' <button class="btn-mini" style="margin-left:8px;font-size:11px;" onclick="toggleContestLeaderboard(\''+contest['Contest ID']+'\')">&#127942; Leaderboard</button></div>';
   h+='<div class="contest-sub">'+contest['Start Date']+' to '+contest['End Date']+' &#183; '+metrics.join(' + ')+'</div>';
+  h+='<div id="contestLB_'+contest['Contest ID']+'"></div>';
   h+=mkContestRulesBlock(contest);
   if(metrics.indexOf('Account Opening')!==-1)h+=mkContestQuickAddAccount(contest['Contest ID']);
   h+='<div class="contest-body">';
@@ -3957,7 +3958,8 @@ function contestAdminCard(contest){
   var metrics=contestMetricList(contest);
   var h='<div class="contest-card">';
   h+='<div class="contest-title">&#127942; '+contest['Title']+' <span style="font-size:11px;background:rgba(63,191,127,.15);color:var(--accent);padding:2px 8px;border-radius:10px;">'+(contest['Status']||'Active')+'</span>'+(contest['_rowNum']?' <button class="btn-mini" style="margin-left:auto;font-size:11px;" onclick="toggleContestEdit('+contest['_rowNum']+')">&#9999; Edit Contest</button> <button class="btn-mini" style="color:var(--danger);border-color:rgba(239,68,68,.4);font-size:11px;" onclick="endContest('+contest['_rowNum']+')">End Contest</button>':'')+'</div>';
-  h+='<div class="contest-sub">'+contest['Start Date']+' to '+contest['End Date']+' &#183; '+metrics.join(' + ')+'</div>';
+  h+='<div class="contest-sub">'+contest['Start Date']+' to '+contest['End Date']+' &#183; '+metrics.join(' + ')+' <button class="btn-mini" style="font-size:11px;" onclick="toggleContestLeaderboard(\''+contest['Contest ID']+'\')">&#127942; Leaderboard</button></div>';
+  h+='<div id="contestLB_'+contest['Contest ID']+'"></div>';
   if(contest['_rowNum'])h+='<div id="contestEditBox_'+contest['_rowNum']+'" style="display:none;"></div>';
   h+=mkContestRulesBlock(contest,true);
   if(metrics.indexOf('Account Opening')!==-1)h+=mkContestQuickAddAccount(contest['Contest ID']);
@@ -4035,6 +4037,118 @@ function contestAdminCard(contest){
   h+='<div id="contestDrill_'+contest['Contest ID']+'"></div>';
   h+='</div>';
   return h;
+}
+/* ===== v68: Contest Leaderboard - "check your rank vs other employees", generic across any metric(s) =====
+   Reuses the existing contest-engine data functions (contestEmployeeAllStats / contestEmployeeCounts /
+   contestComboLevelInfo) so a future metric (SIP, Insurance, Traded Client, or any custom one) automatically
+   gets its own leaderboard for free - nothing here is hardcoded to "Account Opening" specifically. */
+function contestLeaderboardRanked(contest){
+  var isCombo=contestIsCombo(contest);
+  var metrics=contestMetricList(contest);
+  var ranked=[];
+  if(!isCombo){
+    var metricName=metrics[0];
+    var metric=CONTEST_METRICS[metricName];
+    var cfg=contestMetricConfig(contest);
+    var unit=(cfg.unit&&cfg.unit[metricName])||'count';
+    if(metric&&!metric.multiSheet){
+      var allStats=contestEmployeeAllStats(contest,metricName);
+      var counts=contestEmployeeCounts(contest);
+      ranked=Object.keys(allStats).map(function(id){
+        return {id:id,name:allStats[id].name,branch:allStats[id].branch,
+          total:allStats[id].total,eligible:allStats[id].eligible,
+          score:(counts[id]?counts[id].count:allStats[id].eligible),isAmount:unit==='amount',
+          unitLabel:contestMetricUnitLabel(metricName)};
+      });
+    } else {
+      var counts=contestEmployeeCounts(contest);
+      ranked=Object.keys(counts).map(function(id){
+        return {id:id,name:counts[id].name,branch:counts[id].branch,
+          total:counts[id].count,eligible:counts[id].count,score:counts[id].count,
+          isAmount:unit==='amount',unitLabel:contestMetricUnitLabel(metricName)};
+      });
+    }
+    ranked.sort(function(a,b){return b.score-a.score;});
+  } else {
+    var idMap={};
+    var cfg=contestMetricConfig(contest);
+    metrics.forEach(function(m){
+      var unit=(cfg.unit&&cfg.unit[m])||'count';
+      var c=contestMetricEmployeeCounts(contest,m,unit);
+      Object.keys(c).forEach(function(id){idMap[id]={id:id,name:c[id].name,branch:c[id].branch};});
+    });
+    ranked=Object.keys(idMap).map(function(id){
+      var info=contestComboLevelInfo(contest,id);
+      var total=info.perMetric.reduce(function(s,pm){return s+pm.count;},0);
+      return {id:id,name:idMap[id].name,branch:idMap[id].branch,total:total,eligible:total,
+        score:info.level*1000000+info.pct,isCombo:true,level:info.level,perMetric:info.perMetric};
+    });
+    ranked.sort(function(a,b){return b.score-a.score;});
+  }
+  ranked.forEach(function(r,i){r.rank=i+1;});
+  return ranked;
+}
+function contestLeaderboardScoreDisplay(row){
+  if(row.isCombo)return 'Level '+row.level;
+  if(row.isAmount)return fmt(row.score);
+  return row.score+' '+row.unitLabel+(row.score===1?'':'s');
+}
+function contestLeaderboardAvatar(row,sizePx){
+  var url=empPhotoUrl(row.id);
+  var inner=url?('<img src="'+url+'" style="width:100%;height:100%;object-fit:cover;" alt="">'):initialsOf(row.name);
+  return '<div style="width:'+sizePx+'px;height:'+sizePx+'px;border-radius:50%;overflow:hidden;margin:0 auto;background:var(--card2);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:'+Math.round(sizePx*0.32)+'px;color:var(--accent);">'+inner+'</div>';
+}
+function contestLeaderboardPodiumCard(row,place){
+  if(!row)return '<div style="flex:1;min-width:100px;"></div>';
+  var medal=place===1?'&#129351;':(place===2?'&#129352;':'&#129353;');
+  var size=place===1?76:58;
+  var order=place===1?2:(place===2?1:3);
+  return '<div style="text-align:center;order:'+order+';flex:1;min-width:100px;">'+
+    contestLeaderboardAvatar(row,size)+
+    '<div style="font-size:22px;margin-top:-16px;">'+medal+'</div>'+
+    '<div style="font-weight:700;font-size:12px;margin-top:2px;">'+(row.name||'-').toUpperCase()+'</div>'+
+    '<div style="font-weight:800;color:var(--accent);font-size:13px;">'+contestLeaderboardScoreDisplay(row)+'</div>'+
+  '</div>';
+}
+function toggleContestLeaderboard(contestId){
+  var el=document.getElementById('contestLB_'+contestId);
+  if(!el)return;
+  if(el.innerHTML){el.innerHTML='';return;}
+  var contest=(allData.Contests||[]).find(function(c){return c['Contest ID']===contestId;});
+  if(!contest)return;
+  var ranked=contestLeaderboardRanked(contest);
+  var myId=currentUser.userId;
+  var myRow=ranked.find(function(r){return r.id===myId;});
+  var metrics=contestMetricList(contest);
+  var isCombo=contestIsCombo(contest);
+  var h='<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin:10px 0 16px;">';
+  h+='<div style="text-align:center;padding:4px 0 18px;"><div style="font-size:18px;font-weight:800;">&#127942; Leaderboard Rankings</div><div style="color:var(--muted);font-size:12px;margin-top:4px;">Check your rank vs other employees!</div></div>';
+  if(!ranked.length){
+    h+='<div class="no-data">No entries yet for this contest.</div>';
+  } else {
+    h+='<div style="display:flex;justify-content:center;align-items:flex-end;gap:16px;margin-bottom:20px;flex-wrap:wrap;">';
+    h+=contestLeaderboardPodiumCard(ranked[1],2)+contestLeaderboardPodiumCard(ranked[0],1)+contestLeaderboardPodiumCard(ranked[2],3);
+    h+='</div>';
+    h+='<div style="background:var(--card2);border-radius:8px;padding:12px 18px;display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;font-weight:700;">';
+    h+='<span>Your Ranking is</span><span>'+(myRow?('#'+myRow.rank+' ('+contestLeaderboardScoreDisplay(myRow)+')'):'Not participating yet')+'</span>';
+    h+='</div>';
+    h+='<div class="table-wrap"><div class="table-inner"><table><thead><tr><th>Global Rank</th><th>Participant</th>';
+    if(isCombo){ metrics.forEach(function(m){h+='<th>'+m+'</th>';}); }
+    else if(ranked[0]&&ranked[0].total!==undefined&&!ranked[0].isAmount){ h+='<th>Total</th><th>Eligible</th>'; }
+    h+='<th>Score</th></tr></thead><tbody>';
+    ranked.forEach(function(row){
+      h+='<tr'+(row.id===myId?' style="background:rgba(63,191,127,0.08);"':'')+'>';
+      h+='<td style="font-weight:700;">'+row.rank+'</td>';
+      h+='<td style="display:flex;align-items:center;gap:8px;">'+contestLeaderboardAvatar(row,26)+'<span>'+(row.name||'-')+(row.id===myId?' <span style="color:var(--accent);font-size:10px;">(You)</span>':'')+'</span></td>';
+      if(isCombo){ row.perMetric.forEach(function(pm){h+='<td>'+pm.count+'</td>';}); }
+      else if(row.total!==undefined&&!row.isAmount){ h+='<td>'+row.total+'</td><td style="color:var(--accent);font-weight:700;">'+row.eligible+'</td>'; }
+      h+='<td style="font-weight:700;">'+contestLeaderboardScoreDisplay(row)+'</td>';
+      h+='</tr>';
+    });
+    h+='</tbody></table></div></div>';
+  }
+  h+='</div>';
+  document.getElementById('contestLB_'+contestId).innerHTML=h;
 }
 function contestDrillEmployee(contestId,empId){
   var contest=(allData.Contests||[]).find(function(c){return c['Contest ID']===contestId;});
