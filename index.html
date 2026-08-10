@@ -7088,7 +7088,7 @@ function renderHisab(){
     var role=(e['Role']||'employee').toLowerCase();
     if((e['Status']||'Active')!=='Active'||role==='admin')return false;
     var id=(e['Employee ID']||'').trim().toLowerCase();
-    return !SHARED.some(function(s){return s.from===id;});
+    return !HISAB_SHARED.some(function(s){return s.from===id;});
   });
   function studentRefCommission(e){
     /* v48: jis employee ki reference h student ki, uski received fees ka 10% auto-commission is employee ko - Monthly Hisab me bhi */
