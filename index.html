@@ -863,8 +863,11 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
         <button class="filter-btn" onclick="setTJStat('open',this)">Open</button>
         <button class="filter-btn" onclick="setTJStat('closed',this)">Closed</button>
         <span style="color:var(--muted);font-size:12px;">Check a specific date:</span>
-        <input type="date" id="tj_specificDate" onchange="renderTradingJournalPage()" style="padding:6px 10px;border-radius:6px;">
+        <input type="date" id="tj_specificDate" onchange="document.getElementById('tj_specificMonth').value='';renderTradingJournalPage()" style="padding:6px 10px;border-radius:6px;">
         <button class="filter-btn" onclick="document.getElementById('tj_specificDate').value='';renderTradingJournalPage();">Clear Date</button>
+        <span style="color:var(--muted);font-size:12px;">Or check month-wise:</span>
+        <input type="month" id="tj_specificMonth" onchange="document.getElementById('tj_specificDate').value='';renderTradingJournalPage()" style="padding:6px 10px;border-radius:6px;">
+        <button class="filter-btn" onclick="document.getElementById('tj_specificMonth').value='';renderTradingJournalPage();">Clear Month</button>
         <input class="srch" id="srch-tj" placeholder="&#128269; Search stock..." oninput="renderTradingJournalPage()">
       </div>
       <div id="tjSessionReview"></div>
@@ -8105,22 +8108,34 @@ function renderTJEmpBreakdown(dateFilteredRows){
   var keys=Object.keys(byEmp);
   if(!keys.length){el.innerHTML='';return;}
   keys.sort(function(a,b){return byEmp[b].rows.length-byEmp[a].rows.length;});
-  var h='<div class="sec-title" style="margin-top:18px;">Employee-wise Performance '+(document.getElementById('tj_specificDate').value?('&#183; '+document.getElementById('tj_specificDate').value):'')+'</div>';
-  h+='<div class="table-wrap"><div class="table-inner"><table><thead><tr><th>Employee</th><th>Total Trades</th><th>Closed</th><th>Target Hit</th><th>SL Hit</th><th>Win Rate</th></tr></thead><tbody>';
+  var monthVal=document.getElementById('tj_specificMonth')?document.getElementById('tj_specificMonth').value:'';
+  var dateVal=document.getElementById('tj_specificDate')?document.getElementById('tj_specificDate').value:'';
+  var scopeLabel=monthVal?tjMonthLabel(monthVal):(dateVal?dateVal:'');
+  var h='<div class="sec-title" style="margin-top:18px;">Employee-wise Performance '+(scopeLabel?('&#183; '+scopeLabel):'')+'</div>';
+  h+='<div class="table-wrap"><div class="table-inner"><table><thead><tr><th>Employee</th><th>Total Trades</th><th>Open</th><th>Closed</th><th>Target Hit</th><th>SL Hit</th><th>Win Rate</th><th>Net P&amp;L</th></tr></thead><tbody>';
   keys.forEach(function(k){
     var e=byEmp[k];
     var st=tjWinStats(e.rows);
+    var netPL=e.rows.reduce(function(s,r){return s+(parseFloat(r['Result'])||0);},0);
     h+='<tr style="cursor:pointer;" onclick="tjFilterToEmployee(\''+k.replace(/'/g,"\\'")+'\')">';
     h+='<td style="font-weight:600;">'+e.name+'</td>';
     h+='<td>'+st.total+'</td>';
+    h+='<td style="color:#3b82f6;">'+(st.total-st.closed)+'</td>';
     h+='<td>'+st.closed+'</td>';
     h+='<td style="color:var(--accent);">'+st.target+'</td>';
     h+='<td style="color:var(--danger);">'+st.sl+'</td>';
     h+='<td><span class="badge '+(st.winRate>=50?'green':'amber')+'">'+st.winRate+'%</span></td>';
+    h+='<td style="font-weight:600;color:'+(netPL>=0?'var(--accent)':'var(--danger)')+';">'+fmt(netPL)+'</td>';
     h+='</tr>';
   });
   h+='</tbody></table></div></div>';
   el.innerHTML=h;
+}
+function tjMonthLabel(ym){
+  var parts=(ym||'').split('-');if(parts.length!==2)return ym;
+  var names=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var mi=parseInt(parts[1],10)-1;
+  return (names[mi]||parts[1])+' '+parts[0];
 }
 function tjFilterToEmployee(empId){
   var sel=document.getElementById('tj_empFilter');
@@ -8176,13 +8191,14 @@ function renderTradingJournalPage(){
   initTradingJournalForm();
   var isAdmTJ=currentUser&&currentUser.role==='admin';
   var specificDate=document.getElementById('tj_specificDate')?document.getElementById('tj_specificDate').value:'';
+  var specificMonth=document.getElementById('tj_specificMonth')?document.getElementById('tj_specificMonth').value:'';
   var allScopedRows=isAdmTJ?(allData.TradingJournal||[]):fEmpStrict(allData.TradingJournal||[],currentUser.userId);
-  var dateFilteredAll=specificDate?allScopedRows.filter(function(r){return (r['Date']||'')===specificDate;}):fDate(allScopedRows,filters['tj']||'all');
+  var dateFilteredAll=specificMonth?allScopedRows.filter(function(r){return (r['Date']||'').slice(0,7)===specificMonth;}):(specificDate?allScopedRows.filter(function(r){return (r['Date']||'')===specificDate;}):fDate(allScopedRows,filters['tj']||'all'));
   var reviewDate=specificDate||td();
   renderTJSessionReview(allScopedRows.filter(function(r){return (r['Date']||'')===reviewDate;}),isAdmTJ,reviewDate);
   renderTJEmpBreakdown(dateFilteredAll);
   var rows=tjRows();
-  rows=specificDate?rows.filter(function(r){return (r['Date']||'')===specificDate;}):fDate(rows,filters['tj']||'all');
+  rows=specificMonth?rows.filter(function(r){return (r['Date']||'').slice(0,7)===specificMonth;}):(specificDate?rows.filter(function(r){return (r['Date']||'')===specificDate;}):fDate(rows,filters['tj']||'all'));
   var openStatuses=['Open','1st Target Done'];
   if(tjStatF==='open')rows=rows.filter(function(r){return openStatuses.indexOf(r['Status'])!==-1;});
   else if(tjStatF==='closed')rows=rows.filter(function(r){return openStatuses.indexOf(r['Status'])===-1;});
