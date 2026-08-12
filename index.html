@@ -416,6 +416,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
         <div class="nav-item" onclick="showPage('myPoints')">&#11088; My Points</div>
       </div>
     </div>
+    <div class="nav-item" id="navSelfIPO" onclick="showPage('selfIPO')">&#128188; Self IPO</div>
     <div class="nav-item" id="navMyProfile" onclick="showPage('myProfile')" style="margin:0 12px 8px;border-radius:8px;">&#128100; My Profile <span id="myProfileAlert" style="display:none;color:var(--danger);font-weight:700;">&#9679;</span></div>
     <div class="sidebar-bottom"><button class="theme-switch" id="themeSwitchBtn" onclick="toggleTheme()">&#9788; Light Mode</button><button class="btn-logout" onclick="logout()">&#8592; Logout</button></div>
   </nav>
@@ -423,6 +424,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
   <main id="main">
 
     <div id="announceBanner" style="display:none;background:linear-gradient(90deg,#f59e0b,#ef4444);color:#111;font-weight:700;padding:10px 16px;border-radius:8px;margin-bottom:14px;align-items:center;gap:10px;"></div>
+    <div id="myTasksBanner" style="display:none;background:linear-gradient(90deg,#8b5cf6,#3b82f6);color:#fff;font-weight:700;padding:10px 16px;border-radius:8px;margin-bottom:14px;align-items:center;gap:10px;flex-wrap:wrap;"></div>
 
     <!-- ADMIN DASHBOARD -->
     <div class="page" id="page-adminDash">
@@ -773,8 +775,15 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
     <!-- MY TEAM -->
     <div class="page" id="page-myTeam">
       <div class="page-header"><h1>My Team</h1><p>View and edit sub-employees' Accounts/SIP/Insurance/Students</p></div>
-      <div style="margin-bottom:16px;"><button class="btn-submit" onclick="showRecruitModal()">&#43; Naya Advisor Recruit Karein</button></div>
+      <div style="margin-bottom:16px;"><button class="btn-submit" onclick="showRecruitModal()">&#43; Naya Advisor Recruit Karein</button> <button class="btn-submit" onclick="openAssignTaskModal()">&#128221; + Task Assign Karein</button></div>
       <div id="myRecruitReqBox"></div>
+      <h3 id="teamSecTasks" style="margin:24px 0 10px;">Team Tasks</h3>
+      <div style="margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;">
+        <select id="tt_filterEmp" onchange="renderTeamTasksTable()" style="max-width:200px;"><option value="">All Team Members</option></select>
+        <select id="tt_filterStatus" onchange="renderTeamTasksTable()" style="max-width:160px;"><option value="">All Status</option><option value="Pending">Pending</option><option value="Done">Done</option></select>
+      </div>
+      <div class="stats-grid" id="teamTasksStats"></div>
+      <div id="teamTasksTable"></div>
       <div class="form-card" style="margin-bottom:20px;">
         <div class="form-group"><label>Select Team Member</label>
           <select id="team_emp" onchange="renderMyTeamData()"><option value="">-- Select --</option></select>
@@ -1656,6 +1665,27 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       </div>
     </div>
 
+    <!-- SELF IPO (personal/family applications, employee ka apna record) -->
+    <div class="page" id="page-selfIPO">
+      <div class="page-header"><h1>Self IPO</h1><p>Aapke khud ke / family ke IPO applications ka personal record — company ke business IPO figures me nahi judta</p></div>
+      <div class="form-card" style="margin-bottom:16px;">
+        <div class="form-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:6px 20px;">
+          <div class="form-group"><label>Date</label><input type="date" id="si_date"></div>
+          <div class="form-group"><label>IPO Name</label><input type="text" id="si_ipoName" placeholder="e.g. Tata Capital"></div>
+          <div class="form-group"><label>Client ID (jisme lagaya)</label><input type="text" id="si_clientId" placeholder="e.g. FBO1234 / apna naam"></div>
+          <div class="form-group"><label>Category</label><select id="si_cat"><option>Retail</option><option>sHNI</option><option>bHNI</option></select></div>
+          <div class="form-group"><label>Amount</label><input type="number" id="si_amount" placeholder="e.g. 15000"></div>
+          <div class="form-group"><label>Bank</label><input type="text" id="si_bank" placeholder="e.g. HDFC Bank"></div>
+          <div class="form-group"><label>UPI ID</label><input type="text" id="si_upi" placeholder="e.g. name@okhdfc"></div>
+          <div class="form-group"><label>PAN Card</label><input type="text" id="si_pan" placeholder="e.g. ABCDE1234F" style="text-transform:uppercase;"></div>
+          <div class="form-group"><label>Remarks</label><input type="text" id="si_remarks" placeholder="optional note"></div>
+          <div class="form-group" style="align-self:end;"><button class="btn-submit" onclick="submitSelfIPO()">Add Entry</button></div>
+        </div>
+      </div>
+      <div class="stats-grid" id="selfIPOStats"></div>
+      <div id="selfIPOTable"></div>
+    </div>
+
   </main>
 </div>
 
@@ -1670,7 +1700,7 @@ var ADMIN_ID='directorravikant.idealfinway';
 var OFFICE_ID='ideal.office';
 var ADMIN_PASS='drrk@1401';
 var currentUser=null;
-var allData={Brokerage:[],ClientBrokerage:[],ClientHolding:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[],Meetings:[],Income:[],Expense:[],Hisab:[],TradingJournal:[],CallTrade:[],CallClients:[],Watchlist:[],Reminders:[],Announcements:[],ClientDocuments:[],Resignations:[],EmployeeDataMoves:[],IPO_Master:[],IPO_Applications:[]};
+var allData={Brokerage:[],ClientBrokerage:[],ClientHolding:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[],Meetings:[],Income:[],Expense:[],Hisab:[],TradingJournal:[],CallTrade:[],CallClients:[],Watchlist:[],Reminders:[],Announcements:[],ClientDocuments:[],Resignations:[],EmployeeDataMoves:[],IPO_Master:[],IPO_Applications:[],TeamTasks:[],SelfIPO:[]};
 var employees=[];
 var filters={};
 var accStat='all',myAccStat='all',dashF='today',accDupOnly=false,teamWorkingOnly=false,bizScope='own',accSortBy='',myAccSortBy='',teamAccSortBy='';
@@ -1951,11 +1981,21 @@ function computeReminders(){
       return false;
     });
   }
-  return {sipTomorrow:sipTomorrow,meetToday:meetToday,pendStud:pendStud,tomorrow:tomorrow,tradeAlerts:tradeAlerts,dueReminders:dueReminders,starredWatch:starredWatch,holdingAlerts:holdingAlerts,settlementAlerts:settlementAlerts,watchlistAlerts:watchlistAlerts};
+  var myTasks=(allData.TeamTasks||[]).filter(function(t){return t['Assigned To']===currentUser.userId&&(t['Status']||'Pending')!=='Done';});
+  return {sipTomorrow:sipTomorrow,meetToday:meetToday,pendStud:pendStud,tomorrow:tomorrow,tradeAlerts:tradeAlerts,dueReminders:dueReminders,starredWatch:starredWatch,holdingAlerts:holdingAlerts,settlementAlerts:settlementAlerts,watchlistAlerts:watchlistAlerts,myTasks:myTasks};
 }
 function buildReminderHTML(r){
   var isAdm=currentUser&&currentUser.role==='admin';
   var h='<div class="modal-title">&#128276; Today\'s Reminder - '+td()+'</div>';
+  if(r.myTasks&&r.myTasks.length){
+    h+='<div style="font-weight:700;color:#8b5cf6;margin:4px 0 8px;">&#128221; Aapko Task Assign Hua Hai:</div>';
+    h+='<div style="max-height:220px;overflow:auto;margin-bottom:14px;">'+r.myTasks.map(function(t){
+      return '<div style="padding:8px 4px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:13px;">'
+        +'<div style="margin-bottom:6px;"><b>'+(t['Task']||'-')+'</b>'+(t['Client Name']?' &#183; '+t['Client Name']:'')+' <span style="color:var(--muted,#8a94a6);font-size:11px;">(by '+(t['Assigned By Name']||'-')+', '+(t['Date Assigned']||'')+')</span></div>'
+        +'<button class="btn-mini" onclick="openMarkTaskDoneModal('+t['_rowNum']+')">&#10003; Done + Remarks</button>'
+        +'</div>';
+    }).join('')+'</div>';
+  }
   if(r.meetToday.length){
     h+='<div style="font-weight:700;color:var(--blue,#3b82f6);margin:4px 0 8px;">&#129309; Meeting Today:</div>';
     h+='<div style="max-height:170px;overflow:auto;margin-bottom:14px;">'+r.meetToday.map(function(m){
@@ -2045,7 +2085,7 @@ function buildReminderHTML(r){
         +'</div>';
     }).join('')+'</div>';
   }
-  if(!r.meetToday.length&&!r.sipTomorrow.length&&!r.pendStud.length&&!(r.tradeAlerts&&r.tradeAlerts.length)&&!(r.dueReminders&&r.dueReminders.length)&&!(r.starredWatch&&r.starredWatch.length)&&!(r.holdingAlerts&&r.holdingAlerts.length)&&!(r.settlementAlerts&&r.settlementAlerts.length)&&!(r.watchlistAlerts&&r.watchlistAlerts.length)){
+  if(!r.meetToday.length&&!r.sipTomorrow.length&&!r.pendStud.length&&!(r.tradeAlerts&&r.tradeAlerts.length)&&!(r.dueReminders&&r.dueReminders.length)&&!(r.starredWatch&&r.starredWatch.length)&&!(r.holdingAlerts&&r.holdingAlerts.length)&&!(r.settlementAlerts&&r.settlementAlerts.length)&&!(r.watchlistAlerts&&r.watchlistAlerts.length)&&!(r.myTasks&&r.myTasks.length)){
     h+='<div style="color:var(--muted,#8a94a6);padding:14px 0;">No pending reminders. All clear! &#9989;</div>';
   }
   h+='<div class="modal-actions"><button class="btn-save" onclick="closeModal()">Got it</button></div>';
@@ -2055,7 +2095,7 @@ function buildReminderHTML(r){
 function renderNotifBell(){
   var el=document.getElementById('notifBell');if(!el||!currentUser)return;
   var r=computeReminders();
-  var n=r.sipTomorrow.length+r.meetToday.length+r.pendStud.length+(r.tradeAlerts?r.tradeAlerts.length:0)+(r.dueReminders?r.dueReminders.length:0)+(r.starredWatch?r.starredWatch.length:0)+(r.holdingAlerts?r.holdingAlerts.length:0)+(r.settlementAlerts?r.settlementAlerts.length:0)+(r.watchlistAlerts?r.watchlistAlerts.length:0);
+  var n=r.sipTomorrow.length+r.meetToday.length+r.pendStud.length+(r.tradeAlerts?r.tradeAlerts.length:0)+(r.dueReminders?r.dueReminders.length:0)+(r.starredWatch?r.starredWatch.length:0)+(r.holdingAlerts?r.holdingAlerts.length:0)+(r.settlementAlerts?r.settlementAlerts.length:0)+(r.watchlistAlerts?r.watchlistAlerts.length:0)+(r.myTasks?r.myTasks.length:0);
   el.style.display='flex';
   el.classList.toggle('has-alert',n>0);
   var badge=document.getElementById('notifCount');
@@ -2073,7 +2113,7 @@ function checkDueTomorrowPopup(){
   if(localStorage.getItem(key))return;
   localStorage.setItem(key,'1');
   var r=computeReminders();
-  if(!r.sipTomorrow.length&&!r.meetToday.length&&!r.pendStud.length&&!(r.tradeAlerts&&r.tradeAlerts.length)&&!(r.dueReminders&&r.dueReminders.length)&&!(r.starredWatch&&r.starredWatch.length)&&!(r.holdingAlerts&&r.holdingAlerts.length)&&!(r.settlementAlerts&&r.settlementAlerts.length)&&!(r.watchlistAlerts&&r.watchlistAlerts.length))return;
+  if(!r.sipTomorrow.length&&!r.meetToday.length&&!r.pendStud.length&&!(r.tradeAlerts&&r.tradeAlerts.length)&&!(r.dueReminders&&r.dueReminders.length)&&!(r.starredWatch&&r.starredWatch.length)&&!(r.holdingAlerts&&r.holdingAlerts.length)&&!(r.settlementAlerts&&r.settlementAlerts.length)&&!(r.watchlistAlerts&&r.watchlistAlerts.length)&&!(r.myTasks&&r.myTasks.length))return;
   playAlertSound();
   document.getElementById('modalBox').innerHTML=buildReminderHTML(r);
   document.getElementById('modal').className='show';
@@ -2158,7 +2198,7 @@ function startApp(){
 }
 
 function logout(){
-  currentUser=null;autoPunched=false;allData={Brokerage:[],ClientBrokerage:[],ClientHolding:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[],Meetings:[],Income:[],Expense:[],Hisab:[],TradingJournal:[],CallTrade:[],CallClients:[],Watchlist:[],Reminders:[],Announcements:[],ClientDocuments:[],IPO_Master:[],IPO_Applications:[]};
+  currentUser=null;autoPunched=false;allData={Brokerage:[],ClientBrokerage:[],ClientHolding:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[],Meetings:[],Income:[],Expense:[],Hisab:[],TradingJournal:[],CallTrade:[],CallClients:[],Watchlist:[],Reminders:[],Announcements:[],ClientDocuments:[],IPO_Master:[],IPO_Applications:[],TeamTasks:[],SelfIPO:[]};
   document.getElementById('loginWrap').style.display='flex';
   document.getElementById('appWrap').style.display='none';
   document.getElementById('adminNav').style.display='none';
@@ -2264,9 +2304,11 @@ function loadAll(attempt){
         IPO_Applications:r.ipoApplications||r.IPO_Applications||[],
         Settlement:r.settlement||r.Settlement||[],
         LeaderMilestoneBonus:r.leaderMilestoneBonus||r.LeaderMilestoneBonus||[],
-        RecruitRequests:r.recruitRequests||r.RecruitRequests||[]
+        RecruitRequests:r.recruitRequests||r.RecruitRequests||[],
+        TeamTasks:r.teamTasks||r.TeamTasks||[],
+        SelfIPO:r.selfIpo||r.SelfIPO||[]
       };
-      saveCache();checkSIPAlerts();autoPunchIn();renderPage(curPage());loadEmps();setTimeout(checkDueTomorrowPopup,600);setTimeout(check315Reminder,900);setTimeout(checkWLRKComments,1200);renderAnnounceBanner();if(!window._stlCleanupDone){window._stlCleanupDone=true;getJSON('cleanupOldSettlement').catch(function(){});}
+      saveCache();checkSIPAlerts();autoPunchIn();renderPage(curPage());loadEmps();setTimeout(checkDueTomorrowPopup,600);setTimeout(check315Reminder,900);setTimeout(checkWLRKComments,1200);renderAnnounceBanner();renderMyTasksBanner();if(!window._stlCleanupDone){window._stlCleanupDone=true;getJSON('cleanupOldSettlement').catch(function(){});}
     }else if(attempt<3){
       setTimeout(function(){loadAll(attempt+1);},4000);
     }else{
@@ -2408,7 +2450,7 @@ function populateTeamEmpSelect(){
   team.forEach(function(e){var o=document.createElement('option');o.value=e['Employee ID'];o.textContent=e['Name'];sel.appendChild(o);});
   if(cur&&team.some(function(e){return e['Employee ID']===cur;}))sel.value=cur;
 }
-function renderMyTeamPage(){populateTeamEmpSelect();renderMyTeamData();renderMyRecruitReqs();}
+function renderMyTeamPage(){populateTeamEmpSelect();renderMyTeamData();renderMyRecruitReqs();populateTeamTaskEmpSelect();renderTeamTasksTable();}
 function renderMyTeamData(){
   var sel=document.getElementById('team_emp');
   var uid=sel?sel.value:'';if(uid==='__ALL__')uid=teamMembersOf(currentUser.userId).map(function(e){return e['Employee ID'];});
@@ -2582,6 +2624,7 @@ function renderPage(id){
   else if(id==='client360'){var e=document.getElementById('c360_q');if(e)e.value='';document.getElementById('c360_results').innerHTML='';document.getElementById('c360_profile').innerHTML='';}
   else if(id==='myProfile')renderMyProfile();
   else if(id==='ipo')renderIPOPage();
+  else if(id==='selfIPO')renderSelfIPOPage();
 }
 
 function mkStats(cards){var h='';cards.forEach(function(c){h+='<div class="stat-card '+(c.color||'green')+'"'+(c.onclick?' style="cursor:pointer" onclick="'+c.onclick+'"':'')+'><div class="stat-label">'+c.label+'</div><div class="stat-value">'+c.value+'</div><div class="stat-sub">'+(c.sub||'')+'</div></div>';});return h;}
@@ -2913,6 +2956,146 @@ function dismissRKCommentsSeen(rowNums){
     var c=row?(row['RK Comments']||'').trim():'';
     localStorage.setItem('ifw_rkseen_'+currentUser.userId+'_'+rn,c);
   });
+}
+/* ===== Self IPO (employee ka apna/family ka personal IPO record, business figures se alag) ===== */
+function submitSelfIPO(){
+  var ipoName=(document.getElementById('si_ipoName').value||'').trim();
+  var amount=document.getElementById('si_amount').value;
+  if(!ipoName){showToast('IPO Name zaroori hai','error');return;}
+  var p={action:'addSelfIPO','Date':document.getElementById('si_date').value||td(),'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch||'','IPO Name':ipoName,'Client ID':(document.getElementById('si_clientId').value||'').trim(),'Bank':(document.getElementById('si_bank').value||'').trim(),'UPI ID':(document.getElementById('si_upi').value||'').trim(),'PAN':(document.getElementById('si_pan').value||'').trim().toUpperCase(),'Category':document.getElementById('si_cat').value,'Amount':amount||'','Status':'Applied','Remarks':(document.getElementById('si_remarks').value||'').trim()};
+  postData(p).then(function(r){
+    if(r&&r.success){
+      showToast('Self IPO entry add ho gayi','success');
+      ['si_ipoName','si_clientId','si_bank','si_upi','si_pan','si_amount','si_remarks'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});
+      setTimeout(function(){loadAll(2);},600);
+    } else showToast('Failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+function setSelfIPOStatus(rowNum,status){
+  patchRowLocal('SelfIPO',rowNum,{'Status':status});renderSelfIPOPage();
+  postData({action:'editRow',sheet:'SelfIPO',rowNum:rowNum,vals:{'Status':status}}).then(function(r){
+    if(r&&r.success)setTimeout(function(){loadAll(2);},600);
+    else showToast('Failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+function renderSelfIPOPage(){
+  var box=document.getElementById('selfIPOTable');if(!box||!currentUser)return;
+  var el=document.getElementById('si_date');if(el&&!el.value)el.value=td();
+  var isAdm=currentUser.role==='admin';
+  var rows=isAdm?(allData.SelfIPO||[]):(allData.SelfIPO||[]).filter(function(r){return r['Employee ID']===currentUser.userId;});
+  var allotted=rows.filter(function(r){return r['Status']==='Allotted';}).length;
+  var applied=rows.length;
+  var totAmt=rows.reduce(function(s,r){return s+(parseFloat(r['Amount'])||0);},0);
+  document.getElementById('selfIPOStats').innerHTML=mkStats([
+    {label:'Total Entries',value:applied,sub:'applications',color:'purple'},
+    {label:'Allotted',value:allotted,sub:'out of '+applied,color:'green'},
+    {label:'Total Amount',value:fmt(totAmt),sub:'applied so far',color:'blue'}
+  ]);
+  if(!rows.length){box.innerHTML='<div class="no-data">Koi entry nahi hai abhi</div>';return;}
+  rows=rows.slice().sort(function(a,b){return (b['Date']||'').localeCompare(a['Date']||'');});
+  var h='<table><thead><tr>'+(isAdm?'<th>Employee</th>':'')+'<th>Date</th><th>IPO Name</th><th>Client ID</th><th>Category</th><th>Amount</th><th>Bank</th><th>UPI</th><th>PAN</th><th>Status</th><th>Remarks</th><th></th></tr></thead><tbody>';
+  rows.forEach(function(r){
+    var st=r['Status']||'Applied';
+    h+='<tr>'+(isAdm?'<td>'+(r['Employee Name']||'-')+'</td>':'')+'<td>'+(r['Date']||'-')+'</td><td style="font-weight:600;">'+(r['IPO Name']||'-')+'</td><td>'+(r['Client ID']||'-')+'</td><td>'+(r['Category']||'-')+'</td><td class="money">'+fmt(r['Amount']||0)+'</td><td>'+(r['Bank']||'-')+'</td><td>'+(r['UPI ID']||'-')+'</td><td>'+(r['PAN']||'-')+'</td>'
+      +'<td><select onchange="setSelfIPOStatus('+r['_rowNum']+',this.value)" style="font-size:12px;padding:3px 5px;"><option'+(st==='Applied'?' selected':'')+'>Applied</option><option'+(st==='Allotted'?' selected':'')+'>Allotted</option><option'+(st==='Not Allotted'?' selected':'')+'>Not Allotted</option></select></td>'
+      +'<td style="white-space:normal;max-width:160px;color:var(--muted);">'+(r['Remarks']||'-')+'</td>'
+      +'<td><button class="btn-del" onclick="confirmDel(\'SelfIPO\','+r['_rowNum']+')">&#128465;</button></td>'
+      +'</tr>';
+  });
+  h+='</tbody></table>';
+  box.innerHTML=h;
+}
+/* ===== Team Tasks (parent ID -> team member task assignment) ===== */
+function renderMyTasksBanner(){
+  var el=document.getElementById('myTasksBanner');
+  if(!el||!currentUser)return;
+  var pending=(allData.TeamTasks||[]).filter(function(t){return t['Assigned To']===currentUser.userId&&(t['Status']||'Pending')!=='Done';});
+  if(!pending.length){el.style.display='none';el.innerHTML='';return;}
+  el.style.display='flex';
+  el.innerHTML='<span>&#128221;</span><span>Aapko '+pending.length+' naya task assign hua hai &#8212; '+(pending[0]['Task']||'')+(pending.length>1?' (+'+(pending.length-1)+' aur)':'')+'</span>'
+    +'<button class="btn-mini" style="margin-left:auto;" onclick="showReminderModal()">&#128064; Dekhein</button>';
+}
+function openMarkTaskDoneModal(rowNum){
+  var t=(allData.TeamTasks||[]).find(function(x){return String(x['_rowNum'])===String(rowNum);});
+  if(!t){showToast('Task nahi mila','error');return;}
+  var h='<div class="modal-title">&#10003; Task Done Karein</div>';
+  h+='<div style="color:var(--muted,#8a94a6);margin-bottom:10px;font-size:13px;"><b>'+(t['Task']||'-')+'</b>'+(t['Client Name']?' &#183; '+t['Client Name']:'')+'</div>';
+  h+='<div class="form-group"><label>Remarks (kya baat hui / kya hua)</label><textarea id="mtd_remarks" rows="3" placeholder="e.g. Client se baat ho gayi, meeting fix ho gayi 15 tarikh ko"></textarea></div>';
+  h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="submitMarkTaskDone('+rowNum+')">Done Mark Karein</button></div>';
+  document.getElementById('modalBox').innerHTML=h;
+  document.getElementById('modal').className='show';
+}
+function submitMarkTaskDone(rowNum){
+  var remarks=(document.getElementById('mtd_remarks').value||'').trim();
+  var vals={'Status':'Done','Remarks':remarks,'Completed Date':td()};
+  patchRowLocal('TeamTasks',rowNum,vals);
+  closeModal();renderMyTasksBanner();renderNotifBell();
+  postData({action:'editRow',sheet:'TeamTasks',rowNum:rowNum,vals:vals}).then(function(r){
+    if(r&&r.success){showToast('Task done mark ho gaya','success');setTimeout(function(){loadAll(2);},600);}
+    else showToast('Failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+function populateTeamTaskEmpSelect(){
+  var sel=document.getElementById('tt_filterEmp');if(!sel||!currentUser)return;
+  var team=teamMembersOf(currentUser.userId);
+  var cur=sel.value;
+  sel.innerHTML='<option value="">All Team Members</option>';
+  team.forEach(function(e){var o=document.createElement('option');o.value=e['Employee ID'];o.textContent=e['Name'];sel.appendChild(o);});
+  if(cur)sel.value=cur;
+}
+function openAssignTaskModal(){
+  var team=teamMembersOf(currentUser.userId);
+  if(!team.length){showToast('Aapki team me koi member nahi hai','error');return;}
+  var h='<div class="modal-title">&#128221; Naya Task Assign Karein</div>';
+  h+='<div class="form-group"><label>Team Member</label><select id="at_emp">'+team.map(function(e){return '<option value="'+e['Employee ID']+'">'+e['Name']+'</option>';}).join('')+'</select></div>';
+  h+='<div class="form-group"><label>Client Name (optional)</label><input type="text" id="at_client" placeholder="e.g. Ramesh Kumar"></div>';
+  h+='<div class="form-group"><label>Task Kya Karna Hai</label><textarea id="at_task" rows="3" placeholder="e.g. Is client ko call karo, meeting karke aao"></textarea></div>';
+  h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-submit" onclick="submitAssignTask()">Assign Task</button></div>';
+  document.getElementById('modalBox').innerHTML=h;
+  document.getElementById('modal').className='show';
+}
+function submitAssignTask(){
+  var empId=document.getElementById('at_emp').value;
+  var client=document.getElementById('at_client').value.trim();
+  var task=document.getElementById('at_task').value.trim();
+  if(!task){showToast('Task likhna zaroori hai','error');return;}
+  var emp=employees.find(function(e){return e['Employee ID']===empId;});
+  if(!emp){showToast('Employee nahi mila','error');return;}
+  var p={action:'addTeamTask','Date Assigned':td(),'Assigned By':currentUser.userId,'Assigned By Name':currentUser.name,'Assigned To':empId,'Assigned To Name':emp['Name'],'Branch':emp['Branch']||'','Client Name':client,'Task':task,'Status':'Pending'};
+  postData(p).then(function(r){
+    if(r&&r.success){showToast('Task assign ho gaya','success');closeModal();setTimeout(function(){loadAll(2);},600);}
+    else showToast('Failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+function renderTeamTasksTable(){
+  var box=document.getElementById('teamTasksTable');if(!box||!currentUser)return;
+  var team=teamMembersOf(currentUser.userId);
+  var teamIds=team.map(function(e){return e['Employee ID'];});
+  var all=(allData.TeamTasks||[]).filter(function(t){return teamIds.indexOf(t['Assigned To'])!==-1&&t['Assigned By']===currentUser.userId;});
+  var fEmpSel=document.getElementById('tt_filterEmp'),fStat=document.getElementById('tt_filterStatus');
+  var rows=all;
+  if(fEmpSel&&fEmpSel.value)rows=rows.filter(function(t){return t['Assigned To']===fEmpSel.value;});
+  if(fStat&&fStat.value)rows=rows.filter(function(t){return (t['Status']||'Pending')===fStat.value;});
+  var pending=all.filter(function(t){return (t['Status']||'Pending')==='Pending';}).length;
+  var done=all.filter(function(t){return t['Status']==='Done';}).length;
+  var statsEl=document.getElementById('teamTasksStats');
+  if(statsEl)statsEl.innerHTML=mkStats([
+    {label:'Total Assigned',value:all.length,sub:'tasks',color:'purple'},
+    {label:'Pending',value:pending,sub:'not done yet',color:'amber'},
+    {label:'Done',value:done,sub:'completed',color:'green'}
+  ]);
+  if(!rows.length){box.innerHTML='<div class="no-data">Koi task nahi mila</div>';return;}
+  rows=rows.slice().sort(function(a,b){return (b['Date Assigned']||'').localeCompare(a['Date Assigned']||'');});
+  var h='<table><thead><tr><th>Date</th><th>Employee</th><th>Client</th><th>Task</th><th>Status</th><th>Remarks</th><th>Completed</th></tr></thead><tbody>';
+  rows.forEach(function(t){
+    var isDone=t['Status']==='Done';
+    h+='<tr><td>'+(t['Date Assigned']||'-')+'</td><td style="font-weight:600;">'+(t['Assigned To Name']||'-')+'</td><td>'+(t['Client Name']||'-')+'</td><td style="white-space:normal;max-width:220px;">'+(t['Task']||'-')+'</td>'
+      +'<td><span class="badge '+(isDone?'green':'amber')+'">'+(t['Status']||'Pending')+'</span></td>'
+      +'<td style="white-space:normal;max-width:200px;color:var(--muted);">'+(t['Remarks']||'-')+'</td>'
+      +'<td>'+(t['Completed Date']||'-')+'</td></tr>';
+  });
+  h+='</tbody></table>';
+  box.innerHTML=h;
 }
 function showWLDay(ds){
   var isAdm=currentUser&&currentUser.role==='admin';
