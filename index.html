@@ -9789,6 +9789,31 @@ function submitIPOApplications(){
 }
 /* ===== END IPO MODULE ===== */
 
+/* v74: prevent accidental duplicate submissions - agar koi jaldi jaldi ya network slow hone
+   par kisi bhi Add/Save/Send-for-Approval button ko baar-baar click kar de, to sirf pehla click
+   process hota hai; button 2 second ke liye visually dim ho jata hai aur agle clicks ignore hote
+   hain. Event delegation via document-level capture listener - sabhi .btn-submit/.btn-save
+   buttons (Add Trade/Account/SIP/..., Send for Approval, sabhi modal Save buttons) automatically
+   cover ho jate hain, kisi bhi individual submit function ko badalna nahi pada. */
+(function(){
+  document.addEventListener('click', function(e){
+    var btn = e.target.closest && e.target.closest('.btn-submit, .btn-save');
+    if(!btn) return;
+    if(btn.dataset.guardBusy==='1'){
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      return;
+    }
+    btn.dataset.guardBusy='1';
+    var prevOpacity=btn.style.opacity;
+    btn.style.opacity='0.55';
+    setTimeout(function(){
+      btn.dataset.guardBusy='';
+      btn.style.opacity=prevOpacity;
+    },2000);
+  }, true);
+})();
+
 (function(){
   var c=loadCache();
   if(c&&c.e&&c.e.length)employees=c.e; /* cached list se login turant — fresh list background me aa jayegi */
