@@ -1915,9 +1915,17 @@ function computeReminders(){
   var remRows=isAdm?(allData.Reminders||[]):fEmpStrict(allData.Reminders||[],currentUser.userId);
   var dueReminders=remRows.filter(function(r){return r['Reminder Date']&&r['Reminder Date']<=today&&r['Status']!=='Done';});
   var wlRows=fEmpStrict(allData.Watchlist||[],currentUser.userId);
-  var starredWatch=wlRows.filter(function(r){return r['Starred']==='Yes'&&(r['Status']||'Active')==='Active';});
+  var starredWatch=wlRows.filter(function(r){
+    if(r['Starred']!=='Yes'||(r['Status']||'Active')!=='Active')return false;
+    var sd=(r['Starred Date']||r['Date Added']||'').trim();
+    if(!sd)return true;
+    var d0=new Date(sd+'T00:00:00');
+    var d1=new Date();d1.setHours(0,0,0,0);
+    var diffDays=Math.round((d1-d0)/86400000);
+    return diffDays>=0&&diffDays<=1;
+  });
   var holdRows=isAdm?(allData.ClientHolding||[]):fEmpStrict(allData.ClientHolding||[],currentUser.userId);
-  var holdingAlerts=holdRows.filter(function(r){var c=parseFloat(r['Change %']);return !isNaN(c)&&Math.abs(c)>=5;});
+  var holdingAlerts=holdRows.filter(function(r){var c=parseFloat(r['Change %']);return !isNaN(c)&&Math.abs(c)>=5&&(r['Upload Date']||'')===today;});
   var stlRows=isAdm?(allData.Settlement||[]):fEmpStrict(allData.Settlement||[],currentUser.userId);
   function stlFirstFriday(y,m){var d=new Date(y,m,1);while(d.getDay()!==5)d.setDate(d.getDate()+1);return d;}
   var stlNow=new Date();stlNow.setHours(0,0,0,0);
@@ -1929,7 +1937,19 @@ function computeReminders(){
   if(stlInWindow(stlQFri))settlementAlerts=settlementAlerts.concat(stlRows.filter(function(r){return (r['Type']||'')==='Quarterly';}));
   var watchlistAlerts=[];
   if(isAdm){
-    watchlistAlerts=(allData.Watchlist||[]).filter(function(r){return (r['Status']||'Active')==='Active' && !(r['RK Comments']||'').trim();});
+    var wlNow=new Date();
+    var wlYest=new Date();wlYest.setDate(wlYest.getDate()-1);
+    var wlYestStr=wlYest.toISOString().split('T')[0];
+    var wlDismissed=getWLNewDismissed();
+    watchlistAlerts=(allData.Watchlist||[]).filter(function(r){
+      if((r['Status']||'Active')!=='Active')return false;
+      if((r['RK Comments']||'').trim())return false;
+      if(wlDismissed[r['_rowNum']])return false;
+      var da=(r['Date Added']||'').trim();
+      if(da===today)return true;
+      if(da===wlYestStr&&wlNow.getHours()<12)return true;
+      return false;
+    });
   }
   return {sipTomorrow:sipTomorrow,meetToday:meetToday,pendStud:pendStud,tomorrow:tomorrow,tradeAlerts:tradeAlerts,dueReminders:dueReminders,starredWatch:starredWatch,holdingAlerts:holdingAlerts,settlementAlerts:settlementAlerts,watchlistAlerts:watchlistAlerts};
 }
@@ -1997,13 +2017,15 @@ function buildReminderHTML(r){
     }).join('')+'</div>';
   }
   if(r.watchlistAlerts && r.watchlistAlerts.length){
-    h+='<div style="font-weight:700;color:#8b5cf6;margin:4px 0 8px;">&#128269; New Watchlist Stocks &#8212; check &amp; add your RK Comment:</div>';
-    h+='<div style="max-height:170px;overflow:auto;margin-bottom:14px;">'+r.watchlistAlerts.map(function(w){
-      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 4px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:13px;">'
-        +'<span><b>'+(w['Stock']||'-')+'</b> <span style="color:var(--muted,#8a94a6);font-size:11px;">('+(w['Employee Name']||'')+')</span></span>'
-        +'<button class="btn-mini" onclick="closeModal();showPage(\'watchlist\');">&#128064; View</button>'
-        +'</div>';
-    }).join('')+'</div>';
+    var wlEmpNames=[];
+    r.watchlistAlerts.forEach(function(w){var nm=w['Employee Name']||'-';if(wlEmpNames.indexOf(nm)===-1)wlEmpNames.push(nm);});
+    var wlRowNums=r.watchlistAlerts.map(function(w){return w['_rowNum'];});
+    h+='<div style="font-weight:700;color:#8b5cf6;margin:4px 0 8px;">&#128269; New Watchlist Stocks:</div>';
+    h+='<div style="padding:8px 4px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:13px;margin-bottom:14px;">'
+      +'<div style="margin-bottom:8px;">'+wlEmpNames.join(', ')+' ne '+r.watchlistAlerts.length+' stock(s) daale hain &#8212; check karo aur RK Comment add karo.</div>'
+      +'<button class="btn-mini" onclick="closeModal();showPage(\'watchlist\');">&#128064; View</button> '
+      +'<button class="btn-mini" onclick="dismissWLNewAlertsBtn('+JSON.stringify(wlRowNums)+')">&#10003; Checked</button>'
+      +'</div>';
   }
   if(r.dueReminders&&r.dueReminders.length){
     h+='<div style="font-weight:700;color:var(--danger,#ef4444);margin:4px 0 8px;">&#128276; Reminder Due:</div>';
@@ -2776,11 +2798,28 @@ function submitWatchlist(){
 }
 function toggleWatchlistStar(rowNum,current){
   var v=current==='Yes'?'No':'Yes';
-  patchRowLocal('Watchlist',rowNum,{'Starred':v});renderWatchlistPage();
-  postData({action:'editRow',sheet:'Watchlist',rowNum:rowNum,vals:{'Starred':v}}).then(function(r){
+  var patch={'Starred':v};
+  if(v==='Yes')patch['Starred Date']=td();
+  patchRowLocal('Watchlist',rowNum,patch);renderWatchlistPage();
+  postData({action:'editRow',sheet:'Watchlist',rowNum:rowNum,vals:patch}).then(function(r){
     if(!r||!r.success){showToast('Failed: '+(r&&r.error||''),'error');patchRowLocal('Watchlist',rowNum,{'Starred':current});renderWatchlistPage();}
     else setTimeout(function(){loadAll(2);},600);
   }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+function getWLNewDismissed(){
+  try{return JSON.parse(localStorage.getItem('ifw_wlnew_dismissed_'+(currentUser?currentUser.userId:''))||'{}');}catch(e){return {};}
+}
+function dismissWLNewAlertsBtn(rowNums){
+  var key='ifw_wlnew_dismissed_'+(currentUser?currentUser.userId:'');
+  var obj=getWLNewDismissed();
+  rowNums.forEach(function(rn){obj[rn]=1;});
+  localStorage.setItem(key,JSON.stringify(obj));
+  renderNotifBell();
+  var modalEl=document.getElementById('modal');
+  if(modalEl&&modalEl.className==='show'){
+    var r=computeReminders();
+    document.getElementById('modalBox').innerHTML=buildReminderHTML(r);
+  }
 }
 function toggleWatchlistTraded(rowNum,current){
   var v=current==='Yes'?'No':'Yes';
@@ -2853,8 +2892,9 @@ function checkWLRKComments(){
     newOnes.push(r);
   });
   if(!newOnes.length)return;
-  newOnes.forEach(function(r){localStorage.setItem('ifw_rkseen_'+currentUser.userId+'_'+r['_rowNum'],(r['RK Comments']||'').trim());});
+  /* Auto-dismiss-on-display hata diya - ab sirf 'Checked' button click karne pe hi seen mark hoga */
   playAlertSound();
+  var rkRowNums=newOnes.map(function(r){return r['_rowNum'];});
   var h='<div class="modal-title">&#128172; RK Comments on Your Watchlist</div>';
   h+='<div style="color:var(--muted,#8a94a6);margin-bottom:10px;font-size:13px;">RK ne aapke daale gaye stocks pe comment kiya hai:</div>';
   h+='<div style="max-height:260px;overflow:auto;margin-bottom:14px;">'+newOnes.map(function(r){
@@ -2862,9 +2902,17 @@ function checkWLRKComments(){
       +'<b>'+(r['Stock']||'-')+'</b><div style="color:#3fbf7f;margin-top:4px;">&#128172; '+(r['RK Comments']||'')+'</div>'
       +'</div>';
   }).join('')+'</div>';
-  h+='<div class="modal-actions"><button class="btn-save" onclick="closeModal()">Got it</button></div>';
+  h+='<div class="modal-actions"><button class="btn-save" onclick="dismissRKCommentsSeen('+JSON.stringify(rkRowNums)+');closeModal();">&#10003; Checked</button></div>';
   document.getElementById('modalBox').innerHTML=h;
   document.getElementById('modal').className='show';
+}
+function dismissRKCommentsSeen(rowNums){
+  var wl=allData.Watchlist||[];
+  rowNums.forEach(function(rn){
+    var row=wl.filter(function(r){return r['_rowNum']===rn;})[0];
+    var c=row?(row['RK Comments']||'').trim():'';
+    localStorage.setItem('ifw_rkseen_'+currentUser.userId+'_'+rn,c);
+  });
 }
 function showWLDay(ds){
   var isAdm=currentUser&&currentUser.role==='admin';
