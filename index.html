@@ -1590,8 +1590,8 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       <div class="page-header"><h1>IPO</h1><p>Application-wise IPO tracking &amp; profit/loss — a fully separate module, never mixed with main Income/Expense figures</p></div>
 
       <div class="tab-btns" style="margin-bottom:16px;">
-        <button class="tab-btn" id="ipoModeTabSelf" onclick="setIPOMode('self')">&#128188; Self Application</button>
-        <button class="tab-btn" id="ipoModeTabBuy" onclick="setIPOMode('buy')">&#128176; Application Buy</button>
+        <button class="tab-btn" id="ipoModeTabSelf" onclick="setIPOMode('self',true)">&#128188; Self Application</button>
+        <button class="tab-btn" id="ipoModeTabBuy" onclick="setIPOMode('buy',true)">&#128176; Application Buy</button>
       </div>
 
       <div id="ipoModeSelf" style="display:none;">
@@ -1718,7 +1718,7 @@ var accStat='all',myAccStat='all',dashF='today',accDupOnly=false,teamWorkingOnly
 var leadCatF='all',myLeadCatF='all';
 var leadConvF='all',myLeadConvF='all',meetConvF='all',myMeetConvF='all';
 var wlStatF='all';
-var ipoSelId=null,ipoCatF='All',ipoBrokerF='All',ipoRefF=null,ipoBuyerF=null,ipoTab='apps',ipoMode='buy';
+var ipoSelId=null,ipoCatF='All',ipoBrokerF='All',ipoRefF=null,ipoBuyerF=null,ipoTab='apps',ipoMode='buy',ipoModeUserSet=false;
 function setLeadConv(v,varName){if(varName==='leadConvF')leadConvF=v;else myLeadConvF=v;renderPage(curPage());}
 function setMeetConv(v,varName){if(varName==='meetConvF')meetConvF=v;else myMeetConvF=v;renderPage(curPage());}
 var finTab='income';
@@ -2209,7 +2209,7 @@ function startApp(){
 }
 
 function logout(){
-  currentUser=null;autoPunched=false;allData={Brokerage:[],ClientBrokerage:[],ClientHolding:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[],Meetings:[],Income:[],Expense:[],Hisab:[],TradingJournal:[],CallTrade:[],CallClients:[],Watchlist:[],Reminders:[],Announcements:[],ClientDocuments:[],IPO_Master:[],IPO_Applications:[],TeamTasks:[],SelfIPO:[]};
+  currentUser=null;autoPunched=false;ipoMode='buy';ipoModeUserSet=false;allData={Brokerage:[],ClientBrokerage:[],ClientHolding:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[],Meetings:[],Income:[],Expense:[],Hisab:[],TradingJournal:[],CallTrade:[],CallClients:[],Watchlist:[],Reminders:[],Announcements:[],ClientDocuments:[],IPO_Master:[],IPO_Applications:[],TeamTasks:[],SelfIPO:[]};
   document.getElementById('loginWrap').style.display='flex';
   document.getElementById('appWrap').style.display='none';
   document.getElementById('adminNav').style.display='none';
@@ -2635,7 +2635,7 @@ function renderPage(id){
   else if(id==='bizOverview')renderBizOverview();
   else if(id==='client360'){var e=document.getElementById('c360_q');if(e)e.value='';document.getElementById('c360_results').innerHTML='';document.getElementById('c360_profile').innerHTML='';}
   else if(id==='myProfile')renderMyProfile();
-  else if(id==='ipo')setIPOMode(canIPOAccess()?'buy':'self');
+  else if(id==='ipo')setIPOMode(ipoModeUserSet?ipoMode:(canIPOAccess()?'buy':'self'));
 }
 
 function mkStats(cards){var h='';cards.forEach(function(c){h+='<div class="stat-card '+(c.color||'green')+'"'+(c.onclick?' style="cursor:pointer" onclick="'+c.onclick+'"':'')+'><div class="stat-label">'+c.label+'</div><div class="stat-value">'+c.value+'</div><div class="stat-sub">'+(c.sub||'')+'</div></div>';});return h;}
@@ -9318,8 +9318,9 @@ function ipoDupPANCounts(rows){
   rows.forEach(function(r){var p=(r['PAN']||'').trim().toUpperCase();if(p)counts[p]=(counts[p]||0)+1;});
   return counts;
 }
-function setIPOMode(mode){
+function setIPOMode(mode,userAction){
   ipoMode=mode;
+  if(userAction)ipoModeUserSet=true;
   var btnSelf=document.getElementById('ipoModeTabSelf'),btnBuy=document.getElementById('ipoModeTabBuy');
   var divSelf=document.getElementById('ipoModeSelf'),divBuy=document.getElementById('ipoModeBuy');
   if(btnSelf)btnSelf.className='tab-btn'+(mode==='self'?' active':'');
