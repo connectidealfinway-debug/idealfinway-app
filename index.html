@@ -3078,11 +3078,55 @@ function renderSelfIPOPage(){
     h+='<tr>'+(isAdm?'<td>'+(r['Employee Name']||'-')+'</td>':'')+'<td>'+(r['Date']||'-')+'</td><td style="font-weight:600;">'+(r['IPO Name']||'-')+'</td><td>'+(r['Client ID']||'-')+'</td><td>'+(r['Client Name']||'-')+'</td><td>'+(r['Category']||'-')+'</td><td class="money">'+fmt(r['Amount']||0)+'</td><td>'+(r['Bank']||'-')+'</td><td>'+(r['UPI ID']||'-')+'</td><td>'+(r['PAN']||'-')+'</td>'
       +'<td><select onchange="setSelfIPOStatus('+r['_rowNum']+',this.value)" style="font-size:12px;padding:3px 5px;"><option'+(st==='Applied'?' selected':'')+'>Applied</option><option'+(st==='Allotted'?' selected':'')+'>Allotted</option><option'+(st==='Not Allotted'?' selected':'')+'>Not Allotted</option></select></td>'
       +'<td style="white-space:normal;max-width:160px;color:var(--muted);">'+(r['Remarks']||'-')+'</td>'
-      +'<td><button class="btn-del" onclick="confirmDel(\'SelfIPO\','+r['_rowNum']+')">&#128465;</button></td>'
+      +'<td><button class="btn-edit" onclick="openEditSelfIPOModal('+r['_rowNum']+')">&#9998;</button><button class="btn-del" onclick="confirmDel(\'SelfIPO\','+r['_rowNum']+')">&#128465;</button></td>'
       +'</tr>';
   });
   h+='</tbody></table>';
   box.innerHTML=h;
+}
+function openEditSelfIPOModal(rowNum){
+  var r=(allData.SelfIPO||[]).find(function(x){return String(x['_rowNum'])===String(rowNum);});
+  if(!r){showToast('Entry nahi mila','error');return;}
+  var h='<div class="modal-title">Edit Self Application Entry</div>';
+  h+='<div class="form-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:6px 20px;">';
+  h+='<div class="form-group"><label>Date</label><input type="date" id="esi_date" value="'+siEsc(r['Date']||'')+'"></div>';
+  h+='<div class="form-group"><label>IPO Name</label><input type="text" id="esi_ipoName" list="dl_si_ipoName" value="'+siEsc(r['IPO Name']||'')+'"></div>';
+  h+='<div class="form-group"><label>Client ID</label><input type="text" id="esi_clientId" list="dl_si_clientId" value="'+siEsc(r['Client ID']||'')+'"></div>';
+  h+='<div class="form-group"><label>Client Naam</label><input type="text" id="esi_clientName" list="dl_si_clientName" value="'+siEsc(r['Client Name']||'')+'"></div>';
+  h+='<div class="form-group"><label>Category</label><select id="esi_cat"><option'+(r['Category']==='Retail'?' selected':'')+'>Retail</option><option'+(r['Category']==='sHNI'?' selected':'')+'>sHNI</option><option'+(r['Category']==='bHNI'?' selected':'')+'>bHNI</option></select></div>';
+  h+='<div class="form-group"><label>Amount</label><input type="number" id="esi_amount" value="'+siEsc(r['Amount']||'')+'"></div>';
+  h+='<div class="form-group"><label>Bank</label><input type="text" id="esi_bank" list="dl_si_bank" value="'+siEsc(r['Bank']||'')+'"></div>';
+  h+='<div class="form-group"><label>UPI ID</label><input type="text" id="esi_upi" list="dl_si_upi" value="'+siEsc(r['UPI ID']||'')+'"></div>';
+  h+='<div class="form-group"><label>PAN Card</label><input type="text" id="esi_pan" value="'+siEsc(r['PAN']||'')+'" style="text-transform:uppercase;"></div>';
+  h+='<div class="form-group"><label>Status</label><select id="esi_status"><option'+((r['Status']||'Applied')==='Applied'?' selected':'')+'>Applied</option><option'+(r['Status']==='Allotted'?' selected':'')+'>Allotted</option><option'+(r['Status']==='Not Allotted'?' selected':'')+'>Not Allotted</option></select></div>';
+  h+='<div class="form-group" style="grid-column:1/-1;"><label>Remarks</label><input type="text" id="esi_remarks" value="'+siEsc(r['Remarks']||'')+'"></div>';
+  h+='</div>';
+  h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="submitEditSelfIPO('+rowNum+')">Save</button></div>';
+  document.getElementById('modalBox').innerHTML=h;
+  document.getElementById('modal').className='show';
+}
+function submitEditSelfIPO(rowNum){
+  var ipoName=(document.getElementById('esi_ipoName').value||'').trim();
+  if(!ipoName){showToast('IPO Name zaroori hai','error');return;}
+  var vals={
+    'Date':document.getElementById('esi_date').value||'',
+    'IPO Name':ipoName,
+    'Client ID':(document.getElementById('esi_clientId').value||'').trim(),
+    'Client Name':(document.getElementById('esi_clientName').value||'').trim(),
+    'Category':document.getElementById('esi_cat').value,
+    'Amount':document.getElementById('esi_amount').value||'',
+    'Bank':(document.getElementById('esi_bank').value||'').trim(),
+    'UPI ID':(document.getElementById('esi_upi').value||'').trim(),
+    'PAN':(document.getElementById('esi_pan').value||'').trim().toUpperCase(),
+    'Status':document.getElementById('esi_status').value,
+    'Remarks':(document.getElementById('esi_remarks').value||'').trim()
+  };
+  patchRowLocal('SelfIPO',rowNum,vals);
+  closeModal();renderSelfIPOPage();
+  postData({action:'editRow',sheet:'SelfIPO',rowNum:rowNum,vals:vals}).then(function(r){
+    if(r&&r.success){showToast('Update ho gaya','success');setTimeout(function(){loadAll(2);populateSelfIPODatalists();},600);}
+    else showToast('Failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
 /* ===== Team Tasks (parent ID -> team member task assignment) ===== */
 function renderMyTasksBanner(){
