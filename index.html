@@ -1590,22 +1590,23 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       <div class="page-header"><h1>IPO</h1><p>Application-wise IPO tracking &amp; profit/loss — a fully separate module, never mixed with main Income/Expense figures</p></div>
 
       <div class="tab-btns" style="margin-bottom:16px;">
-        <button class="tab-btn" id="ipoModeTabSelf" onclick="setIPOMode('self')">&#128188; Self IPO</button>
+        <button class="tab-btn" id="ipoModeTabSelf" onclick="setIPOMode('self')">&#128188; Self Application</button>
         <button class="tab-btn" id="ipoModeTabBuy" onclick="setIPOMode('buy')">&#128176; Application Buy</button>
       </div>
 
       <div id="ipoModeSelf" style="display:none;">
-        <p style="color:var(--muted);font-size:13px;margin:-8px 0 16px;">Aapke khud ke / family ke IPO applications ka personal record — company ke business IPO figures me nahi judta</p>
+        <p style="color:var(--muted);font-size:13px;margin:-8px 0 16px;">Aapke khud ke / family ke IPO applications ka personal record — company ke business IPO figures me nahi judta. IPO Name select karke rakhein to agli entries me dobara nahi likhna padega; Amount bhi usi IPO+Category ki last entry se apne aap bhar jayega (manually badal bhi sakte hain).</p>
         <div class="form-card" style="margin-bottom:16px;">
           <div class="form-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:6px 20px;">
             <div class="form-group"><label>Date</label><input type="date" id="si_date"></div>
-            <div class="form-group"><label>IPO Name</label><input type="text" id="si_ipoName" placeholder="e.g. Tata Capital"></div>
-            <div class="form-group"><label>Client ID (jisme lagaya)</label><input type="text" id="si_clientId" placeholder="e.g. FBO1234 / apna naam"></div>
-            <div class="form-group"><label>Category</label><select id="si_cat"><option>Retail</option><option>sHNI</option><option>bHNI</option></select></div>
-            <div class="form-group"><label>Amount</label><input type="number" id="si_amount" placeholder="e.g. 15000"></div>
-            <div class="form-group"><label>Bank</label><input type="text" id="si_bank" placeholder="e.g. HDFC Bank"></div>
-            <div class="form-group"><label>UPI ID</label><input type="text" id="si_upi" placeholder="e.g. name@okhdfc"></div>
-            <div class="form-group"><label>PAN Card</label><input type="text" id="si_pan" placeholder="e.g. ABCDE1234F" style="text-transform:uppercase;"></div>
+            <div class="form-group"><label>IPO Name</label><input type="text" id="si_ipoName" list="dl_si_ipoName" placeholder="e.g. Tata Capital" oninput="onSelfIPOFieldChange()" onchange="onSelfIPOFieldChange()"><datalist id="dl_si_ipoName"></datalist><div class="qp-row" id="qp_si_ipoName"></div></div>
+            <div class="form-group"><label>Client ID (jisme lagaya)</label><input type="text" id="si_clientId" list="dl_si_clientId" placeholder="e.g. FBO1234 / apna naam"><datalist id="dl_si_clientId"></datalist><div class="qp-row" id="qp_si_clientId"></div></div>
+            <div class="form-group"><label>Client / Investor Naam</label><input type="text" id="si_clientName" list="dl_si_clientName" placeholder="e.g. Ramesh Kumar"><datalist id="dl_si_clientName"></datalist><div class="qp-row" id="qp_si_clientName"></div></div>
+            <div class="form-group"><label>Category</label><select id="si_cat" onchange="onSelfIPOFieldChange()"><option>Retail</option><option>sHNI</option><option>bHNI</option></select></div>
+            <div class="form-group"><label>Amount (manual bhi kar sakte hain)</label><input type="number" id="si_amount" list="dl_si_amount" placeholder="e.g. 15000"><datalist id="dl_si_amount"></datalist><div class="qp-row" id="qp_si_amount"></div></div>
+            <div class="form-group"><label>Bank</label><input type="text" id="si_bank" list="dl_si_bank" placeholder="e.g. HDFC Bank"><datalist id="dl_si_bank"></datalist></div>
+            <div class="form-group"><label>UPI ID</label><input type="text" id="si_upi" list="dl_si_upi" placeholder="e.g. name@okhdfc"><datalist id="dl_si_upi"></datalist><div class="qp-row" id="qp_si_upi"></div></div>
+            <div class="form-group"><label>PAN Card</label><input type="text" id="si_pan" list="dl_si_pan" placeholder="e.g. ABCDE1234F" style="text-transform:uppercase;"><datalist id="dl_si_pan"></datalist></div>
             <div class="form-group"><label>Remarks</label><input type="text" id="si_remarks" placeholder="optional note"></div>
             <div class="form-group" style="align-self:end;"><button class="btn-submit" onclick="submitSelfIPO()">Add Entry</button></div>
           </div>
@@ -2968,16 +2969,83 @@ function dismissRKCommentsSeen(rowNums){
   });
 }
 /* ===== Self IPO (employee ka apna/family ka personal IPO record, business figures se alag) ===== */
+function siEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function siUniqVals(arr,key,limit){
+  var seen={},out=[];
+  for(var i=arr.length-1;i>=0;i--){
+    var v=(arr[i][key]||'').toString().trim();
+    if(v&&!seen[v]){seen[v]=1;out.push(v);}
+    if(limit&&out.length>=limit)break;
+  }
+  return out;
+}
+var selfIPOQP={},siLastAutoAmt=null,siLastAutoCombo=null;
+function renderQuickPicks(fieldId,containerId,values){
+  selfIPOQP[fieldId]=values;
+  var el=document.getElementById(containerId);
+  if(!el)return;
+  if(!values||!values.length){el.innerHTML='';return;}
+  el.innerHTML='<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px;">'+values.map(function(v,i){
+    return '<span onclick="quickPickSet(\''+fieldId+'\','+i+')" style="cursor:pointer;font-size:11px;padding:2px 8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.14);border-radius:10px;color:var(--muted,#8a94a6);">'+siEsc(v)+'</span>';
+  }).join('')+'</div>';
+}
+function quickPickSet(fieldId,i){
+  var v=(selfIPOQP[fieldId]||[])[i];
+  if(v===undefined)return;
+  var el=document.getElementById(fieldId);
+  if(el)el.value=v;
+  if(fieldId==='si_amount'){siLastAutoAmt=v;}
+  else onSelfIPOFieldChange();
+}
+function populateSelfIPODatalists(){
+  if(!currentUser)return;
+  var all=allData.SelfIPO||[];
+  var mine=all.filter(function(r){return r['Employee ID']===currentUser.userId;});
+  function fillDatalist(id,vals){
+    var dl=document.getElementById(id);if(!dl)return;
+    dl.innerHTML=vals.map(function(v){return '<option value="'+siEsc(v)+'">';}).join('');
+  }
+  var ipoNames=siUniqVals(all,'IPO Name'),clientIds=siUniqVals(mine,'Client ID'),clientNames=siUniqVals(mine,'Client Name'),banks=siUniqVals(mine,'Bank'),upis=siUniqVals(mine,'UPI ID'),pans=siUniqVals(mine,'PAN'),amounts=siUniqVals(all,'Amount');
+  fillDatalist('dl_si_ipoName',ipoNames);
+  fillDatalist('dl_si_clientId',clientIds);
+  fillDatalist('dl_si_clientName',clientNames);
+  fillDatalist('dl_si_bank',banks);
+  fillDatalist('dl_si_upi',upis);
+  fillDatalist('dl_si_pan',pans);
+  fillDatalist('dl_si_amount',amounts);
+  renderQuickPicks('si_ipoName','qp_si_ipoName',ipoNames.slice(0,6));
+  renderQuickPicks('si_clientId','qp_si_clientId',clientIds.slice(0,6));
+  renderQuickPicks('si_clientName','qp_si_clientName',clientNames.slice(0,6));
+  renderQuickPicks('si_upi','qp_si_upi',upis.slice(0,6));
+  onSelfIPOFieldChange();
+}
+function onSelfIPOFieldChange(){
+  var ipoNameEl=document.getElementById('si_ipoName'),catEl=document.getElementById('si_cat'),amtEl=document.getElementById('si_amount');
+  if(!ipoNameEl||!catEl||!amtEl)return;
+  var ipoName=(ipoNameEl.value||'').trim().toLowerCase(),cat=catEl.value,combo=ipoName+'|'+cat;
+  if(!ipoName){renderQuickPicks('si_amount','qp_si_amount',[]);return;}
+  var matches=(allData.SelfIPO||[]).filter(function(r){return (r['IPO Name']||'').trim().toLowerCase()===ipoName&&r['Category']===cat&&r['Amount'];});
+  var amtVals=siUniqVals(matches,'Amount',6);
+  renderQuickPicks('si_amount','qp_si_amount',amtVals);
+  if(amtVals.length){
+    var latest=amtVals[0];
+    if(!amtEl.value||amtEl.value===siLastAutoAmt||combo!==siLastAutoCombo){
+      amtEl.value=latest;siLastAutoAmt=latest;
+    }
+  }
+  siLastAutoCombo=combo;
+}
 function submitSelfIPO(){
   var ipoName=(document.getElementById('si_ipoName').value||'').trim();
   var amount=document.getElementById('si_amount').value;
   if(!ipoName){showToast('IPO Name zaroori hai','error');return;}
-  var p={action:'addSelfIPO','Date':document.getElementById('si_date').value||td(),'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch||'','IPO Name':ipoName,'Client ID':(document.getElementById('si_clientId').value||'').trim(),'Bank':(document.getElementById('si_bank').value||'').trim(),'UPI ID':(document.getElementById('si_upi').value||'').trim(),'PAN':(document.getElementById('si_pan').value||'').trim().toUpperCase(),'Category':document.getElementById('si_cat').value,'Amount':amount||'','Status':'Applied','Remarks':(document.getElementById('si_remarks').value||'').trim()};
+  var p={action:'addSelfIPO','Date':document.getElementById('si_date').value||td(),'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch||'','IPO Name':ipoName,'Client ID':(document.getElementById('si_clientId').value||'').trim(),'Client Name':(document.getElementById('si_clientName').value||'').trim(),'Bank':(document.getElementById('si_bank').value||'').trim(),'UPI ID':(document.getElementById('si_upi').value||'').trim(),'PAN':(document.getElementById('si_pan').value||'').trim().toUpperCase(),'Category':document.getElementById('si_cat').value,'Amount':amount||'','Status':'Applied','Remarks':(document.getElementById('si_remarks').value||'').trim()};
   postData(p).then(function(r){
     if(r&&r.success){
       showToast('Self IPO entry add ho gayi','success');
-      ['si_ipoName','si_clientId','si_bank','si_upi','si_pan','si_amount','si_remarks'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});
-      setTimeout(function(){loadAll(2);},600);
+      /* v76: IPO Name/Category/Amount sticky rakhe (baar baar select na karna pade) - sirf client-specific fields clear */
+      ['si_clientId','si_clientName','si_bank','si_upi','si_pan','si_remarks'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});
+      setTimeout(function(){loadAll(2);populateSelfIPODatalists();},600);
     } else showToast('Failed: '+(r&&r.error||''),'error');
   }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
@@ -2991,6 +3059,7 @@ function setSelfIPOStatus(rowNum,status){
 function renderSelfIPOPage(){
   var box=document.getElementById('selfIPOTable');if(!box||!currentUser)return;
   var el=document.getElementById('si_date');if(el&&!el.value)el.value=td();
+  populateSelfIPODatalists();
   var isAdm=currentUser.role==='admin';
   var rows=isAdm?(allData.SelfIPO||[]):(allData.SelfIPO||[]).filter(function(r){return r['Employee ID']===currentUser.userId;});
   var allotted=rows.filter(function(r){return r['Status']==='Allotted';}).length;
@@ -3003,10 +3072,10 @@ function renderSelfIPOPage(){
   ]);
   if(!rows.length){box.innerHTML='<div class="no-data">Koi entry nahi hai abhi</div>';return;}
   rows=rows.slice().sort(function(a,b){return (b['Date']||'').localeCompare(a['Date']||'');});
-  var h='<table><thead><tr>'+(isAdm?'<th>Employee</th>':'')+'<th>Date</th><th>IPO Name</th><th>Client ID</th><th>Category</th><th>Amount</th><th>Bank</th><th>UPI</th><th>PAN</th><th>Status</th><th>Remarks</th><th></th></tr></thead><tbody>';
+  var h='<table><thead><tr>'+(isAdm?'<th>Employee</th>':'')+'<th>Date</th><th>IPO Name</th><th>Client ID</th><th>Client Naam</th><th>Category</th><th>Amount</th><th>Bank</th><th>UPI</th><th>PAN</th><th>Status</th><th>Remarks</th><th></th></tr></thead><tbody>';
   rows.forEach(function(r){
     var st=r['Status']||'Applied';
-    h+='<tr>'+(isAdm?'<td>'+(r['Employee Name']||'-')+'</td>':'')+'<td>'+(r['Date']||'-')+'</td><td style="font-weight:600;">'+(r['IPO Name']||'-')+'</td><td>'+(r['Client ID']||'-')+'</td><td>'+(r['Category']||'-')+'</td><td class="money">'+fmt(r['Amount']||0)+'</td><td>'+(r['Bank']||'-')+'</td><td>'+(r['UPI ID']||'-')+'</td><td>'+(r['PAN']||'-')+'</td>'
+    h+='<tr>'+(isAdm?'<td>'+(r['Employee Name']||'-')+'</td>':'')+'<td>'+(r['Date']||'-')+'</td><td style="font-weight:600;">'+(r['IPO Name']||'-')+'</td><td>'+(r['Client ID']||'-')+'</td><td>'+(r['Client Name']||'-')+'</td><td>'+(r['Category']||'-')+'</td><td class="money">'+fmt(r['Amount']||0)+'</td><td>'+(r['Bank']||'-')+'</td><td>'+(r['UPI ID']||'-')+'</td><td>'+(r['PAN']||'-')+'</td>'
       +'<td><select onchange="setSelfIPOStatus('+r['_rowNum']+',this.value)" style="font-size:12px;padding:3px 5px;"><option'+(st==='Applied'?' selected':'')+'>Applied</option><option'+(st==='Allotted'?' selected':'')+'>Allotted</option><option'+(st==='Not Allotted'?' selected':'')+'>Not Allotted</option></select></td>'
       +'<td style="white-space:normal;max-width:160px;color:var(--muted);">'+(r['Remarks']||'-')+'</td>'
       +'<td><button class="btn-del" onclick="confirmDel(\'SelfIPO\','+r['_rowNum']+')">&#128465;</button></td>'
