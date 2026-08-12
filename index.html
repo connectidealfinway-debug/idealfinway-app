@@ -375,7 +375,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       <div class="nav-item" onclick="showPage('addExpense')">&#43; Add Expense</div>
       <div class="nav-item" onclick="showPage('finRecords')">&#8377; Income &amp; Expense</div>
       <div class="nav-item" onclick="showPage('hisab')">&#9878; Monthly Hisab</div>
-      <div class="nav-item" id="navIPOFin" style="display:none" onclick="showPage('ipo')">&#128200; IPO</div>
+      <div class="nav-item" id="navIPOFin" onclick="showPage('ipo')">&#128200; IPO</div>
       <div class="nav-section">Attendance</div>
       <div class="nav-item" onclick="showPage('markAttendance')">&#9711; My Attendance</div>
     </div>
@@ -393,7 +393,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       <div class="nav-item" onclick="showPage('settlement')">&#128184; Settlement</div>
       <div class="nav-item" onclick="showPage('contest')">&#127942; Contests</div>
       <div class="nav-item" id="navMyTeam" style="display:none" onclick="showPage('myTeam')">&#128101; My Team</div>
-      <div class="nav-item" id="navIPO" style="display:none" onclick="showPage('ipo')">&#128200; IPO</div>
+      <div class="nav-item" id="navIPO" onclick="showPage('ipo')">&#128200; IPO</div>
       <div class="nav-sec" onclick="toggleGrp('gAdd',this)"><span class="arr">&#9656;</span>Add Entry</div>
       <div class="nav-grp" id="gAdd" style="display:none">
         <div class="nav-item" onclick="showPage('addSIP')">&#43; Mutual Fund</div>
@@ -418,7 +418,6 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
         <div class="nav-item" onclick="showPage('myPoints')">&#11088; My Points</div>
       </div>
     </div>
-    <div class="nav-item" id="navSelfIPO" onclick="showPage('selfIPO')">&#128188; Self IPO</div>
     <div class="nav-item" id="navMyProfile" onclick="showPage('myProfile')" style="margin:0 12px 8px;border-radius:8px;">&#128100; My Profile <span id="myProfileAlert" style="display:none;color:var(--danger);font-weight:700;">&#9679;</span></div>
     <div class="sidebar-bottom"><button class="theme-switch" id="themeSwitchBtn" onclick="toggleTheme()">&#9788; Light Mode</button><button class="btn-logout" onclick="logout()">&#8592; Logout</button></div>
   </nav>
@@ -1590,6 +1589,34 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
     <div class="page" id="page-ipo">
       <div class="page-header"><h1>IPO</h1><p>Application-wise IPO tracking &amp; profit/loss — a fully separate module, never mixed with main Income/Expense figures</p></div>
 
+      <div class="tab-btns" style="margin-bottom:16px;">
+        <button class="tab-btn" id="ipoModeTabSelf" onclick="setIPOMode('self')">&#128188; Self IPO</button>
+        <button class="tab-btn" id="ipoModeTabBuy" onclick="setIPOMode('buy')">&#128176; Application Buy</button>
+      </div>
+
+      <div id="ipoModeSelf" style="display:none;">
+        <p style="color:var(--muted);font-size:13px;margin:-8px 0 16px;">Aapke khud ke / family ke IPO applications ka personal record — company ke business IPO figures me nahi judta</p>
+        <div class="form-card" style="margin-bottom:16px;">
+          <div class="form-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:6px 20px;">
+            <div class="form-group"><label>Date</label><input type="date" id="si_date"></div>
+            <div class="form-group"><label>IPO Name</label><input type="text" id="si_ipoName" placeholder="e.g. Tata Capital"></div>
+            <div class="form-group"><label>Client ID (jisme lagaya)</label><input type="text" id="si_clientId" placeholder="e.g. FBO1234 / apna naam"></div>
+            <div class="form-group"><label>Category</label><select id="si_cat"><option>Retail</option><option>sHNI</option><option>bHNI</option></select></div>
+            <div class="form-group"><label>Amount</label><input type="number" id="si_amount" placeholder="e.g. 15000"></div>
+            <div class="form-group"><label>Bank</label><input type="text" id="si_bank" placeholder="e.g. HDFC Bank"></div>
+            <div class="form-group"><label>UPI ID</label><input type="text" id="si_upi" placeholder="e.g. name@okhdfc"></div>
+            <div class="form-group"><label>PAN Card</label><input type="text" id="si_pan" placeholder="e.g. ABCDE1234F" style="text-transform:uppercase;"></div>
+            <div class="form-group"><label>Remarks</label><input type="text" id="si_remarks" placeholder="optional note"></div>
+            <div class="form-group" style="align-self:end;"><button class="btn-submit" onclick="submitSelfIPO()">Add Entry</button></div>
+          </div>
+        </div>
+        <div class="stats-grid" id="selfIPOStats"></div>
+        <div id="selfIPOTable"></div>
+      </div>
+
+      <div id="ipoModeBuy" style="display:none;">
+      <div id="ipoNoAccessMsg" class="no-data" style="display:none;">&#128274; Ye section (Application Buy) sirf admin-approved employees ke liye hai. Access ke liye admin se baat karein.</div>
+      <div id="ipoBuyAccessWrap">
       <div class="form-card form-grid" style="margin-bottom:16px;">
         <div class="form-group"><label>Select IPO</label><select id="ipo_select" onchange="onIPOSelectChange()"></select></div>
         <div class="form-group"><label>&nbsp;</label><button class="btn-mini add" onclick="openNewIPOModal()">&#43; New IPO</button></div>
@@ -1665,27 +1692,8 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
           <p style="color:var(--muted);font-size:12px;">Scratchpad only - nothing here is saved, it's just an instant what-if projection.</p>
         </div>
       </div>
-    </div>
-
-    <!-- SELF IPO (personal/family applications, employee ka apna record) -->
-    <div class="page" id="page-selfIPO">
-      <div class="page-header"><h1>Self IPO</h1><p>Aapke khud ke / family ke IPO applications ka personal record — company ke business IPO figures me nahi judta</p></div>
-      <div class="form-card" style="margin-bottom:16px;">
-        <div class="form-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:6px 20px;">
-          <div class="form-group"><label>Date</label><input type="date" id="si_date"></div>
-          <div class="form-group"><label>IPO Name</label><input type="text" id="si_ipoName" placeholder="e.g. Tata Capital"></div>
-          <div class="form-group"><label>Client ID (jisme lagaya)</label><input type="text" id="si_clientId" placeholder="e.g. FBO1234 / apna naam"></div>
-          <div class="form-group"><label>Category</label><select id="si_cat"><option>Retail</option><option>sHNI</option><option>bHNI</option></select></div>
-          <div class="form-group"><label>Amount</label><input type="number" id="si_amount" placeholder="e.g. 15000"></div>
-          <div class="form-group"><label>Bank</label><input type="text" id="si_bank" placeholder="e.g. HDFC Bank"></div>
-          <div class="form-group"><label>UPI ID</label><input type="text" id="si_upi" placeholder="e.g. name@okhdfc"></div>
-          <div class="form-group"><label>PAN Card</label><input type="text" id="si_pan" placeholder="e.g. ABCDE1234F" style="text-transform:uppercase;"></div>
-          <div class="form-group"><label>Remarks</label><input type="text" id="si_remarks" placeholder="optional note"></div>
-          <div class="form-group" style="align-self:end;"><button class="btn-submit" onclick="submitSelfIPO()">Add Entry</button></div>
-        </div>
       </div>
-      <div class="stats-grid" id="selfIPOStats"></div>
-      <div id="selfIPOTable"></div>
+      </div>
     </div>
 
   </main>
@@ -1709,7 +1717,7 @@ var accStat='all',myAccStat='all',dashF='today',accDupOnly=false,teamWorkingOnly
 var leadCatF='all',myLeadCatF='all';
 var leadConvF='all',myLeadConvF='all',meetConvF='all',myMeetConvF='all';
 var wlStatF='all';
-var ipoSelId=null,ipoCatF='All',ipoBrokerF='All',ipoRefF=null,ipoBuyerF=null,ipoTab='apps';
+var ipoSelId=null,ipoCatF='All',ipoBrokerF='All',ipoRefF=null,ipoBuyerF=null,ipoTab='apps',ipoMode='buy';
 function setLeadConv(v,varName){if(varName==='leadConvF')leadConvF=v;else myLeadConvF=v;renderPage(curPage());}
 function setMeetConv(v,varName){if(varName==='meetConvF')meetConvF=v;else myMeetConvF=v;renderPage(curPage());}
 var finTab='income';
@@ -2331,8 +2339,9 @@ function loadEmps(){
       var navTeam=document.getElementById('navMyTeam');if(navTeam)navTeam.style.display=(currentUser&&currentUser.role!=='admin')?'flex':'none';
       var navAI=document.getElementById('navAddIncome');if(navAI)navAI.style.display=canAddFinance()?'flex':'none';
       var navAE=document.getElementById('navAddExpense');if(navAE)navAE.style.display=canAddFinance()?'flex':'none';
-      var navIPO=document.getElementById('navIPO');if(navIPO)navIPO.style.display=canIPOAccess()?'flex':'none';
-      var navIPOFin=document.getElementById('navIPOFin');if(navIPOFin)navIPOFin.style.display=canIPOAccess()?'flex':'none';
+      /* v75: IPO nav ab hamesha visible - andar Self IPO (sabke liye) aur Application Buy (sirf IPO_Access wale) do alag tabs h */
+      var navIPO=document.getElementById('navIPO');if(navIPO)navIPO.style.display='flex';
+      var navIPOFin=document.getElementById('navIPOFin');if(navIPOFin)navIPOFin.style.display='flex';
       populateForEmpPickers();
       checkMyProfileAlert();
       renderPage(curPage());
@@ -2625,8 +2634,7 @@ function renderPage(id){
   else if(id==='bizOverview')renderBizOverview();
   else if(id==='client360'){var e=document.getElementById('c360_q');if(e)e.value='';document.getElementById('c360_results').innerHTML='';document.getElementById('c360_profile').innerHTML='';}
   else if(id==='myProfile')renderMyProfile();
-  else if(id==='ipo')renderIPOPage();
-  else if(id==='selfIPO')renderSelfIPOPage();
+  else if(id==='ipo')setIPOMode(canIPOAccess()?'buy':'self');
 }
 
 function mkStats(cards){var h='';cards.forEach(function(c){h+='<div class="stat-card '+(c.color||'green')+'"'+(c.onclick?' style="cursor:pointer" onclick="'+c.onclick+'"':'')+'><div class="stat-label">'+c.label+'</div><div class="stat-value">'+c.value+'</div><div class="stat-sub">'+(c.sub||'')+'</div></div>';});return h;}
@@ -9240,6 +9248,28 @@ function ipoDupPANCounts(rows){
   var counts={};
   rows.forEach(function(r){var p=(r['PAN']||'').trim().toUpperCase();if(p)counts[p]=(counts[p]||0)+1;});
   return counts;
+}
+function setIPOMode(mode){
+  ipoMode=mode;
+  var btnSelf=document.getElementById('ipoModeTabSelf'),btnBuy=document.getElementById('ipoModeTabBuy');
+  var divSelf=document.getElementById('ipoModeSelf'),divBuy=document.getElementById('ipoModeBuy');
+  if(btnSelf)btnSelf.className='tab-btn'+(mode==='self'?' active':'');
+  if(btnBuy)btnBuy.className='tab-btn'+(mode==='buy'?' active':'');
+  if(divSelf)divSelf.style.display=(mode==='self'?'block':'none');
+  if(divBuy)divBuy.style.display=(mode==='buy'?'block':'none');
+  if(mode==='self'){
+    renderSelfIPOPage();
+  } else {
+    var noAccess=document.getElementById('ipoNoAccessMsg'),wrap=document.getElementById('ipoBuyAccessWrap');
+    if(canIPOAccess()){
+      if(noAccess)noAccess.style.display='none';
+      if(wrap)wrap.style.display='block';
+      renderIPOPage();
+    } else {
+      if(noAccess)noAccess.style.display='block';
+      if(wrap)wrap.style.display='none';
+    }
+  }
 }
 function renderIPOPage(){
   var ipos=allData.IPO_Master||[];
