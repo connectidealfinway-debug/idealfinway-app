@@ -1621,6 +1621,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
               <div class="form-group"><label>Reference</label><input type="text" id="ipoAdd_ref" placeholder="Employee / client / anyone"></div>
               <div class="form-group"><label>Category</label><select id="ipoAdd_cat"><option>Retail</option><option>sHNI</option><option>bHNI</option></select></div>
               <div class="form-group"><label>Buy Rate (&#8377;/application)</label><input type="number" id="ipoAdd_buyrate" placeholder="e.g. 15000"></div>
+              <div class="form-group" style="grid-column:1/-1;"><label>Remarks</label><input type="text" id="ipoAdd_remarks" placeholder="Client ke baare me, payment ke baare me - kuch bhi note"></div>
               <div class="form-group" style="align-self:end;"><button class="btn-submit" onclick="submitIPOApplications()">Add</button></div>
             </div>
             <p style="color:var(--muted);font-size:11px;margin-top:6px;">Broker (Choice/Other) is set per application below the table, since one batch can split across brokers.</p>
@@ -9138,7 +9139,7 @@ function mkIPOAppsTable(rows,dupCounts,ipo){
     brokerSel+='</select>';
     h+='<tr'+(isDup?' class="dup-row"':'')+'>';
     h+='<td>'+(isDup?'<span class="dup-badge">&#9888;</span>':'')+ipoInlineTextCell(r,'PAN','Enter PAN',true)+(isDup?'<div style="font-size:10px;color:var(--danger);">Duplicate PAN, already added</div>':'')+'</td>';
-    h+='<td>'+ipoInlineTextCell(r,'Client_Name','Enter name',false)+'</td>';
+    h+='<td>'+ipoInlineTextCell(r,'Client_Name','Enter name',false)+(r['Remarks']?('<br><span style="font-size:10px;color:var(--muted,#8a94a6);" title="Remarks">&#128221; '+r['Remarks']+'</span>'):'')+'</td>';
     h+='<td>'+ipoInlineTextCell(r,'Mobile','Enter mobile',false)+'</td>';
     h+='<td>'+((r['Broker']||'Choice')==='Choice'?ipoInlineTextCell(r,'Client_ID','Enter Client ID',true):'<span style="color:var(--muted);">-</span>')+'</td>';
     h+='<td style="cursor:pointer;color:var(--accent);" onclick="filterIPOByReference(\''+String(r['Reference']||'').replace(/'/g,"\\\\'")+'\')" title="Filter by this reference">'+(r['Reference']||'-')+'</td>';
@@ -9216,6 +9217,7 @@ function openIPOAppEditModal(rowNum){
   html+='<div class="form-group"><label>Mobile</label><input type="text" id="ipe_mobile" value="'+(row['Mobile']||'')+'"></div>';
   html+='<div class="form-group"><label>Client ID (Choice/demat)</label><input type="text" id="ipe_clientid" value="'+(row['Client_ID']||'')+'" style="text-transform:uppercase;"></div>';
   html+='<div class="form-group"><label>Reference</label><input type="text" id="ipe_ref" value="'+(row['Reference']||'')+'"></div>';
+  html+='<div class="form-group"><label>Remarks</label><textarea id="ipe_remarks" rows="2" placeholder="Client ke baare me, payment ke baare me - kuch bhi note">'+(row['Remarks']||'')+'</textarea></div>';
   html+='<div class="form-group"><label>Category</label><select id="ipe_cat">';
   ['Retail','sHNI','bHNI'].forEach(function(c){html+='<option'+(row['Category']===c?' selected':'')+'>'+c+'</option>';});
   html+='</select></div>';
@@ -9258,6 +9260,7 @@ function saveIPOAppEdit(rowNum){
     'Payment_Account':document.getElementById('ipe_payacc').value,
     'Payment_By':(document.getElementById('ipe_payby').value||'').trim(),
     'Payment_Done':document.getElementById('ipe_paydone').checked?'Yes':'No',
+    'Remarks':(document.getElementById('ipe_remarks').value||'').trim(),
     'Updated_Date':td()
   };
   var statusEl=document.getElementById('ipe_status');
@@ -9773,12 +9776,13 @@ function submitIPOApplications(){
   var ref=(document.getElementById('ipoAdd_ref').value||'').trim();
   var cat=document.getElementById('ipoAdd_cat').value;
   var buyRate=parseFloat(document.getElementById('ipoAdd_buyrate').value)||0;
+  var remarks=(document.getElementById('ipoAdd_remarks').value||'').trim();
   if(qty<1){showToast('Quantity must be at least 1','error');return;}
-  var p={action:'addIPOApplications','IPO_ID':ipoSelId,'Qty':qty,'Reference':ref,'Category':cat,'Buy_Rate':buyRate};
+  var p={action:'addIPOApplications','IPO_ID':ipoSelId,'Qty':qty,'Reference':ref,'Category':cat,'Buy_Rate':buyRate,'Remarks':remarks};
   postData(p).then(function(r){
     if(r&&r.success){
       showToast(r.added+' application(s) added','success');
-      document.getElementById('ipoAdd_qty').value=1;document.getElementById('ipoAdd_ref').value='';document.getElementById('ipoAdd_buyrate').value='';
+      document.getElementById('ipoAdd_qty').value=1;document.getElementById('ipoAdd_ref').value='';document.getElementById('ipoAdd_buyrate').value='';document.getElementById('ipoAdd_remarks').value='';
       loadAll();
     } else showToast('Failed: '+(r&&r.error||''),'error');
   }).catch(function(e){showToast('Error: '+e.message,'error');});
