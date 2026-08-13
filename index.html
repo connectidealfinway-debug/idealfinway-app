@@ -951,7 +951,6 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       <div class="filter-bar">
         <input class="srch" id="srch-wl" placeholder="&#128269; Search stock..." oninput="renderWatchlistPage()">
       </div>
-      <div id="wlCalDiv"></div><div id="wlDayDiv"></div>
       <div class="stats-grid" id="wlStats"></div><div id="wlStatDiv"></div>
       <div class="table-wrap"><div class="table-inner" id="wlTable"></div></div>
     </div>
@@ -3278,7 +3277,6 @@ function renderWatchlistPage(){
   var q=getSrch('srch-wl');rows=srchFilter(rows,q,['Stock','Notes','Employee Name','Pattern']);
   var starredRows=rows.filter(function(r){return r['Starred']==='Yes';});
   var shown=wlStatF==='starred'?starredRows:rows;
-  document.getElementById('wlCalDiv').innerHTML=mkCalendar(isAdm?(allData.Watchlist||[]):fEmpStrict(allData.Watchlist||[],currentUser.userId),'wlCal',{moreLabel:'More Stocks',clickFn:'showWLDay'});
   document.getElementById('wlStats').innerHTML=mkStats([
     {label:'Total Stocks',value:rows.length,sub:'click to view all',color:'blue',onclick:"setWLFilter('all')"},
     {label:'Starred (Must Watch)',value:starredRows.length,sub:'click to view starred',color:'amber',onclick:"setWLFilter('starred')"}
