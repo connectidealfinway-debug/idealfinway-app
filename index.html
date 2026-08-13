@@ -2999,6 +2999,10 @@ function quickPickSet(fieldId,i){
 }
 function populateSelfIPODatalists(){
   if(!currentUser)return;
+  /* v77: agar user abhi is form ke kisi bhi field me type/select kar raha hai (naya ya edit modal),
+     to yahan se return - warna datalist repopulate hone se beech-typing PAN/naam corrupt ho jata tha */
+  var ae=document.activeElement;
+  if(ae&&ae.id&&(ae.id.indexOf('si_')===0||ae.id.indexOf('esi_')===0))return;
   var all=allData.SelfIPO||[];
   var mine=all.filter(function(r){return r['Employee ID']===currentUser.userId;});
   function fillDatalist(id,vals){
@@ -3209,16 +3213,52 @@ function renderTeamTasksTable(){
   ]);
   if(!rows.length){box.innerHTML='<div class="no-data">Koi task nahi mila</div>';return;}
   rows=rows.slice().sort(function(a,b){return (b['Date Assigned']||'').localeCompare(a['Date Assigned']||'');});
-  var h='<table><thead><tr><th>Date</th><th>Employee</th><th>Client</th><th>Task</th><th>Status</th><th>Remarks</th><th>Completed</th></tr></thead><tbody>';
+  var h='<table><thead><tr><th>Date</th><th>Employee</th><th>Client</th><th>Task</th><th>Status</th><th>Remarks</th><th>Completed</th><th></th></tr></thead><tbody>';
   rows.forEach(function(t){
     var isDone=t['Status']==='Done';
     h+='<tr><td>'+(t['Date Assigned']||'-')+'</td><td style="font-weight:600;">'+(t['Assigned To Name']||'-')+'</td><td>'+(t['Client Name']||'-')+'</td><td style="white-space:normal;max-width:220px;">'+(t['Task']||'-')+'</td>'
       +'<td><span class="badge '+(isDone?'green':'amber')+'">'+(t['Status']||'Pending')+'</span></td>'
       +'<td style="white-space:normal;max-width:200px;color:var(--muted);">'+(t['Remarks']||'-')+'</td>'
-      +'<td>'+(t['Completed Date']||'-')+'</td></tr>';
+      +'<td>'+(t['Completed Date']||'-')+'</td>'
+      +'<td><button class="btn-edit" onclick="openEditTeamTaskModal('+t['_rowNum']+')">&#9998;</button><button class="btn-del" onclick="confirmDel(\'TeamTasks\','+t['_rowNum']+')">&#128465;</button></td></tr>';
   });
   h+='</tbody></table>';
   box.innerHTML=h;
+}
+function openEditTeamTaskModal(rowNum){
+  var t=(allData.TeamTasks||[]).find(function(x){return String(x['_rowNum'])===String(rowNum);});
+  if(!t){showToast('Task nahi mila','error');return;}
+  var team=teamMembersOf(currentUser.userId);
+  var h='<div class="modal-title">&#9998; Task Edit Karein</div>';
+  h+='<div class="form-group"><label>Team Member</label><select id="ett_emp">'+team.map(function(e){return '<option value="'+e['Employee ID']+'"'+(e['Employee ID']===t['Assigned To']?' selected':'')+'>'+e['Name']+'</option>';}).join('')+'</select></div>';
+  h+='<div class="form-group"><label>Client Name (optional)</label><input type="text" id="ett_client" value="'+siEsc(t['Client Name']||'')+'"></div>';
+  h+='<div class="form-group"><label>Task Kya Karna Hai</label><textarea id="ett_task" rows="3">'+siEsc(t['Task']||'')+'</textarea></div>';
+  h+='<div class="form-group"><label>Status</label><select id="ett_status"><option'+((t['Status']||'Pending')==='Pending'?' selected':'')+'>Pending</option><option'+(t['Status']==='Done'?' selected':'')+'>Done</option></select></div>';
+  h+='<div class="form-group"><label>Remarks</label><input type="text" id="ett_remarks" value="'+siEsc(t['Remarks']||'')+'"></div>';
+  h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="submitEditTeamTask('+rowNum+')">Save</button></div>';
+  document.getElementById('modalBox').innerHTML=h;
+  document.getElementById('modal').className='show';
+}
+function submitEditTeamTask(rowNum){
+  var empId=document.getElementById('ett_emp').value;
+  var emp=employees.find(function(e){return e['Employee ID']===empId;});
+  var task=(document.getElementById('ett_task').value||'').trim();
+  if(!task){showToast('Task likhna zaroori hai','error');return;}
+  var vals={
+    'Assigned To':empId,
+    'Assigned To Name':emp?emp['Name']:'',
+    'Branch':emp?(emp['Branch']||''):'',
+    'Client Name':(document.getElementById('ett_client').value||'').trim(),
+    'Task':task,
+    'Status':document.getElementById('ett_status').value,
+    'Remarks':(document.getElementById('ett_remarks').value||'').trim()
+  };
+  patchRowLocal('TeamTasks',rowNum,vals);
+  closeModal();renderTeamTasksTable();renderMyTasksBanner();
+  postData({action:'editRow',sheet:'TeamTasks',rowNum:rowNum,vals:vals}).then(function(r){
+    if(r&&r.success){showToast('Task update ho gaya','success');setTimeout(function(){loadAll(2);},600);}
+    else showToast('Failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
 function showWLDay(ds){
   var isAdm=currentUser&&currentUser.role==='admin';
