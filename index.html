@@ -3038,11 +3038,32 @@ function onSelfIPOFieldChange(){
   }
   siLastAutoCombo=combo;
 }
+function findSelfIPODupe(ipoName,pan,clientId,excludeRowNum){
+  /* v78: ek IPO me same PAN ya same Client ID dobara add na ho paye - 2 clients ka PAN/Client ID same nahi ho sakta */
+  var ipoL=ipoName.trim().toLowerCase(),panU=(pan||'').trim().toUpperCase(),cidL=(clientId||'').trim().toLowerCase();
+  if(!panU&&!cidL)return null;
+  return (allData.SelfIPO||[]).find(function(r){
+    if(excludeRowNum&&String(r['_rowNum'])===String(excludeRowNum))return false;
+    if((r['IPO Name']||'').trim().toLowerCase()!==ipoL)return false;
+    var rPan=(r['PAN']||'').trim().toUpperCase(),rCid=(r['Client ID']||'').trim().toLowerCase();
+    if(panU&&rPan&&rPan===panU)return true;
+    if(cidL&&rCid&&rCid===cidL)return true;
+    return false;
+  })||null;
+}
 function submitSelfIPO(){
   var ipoName=(document.getElementById('si_ipoName').value||'').trim();
   var amount=document.getElementById('si_amount').value;
+  var clientId=(document.getElementById('si_clientId').value||'').trim();
+  var pan=(document.getElementById('si_pan').value||'').trim().toUpperCase();
   if(!ipoName){showToast('IPO Name zaroori hai','error');return;}
-  var p={action:'addSelfIPO','Date':document.getElementById('si_date').value||td(),'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch||'','IPO Name':ipoName,'Client ID':(document.getElementById('si_clientId').value||'').trim(),'Client Name':(document.getElementById('si_clientName').value||'').trim(),'Bank':(document.getElementById('si_bank').value||'').trim(),'UPI ID':(document.getElementById('si_upi').value||'').trim(),'PAN':(document.getElementById('si_pan').value||'').trim().toUpperCase(),'Category':document.getElementById('si_cat').value,'Amount':amount||'','Status':'Applied','Remarks':(document.getElementById('si_remarks').value||'').trim()};
+  var dupe=findSelfIPODupe(ipoName,pan,clientId);
+  if(dupe){
+    var which=(pan&&(dupe['PAN']||'').trim().toUpperCase()===pan)?('PAN '+pan):('Client ID '+clientId);
+    showToast('Is IPO ('+ipoName+') ke liye '+which+' already add ho chuka hai ('+(dupe['Employee Name']||'')+', '+(dupe['Date']||'')+') — 2 clients ka PAN/Client ID same nahi ho sakta','error');
+    return;
+  }
+  var p={action:'addSelfIPO','Date':document.getElementById('si_date').value||td(),'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch||'','IPO Name':ipoName,'Client ID':clientId,'Client Name':(document.getElementById('si_clientName').value||'').trim(),'Bank':(document.getElementById('si_bank').value||'').trim(),'UPI ID':(document.getElementById('si_upi').value||'').trim(),'PAN':pan,'Category':document.getElementById('si_cat').value,'Amount':amount||'','Status':'Applied','Remarks':(document.getElementById('si_remarks').value||'').trim()};
   postData(p).then(function(r){
     if(r&&r.success){
       showToast('Self IPO entry add ho gayi','success');
@@ -3111,10 +3132,18 @@ function openEditSelfIPOModal(rowNum){
 function submitEditSelfIPO(rowNum){
   var ipoName=(document.getElementById('esi_ipoName').value||'').trim();
   if(!ipoName){showToast('IPO Name zaroori hai','error');return;}
+  var editClientId=(document.getElementById('esi_clientId').value||'').trim();
+  var editPan=(document.getElementById('esi_pan').value||'').trim().toUpperCase();
+  var editDupe=findSelfIPODupe(ipoName,editPan,editClientId,rowNum);
+  if(editDupe){
+    var editWhich=(editPan&&(editDupe['PAN']||'').trim().toUpperCase()===editPan)?('PAN '+editPan):('Client ID '+editClientId);
+    showToast('Is IPO ('+ipoName+') ke liye '+editWhich+' already ek aur entry me add hai ('+(editDupe['Employee Name']||'')+', '+(editDupe['Date']||'')+') — 2 clients ka PAN/Client ID same nahi ho sakta','error');
+    return;
+  }
   var vals={
     'Date':document.getElementById('esi_date').value||'',
     'IPO Name':ipoName,
-    'Client ID':(document.getElementById('esi_clientId').value||'').trim(),
+    'Client ID':editClientId,
     'Client Name':(document.getElementById('esi_clientName').value||'').trim(),
     'Category':document.getElementById('esi_cat').value,
     'Amount':document.getElementById('esi_amount').value||'',
