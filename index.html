@@ -9410,7 +9410,16 @@ function ipoCategoryGain(ipo,cat){
    - Status = Pending                -> clientNet = null, profit = null (nothing payable yet)
    - Status = Allotted                -> clientNet = buyRate - categoryListingGain, profit = categoryListingGain
    - Status = Not Allotted            -> clientNet = buyRate, profit = 0
-   - Status = Rejection (invalid app) -> clientNet = buyRate - manualPenalty, profit = manualPenalty  */
+   - Status = Rejection (invalid app) -> clientNet = buyRate - penalty, profit = penalty
+       penalty = per-application override (row['Penalty'], if explicitly set) else the
+       IPO-wide default (ipo['Rejection_Penalty']) set once via "Edit Listing Gains" - same
+       pattern as Allotted's categoryListingGain, since the real penalty amount (like the
+       listing gain) is only known after listing/registrar result, not at rejection-select time */
+function ipoRejectionPenaltyFor(row,ipo){
+  var override=row['Penalty'];
+  if(override!==undefined&&override!==null&&String(override).trim()!=='')return parseFloat(override)||0;
+  return parseFloat(ipo&&ipo['Rejection_Penalty'])||0;
+}
 function ipoAppCalc(row,ipo){
   var buyRate=parseFloat(row['Buy_Rate'])||0;
   if(row['Resold']==='Yes'){
@@ -9421,7 +9430,7 @@ function ipoAppCalc(row,ipo){
   if(status==='Pending')return {clientNet:null,profit:null};
   if(status==='Allotted'){var gain=ipoCategoryGain(ipo,row['Category']);return {clientNet:buyRate-gain,profit:gain};}
   if(status==='Not Allotted')return {clientNet:buyRate,profit:0};
-  if(status==='Rejection'){var pen=parseFloat(row['Penalty'])||0;return {clientNet:buyRate-pen,profit:pen};}
+  if(status==='Rejection'){var pen=ipoRejectionPenaltyFor(row,ipo);return {clientNet:buyRate-pen,profit:pen};}
   return {clientNet:null,profit:null};
 }
 function ipoDupPANCounts(rows){
@@ -9477,7 +9486,7 @@ function renderIPOGainsDisplay(){
   if(!el)return;
   var ipo=currentIPO();
   if(!ipo){el.innerHTML='';return;}
-  el.innerHTML='<b>'+(ipo['IPO_Name']||'')+'</b> listing gain — Retail: <b>'+fmt(parseFloat(ipo['Retail_Gain'])||0)+'</b>/app &nbsp;|&nbsp; sHNI: <b>'+fmt(parseFloat(ipo['sHNI_Gain'])||0)+'</b>/app &nbsp;|&nbsp; bHNI: <b>'+fmt(parseFloat(ipo['bHNI_Gain'])||0)+'</b>/app'+(((parseFloat(ipo['Retail_Gain'])||0)===0&&(parseFloat(ipo['sHNI_Gain'])||0)===0&&(parseFloat(ipo['bHNI_Gain'])||0)===0)?' <span style="color:var(--danger);">— not set yet, Allotted profit will show ₹0 until you edit this</span>':'');
+  el.innerHTML='<b>'+(ipo['IPO_Name']||'')+'</b> listing gain — Retail: <b>'+fmt(parseFloat(ipo['Retail_Gain'])||0)+'</b>/app &nbsp;|&nbsp; sHNI: <b>'+fmt(parseFloat(ipo['sHNI_Gain'])||0)+'</b>/app &nbsp;|&nbsp; bHNI: <b>'+fmt(parseFloat(ipo['bHNI_Gain'])||0)+'</b>/app &nbsp;|&nbsp; Rejection Penalty: <b>'+fmt(parseFloat(ipo['Rejection_Penalty'])||0)+'</b>/app'+(((parseFloat(ipo['Retail_Gain'])||0)===0&&(parseFloat(ipo['sHNI_Gain'])||0)===0&&(parseFloat(ipo['bHNI_Gain'])||0)===0)?' <span style="color:var(--danger);">— not set yet, Allotted profit will show ₹0 until you edit this</span>':'')+((parseFloat(ipo['Rejection_Penalty'])||0)===0?' <span style="color:var(--amber);">— Rejection Penalty not set yet, rejected apps show ₹0 penalty until you edit this</span>':'');
 }
 function onIPOSelectChange(){ipoSelId=document.getElementById('ipo_select').value;ipoRefF=null;ipoBuyerF=null;renderIPOGainsDisplay();renderIPOTabBody();}
 function setIPOTab(t){
@@ -9575,7 +9584,7 @@ function mkIPOAppsTable(rows,dupCounts,ipo){
     var calc=ipoAppCalc(r,ipo);
     var resold=r['Resold']==='Yes';
     var curStatus=r['Status']||'Pending';
-    var statusSel='<select class="tbl-select"'+(resold?' disabled':'')+' onchange="onIPOStatusInlineChange(this,'+r._rowNum+')" style="min-width:120px;'+ipoStatusStyle(curStatus)+'">';
+    var statusSel='<select class="tbl-select"'+(resold?' disabled':'')+' onchange="inlineSaveIPOApp('+r._rowNum+',\'Status\',this.value)" style="min-width:120px;'+ipoStatusStyle(curStatus)+'">';
     ['Pending','Allotted','Not Allotted','Rejection'].forEach(function(s){statusSel+='<option'+(curStatus===s?' selected':'')+'>'+s+'</option>';});
     statusSel+='</select>';
     var brokerSel='<select class="tbl-select" onchange="inlineSaveIPOApp('+r._rowNum+',\'Broker\',this.value)" style="min-width:90px;">';
@@ -9633,38 +9642,6 @@ function inlineSaveIPOApp(rowNum,field,rawVal){
   }).catch(function(e){showToast('Error: '+e.message,'error');renderIPOTabBody();});
 }
 
-function onIPOStatusInlineChange(selEl,rowNum){
-  var val=selEl.value;
-  if(val==='Rejection'){openIPORejectionPenaltyModal(rowNum);}
-  else{inlineSaveIPOApp(rowNum,'Status',val);}
-}
-function openIPORejectionPenaltyModal(rowNum){
-  var row=(allData.IPO_Applications||[]).find(function(r){return String(r['_rowNum'])===String(rowNum);});
-  if(!row){showToast('Application not found - reloading','error');loadAll();return;}
-  var buyRate=parseFloat(row['Buy_Rate'])||0;
-  var curPenalty=parseFloat(row['Penalty'])||0;
-  var html='<div class="modal-title">Application Rejected &#8212; Penalty Amount</div>';
-  html+='<div class="prev-warn">Buy Rate: <b>'+fmt(buyRate)+'</b>. Penalty dalte hi client ka payment auto-adjust ho jayega (Buy Rate &#8722; Penalty). Agar penalty buy rate se zyada hai, to ulta client se paisa lena banega &#8212; wo Net Receivable me dikhega.</div>';
-  html+='<div class="form-group"><label>Penalty Amount (&#8377;)</label><input type="number" id="ipo_rej_penalty" value="'+curPenalty+'"></div>';
-  html+='<div class="modal-actions"><button class="btn-cancel" onclick="cancelIPORejection()">Cancel</button><button class="btn-save" onclick="confirmIPORejection('+rowNum+')">Save</button></div>';
-  document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
-  var pInp=document.getElementById('ipo_rej_penalty');if(pInp){pInp.focus();pInp.select();}
-}
-function cancelIPORejection(){
-  closeModal();
-  renderIPOTabBody(); // row was never changed, so this restores the status dropdown to its real saved value
-}
-function confirmIPORejection(rowNum){
-  var pen=parseFloat(document.getElementById('ipo_rej_penalty').value)||0;
-  var vals={'Status':'Rejection','Penalty':pen,'Updated_Date':td()};
-  patchRowLocal('IPO_Applications',rowNum,vals);
-  closeModal();
-  renderIPOTabBody();
-  postData({action:'editRow',sheet:'IPO_Applications',rowNum:rowNum,vals:vals}).then(function(r){
-    if(r&&r.success)showToast('Rejected + penalty saved, payment adjusted','success');
-    else{showToast('Save failed: '+(r&&r.error||''),'error');loadAll();}
-  }).catch(function(e){showToast('Error: '+e.message,'error');loadAll();});
-}
 /* Client-payment ledger chip. clientNet>=0 => company owes client (Payable/Paid);
    clientNet<0 => client owes company (Receivable/Received) - e.g. a manual penalty larger
    than the buy rate. Both directions use the same Payment_Done/Payment_Account/Payment_By
@@ -9704,7 +9681,7 @@ function openIPOAppEditModal(rowNum){
   html+='<div class="form-group"><label>Status'+(resold?' <span style="color:var(--muted);font-weight:400;">(disabled - resold, client always gets full buy rate)</span>':'')+'</label><select id="ipe_status"'+(resold?' disabled':'')+'>';
   ['Pending','Allotted','Not Allotted','Rejection'].forEach(function(s){html+='<option'+(row['Status']===s?' selected':'')+'>'+s+'</option>';});
   html+='</select></div>';
-  html+='<div class="form-group"><label>Penalty (used only when Status = Rejection)</label><input type="number" id="ipe_penalty" value="'+(parseFloat(row['Penalty'])||0)+'"></div>';
+  html+='<div class="form-group"><label>Penalty Override (&#8377;/application) <span style="color:var(--muted);font-weight:400;">- blank = use this IPO\'s default Rejection Penalty (set via "Edit Listing Gains"); fill only if THIS application\'s penalty is different</span></label><input type="number" id="ipe_penalty" placeholder="blank = IPO default" value="'+((row['Penalty']===undefined||row['Penalty']===null||String(row['Penalty']).trim()==='')?'':(parseFloat(row['Penalty'])||0))+'"></div>';
   html+='<div class="form-group"><label>Payment Account</label><select id="ipe_payacc">';
   acctOpts.forEach(function(a){html+='<option value="'+a+'"'+(row['Payment_Account']===a?' selected':'')+'>'+(a||'-- select --')+'</option>';});
   html+='</select></div>';
@@ -9732,7 +9709,7 @@ function saveIPOAppEdit(rowNum){
     'Category':document.getElementById('ipe_cat').value,
     'Broker':document.getElementById('ipe_broker').value,
     'Buy_Rate':parseFloat(document.getElementById('ipe_buyrate').value)||0,
-    'Penalty':parseFloat(document.getElementById('ipe_penalty').value)||0,
+    'Penalty':(function(){var v=(document.getElementById('ipe_penalty').value||'').trim();return v===''?'':(parseFloat(v)||0);})(),
     'Payment_Account':document.getElementById('ipe_payacc').value,
     'Payment_By':(document.getElementById('ipe_payby').value||'').trim(),
     'Payment_Done':document.getElementById('ipe_paydone').checked?'Yes':'No',
@@ -10209,13 +10186,14 @@ function openNewIPOModal(){
   html+='<div class="form-group"><label>Retail Listing Gain (&#8377;/application)</label><input type="number" id="ipn_retail" value="0"></div>';
   html+='<div class="form-group"><label>sHNI Listing Gain (&#8377;/application)</label><input type="number" id="ipn_shni" value="0"></div>';
   html+='<div class="form-group"><label>bHNI Listing Gain (&#8377;/application)</label><input type="number" id="ipn_bhni" value="0"></div>';
+  html+='<div class="form-group"><label>Rejection Penalty (&#8377;/application) <span style="color:var(--muted);font-weight:400;">- optional, set/edit later once known</span></label><input type="number" id="ipn_penalty" value="0"></div>';
   html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="submitNewIPO()">Create</button></div>';
   document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
 }
 function submitNewIPO(){
   var name=(document.getElementById('ipn_name').value||'').trim();
   if(!name){showToast('IPO Name required','error');return;}
-  var p={action:'addIPOMaster','IPO_Name':name,'Retail_Gain':parseFloat(document.getElementById('ipn_retail').value)||0,'sHNI_Gain':parseFloat(document.getElementById('ipn_shni').value)||0,'bHNI_Gain':parseFloat(document.getElementById('ipn_bhni').value)||0,'Created_By':currentUser.name};
+  var p={action:'addIPOMaster','IPO_Name':name,'Retail_Gain':parseFloat(document.getElementById('ipn_retail').value)||0,'sHNI_Gain':parseFloat(document.getElementById('ipn_shni').value)||0,'bHNI_Gain':parseFloat(document.getElementById('ipn_bhni').value)||0,'Rejection_Penalty':parseFloat(document.getElementById('ipn_penalty').value)||0,'Created_By':currentUser.name};
   postData(p).then(function(r){
     closeModal();
     if(r&&r.success){showToast('IPO created','success');ipoSelId=r.ipoId;loadAll();}
@@ -10231,6 +10209,8 @@ function openEditIPOGainsModal(){
   html+='<div class="form-group"><label>Retail Listing Gain (&#8377;/application)</label><input type="number" id="ipg_retail" value="'+(parseFloat(ipo['Retail_Gain'])||0)+'"></div>';
   html+='<div class="form-group"><label>sHNI Listing Gain (&#8377;/application)</label><input type="number" id="ipg_shni" value="'+(parseFloat(ipo['sHNI_Gain'])||0)+'"></div>';
   html+='<div class="form-group"><label>bHNI Listing Gain (&#8377;/application)</label><input type="number" id="ipg_bhni" value="'+(parseFloat(ipo['bHNI_Gain'])||0)+'"></div>';
+  html+='<p style="color:var(--muted);font-size:12px;margin:14px 0 10px;border-top:1px solid var(--border,#2a2f3a);padding-top:10px;">&#8377;/application penalty auto-applied to ALL applications marked <b>Rejection</b> in this IPO. Ek specific application ka penalty alag rakhna ho to us application ke Edit (&#9998;) button se manually set kar sakte ho — wahan blank chhodne par yehi default use hoga.</p>';
+  html+='<div class="form-group"><label>Rejection Penalty (&#8377;/application)</label><input type="number" id="ipg_penalty" value="'+(parseFloat(ipo['Rejection_Penalty'])||0)+'"></div>';
   html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="saveIPOGains('+ipo['_rowNum']+')">Save</button></div>';
   document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
 }
@@ -10238,11 +10218,12 @@ function saveIPOGains(rowNum){
   var vals={
     'Retail_Gain':parseFloat(document.getElementById('ipg_retail').value)||0,
     'sHNI_Gain':parseFloat(document.getElementById('ipg_shni').value)||0,
-    'bHNI_Gain':parseFloat(document.getElementById('ipg_bhni').value)||0
+    'bHNI_Gain':parseFloat(document.getElementById('ipg_bhni').value)||0,
+    'Rejection_Penalty':parseFloat(document.getElementById('ipg_penalty').value)||0
   };
   postData({action:'editRow',sheet:'IPO_Master',rowNum:rowNum,vals:vals}).then(function(r){
     closeModal();
-    if(r&&r.success){showToast('Listing gains updated','success');patchRowLocal('IPO_Master',rowNum,vals);renderIPOGainsDisplay();renderIPOTabBody();}
+    if(r&&r.success){showToast('Listing gains & rejection penalty updated','success');patchRowLocal('IPO_Master',rowNum,vals);renderIPOGainsDisplay();renderIPOTabBody();}
     else showToast('Failed: '+(r&&r.error||''),'error');
   }).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
 }
