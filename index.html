@@ -430,6 +430,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
     <!-- ADMIN DASHBOARD -->
     <div class="page" id="page-adminDash">
       <div class="page-header"><h1>Admin Dashboard</h1><p>Overall performance overview</p></div>
+      <div class="sip-alert" id="sipAlertAdminDash"></div>
       <div class="dash-row">
         <div style="flex:1.3;min-width:340px;">
           <div id="attentionPanel"></div>
@@ -585,6 +586,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
     <!-- ADMIN SIP -->
     <div class="page" id="page-adminSIP">
       <div class="page-header"><h1>Mutual Fund / SIP Records</h1><p>All SIP and Lumpsum entries</p></div>
+      <div class="sip-alert" id="sipAlertAdminSIP"></div>
       <div class="filter-bar">
         <button class="filter-btn active" onclick="setF('today',this,'sip')">Today</button>
         <button class="filter-btn" onclick="setF('yesterday',this,'sip')">Yesterday</button>
@@ -1825,22 +1827,23 @@ function nextDue(dd){
 }
 function checkSIPAlerts(){
   renderNotifBell();
-  if(!currentUser||currentUser.role==='admin')return;
+  if(!currentUser)return;
+  var isAdm=currentUser.role==='admin';
   var uid=currentUser.userId;
   var today=new Date();today.setHours(0,0,0,0);
   var limit=new Date(today);limit.setDate(limit.getDate()+3);
   var due=(allData.SIP||[]).filter(function(r){
-    if((r['Employee ID']||'').trim().toLowerCase()!==uid.trim().toLowerCase())return false;
+    if(!isAdm&&(r['Employee ID']||'').trim().toLowerCase()!==uid.trim().toLowerCase())return false;
     if((r['Type']||'SIP')!=='SIP')return false;
     var dd=(r['SIP Due Date']||'').trim();if(!dd)return false;
     var d2=nextDue(dd);
     return d2&&d2>=today&&d2<limit;
   });
   due.sort(function(a,b){return nextDue(a['SIP Due Date'])-nextDue(b['SIP Due Date']);});
-  ['sipAlert','sipAlertSIP'].forEach(function(id){
+  ['sipAlert','sipAlertSIP','sipAlertAdminDash','sipAlertAdminSIP'].forEach(function(id){
     var el=document.getElementById(id);if(!el)return;
     if(due.length>0){
-      el.innerHTML='&#9888; <strong>SIP Due (agle 3 din, har month repeat):</strong> '+due.map(function(r){var d=nextDue(r['SIP Due Date']);var day=('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2);return (r['Client Name']||'')+' &#8212; '+day+' ('+fmt(r['Amount']||0)+')';}).join(' &nbsp;&#183;&nbsp; ');
+      el.innerHTML='&#9888; <strong>SIP Due (agle 3 din, har month automatic repeat):</strong> '+due.map(function(r){var d=nextDue(r['SIP Due Date']);var day=('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2);return (r['Client Name']||'')+(isAdm?' ['+(r['Employee Name']||'-')+']':'')+' &#8212; '+day+' ('+fmt(r['Amount']||0)+')';}).join(' &nbsp;&#183;&nbsp; ');
       el.classList.add('show');
     } else {el.classList.remove('show');}
   });
@@ -1939,12 +1942,13 @@ function computeReminders(){
   var isAdm=currentUser.role==='admin';
   var tomorrow=new Date();tomorrow.setHours(0,0,0,0);tomorrow.setDate(tomorrow.getDate()+1);
   var sipRows=isAdm?(allData.SIP||[]):fEmp(allData.SIP||[],currentUser.userId);
+  var sipWindowEnd=new Date(tomorrow);sipWindowEnd.setDate(sipWindowEnd.getDate()+2); // tomorrow..+2 more days = 3-day advance window; recurs every month automatically via nextDue()
   var sipTomorrow=sipRows.filter(function(r){
     if((r['Type']||'SIP')!=='SIP')return false;
     var dd=(r['SIP Due Date']||'').trim();if(!dd)return false;
     var d2=nextDue(dd);
-    return d2&&d2.getFullYear()===tomorrow.getFullYear()&&d2.getMonth()===tomorrow.getMonth()&&d2.getDate()===tomorrow.getDate();
-  });
+    return d2&&d2>=tomorrow&&d2<=sipWindowEnd;
+  }).sort(function(a,b){return nextDue(a['SIP Due Date'])-nextDue(b['SIP Due Date']);});
   var meetRows=isAdm?(allData.Meetings||[]):fEmp(allData.Meetings||[],currentUser.userId);
   var today=td();
   var meetToday=meetRows.filter(function(r){return (r['Next Meeting']||'').trim()===today&&(r['Converted']||'No')!=='Yes';});
@@ -2017,12 +2021,13 @@ function buildReminderHTML(r){
     }).join('')+'</div>';
   }
   if(r.sipTomorrow.length){
-    var tm=r.tomorrow;
-    h+='<div style="font-weight:700;color:var(--accent,#3fbf7f);margin:4px 0 8px;">&#128197; Tomorrow ('+('0'+tm.getDate()).slice(-2)+'/'+('0'+(tm.getMonth()+1)).slice(-2)+') SIP is due - call the client to remind them:</div>';
+    h+='<div style="font-weight:700;color:var(--accent,#3fbf7f);margin:4px 0 8px;">&#128197; SIP Due (agle 3 din, har mahine automatic repeat) &#8212; call the client to remind them:</div>';
     h+='<div style="max-height:200px;overflow:auto;margin-bottom:14px;">'+r.sipTomorrow.map(function(row){
       var ph=(row['Client Phone']||'').replace(/[^\d+]/g,'');
+      var dd2=nextDue(row['SIP Due Date']);
+      var dstr=dd2?(('0'+dd2.getDate()).slice(-2)+'/'+('0'+(dd2.getMonth()+1)).slice(-2)):'';
       return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 4px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:13px;">'
-        +'<span>'+(row['Client Name']||'-')+' &#183; <b>'+fmt(row['Amount']||0)+'</b>'+(isAdm?' <span style="color:var(--muted,#8a94a6);font-size:11px;">('+(row['Employee Name']||'')+')</span>':'')+'</span>'
+        +'<span>'+(row['Client Name']||'-')+' &#183; <b>'+dstr+'</b> &#183; '+fmt(row['Amount']||0)+(isAdm?' <span style="color:var(--muted,#8a94a6);font-size:11px;">('+(row['Employee Name']||'')+')</span>':'')+'</span>'
         +(ph?'<a href="tel:'+ph+'" style="color:var(--accent,#3fbf7f);font-weight:700;text-decoration:none;">&#128222; Call</a>':'')
         +'</div>';
     }).join('')+'</div>';
