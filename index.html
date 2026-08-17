@@ -6202,7 +6202,10 @@ function submitInsurance(){
 
 function submitAccount(){
   var cn=document.getElementById('a_cname').value.trim(),cid=document.getElementById('a_cid').value.trim();
-  if(!cn||!cid){showToast('Client Name and ID required','error');return;}
+  if(!cn){showToast('Client Name required','error');return;}
+  /* Client ID intentionally optional here - blank ID = account goes to "Under Process Demat" tab
+     automatically (see renderAccTable/renderAccProcessTable), moves to "Completed" the moment
+     someone edits in the real Client ID later. */
   var cphoneChk=document.getElementById('a_cphone').value.trim();
   if(!cphoneChk){showToast('Client mobile number is required - entry cannot be added without it','error');return;}
   var fe=forEmpObj('a_forEmp');
