@@ -9575,7 +9575,7 @@ function mkIPOAppsTable(rows,dupCounts,ipo){
     var calc=ipoAppCalc(r,ipo);
     var resold=r['Resold']==='Yes';
     var curStatus=r['Status']||'Pending';
-    var statusSel='<select class="tbl-select"'+(resold?' disabled':'')+' onchange="inlineSaveIPOApp('+r._rowNum+',\'Status\',this.value)" style="min-width:120px;'+ipoStatusStyle(curStatus)+'">';
+    var statusSel='<select class="tbl-select"'+(resold?' disabled':'')+' onchange="onIPOStatusInlineChange(this,'+r._rowNum+')" style="min-width:120px;'+ipoStatusStyle(curStatus)+'">';
     ['Pending','Allotted','Not Allotted','Rejection'].forEach(function(s){statusSel+='<option'+(curStatus===s?' selected':'')+'>'+s+'</option>';});
     statusSel+='</select>';
     var brokerSel='<select class="tbl-select" onchange="inlineSaveIPOApp('+r._rowNum+',\'Broker\',this.value)" style="min-width:90px;">';
@@ -9633,6 +9633,38 @@ function inlineSaveIPOApp(rowNum,field,rawVal){
   }).catch(function(e){showToast('Error: '+e.message,'error');renderIPOTabBody();});
 }
 
+function onIPOStatusInlineChange(selEl,rowNum){
+  var val=selEl.value;
+  if(val==='Rejection'){openIPORejectionPenaltyModal(rowNum);}
+  else{inlineSaveIPOApp(rowNum,'Status',val);}
+}
+function openIPORejectionPenaltyModal(rowNum){
+  var row=(allData.IPO_Applications||[]).find(function(r){return String(r['_rowNum'])===String(rowNum);});
+  if(!row){showToast('Application not found - reloading','error');loadAll();return;}
+  var buyRate=parseFloat(row['Buy_Rate'])||0;
+  var curPenalty=parseFloat(row['Penalty'])||0;
+  var html='<div class="modal-title">Application Rejected &#8212; Penalty Amount</div>';
+  html+='<div class="prev-warn">Buy Rate: <b>'+fmt(buyRate)+'</b>. Penalty dalte hi client ka payment auto-adjust ho jayega (Buy Rate &#8722; Penalty). Agar penalty buy rate se zyada hai, to ulta client se paisa lena banega &#8212; wo Net Receivable me dikhega.</div>';
+  html+='<div class="form-group"><label>Penalty Amount (&#8377;)</label><input type="number" id="ipo_rej_penalty" value="'+curPenalty+'"></div>';
+  html+='<div class="modal-actions"><button class="btn-cancel" onclick="cancelIPORejection()">Cancel</button><button class="btn-save" onclick="confirmIPORejection('+rowNum+')">Save</button></div>';
+  document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
+  var pInp=document.getElementById('ipo_rej_penalty');if(pInp){pInp.focus();pInp.select();}
+}
+function cancelIPORejection(){
+  closeModal();
+  renderIPOTabBody(); // row was never changed, so this restores the status dropdown to its real saved value
+}
+function confirmIPORejection(rowNum){
+  var pen=parseFloat(document.getElementById('ipo_rej_penalty').value)||0;
+  var vals={'Status':'Rejection','Penalty':pen,'Updated_Date':td()};
+  patchRowLocal('IPO_Applications',rowNum,vals);
+  closeModal();
+  renderIPOTabBody();
+  postData({action:'editRow',sheet:'IPO_Applications',rowNum:rowNum,vals:vals}).then(function(r){
+    if(r&&r.success)showToast('Rejected + penalty saved, payment adjusted','success');
+    else{showToast('Save failed: '+(r&&r.error||''),'error');loadAll();}
+  }).catch(function(e){showToast('Error: '+e.message,'error');loadAll();});
+}
 /* Client-payment ledger chip. clientNet>=0 => company owes client (Payable/Paid);
    clientNet<0 => client owes company (Receivable/Received) - e.g. a manual penalty larger
    than the buy rate. Both directions use the same Payment_Done/Payment_Account/Payment_By
