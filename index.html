@@ -623,22 +623,36 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
     <!-- ADMIN ACCOUNTS -->
     <div class="page" id="page-adminAcc">
       <div class="page-header"><h1>Account Opening Records</h1><p>All demat account openings</p></div>
-      <div class="filter-bar">
-        <button class="filter-btn active" onclick="setF('today',this,'acc')">Today</button>
-        <button class="filter-btn" onclick="setF('yesterday',this,'acc')">Yesterday</button>
-        <button class="filter-btn" onclick="setF('week',this,'acc')">This Week</button>
-        <button class="filter-btn" onclick="setF('month',this,'acc')">This Month</button>
-        <button class="filter-btn" onclick="setF('quarter',this,'acc')">Quarter</button>
-        <button class="filter-btn" onclick="setF('year',this,'acc')">This Year</button>
-        <button class="filter-btn" onclick="setF('all',this,'acc')">All Time</button>
-        <span style="color:var(--muted);font-size:12px;">Status:</span>
-        <button class="filter-btn active" onclick="setAccStat('all',this)">All</button>
-        <button class="filter-btn" onclick="setAccStat('active',this)">Active</button>
-        <button class="filter-btn" onclick="setAccStat('inactive',this)">Inactive</button>
-        <input class="srch" id="srch-acc" placeholder="&#128269; Search client/ID..." oninput="renderAccTable()"><select onchange="setAccSort(this.value)" style="max-width:210px;"><option value="">Sort: Recent Entry</option><option value="cid">Sort: Client ID (FBO1,2,3...)</option><option value="lastcall">Sort: Last Call (recent first)</option></select>
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+        <button class="tab-btn active" id="accModeTabCompleted" onclick="setAccMode('completed')">&#9989; Completed Demat</button>
+        <button class="tab-btn" id="accModeTabProcess" onclick="setAccMode('process')">&#8987; Under Process Demat <span id="accProcessCount"></span></button>
       </div>
-      <div class="stats-grid" id="accStats"></div><div id="accStatDiv"></div>
-      <div class="table-wrap"><div class="table-inner" id="accTable"></div></div>
+      <div id="accModeCompleted">
+        <div class="filter-bar">
+          <button class="filter-btn active" onclick="setF('today',this,'acc')">Today</button>
+          <button class="filter-btn" onclick="setF('yesterday',this,'acc')">Yesterday</button>
+          <button class="filter-btn" onclick="setF('week',this,'acc')">This Week</button>
+          <button class="filter-btn" onclick="setF('month',this,'acc')">This Month</button>
+          <button class="filter-btn" onclick="setF('quarter',this,'acc')">Quarter</button>
+          <button class="filter-btn" onclick="setF('year',this,'acc')">This Year</button>
+          <button class="filter-btn" onclick="setF('all',this,'acc')">All Time</button>
+          <span style="color:var(--muted);font-size:12px;">Status:</span>
+          <button class="filter-btn active" onclick="setAccStat('all',this)">All</button>
+          <button class="filter-btn" onclick="setAccStat('active',this)">Active</button>
+          <button class="filter-btn" onclick="setAccStat('inactive',this)">Inactive</button>
+          <input class="srch" id="srch-acc" placeholder="&#128269; Search client/ID..." oninput="renderAccTable()"><select onchange="setAccSort(this.value)" style="max-width:210px;"><option value="">Sort: Recent Entry</option><option value="cid">Sort: Client ID (FBO1,2,3...)</option><option value="lastcall">Sort: Last Call (recent first)</option></select>
+        </div>
+        <div class="stats-grid" id="accStats"></div><div id="accStatDiv"></div>
+        <div class="table-wrap"><div class="table-inner" id="accTable"></div></div>
+      </div>
+      <div id="accModeProcess" style="display:none;">
+        <p style="color:var(--muted);font-size:12px;margin-bottom:10px;">Documents aa chuke hain, account punch ho chuka hai, but Client ID abhi tak nahi aayi. Jaise hi Edit (&#9998;) se Client ID daaloge, ye entry automatic "Completed Demat" me chali jayegi.</p>
+        <div class="filter-bar">
+          <input class="srch" id="srch-accProcess" placeholder="&#128269; Search client/phone/employee..." oninput="renderAccProcessTable()"><select onchange="setAccProcessSort(this.value)" style="max-width:210px;"><option value="">Sort: Oldest First</option><option value="recent">Sort: Recent First</option></select>
+        </div>
+        <div class="stats-grid" id="accProcessStats"></div>
+        <div class="table-wrap"><div class="table-inner" id="accProcessTable"></div></div>
+      </div>
     </div>
 
     <!-- CONTESTS (v31) -->
@@ -1102,7 +1116,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
         <div class="form-group" id="a_forEmpGroup" style="display:none"><label>Entry For Which Employee?</label><select id="a_forEmp"></select></div>
         <div class="form-group"><label>Date</label><input type="date" id="a_date"></div>
         <div class="form-group"><label>Client Name</label><input type="text" id="a_cname" placeholder="Enter client name"></div>
-        <div class="form-group"><label>Client ID / Demat No</label><input type="text" id="a_cid" placeholder="e.g. FBO1234"></div>
+        <div class="form-group"><label>Client ID / Demat No <span style="color:var(--muted);font-weight:400;">- abhi na aayi ho to khaali chhod do, entry "Under Process" me chali jayegi aur Client ID edit se daalte hi automatic "Completed" me aa jayegi</span></label><input type="text" id="a_cid" placeholder="e.g. FBO1234 - ya khaali chhodo agar abhi tak nahi aayi"></div>
         <div class="form-group"><label style="color:var(--danger,#ef4444);">Client Phone - required</label><input type="tel" id="a_cphone" placeholder="10-digit mobile"></div>
         <div class="form-group"><label>Account Type</label>
           <select id="a_acctype"><option value="New">New</option><option value="Transfer">Transfer</option></select>
@@ -1328,22 +1342,36 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
     <!-- MY ACCOUNTS -->
     <div class="page" id="page-myAcc">
       <div class="page-header"><h1>My Account Openings</h1></div>
-      <div class="filter-bar">
-        <button class="filter-btn active" onclick="setF('today',this,'myAcc')">Today</button>
-        <button class="filter-btn" onclick="setF('yesterday',this,'myAcc')">Yesterday</button>
-        <button class="filter-btn" onclick="setF('week',this,'myAcc')">This Week</button>
-        <button class="filter-btn" onclick="setF('month',this,'myAcc')">This Month</button>
-        <button class="filter-btn" onclick="setF('quarter',this,'myAcc')">Quarter</button>
-        <button class="filter-btn" onclick="setF('year',this,'myAcc')">This Year</button>
-        <button class="filter-btn" onclick="setF('all',this,'myAcc')">All Time</button>
-        <span style="color:var(--muted);font-size:12px;">Status:</span>
-        <button class="filter-btn active" onclick="setMyAccStat('all',this)">All</button>
-        <button class="filter-btn" onclick="setMyAccStat('active',this)">Active</button>
-        <button class="filter-btn" onclick="setMyAccStat('inactive',this)">Inactive</button>
-        <input class="srch" id="srch-myAcc" placeholder="&#128269; Search client/ID..." oninput="renderMyAccTable()"><select onchange="setMyAccSort(this.value)" style="max-width:210px;"><option value="">Sort: Recent Entry</option><option value="cid">Sort: Client ID (FBO1,2,3...)</option><option value="lastcall">Sort: Last Call (recent first)</option></select>
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+        <button class="tab-btn active" id="myAccModeTabCompleted" onclick="setMyAccMode('completed')">&#9989; Completed Demat</button>
+        <button class="tab-btn" id="myAccModeTabProcess" onclick="setMyAccMode('process')">&#8987; Under Process Demat <span id="myAccProcessCount"></span></button>
       </div>
-      <div class="stats-grid" id="myAccStats"></div><div id="myAccStatDiv"></div>
-      <div class="table-wrap"><div class="table-inner" id="myAccTable"></div></div>
+      <div id="myAccModeCompleted">
+        <div class="filter-bar">
+          <button class="filter-btn active" onclick="setF('today',this,'myAcc')">Today</button>
+          <button class="filter-btn" onclick="setF('yesterday',this,'myAcc')">Yesterday</button>
+          <button class="filter-btn" onclick="setF('week',this,'myAcc')">This Week</button>
+          <button class="filter-btn" onclick="setF('month',this,'myAcc')">This Month</button>
+          <button class="filter-btn" onclick="setF('quarter',this,'myAcc')">Quarter</button>
+          <button class="filter-btn" onclick="setF('year',this,'myAcc')">This Year</button>
+          <button class="filter-btn" onclick="setF('all',this,'myAcc')">All Time</button>
+          <span style="color:var(--muted);font-size:12px;">Status:</span>
+          <button class="filter-btn active" onclick="setMyAccStat('all',this)">All</button>
+          <button class="filter-btn" onclick="setMyAccStat('active',this)">Active</button>
+          <button class="filter-btn" onclick="setMyAccStat('inactive',this)">Inactive</button>
+          <input class="srch" id="srch-myAcc" placeholder="&#128269; Search client/ID..." oninput="renderMyAccTable()"><select onchange="setMyAccSort(this.value)" style="max-width:210px;"><option value="">Sort: Recent Entry</option><option value="cid">Sort: Client ID (FBO1,2,3...)</option><option value="lastcall">Sort: Last Call (recent first)</option></select>
+        </div>
+        <div class="stats-grid" id="myAccStats"></div><div id="myAccStatDiv"></div>
+        <div class="table-wrap"><div class="table-inner" id="myAccTable"></div></div>
+      </div>
+      <div id="myAccModeProcess" style="display:none;">
+        <p style="color:var(--muted);font-size:12px;margin-bottom:10px;">Documents aa chuke hain, account punch ho chuka hai, but Client ID abhi tak nahi aayi. Jaise hi Edit (&#9998;) se Client ID daaloge, ye entry automatic "Completed Demat" me chali jayegi.</p>
+        <div class="filter-bar">
+          <input class="srch" id="srch-myAccProcess" placeholder="&#128269; Search client/phone..." oninput="renderMyAccProcessTable()"><select onchange="setMyAccProcessSort(this.value)" style="max-width:210px;"><option value="">Sort: Oldest First</option><option value="recent">Sort: Recent First</option></select>
+        </div>
+        <div class="stats-grid" id="myAccProcessStats"></div>
+        <div class="table-wrap"><div class="table-inner" id="myAccProcessTable"></div></div>
+      </div>
     </div>
 
     <!-- MY LEADS -->
@@ -2594,7 +2622,7 @@ function renderPage(id){
   else if(id==='adminBrok')renderBrok();
   else if(id==='adminSIP')renderSIP();
   else if(id==='adminIns')renderIns();
-  else if(id==='adminAcc')renderAccTable();
+  else if(id==='adminAcc'){renderAccTable();renderAccProcessTable();}
   else if(id==='adminLeads')renderALeads();
   else if(id==='adminStudents')renderAdminStudents();
   else if(id==='adminAttendance')renderAdminAttendance();
@@ -2615,7 +2643,7 @@ function renderPage(id){
   else if(id==='myBrok')renderMyBrok();
   else if(id==='mySIP')renderMySIP();
   else if(id==='myIns')renderMyIns();
-  else if(id==='myAcc')renderMyAccTable();
+  else if(id==='myAcc'){renderMyAccTable();renderMyAccProcessTable();}
   else if(id==='myLeads')renderMyLeads();
   else if(id==='myStudents')renderMyStudents();
   else if(id==='myPoints')renderMyPoints();
@@ -3786,7 +3814,7 @@ function showInsStat(kind){
   renderStatDetail('insStatDiv',title,rows,[{k:'Date',l:'Date'},{k:'Employee Name',l:'Employee'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Policy ID'},{k:'Type',l:'Type'},{k:'Premium',l:'Premium',money:true}]);
 }
 function renderAccTable(){
-  var allAcc=allData.Accounts||[];
+  var allAcc=(allData.Accounts||[]).filter(function(r){return (r['Client ID']||'').trim();}); // Completed only - blank Client ID = Under Process (separate tab)
   var rows=fDate(allAcc,filters['acc']||'all');
   if(accStat==='active')rows=rows.filter(function(r){return (r['Status']||'Active')==='Active';});
   if(accStat==='inactive')rows=rows.filter(function(r){return r['Status']==='Inactive';});
@@ -3835,6 +3863,82 @@ function mkAccTable(rows,dupSet,sortMode,amtMap){
     h+='<td>'+mapBtn+'<button class="btn-call" onclick="openAccCallModal('+r['_rowNum']+')">&#128222;</button> <button class="btn-call" style="background:rgba(139,92,246,0.15);color:#8b5cf6;" onclick="openAccHoldingModal('+r['_rowNum']+')" title="View stock holding">&#128188;</button> <button class="btn-edit" onclick="openAccEditModal('+r['_rowNum']+')">&#9998;</button> <button class="btn-del" onclick="confirmDel(\'Accounts\','+r['_rowNum']+')">&#128465;</button> '+nseBtn+'</td></tr>';
   });
   return h+'</tbody></table>';
+}
+var accMode='completed',myAccMode='completed',accProcessSortBy='',myAccProcessSortBy='';
+function setAccMode(mode){
+  accMode=mode;
+  var btnC=document.getElementById('accModeTabCompleted'),btnP=document.getElementById('accModeTabProcess');
+  var divC=document.getElementById('accModeCompleted'),divP=document.getElementById('accModeProcess');
+  if(btnC)btnC.className='tab-btn'+(mode==='completed'?' active':'');
+  if(btnP)btnP.className='tab-btn'+(mode==='process'?' active':'');
+  if(divC)divC.style.display=(mode==='completed'?'block':'none');
+  if(divP)divP.style.display=(mode==='process'?'block':'none');
+}
+function setMyAccMode(mode){
+  myAccMode=mode;
+  var btnC=document.getElementById('myAccModeTabCompleted'),btnP=document.getElementById('myAccModeTabProcess');
+  var divC=document.getElementById('myAccModeCompleted'),divP=document.getElementById('myAccModeProcess');
+  if(btnC)btnC.className='tab-btn'+(mode==='completed'?' active':'');
+  if(btnP)btnP.className='tab-btn'+(mode==='process'?' active':'');
+  if(divC)divC.style.display=(mode==='completed'?'block':'none');
+  if(divP)divP.style.display=(mode==='process'?'block':'none');
+}
+function setAccProcessSort(v){accProcessSortBy=v;renderAccProcessTable();}
+function setMyAccProcessSort(v){myAccProcessSortBy=v;renderMyAccProcessTable();}
+function accDaysPending(dateStr){
+  var d0=new Date((dateStr||'')+'T00:00:00');
+  if(isNaN(d0))return null;
+  var today=new Date();today.setHours(0,0,0,0);
+  return Math.max(0,Math.round((today-d0)/86400000));
+}
+/* Under Process Demat: Client ID abhi tak nahi aayi. Purely computed from Client ID being blank -
+   koi alag column/flag nahi hai, isliye jaise hi Edit se Client ID daal do, agli render pe ye row
+   khud-ba-khud "Completed" table me chali jayegi (renderAccTable/renderMyAccTable already filter
+   on Client ID presence) aur is process-table se hat jayegi. */
+function mkAccProcessTable(rows,isAdmin){
+  if(!rows||!rows.length)return '<div class="no-data">Koi Under Process account nahi hai</div>';
+  var h='<table><thead><tr><th>Date</th>'+(isAdmin?'<th>Employee</th>':'')+'<th>Client</th><th>Phone</th><th>Days Pending</th><th>Remarks</th><th>Actions</th></tr></thead><tbody>';
+  rows.forEach(function(r){
+    var days=accDaysPending(r['Date']);
+    var urgent=(days!==null&&days>=7);
+    h+='<tr'+(urgent?' class="dup-row"':'')+'>'+
+      '<td>'+(r['Date']||'-')+'</td>'+
+      (isAdmin?'<td>'+(r['Employee Name']||'-')+'</td>':'')+
+      '<td>'+(r['Client Name']||'-')+'</td>'+
+      '<td>'+(r['Client Phone']||'-')+'</td>'+
+      '<td>'+(urgent?'<span style="color:var(--danger,#ef4444);font-weight:700;">':'')+(days===null?'-':(days+' din'))+(urgent?'</span>':'')+'</td>'+
+      '<td style="font-size:11px;">'+(r['Remarks']||'-')+'</td>'+
+      '<td><button class="btn-edit" onclick="openAccEditModal('+r['_rowNum']+')">&#9998; Client ID Add Karo</button> <button class="btn-del" onclick="confirmDel(\'Accounts\','+r['_rowNum']+')">&#128465;</button></td>'+
+    '</tr>';
+  });
+  return h+'</tbody></table>';
+}
+function renderAccProcessTable(){
+  var rows=(allData.Accounts||[]).filter(function(r){return !(r['Client ID']||'').trim();});
+  var q=getSrch('srch-accProcess');rows=srchFilter(rows,q,['Client Name','Client Phone','Employee Name']);
+  rows=rows.slice().sort(function(a,b){var da=new Date(a['Date']||0),db=new Date(b['Date']||0);return accProcessSortBy==='recent'?(db-da):(da-db);});
+  var urgentCount=rows.filter(function(r){var d=accDaysPending(r['Date']);return d!==null&&d>=7;}).length;
+  var badgeEl=document.getElementById('accProcessCount');if(badgeEl)badgeEl.innerHTML=rows.length?(' <span class="badge amber">'+rows.length+'</span>'):'';
+  var statsEl=document.getElementById('accProcessStats');
+  if(statsEl)statsEl.innerHTML=mkStats([
+    {label:'Under Process',value:rows.length,sub:'documents in, Client ID pending',color:'amber'},
+    {label:'Pending 7+ Days',value:urgentCount,sub:'follow up urgently',color:'red'}
+  ]);
+  var tblEl=document.getElementById('accProcessTable');if(tblEl)tblEl.innerHTML=mkAccProcessTable(rows,true);
+}
+function renderMyAccProcessTable(){
+  var uid=currentUser.userId;
+  var rows=fEmp(allData.Accounts||[],uid).filter(function(r){return !(r['Client ID']||'').trim();});
+  var q=getSrch('srch-myAccProcess');rows=srchFilter(rows,q,['Client Name','Client Phone']);
+  rows=rows.slice().sort(function(a,b){var da=new Date(a['Date']||0),db=new Date(b['Date']||0);return myAccProcessSortBy==='recent'?(db-da):(da-db);});
+  var urgentCount=rows.filter(function(r){var d=accDaysPending(r['Date']);return d!==null&&d>=7;}).length;
+  var badgeEl=document.getElementById('myAccProcessCount');if(badgeEl)badgeEl.innerHTML=rows.length?(' <span class="badge amber">'+rows.length+'</span>'):'';
+  var statsEl=document.getElementById('myAccProcessStats');
+  if(statsEl)statsEl.innerHTML=mkStats([
+    {label:'Under Process',value:rows.length,sub:'documents in, Client ID pending',color:'amber'},
+    {label:'Pending 7+ Days',value:urgentCount,sub:'follow up urgently',color:'red'}
+  ]);
+  var tblEl=document.getElementById('myAccProcessTable');if(tblEl)tblEl.innerHTML=mkAccProcessTable(rows,false);
 }
 function markNSETradeDone(rowNum){
   var vals={'NSE Trade Done':'Yes','NSE Trade Date':td()};
@@ -5763,7 +5867,7 @@ function showMyInsStat(kind){
 }
 function renderMyAccTable(){
   var uid=currentUser.userId;
-  var rows=fDate(fEmp(allData.Accounts||[],uid),filters['myAcc']||'all');
+  var rows=fDate(fEmp((allData.Accounts||[]).filter(function(r){return (r['Client ID']||'').trim();}),uid),filters['myAcc']||'all'); // Completed only - blank Client ID = Under Process (separate tab)
   if(myAccStat==='active')rows=rows.filter(function(r){return (r['Status']||'Active')==='Active';});
   if(myAccStat==='inactive')rows=rows.filter(function(r){return r['Status']==='Inactive';});
   var q=getSrch('srch-myAcc');rows=srchFilter(rows,q,['Client Name','Client ID']);
