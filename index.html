@@ -328,6 +328,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       <div class="nav-section">Dashboards</div>
       <div class="nav-item" onclick="showPage('adminDash')">&#9632; Main Dashboard</div>
       <div class="nav-item" onclick="showPage('bizOverview')">&#128176; Business Overview</div>
+      <div class="nav-item" onclick="showPage('healthCheck')">&#127981; Health Check</div>
       <div class="nav-item" onclick="showPage('client360')">&#128269; Client Search</div>
       <div class="nav-item" onclick="showPage('tradingJournal')">&#128200; Trading Journal</div>
       <div class="nav-item" onclick="showPage('callTrade')">&#128222; Call &amp; Trade</div>
@@ -581,6 +582,14 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       <div id="meetDayDiv"></div>
       <div class="stats-grid" id="meetStats"></div>
       <div class="table-wrap"><div class="table-inner" id="meetTable"></div></div>
+    </div>
+
+    <!-- HEALTH CHECK -->
+    <div class="page" id="page-healthCheck">
+      <div class="page-header"><h1>&#127981; System Health Check</h1><p>Poore app me data mistakes / inconsistencies dhoondta hai - Accounts, IPO, SIP, Employees sab jagah</p></div>
+      <div style="margin-bottom:14px;"><button class="btn-submit" style="width:auto;padding:10px 24px;" onclick="renderHealthCheckPage()">&#8635; Run Health Check</button> <span id="healthLastRun" style="color:var(--muted);font-size:12px;margin-left:10px;"></span></div>
+      <div class="stats-grid" id="healthStats"></div>
+      <div id="healthResults"></div>
     </div>
 
     <!-- ADMIN SIP -->
@@ -2623,6 +2632,7 @@ function renderPage(id){
   else if(id==='adminSIP')renderSIP();
   else if(id==='adminIns')renderIns();
   else if(id==='adminAcc'){renderAccTable();renderAccProcessTable();}
+  else if(id==='healthCheck')renderHealthCheckPage();
   else if(id==='adminLeads')renderALeads();
   else if(id==='adminStudents')renderAdminStudents();
   else if(id==='adminAttendance')renderAdminAttendance();
@@ -3940,7 +3950,174 @@ function renderMyAccProcessTable(){
   ]);
   var tblEl=document.getElementById('myAccProcessTable');if(tblEl)tblEl.innerHTML=mkAccProcessTable(rows,false);
 }
+/* ===== SYSTEM HEALTH CHECK (v79) - scans allData for common mistakes/inconsistencies, admin only.
+   Purely a read-only diagnostic sweep over already-loaded allData - no new backend calls needed.
+   Each issue carries an "action" with a real closure (not a serialized onclick string) so it can
+   safely capture full row objects; buttons are wired via .onclick after the HTML is inserted. */
+function healthGoToSearch(pageId,searchId,term){
+  showPage(pageId);
+  if(searchId&&term){
+    var el=document.getElementById(searchId);
+    if(el){el.value=term;el.dispatchEvent(new Event('input'));}
+  }
+}
+function runHealthCheck(){
+  var issues=[];
+  function add(sev,cat,title,detail,action){issues.push({sev:sev,cat:cat,title:title,detail:detail,action:action});}
+  var today=new Date();today.setHours(0,0,0,0);
+  function daysAgo(dateStr){var d=new Date((dateStr||'')+'T00:00:00');if(isNaN(d))return null;return Math.round((today-d)/86400000);}
+
+  /* ---- Employees ---- */
+  var empList=employees||[];
+  var empIdSet={};empList.forEach(function(e){var id=(e['Employee ID']||'').trim().toLowerCase();if(id)empIdSet[id]=true;});
+  var empIdCount={};empList.forEach(function(e){var id=(e['Employee ID']||'').trim();if(!id)return;empIdCount[id]=(empIdCount[id]||0)+1;});
+  Object.keys(empIdCount).forEach(function(id){
+    if(empIdCount[id]>1)add('critical','Employees','Duplicate Employee ID','"'+id+'" Employee list me '+empIdCount[id]+' baar hai - login/data mix-up ho sakta hai.',{label:'Manage Employees',fn:function(){showPage('manageEmps');}});
+  });
+  empList.forEach(function(e){
+    var id=(e['Employee ID']||'').trim();if(!id)return;
+    var nm=e['Name']||id;
+    if((e['Status']||'Active')==='Active'){
+      if(!(e['Branch']||'').trim())add('warning','Employees','Branch missing','"'+nm+'" ka Branch khaali hai.',{label:'Fix',fn:function(){showPage('manageEmps');editEmpModal(id);}});
+      if(!(e['Password']||'').trim())add('critical','Employees','Password missing','"'+nm+'" login nahi kar payega - password khaali hai.',{label:'Fix',fn:function(){showPage('manageEmps');editEmpModal(id);}});
+    }
+    (e['Parent ID']||'').split(',').map(function(s){return s.trim();}).filter(Boolean).forEach(function(pid){
+      if(pid.toLowerCase()===id.toLowerCase())add('critical','Employees','Employee is own Parent','"'+nm+'" khud apna Parent ID bana hua hai - My Team me loop ban sakta hai.',{label:'Fix',fn:function(){showPage('manageEmps');editEmpModal(id);}});
+      else if(!empIdSet[pid.toLowerCase()])add('warning','Employees','Parent ID broken reference','"'+nm+'" ka Parent ID "'+pid+'" kisi existing Employee ID se match nahi karta.',{label:'Fix',fn:function(){showPage('manageEmps');editEmpModal(id);}});
+    });
+  });
+
+  /* ---- Accounts (Demat) ---- */
+  var accAll=allData.Accounts||[];
+  var accCidMap={};
+  accAll.forEach(function(r){var cid=(r['Client ID']||'').trim();if(!cid)return;var eid=(r['Employee ID']||'').trim().toLowerCase();if(!accCidMap[cid])accCidMap[cid]={};accCidMap[cid][eid]=true;});
+  Object.keys(accCidMap).forEach(function(cid){
+    var eids=Object.keys(accCidMap[cid]);
+    if(eids.length>1)add('critical','Accounts','Duplicate Client ID (different employees)','Client ID "'+cid+'" '+eids.length+' alag employees ke paas hai - brokerage/commission galat employee ko ja sakta hai.',{label:'View in Accounts',fn:function(){healthGoToSearch('adminAcc','srch-acc',cid);}});
+  });
+  accAll.filter(function(r){return (r['Client ID']||'').trim();}).forEach(function(r){
+    if(!(r['Client Phone']||'').trim())add('warning','Accounts','Phone missing','"'+(r['Client Name']||r['Client ID']||'-')+'" ('+(r['Client ID']||'-')+') ka phone number khaali hai.',{label:'View in Accounts',fn:function(){healthGoToSearch('adminAcc','srch-acc',r['Client Name']||r['Client ID']);}});
+  });
+  accAll.filter(function(r){return !(r['Client ID']||'').trim();}).forEach(function(r){
+    var d=daysAgo(r['Date']);
+    if(d!==null&&d>=14)add('warning','Accounts','Under Process 14+ din se pending','"'+(r['Client Name']||'-')+'" ka account '+d+' din se Under Process hai - Client ID follow up karo.',{label:'View Under Process',fn:function(){setAccMode('process');healthGoToSearch('adminAcc','srch-accProcess',r['Client Name']);}});
+  });
+
+  /* ---- SIP / Mutual Fund ---- */
+  (allData.SIP||[]).forEach(function(r){
+    if((r['Type']||'SIP')==='SIP'&&!(r['SIP Due Date']||'').trim())add('warning','SIP','Due Date missing','"'+(r['Client Name']||'-')+'" ki SIP me Due Date nahi hai - monthly recurring reminder kabhi nahi aayega.',{label:'View in SIP',fn:function(){healthGoToSearch('adminSIP','srch-sip',r['Client Name']);}});
+  });
+
+  /* ---- IPO (Application Buy) ---- */
+  var ipoApps=allData.IPO_Applications||[];
+  var ipoMasters=allData.IPO_Master||[];
+  var ipoNameById={};ipoMasters.forEach(function(m){ipoNameById[m['IPO_ID']]=m['IPO_Name'];});
+  var ipoGoTo=function(ipoId){return function(){showPage('ipo');ipoSelId=ipoId;setIPOMode('buy',true);renderIPOPage();};};
+  var panMap={};
+  ipoApps.forEach(function(r){
+    var pan=(r['PAN']||'').trim().toUpperCase();if(!pan)return;
+    var key=(r['IPO_ID']||'')+'|'+pan;
+    if(!panMap[key])panMap[key]=[];
+    panMap[key].push(r);
+  });
+  Object.keys(panMap).forEach(function(k){
+    if(panMap[k].length>1){
+      var r=panMap[k][0];
+      add('critical','IPO','Duplicate PAN in same IPO','PAN "'+r['PAN']+'" "'+(ipoNameById[r['IPO_ID']]||'-')+'" me '+panMap[k].length+' baar hai - 2 clients ka PAN same nahi ho sakta.',{label:'View in IPO',fn:ipoGoTo(r['IPO_ID'])});
+    }
+  });
+  ipoApps.forEach(function(r){
+    if(r['Status']==='Rejection'){
+      var ipoM=ipoMasters.find(function(m){return m['IPO_ID']===r['IPO_ID'];});
+      var override=r['Penalty'];
+      var hasOverride=override!==undefined&&override!==null&&String(override).trim()!=='';
+      var effPen=hasOverride?(parseFloat(override)||0):(parseFloat(ipoM&&ipoM['Rejection_Penalty'])||0);
+      if(effPen===0)add('warning','IPO','Rejection Penalty not set','"'+(r['Client_Name']||r['PAN']||'-')+'" ("'+(ipoNameById[r['IPO_ID']]||'-')+'") Rejected hai but effective penalty abhi 0 hai - client payment galat calculate hoga.',{label:'View in IPO',fn:ipoGoTo(r['IPO_ID'])});
+    }
+    if(!(r['PAN']||'').trim()){
+      var d=daysAgo(r['Created_Date']);
+      if(d!==null&&d>=7)add('info','IPO','PAN missing 7+ din se','"'+(ipoNameById[r['IPO_ID']]||'-')+'" ki ek application me '+d+' din se PAN nahi bhara gaya.',{label:'View in IPO',fn:ipoGoTo(r['IPO_ID'])});
+    }
+  });
+  ipoMasters.forEach(function(m){
+    var hasAllotted=ipoApps.some(function(r){return r['IPO_ID']===m['IPO_ID']&&r['Status']==='Allotted';});
+    var allZero=(parseFloat(m['Retail_Gain'])||0)===0&&(parseFloat(m['sHNI_Gain'])||0)===0&&(parseFloat(m['bHNI_Gain'])||0)===0;
+    if(hasAllotted&&allZero)add('warning','IPO','Listing Gain not set','"'+(m['IPO_Name']||'-')+'" me Allotted applications hain but Listing Gain abhi 0 hai - profit galat (0) dikhega.',{label:'View in IPO',fn:ipoGoTo(m['IPO_ID'])});
+  });
+
+  /* ---- Self Application (SelfIPO) ---- */
+  var selfIpo=allData.SelfIPO||[];
+  var selfKeyMap={};
+  selfIpo.forEach(function(r){
+    var ipoN=(r['IPO Name']||'').trim().toLowerCase();if(!ipoN)return;
+    var pan=(r['PAN']||'').trim().toUpperCase();
+    var cid=(r['Client ID']||'').trim().toLowerCase();
+    if(pan){var k1='pan|'+ipoN+'|'+pan;if(!selfKeyMap[k1])selfKeyMap[k1]=[];selfKeyMap[k1].push(r);}
+    if(cid){var k2='cid|'+ipoN+'|'+cid;if(!selfKeyMap[k2])selfKeyMap[k2]=[];selfKeyMap[k2].push(r);}
+  });
+  var flaggedSelfRows={};
+  Object.keys(selfKeyMap).forEach(function(k){
+    if(selfKeyMap[k].length>1){
+      var r=selfKeyMap[k][0];
+      if(flaggedSelfRows[r['_rowNum']])return;flaggedSelfRows[r['_rowNum']]=true;
+      add('warning','Self Application','Duplicate PAN/Client ID in same IPO','"'+(r['IPO Name']||'-')+'" me ek hi PAN/Client ID '+selfKeyMap[k].length+' baar add hua hai.',{label:'View',fn:function(){showPage('ipo');setIPOMode('self',true);}});
+    }
+  });
+
+  /* ---- Insurance ---- */
+  (allData.Insurance||[]).forEach(function(r){
+    if(!(r['Client Phone']||'').trim())add('info','Insurance','Phone missing','"'+(r['Client Name']||'-')+'" ka phone number Insurance record me khaali hai.',{label:'View in Insurance',fn:function(){healthGoToSearch('adminIns','srch-ins',r['Client Name']);}});
+  });
+
+  return issues;
+}
+function renderHealthCheckPage(){
+  var statsEl=document.getElementById('healthStats');
+  if(!statsEl)return;
+  var issues=runHealthCheck();
+  var counts={critical:0,warning:0,info:0};
+  issues.forEach(function(i){counts[i.sev]=(counts[i.sev]||0)+1;});
+  statsEl.innerHTML=mkStats([
+    {label:'Total Issues',value:issues.length,sub:'sabhi sections milakar',color:issues.length?'red':'green'},
+    {label:'Critical',value:counts.critical||0,sub:'turant fix karo',color:'red'},
+    {label:'Warning',value:counts.warning||0,sub:'jald dekh lo',color:'amber'},
+    {label:'Info',value:counts.info||0,sub:'FYI',color:'blue'}
+  ]);
+  var cats={};issues.forEach(function(i){if(!cats[i.cat])cats[i.cat]=[];cats[i.cat].push(i);});
+  var order=['Employees','Accounts','SIP','IPO','Self Application','Insurance'];
+  var catKeys=Object.keys(cats).sort(function(a,b){var ia=order.indexOf(a),ib=order.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib);});
+  var sevRank={critical:0,warning:1,info:2};
+  var h='';
+  if(!issues.length){
+    h='<div class="no-data" style="padding:40px;text-align:center;font-size:15px;color:var(--accent,#3fbf7f);">&#9989; Koi mistake nahi mili - sab kuch theek hai!</div>';
+  } else {
+    catKeys.forEach(function(cat){
+      var list=cats[cat].slice().sort(function(a,b){return sevRank[a.sev]-sevRank[b.sev];});
+      h+='<div style="margin:18px 0 8px;font-weight:700;font-size:14px;">'+cat+' ('+list.length+')</div>';
+      h+='<div class="table-wrap"><table><thead><tr><th style="width:80px;">Severity</th><th>Issue</th><th>Detail</th><th style="width:150px;">Action</th></tr></thead><tbody>';
+      list.forEach(function(i,idx){
+        var sevBadge=i.sev==='critical'?'<span class="badge red">Critical</span>':(i.sev==='warning'?'<span class="badge amber">Warning</span>':'<span class="badge blue">Info</span>');
+        var btnId='healthFixBtn_'+cat.replace(/[^a-zA-Z0-9]/g,'')+'_'+idx;
+        h+='<tr><td>'+sevBadge+'</td><td><b>'+i.title+'</b></td><td style="font-size:12px;">'+i.detail+'</td><td>'+(i.action?('<button class="btn-mini" id="'+btnId+'">'+i.action.label+'</button>'):'-')+'</td></tr>';
+      });
+      h+='</tbody></table></div>';
+    });
+  }
+  document.getElementById('healthResults').innerHTML=h;
+  catKeys.forEach(function(cat){
+    var list=cats[cat].slice().sort(function(a,b){return sevRank[a.sev]-sevRank[b.sev];});
+    list.forEach(function(i,idx){
+      if(!i.action)return;
+      var btnId='healthFixBtn_'+cat.replace(/[^a-zA-Z0-9]/g,'')+'_'+idx;
+      var btn=document.getElementById(btnId);
+      if(btn)btn.onclick=i.action.fn;
+    });
+  });
+  var lastRunEl=document.getElementById('healthLastRun');
+  if(lastRunEl)lastRunEl.textContent='Last checked: '+new Date().toLocaleString();
+}
 function markNSETradeDone(rowNum){
+
   var vals={'NSE Trade Done':'Yes','NSE Trade Date':td()};
   postData({action:'editRow',sheet:'Accounts',rowNum:rowNum,vals:vals}).then(function(r){
     if(r&&r.success){
