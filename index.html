@@ -183,6 +183,15 @@ tbody td{padding:10px 14px;vertical-align:middle;}
 .upload-box:hover{border-color:var(--accent);background:rgba(63,191,127,0.05);}
 .upload-box input{display:none;}
 .upload-icon{font-size:36px;margin-bottom:10px;line-height:1;}
+.gprog-wrap{margin-bottom:22px;}
+.gprog-label{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;flex-wrap:wrap;gap:4px;}
+.gprog-track{background:rgba(255,255,255,0.06);border-radius:8px;height:18px;overflow:hidden;}
+.gprog-fill{height:100%;background:var(--accent);border-radius:8px;transition:width .4s;}
+.gtrend-row{display:flex;align-items:center;gap:10px;margin-bottom:7px;font-size:12px;}
+.gtrend-label{width:64px;flex-shrink:0;color:var(--muted);}
+.gtrend-track{flex:1;background:rgba(255,255,255,0.06);border-radius:6px;height:16px;overflow:hidden;}
+.gtrend-fill{height:100%;background:var(--blue,#3b82f6);border-radius:6px;transition:width .4s;}
+.gtrend-val{width:100px;flex-shrink:0;text-align:right;font-weight:700;}
 .prev-warn{background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.4);border-radius:10px;padding:12px 16px;margin:14px 0;font-size:13px;color:var(--amber);}
 .prev-err{background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.4);border-radius:10px;padding:12px 16px;margin:14px 0;font-size:13px;color:var(--danger);}
 .prev-ok{background:rgba(63,191,127,0.1);border:1px solid rgba(63,191,127,0.35);border-radius:10px;padding:12px 16px;margin:14px 0;font-size:13px;color:var(--accent);}
@@ -329,6 +338,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       <div class="nav-item" onclick="showPage('adminDash')">&#9632; Main Dashboard</div>
       <div class="nav-item" onclick="showPage('bizOverview')">&#128176; Business Overview</div>
       <div class="nav-item" onclick="showPage('healthCheck')">&#127981; Health Check</div>
+      <div class="nav-item" onclick="showPage('growthTrack')">&#128200; Growth &amp; Targets</div>
       <div class="nav-item" onclick="showPage('client360')">&#128269; Client Search</div>
       <div class="nav-item" onclick="showPage('tradingJournal')">&#128200; Trading Journal</div>
       <div class="nav-item" onclick="showPage('callTrade')">&#128222; Call &amp; Trade</div>
@@ -590,6 +600,21 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       <div style="margin-bottom:14px;"><button class="btn-submit" style="width:auto;padding:10px 24px;" onclick="renderHealthCheckPage()">&#8635; Run Health Check</button> <span id="healthLastRun" style="color:var(--muted);font-size:12px;margin-left:10px;"></span></div>
       <div class="stats-grid" id="healthStats"></div>
       <div id="healthResults"></div>
+    </div>
+
+    <!-- GROWTH & TARGETS -->
+    <div class="page" id="page-growthTrack">
+      <div class="page-header"><h1>&#128200; Growth &amp; Targets</h1><p>IdealFinway ke long-term goals ka progress - ek jagah</p></div>
+      <div id="growthProgress"></div>
+      <div style="margin-top:26px;">
+        <h3 style="font-size:14px;margin-bottom:12px;">Naye Demat Accounts &#8212; mahine-wise (Completed, pichhle 12 mahine)</h3>
+        <div id="growthAccTrend"></div>
+      </div>
+      <div style="margin-top:26px;">
+        <h3 style="font-size:14px;margin-bottom:12px;">Nayi SIP Amount &#8212; mahine-wise (pichhle 12 mahine)</h3>
+        <div id="growthSipTrend"></div>
+      </div>
+      <p style="color:var(--muted);font-size:11px;margin-top:20px;">AUM figure "Client Holding" upload se aati hai (last upload snapshot) - agar recent upload nahi hua to ye purana ho sakta hai.</p>
     </div>
 
     <!-- ADMIN SIP -->
@@ -2633,6 +2658,7 @@ function renderPage(id){
   else if(id==='adminIns')renderIns();
   else if(id==='adminAcc'){renderAccTable();renderAccProcessTable();}
   else if(id==='healthCheck')renderHealthCheckPage();
+  else if(id==='growthTrack')renderGrowthPage();
   else if(id==='adminLeads')renderALeads();
   else if(id==='adminStudents')renderAdminStudents();
   else if(id==='adminAttendance')renderAdminAttendance();
@@ -4069,6 +4095,34 @@ function runHealthCheck(){
     if(!(r['Client Phone']||'').trim())add('info','Insurance','Phone missing','"'+(r['Client Name']||'-')+'" ka phone number Insurance record me khaali hai.',{label:'View in Insurance',fn:function(){healthGoToSearch('adminIns','srch-ins',r['Client Name']);}});
   });
 
+  /* ---- Monthly Hisab (payout calculation audit) - money-critical, checked mechanically ---- */
+  function hisabGoTo(month){return function(){showPage('hisab');var el=document.getElementById('hisabMonth');if(el){el.value=month;renderHisab();}};}
+  var hisabRows=allData.Hisab||[];
+  hisabRows.forEach(function(r){
+    var share=parseFloat(r['Brok Share'])||0,adds=parseFloat(r['Additions'])||0,deds=parseFloat(r['Deductions'])||0;
+    var storedNet=parseFloat(r['Net Payable'])||0,expectedNet=r2(share+adds-deds);
+    if(Math.abs(expectedNet-storedNet)>0.5)add('critical','Hisab (Payout)','Net Payable math mismatch','"'+(r['Employee Name']||r['Employee ID'])+'" ('+r['Month']+'): stored Net Payable '+fmt(storedNet)+' hai but Brok Share+Additions-Deductions = '+fmt(expectedNet)+' banta hai - mismatch check karo.',{label:'View in Hisab',fn:hisabGoTo(r['Month'])});
+    if(storedNet<0)add('warning','Hisab (Payout)','Negative Net Payable','"'+(r['Employee Name']||r['Employee ID'])+'" ('+r['Month']+') ka Net Payable negative ('+fmt(storedNet)+') hai - Deductions, Brok Share+Additions se zyada hain.',{label:'View in Hisab',fn:hisabGoTo(r['Month'])});
+  });
+  /* Anomaly-vs-history: current month ke Commission%/Additions ko employee ki apni purani history se compare karo */
+  var hcLatestMonth=curMonth();
+  hisabRows.filter(function(r){return r['Month']===hcLatestMonth;}).forEach(function(r){
+    var eid=r['Employee ID'];
+    var past=hisabRows.filter(function(x){return x['Employee ID']===eid&&x['Month']!==hcLatestMonth;});
+    if(past.length<2)return;
+    var pcts=past.map(function(x){return parseFloat(x['Commission %']);}).filter(function(v){return !isNaN(v);});
+    var addSums=past.map(function(x){return parseFloat(x['Additions'])||0;});
+    var curPct=parseFloat(r['Commission %']),curAdd=parseFloat(r['Additions'])||0;
+    if(pcts.length>=2){
+      var avgPct=pcts.reduce(function(s,v){return s+v;},0)/pcts.length;
+      if(!isNaN(curPct)&&Math.abs(curPct-avgPct)>=15)add('warning','Hisab (Payout)','Commission % unusual vs history','"'+(r['Employee Name']||eid)+'" ka is mahine Commission % ('+curPct+'%) inke history ke average ('+Math.round(avgPct)+'%) se bahut alag hai - double check karo before paying.',{label:'View in Hisab',fn:hisabGoTo(hcLatestMonth)});
+    }
+    if(addSums.length>=2){
+      var avgAdd=addSums.reduce(function(s,v){return s+v;},0)/addSums.length;
+      if(curAdd>500&&curAdd>(avgAdd*1.6+500))add('warning','Hisab (Payout)','Additions unusual vs history','"'+(r['Employee Name']||eid)+'" ki is mahine Additions ('+fmt(curAdd)+') inke history ke average ('+fmt(r2(avgAdd))+') se bahut zyada hain - line items verify karo.',{label:'View in Hisab',fn:hisabGoTo(hcLatestMonth)});
+    }
+  });
+
   return issues;
 }
 function renderHealthCheckPage(){
@@ -4084,7 +4138,7 @@ function renderHealthCheckPage(){
     {label:'Info',value:counts.info||0,sub:'FYI',color:'blue'}
   ]);
   var cats={};issues.forEach(function(i){if(!cats[i.cat])cats[i.cat]=[];cats[i.cat].push(i);});
-  var order=['Employees','Accounts','SIP','IPO','Self Application','Insurance'];
+  var order=['Employees','Accounts','SIP','IPO','Self Application','Insurance','Hisab (Payout)'];
   var catKeys=Object.keys(cats).sort(function(a,b){var ia=order.indexOf(a),ib=order.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib);});
   var sevRank={critical:0,warning:1,info:2};
   var h='';
@@ -4116,6 +4170,80 @@ function renderHealthCheckPage(){
   var lastRunEl=document.getElementById('healthLastRun');
   if(lastRunEl)lastRunEl.textContent='Last checked: '+new Date().toLocaleString();
 }
+/* ===== GROWTH & TARGETS (v79) - progress toward stated company goals + simple month-wise trend bars.
+   No new backend/schema - purely computed from allData already loaded. AUM uses the latest
+   ClientHolding upload snapshot (reuses holdingScopedRows/holdingClientAgg from Client Holding page)
+   since that's the only place actual portfolio value data exists in this app. */
+var GROWTH_TARGETS=[
+  {label:'Demat Accounts',metric:'accounts',target:5000,deadline:'2027-03-31',unit:''},
+  {label:'Demat Accounts',metric:'accounts',target:20000,deadline:'2030-12-31',unit:''},
+  {label:'Mutual Fund AUM',metric:'aum',target:100000000,deadline:'2030-12-31',unit:'₹'}
+];
+function mkProgressBar(t,curVal){
+  var pct=t.target>0?Math.min(100,Math.max(0,(curVal/t.target)*100)):0;
+  var dl=new Date(t.deadline+'T00:00:00');
+  var today=new Date();today.setHours(0,0,0,0);
+  var daysLeft=Math.round((dl-today)/86400000);
+  var barColor=pct>=100?'var(--accent,#3fbf7f)':(daysLeft<0?'var(--danger,#ef4444)':'var(--accent,#3fbf7f)');
+  var curLabel=t.unit==='₹'?fmt(curVal):Math.round(curVal).toLocaleString('en-IN');
+  var tgtLabel=t.unit==='₹'?fmt(t.target):t.target.toLocaleString('en-IN');
+  var h='<div class="gprog-wrap">';
+  h+='<div class="gprog-label"><span><b>'+t.label+'</b> &#8212; '+t.deadline.split('-').reverse().join('-')+' tak '+tgtLabel+'</span><span>'+curLabel+' / '+tgtLabel+' ('+Math.round(pct)+'%)</span></div>';
+  h+='<div class="gprog-track"><div class="gprog-fill" style="width:'+pct+'%;background:'+barColor+';"></div></div>';
+  h+='<div style="font-size:11px;color:var(--muted,#8a94a6);margin-top:4px;">'+(daysLeft>=0?(daysLeft+' din baaki'):('deadline '+Math.abs(daysLeft)+' din pehle nikal chuki'))+'</div>';
+  h+='</div>';
+  return h;
+}
+function growthMonthKey(dateStr){
+  var d=new Date((dateStr||'')+'T00:00:00');
+  if(isNaN(d))return null;
+  return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2);
+}
+function growthLast12Months(){
+  var arr=[];var n=new Date();n.setDate(1);
+  for(var i=11;i>=0;i--){
+    var d=new Date(n.getFullYear(),n.getMonth()-i,1);
+    arr.push({key:d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2),label:d.toLocaleString('default',{month:'short'})+' '+String(d.getFullYear()).slice(-2)});
+  }
+  return arr;
+}
+function mkTrendBars(months,valuesByKey,fmtVal){
+  var maxV=Math.max.apply(null,months.map(function(m){return valuesByKey[m.key]||0;}).concat([1]));
+  var h='';
+  months.forEach(function(m){
+    var v=valuesByKey[m.key]||0;
+    var pct=maxV>0?Math.max(2,(v/maxV)*100):2;
+    h+='<div class="gtrend-row"><span class="gtrend-label">'+m.label+'</span><div class="gtrend-track"><div class="gtrend-fill" style="width:'+pct+'%;"></div></div><span class="gtrend-val">'+fmtVal(v)+'</span></div>';
+  });
+  return h;
+}
+function renderGrowthPage(){
+  var progEl=document.getElementById('growthProgress');
+  if(!progEl)return;
+  var accCompleted=(allData.Accounts||[]).filter(function(r){return (r['Client ID']||'').trim();});
+  var curAccounts=accCompleted.length;
+  var aumRows=holdingScopedRows();
+  var curAUM=holdingClientAgg(aumRows).reduce(function(s,c){return s+(c.totalValue||0);},0);
+  var vals={accounts:curAccounts,aum:curAUM};
+  var ph='';
+  GROWTH_TARGETS.forEach(function(t){ph+=mkProgressBar(t,vals[t.metric]||0);});
+  progEl.innerHTML=ph;
+
+  var months=growthLast12Months();
+  var accByMonth={};
+  accCompleted.forEach(function(r){var k=growthMonthKey(r['Date']);if(!k)return;accByMonth[k]=(accByMonth[k]||0)+1;});
+  var accEl=document.getElementById('growthAccTrend');
+  if(accEl)accEl.innerHTML=mkTrendBars(months,accByMonth,function(v){return v+' accounts';});
+
+  var sipByMonth={};
+  (allData.SIP||[]).filter(function(r){return (r['Type']||'SIP')==='SIP';}).forEach(function(r){
+    var k=growthMonthKey(r['Date']);if(!k)return;
+    sipByMonth[k]=(sipByMonth[k]||0)+(parseFloat(r['Amount'])||0);
+  });
+  var sipEl=document.getElementById('growthSipTrend');
+  if(sipEl)sipEl.innerHTML=mkTrendBars(months,sipByMonth,function(v){return fmt(v);});
+}
+
 function markNSETradeDone(rowNum){
 
   var vals={'NSE Trade Done':'Yes','NSE Trade Date':td()};
