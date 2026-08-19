@@ -10673,8 +10673,12 @@ function renderIPOPayHandlerTable(){
   var h='<div style="font-weight:700;margin-bottom:6px;">Client Payment Ledger <span style="font-weight:400;color:var(--muted);font-size:12px;">- money ALREADY settled (net) per Reference, by who handled it. When a client/reference had both payable and receivable applications, they were netted together at settlement time - so this shows only the net amount that actually changed hands, not the gross total. Applications tab\'s Net Payable/Receivable is the TOTAL across every resolved app (settled + still-pending) - the two numbers track different things and will not match unless everything here is settled.</span></div>';
   if(!list.length)h+='<div class="no-data">No settled client payments yet</div>';
   else{
-    h+='<table><thead><tr><th>Handled By</th><th>Total Paid Out</th><th>Total Received</th></tr></thead><tbody>';
-    list.forEach(function(x){h+='<tr><td>'+x.name+'</td><td class="money">'+fmt(x.paidOut)+'</td><td class="money">'+fmt(x.received)+'</td></tr>';});
+    h+='<table><thead><tr><th>Handled By</th><th>Total Paid Out</th><th>Total Received</th><th>Net</th></tr></thead><tbody>';
+    list.forEach(function(x){
+      var net=x.received-x.paidOut;
+      var netTxt=net>0?('Net Received &#8377;'+fmt(net)):(net<0?('Net Paid &#8377;'+fmt(-net)):'&#8377;0');
+      h+='<tr><td>'+x.name+'</td><td class="money">'+fmt(x.paidOut)+'</td><td class="money">'+fmt(x.received)+'</td><td class="money" style="font-weight:700;color:'+(net>0?'var(--accent)':(net<0?'var(--danger)':'var(--muted)'))+';">'+netTxt+'</td></tr>';
+    });
     h+='</tbody></table>';
   }
   var resaleRows=allRows.filter(function(r){return r['Resold']==='Yes';});
