@@ -10033,7 +10033,7 @@ function renderIPOAppsTable(){
   rows.forEach(function(r){
     var c=ipoAppCalc(r,ipo);
     if(c.profit!==null)profitTotal+=c.profit;
-    if(c.clientNet!==null&&r['Payment_Done']!=='Yes')netPayableTotal+=c.clientNet; // outstanding only - already-settled (Payment_Done=Yes) apps are tracked in the Payment Handled By ledger instead, not double-counted here
+    if(c.clientNet!==null)netPayableTotal+=c.clientNet; // TOTAL across all resolved apps (settled + unsettled) - overall business exposure, NOT just outstanding. Payment Handled By ledger separately shows the already-settled subset (by handler) - the two are different views of the data on purpose, they will not sum to the same number unless every app is settled.
     var st=r['Status']||'Pending';
     if(st==='Allotted')cAllotted++;
     else if(st==='Not Allotted')cNotAllotted++;
@@ -10049,8 +10049,8 @@ function renderIPOAppsTable(){
     {label:'Pending',value:cPending,sub:'awaiting result',color:'amber'},
     {label:'Avg Buy Price',value:fmt(avgBuy),sub:'current filter',color:'purple'},
     {label:'Total Buy Cost',value:fmt(buyCostTotal),sub:'current filter',color:'amber'},
-    {label:'Net Payable',value:fmt(netPayableTotal>0?netPayableTotal:0),sub:'we owe client, still unsettled',color:'green'},
-    {label:'Net Receivable',value:fmt(netPayableTotal<0?-netPayableTotal:0),sub:'client owes us, still unsettled',color:'red'},
+    {label:'Net Payable',value:fmt(netPayableTotal>0?netPayableTotal:0),sub:'we owe client, resolved apps (total)',color:'green'},
+    {label:'Net Receivable',value:fmt(netPayableTotal<0?-netPayableTotal:0),sub:'client owes us, resolved apps (total)',color:'red'},
     {label:'IPO Profit',value:fmt(profitTotal),sub:'separate P&L, not in main dashboard',color:'pink'}
   ]);
 
@@ -10635,7 +10635,7 @@ function renderIPOPayHandlerTable(){
     else byPerson[name].received+=Math.abs(c.clientNet);
   });
   var list=Object.keys(byPerson).map(function(k){return byPerson[k];});
-  var h='<div style="font-weight:700;margin-bottom:6px;">Client Payment Ledger <span style="font-weight:400;color:var(--muted);font-size:12px;">- money paid to / collected from the original applicant, by who handled it (only applications marked "Payment Settled" show here; still-pending settlements show in the Applications tab\'s Net Payable/Net Receivable instead)</span></div>';
+  var h='<div style="font-weight:700;margin-bottom:6px;">Client Payment Ledger <span style="font-weight:400;color:var(--muted);font-size:12px;">- money ALREADY paid to / collected from the original applicant (only "Payment Settled" apps), by who handled it. Applications tab\'s Net Payable/Receivable is the TOTAL across every resolved app (settled + still-pending) - the two numbers track different things and will not match unless everything here is settled.</span></div>';
   if(!list.length)h+='<div class="no-data">No settled client payments yet</div>';
   else{
     h+='<table><thead><tr><th>Handled By</th><th>Total Paid Out</th><th>Total Received</th></tr></thead><tbody>';
