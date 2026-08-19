@@ -10444,7 +10444,7 @@ function renderIPORefTable(){
   rows.forEach(function(r){
     var ref=r['Reference']||'';
     var key=ref||'(no reference)';
-    if(!byRef[key])byRef[key]={ref:ref,label:key,count:0,pending:0,allotted:0,notAllotted:0,rejected:0,buyCost:0,unsettledNet:0,hasUnsettled:false,settledCount:0,resoldCount:0,resoldRates:[]};
+    if(!byRef[key])byRef[key]={ref:ref,label:key,count:0,pending:0,allotted:0,notAllotted:0,rejected:0,buyCost:0,unsettledNet:0,hasUnsettled:false,settledNet:0,settledCount:0,resoldCount:0,resoldRates:[]};
     var x=byRef[key];
     x.count++;
     x.buyCost+=parseFloat(r['Buy_Rate'])||0;
@@ -10465,6 +10465,7 @@ function renderIPORefTable(){
         x.unsettledNet+=c.clientNet;
         x.hasUnsettled=true;
       } else {
+        x.settledNet+=c.clientNet;
         x.settledCount++;
       }
     }
@@ -10473,8 +10474,18 @@ function renderIPORefTable(){
   if(!list.length){document.getElementById('ipoRefTable').innerHTML='<div class="no-data">No applications yet</div>';return;}
   var h='<table><thead><tr><th>Reference</th><th>Applications</th><th>Buy Cost</th><th>Net Payable <span style="font-weight:400;color:var(--muted);">(we owe client)</span></th><th>Net Receivable <span style="font-weight:400;color:var(--muted);">(client owes us)</span></th><th>Settle Payment</th><th>Resold Further</th></tr></thead><tbody>';
   list.forEach(function(x){
-    var payable=(x.hasUnsettled&&x.unsettledNet>0)?x.unsettledNet:0;
-    var receivable=(x.hasUnsettled&&x.unsettledNet<0)?-x.unsettledNet:0;
+    // While anything is still unsettled, Payable/Receivable columns show the OUTSTANDING net
+    // (what still needs settling). Once fully settled, they show the SETTLED net instead (so
+    // the number doesn't just disappear to '-' - you can still see what was actually paid or
+    // received for this client).
+    var payable,receivable;
+    if(x.hasUnsettled){
+      payable=x.unsettledNet>0?x.unsettledNet:0;
+      receivable=x.unsettledNet<0?-x.unsettledNet:0;
+    } else {
+      payable=x.settledNet>0?x.settledNet:0;
+      receivable=x.settledNet<0?-x.settledNet:0;
+    }
     var refEsc=x.ref.replace(/'/g,"\\'");
     var counts='<div style="font-size:11px;color:var(--muted);margin-top:2px;">'+
       (x.allotted?'<span style="color:var(--accent);">'+x.allotted+' Allotted</span> &#183; ':'')+
@@ -10487,7 +10498,8 @@ function renderIPORefTable(){
       var lbl=x.unsettledNet>0?('Net Payable &#8377;'+fmt(x.unsettledNet)+' &#8594; Mark Paid'):(x.unsettledNet<0?('Net Receivable &#8377;'+fmt(-x.unsettledNet)+' &#8594; Mark Received'):'Net &#8377;0 &#8594; Mark Cleared');
       settleCell='<button class="btn-mini amber" onclick="event.stopPropagation();openIPORefPaymentModal(\''+refEsc+'\')">'+lbl+'</button>';
     } else if(x.settledCount>0){
-      settleCell='<span class="badge green">Settled</span> <button class="btn-mini" onclick="event.stopPropagation();openIPORefPaymentEditModal(\''+refEsc+'\')" title="Edit who/how this was settled, right here">&#9998; Edit</button>';
+      var badgeLbl=x.settledNet>0?('Paid &#8377;'+fmt(x.settledNet)):(x.settledNet<0?('Received &#8377;'+fmt(-x.settledNet)):'Cleared');
+      settleCell='<span class="badge green">'+badgeLbl+'</span> <button class="btn-mini" onclick="event.stopPropagation();openIPORefPaymentEditModal(\''+refEsc+'\')" title="Edit who/how this was settled, right here">&#9998; Edit</button>';
     } else {
       settleCell='-';
     }
