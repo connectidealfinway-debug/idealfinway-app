@@ -10444,7 +10444,7 @@ function renderIPORefTable(){
   rows.forEach(function(r){
     var ref=r['Reference']||'';
     var key=ref||'(no reference)';
-    if(!byRef[key])byRef[key]={ref:ref,label:key,count:0,pending:0,allotted:0,notAllotted:0,rejected:0,buyCost:0,net:0,payUnpaid:0,recvUnpaid:0,resoldCount:0,resoldRates:[]};
+    if(!byRef[key])byRef[key]={ref:ref,label:key,count:0,pending:0,allotted:0,notAllotted:0,rejected:0,buyCost:0,payTotal:0,recvTotal:0,payUnpaid:0,recvUnpaid:0,resoldCount:0,resoldRates:[]};
     var x=byRef[key];
     x.count++;
     x.buyCost+=parseFloat(r['Buy_Rate'])||0;
@@ -10456,10 +10456,12 @@ function renderIPORefTable(){
     if(r['Resold']==='Yes'){x.resoldCount++;x.resoldRates.push(parseFloat(r['Resale_Rate'])||0);}
     var c=ipoAppCalc(r,ipo);
     if(c.clientNet!==null){
-      x.net+=c.clientNet;
-      if(r['Payment_Done']!=='Yes'){
-        if(c.clientNet>0)x.payUnpaid+=c.clientNet;
-        else if(c.clientNet<0)x.recvUnpaid+=(-c.clientNet);
+      if(c.clientNet>0){
+        x.payTotal+=c.clientNet;
+        if(r['Payment_Done']!=='Yes')x.payUnpaid+=c.clientNet;
+      } else if(c.clientNet<0){
+        x.recvTotal+=(-c.clientNet);
+        if(r['Payment_Done']!=='Yes')x.recvUnpaid+=(-c.clientNet);
       }
     }
   });
@@ -10467,8 +10469,8 @@ function renderIPORefTable(){
   if(!list.length){document.getElementById('ipoRefTable').innerHTML='<div class="no-data">No applications yet</div>';return;}
   var h='<table><thead><tr><th>Reference</th><th>Applications</th><th>Buy Cost</th><th>Net Payable <span style="font-weight:400;color:var(--muted);">(we owe client)</span></th><th>Net Receivable <span style="font-weight:400;color:var(--muted);">(client owes us)</span></th><th>Settle Payment</th><th>Resold Further</th></tr></thead><tbody>';
   list.forEach(function(x){
-    var payable=x.net>0?x.net:0;
-    var receivable=x.net<0?-x.net:0;
+    var payable=x.payTotal;
+    var receivable=x.recvTotal;
     var refEsc=x.ref.replace(/'/g,"\\\\'");
     var counts='<div style="font-size:11px;color:var(--muted);margin-top:2px;">'+
       (x.allotted?'<span style="color:var(--accent);">'+x.allotted+' Allotted</span> &#183; ':'')+
