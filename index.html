@@ -2383,7 +2383,8 @@ function loadAll(attempt){
         LeaderMilestoneBonus:r.leaderMilestoneBonus||r.LeaderMilestoneBonus||[],
         RecruitRequests:r.recruitRequests||r.RecruitRequests||[],
         TeamTasks:r.teamTasks||r.TeamTasks||[],
-        SelfIPO:r.selfIpo||r.SelfIPO||[]
+        SelfIPO:r.selfIpo||r.SelfIPO||[],
+        GrowthTargets:r.growthTargets||r.GrowthTargets||[]
       };
       saveCache();checkSIPAlerts();autoPunchIn();renderPage(curPage());loadEmps();setTimeout(checkDueTomorrowPopup,600);setTimeout(check315Reminder,900);setTimeout(checkWLRKComments,1200);renderAnnounceBanner();renderMyTasksBanner();if(!window._stlCleanupDone){window._stlCleanupDone=true;getJSON('cleanupOldSettlement').catch(function(){});}
     }else if(attempt<3){
@@ -4170,29 +4171,104 @@ function renderHealthCheckPage(){
   var lastRunEl=document.getElementById('healthLastRun');
   if(lastRunEl)lastRunEl.textContent='Last checked: '+new Date().toLocaleString();
 }
-/* ===== GROWTH & TARGETS (v79) - progress toward stated company goals + simple month-wise trend bars.
-   No new backend/schema - purely computed from allData already loaded. AUM uses the latest
-   ClientHolding upload snapshot (reuses holdingScopedRows/holdingClientAgg from Client Holding page)
-   since that's the only place actual portfolio value data exists in this app. */
-var GROWTH_TARGETS=[
-  {label:'Demat Accounts',metric:'accounts',target:5000,deadline:'2027-03-31',unit:''},
-  {label:'Demat Accounts',metric:'accounts',target:20000,deadline:'2030-12-31',unit:''},
-  {label:'Mutual Fund AUM',metric:'aum',target:100000000,deadline:'2030-12-31',unit:'₹'}
-];
-function mkProgressBar(t,curVal){
-  var pct=t.target>0?Math.min(100,Math.max(0,(curVal/t.target)*100)):0;
-  var dl=new Date(t.deadline+'T00:00:00');
+/* ===== GROWTH & TARGETS (v80) - targets are now editable rows in the GrowthTargets sheet,
+   not hardcoded. Add/Edit/Delete via generic addGeneric/editRow/deleteRow actions (zero new
+   backend code needed beyond the HEADERS + getData entries). Metric picks how "current value"
+   is computed live from allData; 'manual' lets admin type/update any custom number by hand
+   (covers goals that don't map to an existing sheet, e.g. a one-off campaign target). */
+var GROWTH_METRICS={
+  accounts:{label:'Demat Accounts (Completed)',unit:'',compute:function(){return (allData.Accounts||[]).filter(function(r){return (r['Client ID']||'').trim();}).length;}},
+  aum:{label:'Mutual Fund / Portfolio AUM (Client Holding upload se)',unit:'₹',compute:function(){return holdingClientAgg(holdingScopedRows()).reduce(function(s,c){return s+(c.totalValue||0);},0);}},
+  sip_amount:{label:'SIP Monthly Amount (sabhi active SIP entries)',unit:'₹',compute:function(){return (allData.SIP||[]).filter(function(r){return (r['Type']||'SIP')==='SIP';}).reduce(function(s,r){return s+(parseFloat(r['Amount'])||0);},0);}},
+  insurance_premium:{label:'Insurance Total Premium',unit:'₹',compute:function(){return (allData.Insurance||[]).reduce(function(s,r){return s+(parseFloat(r['Premium'])||0);},0);}},
+  insurance_count:{label:'Insurance Policies Count',unit:'',compute:function(){return (allData.Insurance||[]).length;}},
+  brokerage_total:{label:'Total Brokerage (all-time)',unit:'₹',compute:function(){return (allData.ClientBrokerage||[]).reduce(function(s,r){return s+(parseFloat(r['Amount'])||0);},0);}},
+  manual:{label:'Custom / Manual (khud value update karo)',unit:'',compute:null}
+};
+function growthTargetCurrentValue(t){
+  var m=GROWTH_METRICS[t['Metric']];
+  if(!m)return 0;
+  if(t['Metric']==='manual')return parseFloat(t['Manual_Value'])||0;
+  return m.compute();
+}
+function mkProgressBar(t){
+  var m=GROWTH_METRICS[t['Metric']]||{label:t['Metric']||'-',unit:''};
+  var curVal=growthTargetCurrentValue(t);
+  var tgt=parseFloat(t['Target_Value'])||0;
+  var pct=tgt>0?Math.min(100,Math.max(0,(curVal/tgt)*100)):0;
+  var dl=new Date((t['Deadline']||'')+'T00:00:00');
   var today=new Date();today.setHours(0,0,0,0);
-  var daysLeft=Math.round((dl-today)/86400000);
-  var barColor=pct>=100?'var(--accent,#3fbf7f)':(daysLeft<0?'var(--danger,#ef4444)':'var(--accent,#3fbf7f)');
-  var curLabel=t.unit==='₹'?fmt(curVal):Math.round(curVal).toLocaleString('en-IN');
-  var tgtLabel=t.unit==='₹'?fmt(t.target):t.target.toLocaleString('en-IN');
+  var daysLeft=isNaN(dl)?null:Math.round((dl-today)/86400000);
+  var isMoney=m.unit==='₹';
+  var curLabel=isMoney?fmt(curVal):Math.round(curVal).toLocaleString('en-IN');
+  var tgtLabel=isMoney?fmt(tgt):tgt.toLocaleString('en-IN');
+  var rn=t['_rowNum'];
   var h='<div class="gprog-wrap">';
-  h+='<div class="gprog-label"><span><b>'+t.label+'</b> &#8212; '+t.deadline.split('-').reverse().join('-')+' tak '+tgtLabel+'</span><span>'+curLabel+' / '+tgtLabel+' ('+Math.round(pct)+'%)</span></div>';
-  h+='<div class="gprog-track"><div class="gprog-fill" style="width:'+pct+'%;background:'+barColor+';"></div></div>';
-  h+='<div style="font-size:11px;color:var(--muted,#8a94a6);margin-top:4px;">'+(daysLeft>=0?(daysLeft+' din baaki'):('deadline '+Math.abs(daysLeft)+' din pehle nikal chuki'))+'</div>';
+  h+='<div class="gprog-label"><span><b>'+(t['Label']||m.label)+'</b> <span style="color:var(--muted);font-weight:400;">('+m.label+')</span>'+(t['Deadline']?' &#8212; '+t['Deadline'].split('-').reverse().join('-')+' tak':'')+'</span>';
+  h+='<span>'+curLabel+' / '+tgtLabel+' ('+Math.round(pct)+'%) <button class="btn-mini" style="padding:2px 6px;" onclick="openGrowthTargetModal('+rn+')">&#9998;</button> <button class="btn-mini" style="padding:2px 6px;" onclick="confirmDel(\'GrowthTargets\','+rn+')">&#128465;</button></span></div>';
+  h+='<div class="gprog-track"><div class="gprog-fill" style="width:'+pct+'%;"></div></div>';
+  h+='<div style="font-size:11px;color:var(--muted,#8a94a6);margin-top:4px;">'+(daysLeft===null?'':(daysLeft>=0?(daysLeft+' din baaki'):('deadline '+Math.abs(daysLeft)+' din pehle nikal chuki')))+'</div>';
   h+='</div>';
   return h;
+}
+function openGrowthTargetModal(rowNum){
+  var row=rowNum?(allData.GrowthTargets||[]).find(function(r){return String(r['_rowNum'])===String(rowNum);}):null;
+  var html='<div class="modal-title">'+(row?'Edit Target':'Naya Target Set Karo')+'</div>';
+  html+='<div class="form-group"><label>Label</label><input type="text" id="gt_label" value="'+(row?(row['Label']||''):'')+'" placeholder="e.g. Insurance Premium, Brokerage, ya kuch bhi apna naam"></div>';
+  html+='<div class="form-group"><label>Kis se current value nikale (Metric)</label><select id="gt_metric" onchange="onGrowthMetricChange()">';
+  Object.keys(GROWTH_METRICS).forEach(function(k){html+='<option value="'+k+'"'+(row&&row['Metric']===k?' selected':'')+'>'+GROWTH_METRICS[k].label+'</option>';});
+  html+='</select></div>';
+  html+='<div class="form-group" id="gt_manualGroup" style="display:none;"><label>Current Value <span style="color:var(--muted);font-weight:400;">- jab bhi progress badhe, yaha aake number update kar dena</span></label><input type="number" id="gt_manual" value="'+(row?(parseFloat(row['Manual_Value'])||0):0)+'"></div>';
+  html+='<div class="form-group"><label>Target Value</label><input type="number" id="gt_target" value="'+(row?(parseFloat(row['Target_Value'])||0):'')+'"></div>';
+  html+='<div class="form-group"><label>Deadline</label><input type="date" id="gt_deadline" value="'+(row?(row['Deadline']||''):'')+'"></div>';
+  html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button>'+(row?('<button class="btn-danger" onclick="confirmDel(\'GrowthTargets\','+rowNum+')">Delete</button>'):'')+'<button class="btn-save" onclick="saveGrowthTarget('+(rowNum||'null')+')">Save</button></div>';
+  document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
+  onGrowthMetricChange();
+}
+function onGrowthMetricChange(){
+  var v=document.getElementById('gt_metric').value;
+  var g=document.getElementById('gt_manualGroup');
+  if(g)g.style.display=(v==='manual')?'block':'none';
+}
+function saveGrowthTarget(rowNum){
+  var label=(document.getElementById('gt_label').value||'').trim();
+  if(!label){showToast('Label required','error');return;}
+  var vals={
+    'Label':label,
+    'Metric':document.getElementById('gt_metric').value,
+    'Target_Value':parseFloat(document.getElementById('gt_target').value)||0,
+    'Deadline':document.getElementById('gt_deadline').value||'',
+    'Manual_Value':parseFloat(document.getElementById('gt_manual').value)||0
+  };
+  if(rowNum){
+    postData({action:'editRow',sheet:'GrowthTargets',rowNum:rowNum,vals:vals}).then(function(r){
+      closeModal();
+      if(r&&r.success){patchRowLocal('GrowthTargets',rowNum,vals);renderGrowthPage();showToast('Target update ho gaya','success');}
+      else showToast('Save failed: '+(r&&r.error||''),'error');
+    }).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
+  } else {
+    var p={action:'addGeneric',sheet:'GrowthTargets','Target_ID':'GT'+new Date().getTime(),'Created_Date':td(),'Created_By':currentUser.name};
+    for(var k in vals)p[k]=vals[k];
+    postData(p).then(function(r){
+      closeModal();
+      if(r&&r.success){showToast('Naya target add ho gaya','success');loadAll(2);setTimeout(renderGrowthPage,700);}
+      else showToast('Add failed: '+(r&&r.error||''),'error');
+    }).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
+  }
+}
+function seedDefaultGrowthTargets(){
+  var defaults=[
+    {Label:'Demat Accounts',Metric:'accounts',Target_Value:5000,Deadline:'2027-03-31'},
+    {Label:'Demat Accounts',Metric:'accounts',Target_Value:20000,Deadline:'2030-12-31'},
+    {Label:'Mutual Fund AUM',Metric:'aum',Target_Value:100000000,Deadline:'2030-12-31'}
+  ];
+  var done=0;
+  defaults.forEach(function(d,i){
+    postData({action:'addGeneric',sheet:'GrowthTargets','Target_ID':'GT'+new Date().getTime()+i,'Label':d.Label,'Metric':d.Metric,'Target_Value':d.Target_Value,'Deadline':d.Deadline,'Manual_Value':0,'Created_Date':td(),'Created_By':currentUser.name}).then(function(){
+      done++;
+      if(done===defaults.length){loadAll(2);setTimeout(function(){renderGrowthPage();},700);}
+    });
+  });
 }
 function growthMonthKey(dateStr){
   var d=new Date((dateStr||'')+'T00:00:00');
@@ -4220,16 +4296,18 @@ function mkTrendBars(months,valuesByKey,fmtVal){
 function renderGrowthPage(){
   var progEl=document.getElementById('growthProgress');
   if(!progEl)return;
-  var accCompleted=(allData.Accounts||[]).filter(function(r){return (r['Client ID']||'').trim();});
-  var curAccounts=accCompleted.length;
-  var aumRows=holdingScopedRows();
-  var curAUM=holdingClientAgg(aumRows).reduce(function(s,c){return s+(c.totalValue||0);},0);
-  var vals={accounts:curAccounts,aum:curAUM};
+  var targets=allData.GrowthTargets||[];
+  if(!targets.length){
+    if(!window._growthSeeded){window._growthSeeded=true;progEl.innerHTML='<div class="no-data">Default targets set kiye ja rahe hain...</div>';seedDefaultGrowthTargets();}
+    return;
+  }
   var ph='';
-  GROWTH_TARGETS.forEach(function(t){ph+=mkProgressBar(t,vals[t.metric]||0);});
+  targets.forEach(function(t){ph+=mkProgressBar(t);});
+  ph+='<button class="btn-mini" style="margin-top:6px;" onclick="openGrowthTargetModal()">&#43; Naya Target Set Karo</button>';
   progEl.innerHTML=ph;
 
   var months=growthLast12Months();
+  var accCompleted=(allData.Accounts||[]).filter(function(r){return (r['Client ID']||'').trim();});
   var accByMonth={};
   accCompleted.forEach(function(r){var k=growthMonthKey(r['Date']);if(!k)return;accByMonth[k]=(accByMonth[k]||0)+1;});
   var accEl=document.getElementById('growthAccTrend');
