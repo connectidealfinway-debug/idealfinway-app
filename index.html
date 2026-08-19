@@ -4065,6 +4065,10 @@ function runHealthCheck(){
       var d=daysAgo(r['Created_Date']);
       if(d!==null&&d>=7)add('info','IPO','PAN missing 7+ din se','"'+(ipoNameById[r['IPO_ID']]||'-')+'" ki ek application me '+d+' din se PAN nahi bhara gaya.',{label:'View in IPO',fn:ipoGoTo(r['IPO_ID'])});
     }
+    if((r['Status']||'Pending')!=='Pending'&&r['Resold']!=='Yes'&&r['Payment_Done']!=='Yes'){
+      var d2=daysAgo(r['Created_Date']);
+      if(d2!==null&&d2>=14)add('info','IPO','Client Payment pending 14+ din se','"'+(r['Client_Name']||r['PAN']||'-')+'" ("'+(ipoNameById[r['IPO_ID']]||'-')+'") ka result aa chuka hai ('+(r['Status']||'-')+') but "Payment Settled" abhi mark nahi hua - jab tak settle nahi hota, iska amount Net Payable/Receivable me outstanding dikhta rahega.',{label:'View in IPO',fn:ipoGoTo(r['IPO_ID'])});
+    }
   });
   ipoMasters.forEach(function(m){
     var hasAllotted=ipoApps.some(function(r){return r['IPO_ID']===m['IPO_ID']&&r['Status']==='Allotted';});
