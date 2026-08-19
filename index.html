@@ -10444,7 +10444,7 @@ function renderIPORefTable(){
   rows.forEach(function(r){
     var ref=r['Reference']||'';
     var key=ref||'(no reference)';
-    if(!byRef[key])byRef[key]={ref:ref,label:key,count:0,pending:0,allotted:0,notAllotted:0,rejected:0,buyCost:0,payTotal:0,recvTotal:0,payUnpaid:0,recvUnpaid:0,resoldCount:0,resoldRates:[]};
+    if(!byRef[key])byRef[key]={ref:ref,label:key,count:0,pending:0,allotted:0,notAllotted:0,rejected:0,buyCost:0,unsettledNet:0,hasUnsettled:false,settledCount:0,resoldCount:0,resoldRates:[]};
     var x=byRef[key];
     x.count++;
     x.buyCost+=parseFloat(r['Buy_Rate'])||0;
@@ -10455,13 +10455,17 @@ function renderIPORefTable(){
     else x.pending++;
     if(r['Resold']==='Yes'){x.resoldCount++;x.resoldRates.push(parseFloat(r['Resale_Rate'])||0);}
     var c=ipoAppCalc(r,ipo);
+    // Netting/adjustment settlement: if a client (Reference) has BOTH payable and receivable
+    // applications, they should be offset against each other into ONE net figure - e.g. 5000
+    // payable minus 2500 receivable = 2500 net payable, settled as a single transaction, not
+    // two separate cash movements. So unsettledNet sums ALL still-pending clientNet together
+    // (signed), and the whole group settles together via one Mark Paid/Received action.
     if(c.clientNet!==null){
-      if(c.clientNet>0){
-        x.payTotal+=c.clientNet;
-        if(r['Payment_Done']!=='Yes')x.payUnpaid+=c.clientNet;
-      } else if(c.clientNet<0){
-        x.recvTotal+=(-c.clientNet);
-        if(r['Payment_Done']!=='Yes')x.recvUnpaid+=(-c.clientNet);
+      if(r['Payment_Done']!=='Yes'){
+        x.unsettledNet+=c.clientNet;
+        x.hasUnsettled=true;
+      } else {
+        x.settledCount++;
       }
     }
   });
@@ -10469,22 +10473,23 @@ function renderIPORefTable(){
   if(!list.length){document.getElementById('ipoRefTable').innerHTML='<div class="no-data">No applications yet</div>';return;}
   var h='<table><thead><tr><th>Reference</th><th>Applications</th><th>Buy Cost</th><th>Net Payable <span style="font-weight:400;color:var(--muted);">(we owe client)</span></th><th>Net Receivable <span style="font-weight:400;color:var(--muted);">(client owes us)</span></th><th>Settle Payment</th><th>Resold Further</th></tr></thead><tbody>';
   list.forEach(function(x){
-    var payable=x.payTotal;
-    var receivable=x.recvTotal;
-    var refEsc=x.ref.replace(/'/g,"\\\\'");
+    var payable=(x.hasUnsettled&&x.unsettledNet>0)?x.unsettledNet:0;
+    var receivable=(x.hasUnsettled&&x.unsettledNet<0)?-x.unsettledNet:0;
+    var refEsc=x.ref.replace(/'/g,"\\'");
     var counts='<div style="font-size:11px;color:var(--muted);margin-top:2px;">'+
       (x.allotted?'<span style="color:var(--accent);">'+x.allotted+' Allotted</span> &#183; ':'')+
       (x.notAllotted?'<span style="color:var(--amber);">'+x.notAllotted+' Not Allotted</span> &#183; ':'')+
       (x.rejected?'<span style="color:var(--danger);">'+x.rejected+' Rejected</span> &#183; ':'')+
       (x.pending?x.pending+' Pending':'')+
       '</div>';
-    var payCell='-';
-    if(payable>0){
-      payCell=x.payUnpaid>0?('<button class="btn-mini amber" onclick="event.stopPropagation();openIPORefPaymentModal(\''+refEsc+'\',\'payable\')">Payable &#8594; Mark Paid</button>'):('<span class="badge green">Paid</span> <button class="btn-mini" onclick="event.stopPropagation();openIPORefPaymentEditModal(\''+refEsc+'\',\'payable\')" title="Edit who/how this was paid, right here">&#9998; Edit</button>');
-    }
-    var recvCell='-';
-    if(receivable>0){
-      recvCell=x.recvUnpaid>0?('<button class="btn-mini amber" onclick="event.stopPropagation();openIPORefPaymentModal(\''+refEsc+'\',\'receivable\')">Receivable &#8594; Mark Received</button>'):('<span class="badge green">Received</span> <button class="btn-mini" onclick="event.stopPropagation();openIPORefPaymentEditModal(\''+refEsc+'\',\'receivable\')" title="Edit who/how this was received, right here">&#9998; Edit</button>');
+    var settleCell;
+    if(x.hasUnsettled){
+      var lbl=x.unsettledNet>0?('Net Payable &#8377;'+fmt(x.unsettledNet)+' &#8594; Mark Paid'):(x.unsettledNet<0?('Net Receivable &#8377;'+fmt(-x.unsettledNet)+' &#8594; Mark Received'):'Net &#8377;0 &#8594; Mark Cleared');
+      settleCell='<button class="btn-mini amber" onclick="event.stopPropagation();openIPORefPaymentModal(\''+refEsc+'\')">'+lbl+'</button>';
+    } else if(x.settledCount>0){
+      settleCell='<span class="badge green">Settled</span> <button class="btn-mini" onclick="event.stopPropagation();openIPORefPaymentEditModal(\''+refEsc+'\')" title="Edit who/how this was settled, right here">&#9998; Edit</button>';
+    } else {
+      settleCell='-';
     }
     var resaleCell='-';
     if(x.resoldCount>0){
@@ -10492,35 +10497,34 @@ function renderIPORefTable(){
       var ratesTxt=x.resoldRates.length<=5?x.resoldRates.map(function(v){return fmt(v);}).join(', '):('avg '+fmt(avgRate));
       resaleCell='<b>'+x.resoldCount+'</b> of '+x.count+' resold<div style="font-size:11px;color:var(--muted);">@ '+ratesTxt+'</div>';
     }
-    h+='<tr style="cursor:pointer;" onclick="filterIPOByReference(\''+refEsc+'\')"><td>'+x.label+counts+'</td><td>'+x.count+'</td><td class="money">'+fmt(x.buyCost)+'</td><td class="money">'+(payable?fmt(payable):'-')+'</td><td class="money">'+(receivable?fmt(receivable):'-')+'</td><td>'+(payCell!=='-'?payCell:'')+(recvCell!=='-'?recvCell:'')+((payCell==='-'&&recvCell==='-')?'-':'')+'</td><td>'+resaleCell+'</td></tr>';
+    h+='<tr style="cursor:pointer;" onclick="filterIPOByReference(\''+refEsc+'\')"><td>'+x.label+counts+'</td><td>'+x.count+'</td><td class="money">'+fmt(x.buyCost)+'</td><td class="money">'+(payable?fmt(payable):'-')+'</td><td class="money">'+(receivable?fmt(receivable):'-')+'</td><td>'+settleCell+'</td><td>'+resaleCell+'</td></tr>';
   });
   h+='</tbody></table>';
   document.getElementById('ipoRefTable').innerHTML=h;
 }
-function openIPORefPaymentModal(ref,kind){
+function openIPORefPaymentModal(ref){
   var ipo=currentIPO();
   var target=currentIPOApps().filter(function(r){
     if((r['Reference']||'')!==ref)return false;
     var c=ipoAppCalc(r,ipo);
-    if(c.clientNet===null||r['Payment_Done']==='Yes')return false;
-    return kind==='payable'?c.clientNet>0:c.clientNet<0;
+    return c.clientNet!==null&&r['Payment_Done']!=='Yes';
   });
   if(!target.length){showToast('Nothing pending to settle for this reference','error');return;}
-  var totalAmt=target.reduce(function(s,r){return s+Math.abs(ipoAppCalc(r,ipo).clientNet);},0);
-  var html='<div class="modal-title">Mark '+(kind==='payable'?'Payable &#8594; Paid':'Receivable &#8594; Received')+' — '+(ref||'(no reference)')+'</div>';
-  html+='<p style="color:var(--muted);font-size:12px;">'+target.length+' application(s), total &#8377;'+fmt(totalAmt)+'. This will settle all of them at once, one by one.</p>';
+  var netAmt=target.reduce(function(s,r){return s+ipoAppCalc(r,ipo).clientNet;},0);
+  var dirLabel=netAmt>0?'Payable (we owe client)':(netAmt<0?'Receivable (client owes us)':'Net Cleared');
+  var html='<div class="modal-title">Settle — '+(ref||'(no reference)')+'</div>';
+  html+='<p style="color:var(--muted);font-size:12px;">'+target.length+' application(s) netted together &#8594; <b>'+dirLabel+': &#8377;'+fmt(Math.abs(netAmt))+'</b>. This settles all of them at once as a single net adjustment (payable and receivable apps offset each other, only the net amount actually needs to change hands).</p>';
   html+='<div class="form-group"><label>Account</label><select id="iprf_acc"><option value="Cash">Cash</option><option value="HDFC">HDFC</option><option value="SBI">SBI</option><option value="UPI">UPI</option><option value="Other">Other</option></select></div>';
   html+='<div class="form-group"><label>Handled By</label><input type="text" id="iprf_by" placeholder="Employee name"></div>';
-  html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="submitIPORefPayment(\''+ref.replace(/'/g,"\\\\'")+'\',\''+kind+'\')">Mark Settled</button></div>';
+  html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="submitIPORefPayment(\''+ref.replace(/'/g,"\\'")+'\')">Mark Settled</button></div>';
   document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
 }
-function submitIPORefPayment(ref,kind){
+function submitIPORefPayment(ref){
   var ipo=currentIPO();
   var target=currentIPOApps().filter(function(r){
     if((r['Reference']||'')!==ref)return false;
     var c=ipoAppCalc(r,ipo);
-    if(c.clientNet===null||r['Payment_Done']==='Yes')return false;
-    return kind==='payable'?c.clientNet>0:c.clientNet<0;
+    return c.clientNet!==null&&r['Payment_Done']!=='Yes';
   });
   var rowNums=target.map(function(r){return r._rowNum;});
   var account=document.getElementById('iprf_acc').value;
@@ -10528,41 +10532,44 @@ function submitIPORefPayment(ref,kind){
   postData({action:'bulkMarkIPOPayment',rowNums:rowNums,Payment_Account:account,Payment_By:by}).then(function(r){
     closeModal();
     if(r&&r.success){
-      showToast(r.updated+' application(s) marked settled','success');
+      showToast(r.updated+' application(s) marked settled (netted)','success');
       target.forEach(function(row){patchRowLocal('IPO_Applications',row._rowNum,{'Payment_Done':'Yes','Payment_Account':account,'Payment_By':by});});
       renderIPOTabBody();
     } else showToast('Failed: '+(r&&r.error||''),'error');
   }).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
 }
 
-/* Editing an already-settled reference-wise payment stays right here in Reference-wise -
-   it does NOT jump to the Applications tab. Lets you correct who handled it / which account,
-   or undo the settlement entirely if it was marked by mistake. */
-function ipoRefSettledTarget(ref,kind){
+/* Editing an already-settled reference stays right here in Reference-wise - it does NOT jump
+   to the Applications tab. Lets you correct who handled it / which account, or undo the whole
+   net settlement if it was marked by mistake. Operates on the FULL settled group for this
+   reference (both payable- and receivable-type apps together), since they were settled as one
+   net transaction. */
+function ipoRefSettledTarget(ref){
   var ipo=currentIPO();
   return currentIPOApps().filter(function(r){
     if((r['Reference']||'')!==ref)return false;
     var c=ipoAppCalc(r,ipo);
-    if(c.clientNet===null||r['Payment_Done']!=='Yes')return false;
-    return kind==='payable'?c.clientNet>0:c.clientNet<0;
+    return c.clientNet!==null&&r['Payment_Done']==='Yes';
   });
 }
-function openIPORefPaymentEditModal(ref,kind){
-  var target=ipoRefSettledTarget(ref,kind);
+function openIPORefPaymentEditModal(ref){
+  var ipo=currentIPO();
+  var target=ipoRefSettledTarget(ref);
   if(!target.length){showToast('Nothing settled to edit for this reference','error');return;}
-  var totalAmt=target.reduce(function(s,r){var ipo=currentIPO();return s+Math.abs(ipoAppCalc(r,ipo).clientNet);},0);
-  var refEsc=ref.replace(/'/g,"\\\\'");
-  var html='<div class="modal-title">Edit Settled '+(kind==='payable'?'Payable':'Receivable')+' — '+(ref||'(no reference)')+'</div>';
-  html+='<p style="color:var(--muted);font-size:12px;">'+target.length+' application(s) already settled, total &#8377;'+fmt(totalAmt)+'. Saving updates who/how it was '+(kind==='payable'?'paid':'received')+' for all of them.</p>';
+  var netAmt=target.reduce(function(s,r){return s+ipoAppCalc(r,ipo).clientNet;},0);
+  var dirLabel=netAmt>0?'Payable':(netAmt<0?'Receivable':'Net Cleared');
+  var refEsc=ref.replace(/'/g,"\\'");
+  var html='<div class="modal-title">Edit Settled — '+(ref||'(no reference)')+'</div>';
+  html+='<p style="color:var(--muted);font-size:12px;">'+target.length+' application(s) already settled together, net '+dirLabel+': &#8377;'+fmt(Math.abs(netAmt))+'. Saving updates who/how it was settled for all of them.</p>';
   html+='<div class="form-group"><label>Account</label><select id="iprfe_acc">';
   ['Cash','HDFC','SBI','UPI','Other'].forEach(function(a){html+='<option value="'+a+'"'+((target[0]['Payment_Account']||'Cash')===a?' selected':'')+'>'+a+'</option>';});
   html+='</select></div>';
   html+='<div class="form-group"><label>Handled By</label><input type="text" id="iprfe_by" value="'+(target[0]['Payment_By']||'')+'" placeholder="Employee name"></div>';
-  html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-danger" onclick="undoIPORefPaymentSettlement(\''+refEsc+'\',\''+kind+'\')">Undo Settlement</button><button class="btn-save" onclick="saveIPORefPaymentEdit(\''+refEsc+'\',\''+kind+'\')">Save</button></div>';
+  html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-danger" onclick="undoIPORefPaymentSettlement(\''+refEsc+'\')">Undo Settlement</button><button class="btn-save" onclick="saveIPORefPaymentEdit(\''+refEsc+'\')">Save</button></div>';
   document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
 }
-function saveIPORefPaymentEdit(ref,kind){
-  var target=ipoRefSettledTarget(ref,kind);
+function saveIPORefPaymentEdit(ref){
+  var target=ipoRefSettledTarget(ref);
   var rowNums=target.map(function(r){return r._rowNum;});
   var account=document.getElementById('iprfe_acc').value;
   var by=(document.getElementById('iprfe_by').value||'').trim();
@@ -10575,8 +10582,8 @@ function saveIPORefPaymentEdit(ref,kind){
     } else showToast('Failed: '+(r&&r.error||''),'error');
   }).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
 }
-function undoIPORefPaymentSettlement(ref,kind){
-  var target=ipoRefSettledTarget(ref,kind);
+function undoIPORefPaymentSettlement(ref){
+  var target=ipoRefSettledTarget(ref);
   if(!confirm('Undo settlement on '+target.length+' application(s)? They will go back to pending.'))return;
   Promise.all(target.map(function(r){
     return postData({action:'editRow',sheet:'IPO_Applications',rowNum:r._rowNum,vals:{'Payment_Done':'No'}}).catch(function(){return {success:false};});
@@ -10588,6 +10595,7 @@ function undoIPORefPaymentSettlement(ref,kind){
     renderIPOTabBody();
   });
 }
+
 
 function renderIPOBuyerTable(){
   var rows=currentIPOApps().filter(function(r){return r['Resold']==='Yes';});
@@ -10627,17 +10635,30 @@ function renderIPOPayHandlerTable(){
   var ipo=currentIPO();
   var allRows=currentIPOApps();
   var clientRows=allRows.filter(function(r){return r['Payment_Done']==='Yes';});
-  var byPerson={};
+  // Net settled applications PER (Reference, Handler) FIRST, then roll the resulting net
+  // amounts up per handler - because settlements are done as one net adjustment per
+  // client/reference (5000 payable minus 2500 receivable = 2500 net paid, not two separate
+  // cash movements), so the ledger should reflect what actually changed hands, not the gross
+  // sum of every individual application's clientNet.
+  var byRefHandler={};
   clientRows.forEach(function(r){
     var c=ipoAppCalc(r,ipo);
     if(c.clientNet===null)return;
+    var ref=r['Reference']||'(no reference)';
     var name=r['Payment_By']||'(unspecified)';
-    if(!byPerson[name])byPerson[name]={name:name,paidOut:0,received:0};
-    if(c.clientNet>=0)byPerson[name].paidOut+=c.clientNet;
-    else byPerson[name].received+=Math.abs(c.clientNet);
+    var key=ref+'||'+name;
+    if(!byRefHandler[key])byRefHandler[key]={name:name,net:0};
+    byRefHandler[key].net+=c.clientNet;
+  });
+  var byPerson={};
+  Object.keys(byRefHandler).forEach(function(k){
+    var g=byRefHandler[k];
+    if(!byPerson[g.name])byPerson[g.name]={name:g.name,paidOut:0,received:0};
+    if(g.net>=0)byPerson[g.name].paidOut+=g.net;
+    else byPerson[g.name].received+=Math.abs(g.net);
   });
   var list=Object.keys(byPerson).map(function(k){return byPerson[k];});
-  var h='<div style="font-weight:700;margin-bottom:6px;">Client Payment Ledger <span style="font-weight:400;color:var(--muted);font-size:12px;">- money ALREADY paid to / collected from the original applicant (only "Payment Settled" apps), by who handled it. Applications tab\'s Net Payable/Receivable is the TOTAL across every resolved app (settled + still-pending) - the two numbers track different things and will not match unless everything here is settled.</span></div>';
+  var h='<div style="font-weight:700;margin-bottom:6px;">Client Payment Ledger <span style="font-weight:400;color:var(--muted);font-size:12px;">- money ALREADY settled (net) per Reference, by who handled it. When a client/reference had both payable and receivable applications, they were netted together at settlement time - so this shows only the net amount that actually changed hands, not the gross total. Applications tab\'s Net Payable/Receivable is the TOTAL across every resolved app (settled + still-pending) - the two numbers track different things and will not match unless everything here is settled.</span></div>';
   if(!list.length)h+='<div class="no-data">No settled client payments yet</div>';
   else{
     h+='<table><thead><tr><th>Handled By</th><th>Total Paid Out</th><th>Total Received</th></tr></thead><tbody>';
