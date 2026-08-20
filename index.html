@@ -4187,6 +4187,8 @@ var GROWTH_METRICS={
   insurance_premium:{label:'Insurance Total Premium',unit:'₹',compute:function(){return (allData.Insurance||[]).reduce(function(s,r){return s+(parseFloat(r['Premium'])||0);},0);}},
   insurance_count:{label:'Insurance Policies Count',unit:'',compute:function(){return (allData.Insurance||[]).length;}},
   brokerage_total:{label:'Total Brokerage (all-time)',unit:'₹',compute:function(){return (allData.ClientBrokerage||[]).reduce(function(s,r){return s+(parseFloat(r['Amount'])||0);},0);}},
+  brokerage_month:{label:'Brokerage - Is Mahine (auto current month)',unit:'₹',compute:function(){var mo=curMonth();return (allData.ClientBrokerage||[]).filter(function(r){return monthOf(r['Date'])===mo;}).reduce(function(s,r){return s+(parseFloat(r['Amount'])||0);},0);}},
+  brokerage_year:{label:'Brokerage - Is Saal (auto current calendar year)',unit:'₹',compute:function(){var yr=new Date().getFullYear();return (allData.ClientBrokerage||[]).filter(function(r){var d=new Date(r['Date']||'');return !isNaN(d)&&d.getFullYear()===yr;}).reduce(function(s,r){return s+(parseFloat(r['Amount'])||0);},0);}},
   manual:{label:'Custom / Manual (khud value update karo)',unit:'',compute:null}
 };
 function growthTargetCurrentValue(t){
@@ -4206,12 +4208,16 @@ function mkProgressBar(t){
   var isMoney=m.unit==='₹';
   var curLabel=isMoney?fmt(curVal):Math.round(curVal).toLocaleString('en-IN');
   var tgtLabel=isMoney?fmt(tgt):tgt.toLocaleString('en-IN');
+  var pending=tgt-curVal;
+  var pendingLabel=pending>0?(isMoney?fmt(pending):Math.round(pending).toLocaleString('en-IN')):null;
+  var isPeriod=(t['Metric']==='brokerage_month'||t['Metric']==='brokerage_year');
+  var periodNote=t['Metric']==='brokerage_month'?'har mahine 1 tareek ko reset hoga':(t['Metric']==='brokerage_year'?'har saal January me reset hoga':'');
   var rn=t['_rowNum'];
   var h='<div class="gprog-wrap">';
   h+='<div class="gprog-label"><span><b>'+(t['Label']||m.label)+'</b> <span style="color:var(--muted);font-weight:400;">('+m.label+')</span>'+(t['Deadline']?' &#8212; '+t['Deadline'].split('-').reverse().join('-')+' tak':'')+'</span>';
   h+='<span>'+curLabel+' / '+tgtLabel+' ('+Math.round(pct)+'%) <button class="btn-mini" style="padding:2px 6px;" onclick="openGrowthTargetModal('+rn+')">&#9998;</button> <button class="btn-mini" style="padding:2px 6px;" onclick="confirmDel(\'GrowthTargets\','+rn+')">&#128465;</button></span></div>';
   h+='<div class="gprog-track"><div class="gprog-fill" style="width:'+pct+'%;"></div></div>';
-  h+='<div style="font-size:11px;color:var(--muted,#8a94a6);margin-top:4px;">'+(daysLeft===null?'':(daysLeft>=0?(daysLeft+' din baaki'):('deadline '+Math.abs(daysLeft)+' din pehle nikal chuki')))+'</div>';
+  h+='<div style="font-size:11px;color:var(--muted,#8a94a6);margin-top:4px;">'+(pendingLabel?('Pending: '+pendingLabel+(isMoney?' ':'')+(daysLeft!==null?' &middot; ':'')):(pct>=100&&tgt>0?'Target poora ho gaya! &#127881;'+(daysLeft!==null?' &middot; ':''):''))+(daysLeft===null?'':(daysLeft>=0?(daysLeft+' din baaki'):('deadline '+Math.abs(daysLeft)+' din pehle nikal chuki')))+(isPeriod?' &middot; '+periodNote:'')+'</div>';
   h+='</div>';
   return h;
 }
