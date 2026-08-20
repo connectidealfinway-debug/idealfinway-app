@@ -3897,9 +3897,50 @@ function mkAccTable(rows,dupSet,sortMode,amtMap){
     var nseDone=(r['NSE Trade Done']||'')==='Yes';
     var nseBtn=nseDone?'<button class="badge green" style="border:none;cursor:pointer;" onclick="undoNSETradeDone('+r['_rowNum']+')" title="NSE trade done on '+(r['NSE Trade Date']||'')+' — click to undo if marked by mistake">&#10003; NSE Trade</button>':'<button class="btn-call" style="background:rgba(255,159,10,0.15);color:#ff9f0a;" onclick="markNSETradeDone('+r['_rowNum']+')" title="Click here once the client has completed an NSE trade">&#128200; Trade Done?</button>';
     var mapBtn=(isDup&&currentUser&&currentUser.role==='admin')?('<button class="btn-call" style="background:rgba(63,191,127,0.15);color:#3fbf7f;" onclick="mapAccountDuplicate(\''+cid+'\','+(r['_rowNum']||0)+')" title="Keep THIS employee for this Client ID - deletes the other duplicate entry(ies)">&#128279; Map</button> '):'';
-    h+='<td>'+mapBtn+'<button class="btn-call" onclick="openAccCallModal('+r['_rowNum']+')">&#128222;</button> <button class="btn-call" style="background:rgba(139,92,246,0.15);color:#8b5cf6;" onclick="openAccHoldingModal('+r['_rowNum']+')" title="View stock holding">&#128188;</button> <button class="btn-edit" onclick="openAccEditModal('+r['_rowNum']+')">&#9998;</button> <button class="btn-del" onclick="confirmDel(\'Accounts\','+r['_rowNum']+')">&#128465;</button> '+nseBtn+'</td></tr>';
+    var inCT=(allData.CallClients||[]).some(function(c){return (c['Client ID']||'').trim()===cid;});
+    var ctBtn=inCT?'<span class="badge blue" style="margin-left:2px;" title="Ye client Call &amp; Trade calling list me hai">&#128222; In Call &amp; Trade</span>':('<button class="btn-call" style="background:rgba(10,132,255,0.15);color:#0a84ff;" onclick="shiftAccountToCallTrade('+r['_rowNum']+')" title="Is account ko Call &amp; Trade (daily calling list) me shift karo">&#128222;&#8594; Shift to Call &amp; Trade</button>');
+    h+='<td>'+mapBtn+'<button class="btn-call" onclick="openAccCallModal('+r['_rowNum']+')">&#128222;</button> <button class="btn-call" style="background:rgba(139,92,246,0.15);color:#8b5cf6;" onclick="openAccHoldingModal('+r['_rowNum']+')" title="View stock holding">&#128188;</button> <button class="btn-edit" onclick="openAccEditModal('+r['_rowNum']+')">&#9998;</button> <button class="btn-del" onclick="confirmDel(\'Accounts\','+r['_rowNum']+')">&#128465;</button> '+nseBtn+' '+ctBtn+'</td></tr>';
   });
   return h+'</tbody></table>';
+}
+/* v72: Accounts -> Call & Trade shift. Ek existing demat account (Accounts sheet) ko Call & Trade
+   daily-calling roster (CallClients sheet) me bhi add kar deta hai - reuses the generic addGeneric
+   backend action (no new backend action/sheet-column needed). Account Accounts list se DELETE nahi
+   hota (user ne explicitly "Accounts me bhi rahe" chuna), sirf CallClients me ek naya row ban jata
+   hai usi employee ke naam se (current owner, employee-picker nahi diya gaya - user ne "hamesha
+   current owner" chuna). Idempotent: agar Client ID already CallClients me hai, dobara add nahi hota
+   (mkAccTable already inCT check se button ko badge me badal deta hai). */
+function shiftAccountToCallTrade(rowNum){
+  var r=(allData.Accounts||[]).find(function(x){return String(x['_rowNum'])===String(rowNum);});
+  if(!r){showToast('Account not found','error');return;}
+  var cid=(r['Client ID']||'').trim();
+  if(!cid){showToast('Client ID missing - pehle Client ID add karo','error');return;}
+  var already=(allData.CallClients||[]).some(function(c){return (c['Client ID']||'').trim()===cid;});
+  if(already){showToast('Ye client already Call & Trade list me hai','info');return;}
+  if(!confirm('"'+(r['Client Name']||cid)+'" ko Call & Trade (daily calling) list me shift karein?'))return;
+  var p={
+    action:'addGeneric',sheet:'CallClients',
+    'Client ID':cid,'Client Name':r['Client Name']||'','Client Phone':r['Client Phone']||'',
+    'Trading Type':'Call & Trade',
+    'Employee ID':r['Employee ID']||'','Employee Name':r['Employee Name']||'','Branch':r['Branch']||'',
+    'Added Date':td(),'Status':'Active','Remarks':'Shifted from Accounts'
+  };
+  if(!allData.CallClients)allData.CallClients=[];
+  var localRow=Object.assign({},p,{_rowNum:'_local'+Date.now()});
+  allData.CallClients.push(localRow);
+  showToast('Call & Trade list me shift ho gaya!','success');
+  renderPage(curPage());
+  postData(p).then(function(res){
+    if(!res||!res.success){
+      var idx=allData.CallClients.indexOf(localRow);if(idx!==-1)allData.CallClients.splice(idx,1);
+      showToast('Save failed - hataya gaya: '+(res&&res.error||''),'error');
+      renderPage(curPage());
+    }else{setTimeout(function(){loadAll(2);},600);}
+  }).catch(function(e){
+    var idx=allData.CallClients.indexOf(localRow);if(idx!==-1)allData.CallClients.splice(idx,1);
+    showToast('Network error - hataya gaya: '+e.message,'error');
+    renderPage(curPage());
+  });
 }
 var accMode='completed',myAccMode='completed',accProcessSortBy='',myAccProcessSortBy='';
 function setAccMode(mode){
