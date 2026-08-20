@@ -9187,14 +9187,14 @@ function renderStudentPending(){
   el.innerHTML=h;
 }
 function approveStudent(rowNum){
-  postData({action:'editRow',sheet:'StudentPortal',rowNum:rowNum,'Status':'Active','Approved By':currentUser.name,'Approved Date':td()}).then(function(r){
+  postData({action:'editRow',sheet:'StudentPortal',rowNum:rowNum,vals:{'Status':'Active','Approved By':currentUser.name,'Approved Date':td()}}).then(function(r){
     if(r&&r.success){showToast('Student approve ho gaya','success');loadStudentPortalAdmin();}
     else showToast('Fail ho gaya'+(r&&r.error?': '+r.error:''),'error');
   }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
 function rejectStudent(rowNum){
   if(!confirm('Is registration ko reject karna hai?'))return;
-  postData({action:'editRow',sheet:'StudentPortal',rowNum:rowNum,'Status':'Rejected'}).then(function(r){
+  postData({action:'editRow',sheet:'StudentPortal',rowNum:rowNum,vals:{'Status':'Rejected'}}).then(function(r){
     if(r&&r.success){showToast('Reject kar diya','success');loadStudentPortalAdmin();}
     else showToast('Fail ho gaya'+(r&&r.error?': '+r.error:''),'error');
   }).catch(function(e){showToast('Error: '+e.message,'error');});
@@ -9222,7 +9222,7 @@ function renderStudentAllList(){
   el.innerHTML=h;
 }
 function toggleStudentStatus(rowNum,newStatus){
-  postData({action:'editRow',sheet:'StudentPortal',rowNum:rowNum,'Status':newStatus}).then(function(r){
+  postData({action:'editRow',sheet:'StudentPortal',rowNum:rowNum,vals:{'Status':newStatus}}).then(function(r){
     if(r&&r.success){showToast('Status update ho gaya','success');loadStudentPortalAdmin();}
     else showToast('Fail'+(r&&r.error?': '+r.error:''),'error');
   }).catch(function(e){showToast('Error: '+e.message,'error');});
@@ -9239,11 +9239,11 @@ function openStudentEditModal(rowNum){
   document.getElementById('modal').className='show';
 }
 function submitStudentEdit(rowNum){
-  var p={action:'editRow',sheet:'StudentPortal',rowNum:rowNum,
+  var p={action:'editRow',sheet:'StudentPortal',rowNum:rowNum,vals:{
     'Name':document.getElementById('se_name').value.trim(),
     'Phone':document.getElementById('se_phone').value.trim(),
     'Email':document.getElementById('se_email').value.trim(),
-    'Batch':document.getElementById('se_batch').value.trim()};
+    'Batch':document.getElementById('se_batch').value.trim()}};
   postData(p).then(function(r){
     if(r&&r.success){showToast('Update ho gaya','success');closeModal();loadStudentPortalAdmin();}
     else showToast('Fail'+(r&&r.error?': '+r.error:''),'error');
