@@ -376,6 +376,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       </div>
       <div class="nav-sec" onclick="toggleGrp('gMan',this)"><span class="arr">&#9656;</span>Manage</div>
       <div class="nav-grp" id="gMan" style="display:none">
+        <div class="nav-item" onclick="showPage('adminTasks')">&#128221; Task Assign</div>
         <div class="nav-item" onclick="showPage('manageEmps')">&#9998; Manage Employees</div>
         <div class="nav-item" onclick="showPage('uploadChoice')">&#11014; Upload Choice Sheet</div>
         <div class="nav-item" onclick="showPage('addBrok')">&#43; Add Brokerage</div>
@@ -832,15 +833,28 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
     <!-- MY TEAM -->
     <div class="page" id="page-myTeam">
       <div class="page-header"><h1>My Team</h1><p>View and edit sub-employees' Accounts/SIP/Insurance/Students</p></div>
-      <div style="margin-bottom:16px;"><button class="btn-submit" onclick="showRecruitModal()">&#43; Naya Advisor Recruit Karein</button> <button class="btn-submit" onclick="openAssignTaskModal()">&#128221; + Task Assign Karein</button></div>
-      <div id="myRecruitReqBox"></div>
-      <h3 id="teamSecTasks" style="margin:24px 0 10px;">Team Tasks</h3>
-      <div style="margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;">
-        <select id="tt_filterEmp" onchange="renderTeamTasksTable()" style="max-width:200px;"><option value="">All Team Members</option></select>
-        <select id="tt_filterStatus" onchange="renderTeamTasksTable()" style="max-width:160px;"><option value="">All Status</option><option value="Pending">Pending</option><option value="Done">Done</option></select>
+      <div style="margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="tab-btn active" id="myTeamTabRecruit" onclick="setMyTeamMode('recruit')">&#43; Naya Advisor Recruit Karein</button>
+        <button class="tab-btn" id="myTeamTabTasks" onclick="setMyTeamMode('tasks')">&#128221; Task Assign Karein</button>
+        <button class="tab-btn" id="myTeamTabMembers" onclick="setMyTeamMode('members')">&#128101; All Members</button>
       </div>
-      <div class="stats-grid" id="teamTasksStats"></div>
-      <div id="teamTasksTable"></div>
+
+      <div id="myTeamModeRecruit">
+        <div style="margin-bottom:16px;"><button class="btn-submit" onclick="showRecruitModal()">&#43; Naya Advisor Recruit Karein</button></div>
+        <div id="myRecruitReqBox"></div>
+      </div>
+
+      <div id="myTeamModeTasks" style="display:none;">
+        <div style="margin-bottom:16px;"><button class="btn-submit" onclick="openAssignTaskModal()">&#128221; + Task Assign Karein</button></div>
+        <div style="margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;">
+          <select id="tt_filterEmp" onchange="renderTeamTasksTable()" style="max-width:200px;"><option value="">All Team Members</option></select>
+          <select id="tt_filterStatus" onchange="renderTeamTasksTable()" style="max-width:160px;"><option value="">All Status</option><option value="Pending">Pending</option><option value="Done">Done</option></select>
+        </div>
+        <div class="stats-grid" id="teamTasksStats"></div>
+        <div id="teamTasksTable"></div>
+      </div>
+
+      <div id="myTeamModeMembers" style="display:none;">
       <div class="form-card" style="margin-bottom:20px;">
         <div class="form-group"><label>Select Team Member</label>
           <select id="team_emp" onchange="renderMyTeamData()"><option value="">-- Select --</option></select>
@@ -871,6 +885,18 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
         <button class="tab-btn" id="teamFinTabExp" onclick="setTeamFinTab('expense')">&#8377; Expense</button>
       </div>
       <div id="teamFinTable"></div>
+      </div>
+    </div>
+
+    <div class="page" id="page-adminTasks">
+      <div class="page-header"><h1>&#128221; Task Assign</h1><p>Kisi bhi employee ko task assign karein aur track karein</p></div>
+      <div style="margin-bottom:16px;"><button class="btn-submit" onclick="openAdminAssignTaskModal()">&#128221; + Naya Task Assign Karein</button></div>
+      <div style="margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;">
+        <select id="admt_filterEmp" onchange="renderAdminTasksTable()" style="max-width:220px;"><option value="">All Employees</option></select>
+        <select id="admt_filterStatus" onchange="renderAdminTasksTable()" style="max-width:160px;"><option value="">All Status</option><option value="Pending">Pending</option><option value="Done">Done</option></select>
+      </div>
+      <div class="stats-grid" id="admtTasksStats"></div>
+      <div id="admtTasksTable"></div>
     </div>
 
     <!-- TRADING JOURNAL -->
@@ -2566,7 +2592,17 @@ function populateTeamEmpSelect(){
   team.forEach(function(e){var o=document.createElement('option');o.value=e['Employee ID'];o.textContent=e['Name'];sel.appendChild(o);});
   if(cur&&team.some(function(e){return e['Employee ID']===cur;}))sel.value=cur;
 }
-function renderMyTeamPage(){populateTeamEmpSelect();renderMyTeamData();renderMyRecruitReqs();populateTeamTaskEmpSelect();renderTeamTasksTable();}
+function renderMyTeamPage(){populateTeamEmpSelect();renderMyTeamData();renderMyRecruitReqs();populateTeamTaskEmpSelect();renderTeamTasksTable();setMyTeamMode(myTeamMode||'recruit');}
+var myTeamMode='recruit';
+function setMyTeamMode(mode){
+  myTeamMode=mode;
+  var modes={recruit:'myTeamModeRecruit',tasks:'myTeamModeTasks',members:'myTeamModeMembers'};
+  var tabs={recruit:'myTeamTabRecruit',tasks:'myTeamTabTasks',members:'myTeamTabMembers'};
+  Object.keys(modes).forEach(function(m){
+    var el=document.getElementById(modes[m]);if(el)el.style.display=(m===mode?'block':'none');
+    var tb=document.getElementById(tabs[m]);if(tb)tb.className='tab-btn'+(m===mode?' active':'');
+  });
+}
 function renderMyTeamData(){
   var sel=document.getElementById('team_emp');
   var uid=sel?sel.value:'';if(uid==='__ALL__')uid=teamMembersOf(currentUser.userId).map(function(e){return e['Employee ID'];});
@@ -2723,6 +2759,7 @@ function renderPage(id){
   else if(id==='myPoints')renderMyPoints();
   else if(id==='myMeetings')renderMyMeetings();
   else if(id==='myTeam')renderMyTeamPage();
+  else if(id==='adminTasks')renderAdminTasksPage();
   else if(id==='tradingJournal')renderTradingJournalPage();
   else if(id==='callTrade'){renderCallTradePage();if(ctMode==='ipo')renderIPOCallList();}
   else if(id==='watchlist')renderWatchlistPage();
@@ -3297,19 +3334,81 @@ function submitMarkTaskDone(rowNum){
     else showToast('Failed: '+(r&&r.error||''),'error');
   }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
+function taskAssignableEmployees(){
+  var team=teamMembersOf(currentUser.userId).slice();
+  team.push({'Employee ID':currentUser.userId,'Name':'Myself ('+currentUser.name+')','Branch':currentUser.branch||'',_self:true});
+  return team;
+}
+function adminAllTaskEmployees(){
+  var list=(employees||[]).filter(function(e){return (e['Status']||'Active')==='Active';}).slice();
+  list.push({'Employee ID':currentUser.userId,'Name':'Myself ('+currentUser.name+')','Branch':currentUser.branch||'',_self:true});
+  return list;
+}
+function renderAdminTasksPage(){populateAdminTaskEmpSelect();renderAdminTasksTable();}
+function populateAdminTaskEmpSelect(){
+  var sel=document.getElementById('admt_filterEmp');if(!sel||!currentUser)return;
+  var all=adminAllTaskEmployees();
+  var cur=sel.value;
+  sel.innerHTML='<option value="">All Employees</option>';
+  all.forEach(function(e){var o=document.createElement('option');o.value=e['Employee ID'];o.textContent=e['Name'];sel.appendChild(o);});
+  if(cur)sel.value=cur;
+}
+function renderAdminTasksTable(){
+  var box=document.getElementById('admtTasksTable');if(!box||!currentUser)return;
+  var all=(allData.TeamTasks||[]).filter(function(t){return t['Assigned By']===currentUser.userId;});
+  var fEmpSel=document.getElementById('admt_filterEmp'),fStat=document.getElementById('admt_filterStatus');
+  var rows=all;
+  if(fEmpSel&&fEmpSel.value)rows=rows.filter(function(t){return t['Assigned To']===fEmpSel.value;});
+  if(fStat&&fStat.value)rows=rows.filter(function(t){return (t['Status']||'Pending')===fStat.value;});
+  var pending=all.filter(function(t){return (t['Status']||'Pending')==='Pending';}).length;
+  var done=all.filter(function(t){return t['Status']==='Done';}).length;
+  var statsEl=document.getElementById('admtTasksStats');
+  if(statsEl)statsEl.innerHTML=mkStats([
+    {label:'Total Assigned',value:all.length,sub:'tasks',color:'purple'},
+    {label:'Pending',value:pending,sub:'not done yet',color:'amber'},
+    {label:'Done',value:done,sub:'completed',color:'green'}
+  ]);
+  if(!rows.length){box.innerHTML='<div class="no-data">Koi task nahi mila</div>';return;}
+  rows=rows.slice().sort(function(a,b){
+    var aDone=(a['Status']==='Done')?1:0,bDone=(b['Status']==='Done')?1:0;
+    if(aDone!==bDone)return aDone-bDone;
+    return (b['Date Assigned']||'').localeCompare(a['Date Assigned']||'');
+  });
+  var h='<table><thead><tr><th>Date</th><th>Employee</th><th>Client</th><th>Task</th><th>Status</th><th>Remarks</th><th>Completed</th><th></th></tr></thead><tbody>';
+  rows.forEach(function(t){
+    var isDone=t['Status']==='Done';
+    var isSelf=t['Assigned To']===currentUser.userId;
+    h+='<tr><td>'+(t['Date Assigned']||'-')+'</td><td style="font-weight:600;">'+(isSelf?'&#128100; Myself':(t['Assigned To Name']||'-'))+'</td><td>'+(t['Client Name']||'-')+'</td><td style="white-space:normal;max-width:220px;">'+(t['Task']||'-')+'</td>'
+      +'<td><span class="badge '+(isDone?'green':'amber')+'">'+(t['Status']||'Pending')+'</span></td>'
+      +'<td style="white-space:normal;max-width:200px;color:var(--muted);">'+(t['Remarks']||'-')+'</td>'
+      +'<td>'+(t['Completed Date']||'-')+'</td>'
+      +'<td><button class="btn-edit" onclick="openEditTeamTaskModal('+t['_rowNum']+')">&#9998;</button><button class="btn-del" onclick="confirmDel(\'TeamTasks\','+t['_rowNum']+')">&#128465;</button></td></tr>';
+  });
+  h+='</tbody></table>';
+  box.innerHTML=h;
+}
+function openAdminAssignTaskModal(){
+  var team=adminAllTaskEmployees();
+  var h='<div class="modal-title">&#128221; Naya Task Assign Karein</div>';
+  h+='<div class="form-group"><label>Kisko Task Dena Hai</label><select id="at_emp">'+team.map(function(e){return '<option value="'+e['Employee ID']+'">'+e['Name']+'</option>';}).join('')+'</select></div>';
+  h+='<div class="form-group"><label>Client Name (optional)</label><input type="text" id="at_client" placeholder="e.g. Ramesh Kumar"></div>';
+  h+='<div class="form-group"><label>Task Kya Karna Hai</label><textarea id="at_task" rows="3" placeholder="e.g. Is client ko call karo, meeting karke aao"></textarea></div>';
+  h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-submit" onclick="submitAssignTask()">Assign Task</button></div>';
+  document.getElementById('modalBox').innerHTML=h;
+  document.getElementById('modal').className='show';
+}
 function populateTeamTaskEmpSelect(){
   var sel=document.getElementById('tt_filterEmp');if(!sel||!currentUser)return;
-  var team=teamMembersOf(currentUser.userId);
+  var team=taskAssignableEmployees();
   var cur=sel.value;
   sel.innerHTML='<option value="">All Team Members</option>';
   team.forEach(function(e){var o=document.createElement('option');o.value=e['Employee ID'];o.textContent=e['Name'];sel.appendChild(o);});
   if(cur)sel.value=cur;
 }
 function openAssignTaskModal(){
-  var team=teamMembersOf(currentUser.userId);
-  if(!team.length){showToast('Aapki team me koi member nahi hai','error');return;}
+  var team=taskAssignableEmployees();
   var h='<div class="modal-title">&#128221; Naya Task Assign Karein</div>';
-  h+='<div class="form-group"><label>Team Member</label><select id="at_emp">'+team.map(function(e){return '<option value="'+e['Employee ID']+'">'+e['Name']+'</option>';}).join('')+'</select></div>';
+  h+='<div class="form-group"><label>Kisko Task Dena Hai</label><select id="at_emp">'+team.map(function(e){return '<option value="'+e['Employee ID']+'">'+e['Name']+'</option>';}).join('')+'</select></div>';
   h+='<div class="form-group"><label>Client Name (optional)</label><input type="text" id="at_client" placeholder="e.g. Ramesh Kumar"></div>';
   h+='<div class="form-group"><label>Task Kya Karna Hai</label><textarea id="at_task" rows="3" placeholder="e.g. Is client ko call karo, meeting karke aao"></textarea></div>';
   h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-submit" onclick="submitAssignTask()">Assign Task</button></div>';
@@ -3321,9 +3420,10 @@ function submitAssignTask(){
   var client=document.getElementById('at_client').value.trim();
   var task=document.getElementById('at_task').value.trim();
   if(!task){showToast('Task likhna zaroori hai','error');return;}
-  var emp=employees.find(function(e){return e['Employee ID']===empId;});
+  var isSelf=empId===currentUser.userId;
+  var emp=isSelf?{'Name':currentUser.name,'Branch':currentUser.branch||''}:employees.find(function(e){return e['Employee ID']===empId;});
   if(!emp){showToast('Employee nahi mila','error');return;}
-  var p={action:'addTeamTask','Date Assigned':td(),'Assigned By':currentUser.userId,'Assigned By Name':currentUser.name,'Assigned To':empId,'Assigned To Name':emp['Name'],'Branch':emp['Branch']||'','Client Name':client,'Task':task,'Status':'Pending'};
+  var p={action:'addTeamTask','Date Assigned':td(),'Assigned By':currentUser.userId,'Assigned By Name':currentUser.name,'Assigned To':empId,'Assigned To Name':(isSelf?'Myself':emp['Name']),'Branch':emp['Branch']||'','Client Name':client,'Task':task,'Status':'Pending'};
   postData(p).then(function(r){
     if(r&&r.success){showToast('Task assign ho gaya','success');closeModal();setTimeout(function(){loadAll(2);},600);}
     else showToast('Failed: '+(r&&r.error||''),'error');
@@ -3331,9 +3431,7 @@ function submitAssignTask(){
 }
 function renderTeamTasksTable(){
   var box=document.getElementById('teamTasksTable');if(!box||!currentUser)return;
-  var team=teamMembersOf(currentUser.userId);
-  var teamIds=team.map(function(e){return e['Employee ID'];});
-  var all=(allData.TeamTasks||[]).filter(function(t){return teamIds.indexOf(t['Assigned To'])!==-1&&t['Assigned By']===currentUser.userId;});
+  var all=(allData.TeamTasks||[]).filter(function(t){return t['Assigned By']===currentUser.userId;});
   var fEmpSel=document.getElementById('tt_filterEmp'),fStat=document.getElementById('tt_filterStatus');
   var rows=all;
   if(fEmpSel&&fEmpSel.value)rows=rows.filter(function(t){return t['Assigned To']===fEmpSel.value;});
@@ -3347,11 +3445,16 @@ function renderTeamTasksTable(){
     {label:'Done',value:done,sub:'completed',color:'green'}
   ]);
   if(!rows.length){box.innerHTML='<div class="no-data">Koi task nahi mila</div>';return;}
-  rows=rows.slice().sort(function(a,b){return (b['Date Assigned']||'').localeCompare(a['Date Assigned']||'');});
+  rows=rows.slice().sort(function(a,b){
+    var aDone=(a['Status']==='Done')?1:0,bDone=(b['Status']==='Done')?1:0;
+    if(aDone!==bDone)return aDone-bDone;
+    return (b['Date Assigned']||'').localeCompare(a['Date Assigned']||'');
+  });
   var h='<table><thead><tr><th>Date</th><th>Employee</th><th>Client</th><th>Task</th><th>Status</th><th>Remarks</th><th>Completed</th><th></th></tr></thead><tbody>';
   rows.forEach(function(t){
     var isDone=t['Status']==='Done';
-    h+='<tr><td>'+(t['Date Assigned']||'-')+'</td><td style="font-weight:600;">'+(t['Assigned To Name']||'-')+'</td><td>'+(t['Client Name']||'-')+'</td><td style="white-space:normal;max-width:220px;">'+(t['Task']||'-')+'</td>'
+    var isSelf=t['Assigned To']===currentUser.userId;
+    h+='<tr><td>'+(t['Date Assigned']||'-')+'</td><td style="font-weight:600;">'+(isSelf?'&#128100; Myself':(t['Assigned To Name']||'-'))+'</td><td>'+(t['Client Name']||'-')+'</td><td style="white-space:normal;max-width:220px;">'+(t['Task']||'-')+'</td>'
       +'<td><span class="badge '+(isDone?'green':'amber')+'">'+(t['Status']||'Pending')+'</span></td>'
       +'<td style="white-space:normal;max-width:200px;color:var(--muted);">'+(t['Remarks']||'-')+'</td>'
       +'<td>'+(t['Completed Date']||'-')+'</td>'
@@ -3363,9 +3466,9 @@ function renderTeamTasksTable(){
 function openEditTeamTaskModal(rowNum){
   var t=(allData.TeamTasks||[]).find(function(x){return String(x['_rowNum'])===String(rowNum);});
   if(!t){showToast('Task nahi mila','error');return;}
-  var team=teamMembersOf(currentUser.userId);
+  var team=(currentUser&&currentUser.role==='admin')?adminAllTaskEmployees():taskAssignableEmployees();
   var h='<div class="modal-title">&#9998; Task Edit Karein</div>';
-  h+='<div class="form-group"><label>Team Member</label><select id="ett_emp">'+team.map(function(e){return '<option value="'+e['Employee ID']+'"'+(e['Employee ID']===t['Assigned To']?' selected':'')+'>'+e['Name']+'</option>';}).join('')+'</select></div>';
+  h+='<div class="form-group"><label>Kisko Task Diya</label><select id="ett_emp">'+team.map(function(e){return '<option value="'+e['Employee ID']+'"'+(e['Employee ID']===t['Assigned To']?' selected':'')+'>'+e['Name']+'</option>';}).join('')+'</select></div>';
   h+='<div class="form-group"><label>Client Name (optional)</label><input type="text" id="ett_client" value="'+siEsc(t['Client Name']||'')+'"></div>';
   h+='<div class="form-group"><label>Task Kya Karna Hai</label><textarea id="ett_task" rows="3">'+siEsc(t['Task']||'')+'</textarea></div>';
   h+='<div class="form-group"><label>Status</label><select id="ett_status"><option'+((t['Status']||'Pending')==='Pending'?' selected':'')+'>Pending</option><option'+(t['Status']==='Done'?' selected':'')+'>Done</option></select></div>';
@@ -3376,7 +3479,8 @@ function openEditTeamTaskModal(rowNum){
 }
 function submitEditTeamTask(rowNum){
   var empId=document.getElementById('ett_emp').value;
-  var emp=employees.find(function(e){return e['Employee ID']===empId;});
+  var isSelf=empId===currentUser.userId;
+  var emp=isSelf?{'Name':'Myself','Branch':currentUser.branch||''}:employees.find(function(e){return e['Employee ID']===empId;});
   var task=(document.getElementById('ett_task').value||'').trim();
   if(!task){showToast('Task likhna zaroori hai','error');return;}
   var vals={
@@ -6433,7 +6537,7 @@ function renderMyAttendance(){
 
 function mkLeads(rows,showEmp,canDel){
   if(!rows||!rows.length)return '<div class="no-data">No leads found</div>';
-  var h='<table><thead><tr><th>Date</th>'+(showEmp?'<th>Employee</th>':'')+'<th>Client</th><th>Phone</th><th>Category</th><th>Contact</th><th>Meeting</th><th>Follow Up</th><th>Remarks</th><th>Converted</th><th>Actions</th></tr></thead><tbody>';
+  var h='<table><thead><tr><th>Date</th>'+(showEmp?'<th>Employee</th>':'')+'<th>Client</th><th>Phone</th><th>Category</th><th>Contact</th><th>Meeting</th><th>Follow Up</th><th>Remarks</th><th>Last Call</th><th>Converted</th><th>Actions</th></tr></thead><tbody>';
   rows.slice().reverse().forEach(function(r){
     var cat=r['Category']||'-',met=r['Meeting Done']||'No';
     var catC={'SIP/MF':'green','Insurance':'blue','Account':'purple','Student':'pink','Other':'amber'}[cat]||'blue';
@@ -6444,13 +6548,56 @@ function mkLeads(rows,showEmp,canDel){
       '<td><span class="badge '+(met==='Yes'?'green':'amber')+'">'+met+'</span></td>'+
       '<td>'+(r['Follow Up']||'-')+'</td>'+
       '<td style="max-width:120px;white-space:normal;font-size:12px;">'+(r['Remarks']||'-')+'</td>'+
+      '<td style="max-width:130px;white-space:normal;font-size:12px;">'+(r['Last Call Date']?('<b>'+r['Last Call Date']+'</b><br><span style="color:var(--muted);">'+(r['Last Call Remarks']||'')+'</span>'):'-')+'</td>'+
       '<td><span class="badge '+(conv?'green':'amber')+'">'+(conv?'Yes':'No')+'</span></td>'+
-      '<td>'+(canDel&&r._rowNum?'<button class="btn-edit" onclick="openEdit(\'Leads\','+r._rowNum+',this.closest(\'tr\'))">&#9998;</button> <button class="btn-del" onclick="confirmDel(\'Leads\','+r._rowNum+')">&#128465;</button>':'-')+
+      '<td>'+(r._rowNum?'<button class="btn-edit" style="background:rgba(63,191,127,0.15);color:var(--accent);" onclick="openLeadCallModal('+r._rowNum+')">&#128222; Follow Call</button>':'')+' '+
+      (canDel&&r._rowNum?'<button class="btn-edit" onclick="openEdit(\'Leads\','+r._rowNum+',this.closest(\'tr\'))">&#9998;</button> <button class="btn-del" onclick="confirmDel(\'Leads\','+r._rowNum+')">&#128465;</button>':'')+
       (!conv&&r._rowNum?' <button class="btn-edit" style="background:rgba(63,191,127,0.15);color:var(--accent);" onclick="markLeadConverted('+r._rowNum+')">&#10003; Converted</button>':'')+
       '</td>'+
       '</tr>';
   });
   return h+'</tbody></table>';
+}
+function openLeadCallModal(rowNum){
+  var row=(allData.Leads||[]).find(function(r){return String(r['_rowNum'])===String(rowNum);});
+  if(!row){showToast('Lead not found - reloading','error');loadAll();return;}
+  var html='<div class="modal-title">&#128222; Follow Call &#8212; '+(row['Client Name']||'')+'</div>';
+  html+='<p style="color:var(--muted,#8a94a6);font-size:12px;margin:-8px 0 14px;">'+(row['Client Phone']?row['Client Phone']+' &#183; <a href="tel:'+row['Client Phone']+'" style="color:var(--accent,#3fbf7f);font-weight:700;text-decoration:none;">&#128222; Call Now</a>':'<span style="color:var(--danger);">No phone number saved</span>')+'</p>';
+  if(row['Last Call Date']){
+    html+='<div style="background:rgba(63,191,127,0.1);border:1px solid rgba(63,191,127,0.3);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px;">';
+    html+='<b style="color:var(--accent,#3fbf7f);">Last baat &#8212; '+row['Last Call Date']+'</b><br>';
+    html+='<span style="color:var(--muted,#8a94a6);">'+(row['Last Call Remarks']||'(no remarks were added)')+'</span>';
+    html+='</div>';
+  } else {
+    html+='<div style="color:var(--muted,#8a94a6);font-size:12px;margin-bottom:14px;">No call log exists yet for this lead.</div>';
+  }
+  html+='<div class="form-group"><label>Today\'s Call Remarks (what was discussed)</label><textarea id="leadCallRemarks" placeholder="e.g. Interested, call again next week..."></textarea></div>';
+  html+='<div class="form-group"><label style="display:flex;align-items:center;gap:6px;font-weight:400;"><input type="checkbox" id="leadCallSetReminder" onchange="document.getElementById(\'leadCallReminderDateWrap\').style.display=this.checked?\'block\':\'none\'" style="width:auto;"> Future ke liye reminder bhi lagayein</label></div>';
+  html+='<div class="form-group" id="leadCallReminderDateWrap" style="display:none;"><label>Reminder Date</label><input type="date" id="leadCallReminderDate"></div>';
+  html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="saveLeadCall('+rowNum+')">Save Call Log</button></div>';
+  document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
+}
+function saveLeadCall(rowNum){
+  var row=(allData.Leads||[]).find(function(r){return String(r['_rowNum'])===String(rowNum);});
+  var remarks=(document.getElementById('leadCallRemarks').value||'').trim();
+  var vals={'Last Call Date':td(),'Last Call Remarks':remarks};
+  var wantReminder=document.getElementById('leadCallSetReminder').checked;
+  var remDate=wantReminder?(document.getElementById('leadCallReminderDate').value||''):'';
+  if(wantReminder&&!remDate){showToast('Reminder date chunein','error');return;}
+  postData({action:'editRow',sheet:'Leads',rowNum:rowNum,vals:vals}).then(function(r){
+    if(r&&r.success){
+      patchRowLocal('Leads',rowNum,vals);
+      var after=function(){
+        closeModal();
+        showToast('Call log saved'+(wantReminder?' + reminder set':''),'success');
+        renderPage(curPage());
+        setTimeout(function(){loadAll(2);},600);
+      };
+      if(wantReminder&&row){
+        postData({action:'addGeneric',sheet:'Reminders','Date Added':td(),'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch,'Client Name':row['Client Name']||'','Client ID':'','Note':'Follow up call - '+(remarks||row['Client Name']||''),'Reminder Date':remDate,'Reminder Time':'','Status':'Pending'}).then(after).catch(after);
+      } else after();
+    } else showToast('Save failed','error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
 function markLeadConverted(rowNum){
   postData({action:'editRow',sheet:'Leads',rowNum:rowNum,vals:{'Converted':'Yes'}}).then(function(r){
@@ -9688,6 +9835,7 @@ function renderCCLTypeStats(){
   var all=cclRosterScoped();
   var intradayN=all.filter(function(r){return (r['Trading Type']||'')==='Intraday'&&(r['Status']||'Active')==='Active';}).length;
   var swingN=all.filter(function(r){return (r['Trading Type']||'')==='Swing Trading'&&(r['Status']||'Active')==='Active';}).length;
+  var ltN=all.filter(function(r){return (r['Trading Type']||'')==='Long Term Investment'&&(r['Status']||'Active')==='Active';}).length;
   var breakN=all.filter(function(r){return (r['Status']||'Active')==='Break';}).length;
   var selfN=all.filter(function(r){return (r['Trading Type']||'')==='Self Trade'&&(r['Status']||'Active')==='Active';}).length;
   var ledgerMap=holdingLedgerMap();
@@ -9695,13 +9843,14 @@ function renderCCLTypeStats(){
   el.innerHTML=mkStats([
     {label:'Intraday Clients',value:intradayN,sub:'click to call',color:'blue',onclick:"setCCLType('intraday')"},
     {label:'Swing Clients',value:swingN,sub:'click to call',color:'purple',onclick:"setCCLType('swing')"},
+    {label:'Long Term Investors',value:ltN,sub:'click to call',color:'pink',onclick:"setCCLType('longterm')"},
     {label:'On Break',value:breakN,sub:'on a break from trading',color:'amber',onclick:"setCCLType('break')"},
     {label:'Trade Independently',value:selfN,sub:'no call needed',color:'green',onclick:"setCCLType('selftrade')"},
     {label:'Fund Available',value:fundN,sub:'has balance - call to trade',color:'green',onclick:"setCCLType('fund')"}
   ]);
   var lbl=document.getElementById('cclFilterLabel');
   if(lbl){
-    var names={intraday:'Intraday',swing:'Swing',break:'On Break',selftrade:'Trade Independently',fund:'Fund Available'};
+    var names={intraday:'Intraday',swing:'Swing',longterm:'Long Term Investors',break:'On Break',selftrade:'Trade Independently',fund:'Fund Available'};
     lbl.innerHTML=cclTypeF==='all'?'':('Showing: '+names[cclTypeF]+' &#8212; <span style="cursor:pointer;text-decoration:underline;" onclick="setCCLType(\''+cclTypeF+'\')">Clear Filter</span>');
   }
 }
@@ -9751,6 +9900,8 @@ function cclRows(){
     rows=rows.filter(function(r){return (r['Trading Type']||'')==='Intraday'&&(r['Status']||'Active')==='Active';});
   } else if(cclTypeF==='swing'){
     rows=rows.filter(function(r){return (r['Trading Type']||'')==='Swing Trading'&&(r['Status']||'Active')==='Active';});
+  } else if(cclTypeF==='longterm'){
+    rows=rows.filter(function(r){return (r['Trading Type']||'')==='Long Term Investment'&&(r['Status']||'Active')==='Active';});
   } else {
     if(!cclShowInactive)rows=rows.filter(function(r){return (r['Status']||'Active')==='Active';});
   }
@@ -10019,20 +10170,31 @@ function openAccCallModal(rowNum){
     html+='<div style="color:var(--muted,#8a94a6);font-size:12px;margin-bottom:14px;">No call log exists yet for this client.</div>';
   }
   html+='<div class="form-group"><label>Today\'s Call Remarks (what was discussed)</label><textarea id="accCallRemarks" placeholder="e.g. Needs SIP restart, call again next week..."></textarea></div>';
+  html+='<div class="form-group"><label style="display:flex;align-items:center;gap:6px;font-weight:400;"><input type="checkbox" id="accCallSetReminder" onchange="document.getElementById(\'accCallReminderDateWrap\').style.display=this.checked?\'block\':\'none\'" style="width:auto;"> Future ke liye reminder bhi lagayein</label></div>';
+  html+='<div class="form-group" id="accCallReminderDateWrap" style="display:none;"><label>Reminder Date</label><input type="date" id="accCallReminderDate"></div>';
   html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="saveAccCall('+rowNum+')">Save Call Log</button></div>';
   document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
 }
 function saveAccCall(rowNum){
+  var row=(allData.Accounts||[]).find(function(r){return String(r['_rowNum'])===String(rowNum);});
   var remarks=(document.getElementById('accCallRemarks').value||'').trim();
   var vals={'Last Call Date':td(),'Last Call Remarks':remarks};
+  var wantReminder=document.getElementById('accCallSetReminder').checked;
+  var remDate=wantReminder?(document.getElementById('accCallReminderDate').value||''):'';
+  if(wantReminder&&!remDate){showToast('Reminder date chunein','error');return;}
   postData({action:'editRow',sheet:'Accounts',rowNum:rowNum,vals:vals}).then(function(r){
-    closeModal();
     if(r&&r.success){
-      showToast('Call log saved','success');
       patchRowLocal('Accounts',rowNum,vals);
-      renderPage(curPage());
-      setTimeout(function(){loadAll(2);},600);
-    } else showToast('Save failed','error');
+      var after=function(){
+        closeModal();
+        showToast('Call log saved'+(wantReminder?' + reminder set':''),'success');
+        renderPage(curPage());
+        setTimeout(function(){loadAll(2);},600);
+      };
+      if(wantReminder&&row){
+        postData({action:'addGeneric',sheet:'Reminders','Date Added':td(),'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch,'Client Name':row['Client Name']||'','Client ID':row['Client ID']||'','Note':'Follow up call - '+(remarks||row['Client Name']||''),'Reminder Date':remDate,'Reminder Time':'','Status':'Pending'}).then(after).catch(after);
+      } else after();
+    } else {closeModal();showToast('Save failed','error');}
   }).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
 }
 function ctRows(){var __team2=currentUser?teamMembersOf(currentUser.userId):[];if(__team2.length>0&&!(currentUser&&currentUser.role==='admin')){var __sel2=document.getElementById('ct_empFilter');var __v2=__sel2?__sel2.value:'';var __rows2=allData.CallTrade||[];if(__v2){return fEmpStrict(__rows2,__v2);}var __scopeIds2=[currentUser.userId].concat(__team2.map(function(e){return e['Employee ID'];}));return fEmpStrict(__rows2,__scopeIds2);}
