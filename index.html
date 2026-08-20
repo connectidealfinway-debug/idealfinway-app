@@ -340,16 +340,19 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       <div class="nav-item" onclick="showPage('healthCheck')">&#127981; Health Check</div>
       <div class="nav-item" onclick="showPage('growthTrack')">&#128200; Growth &amp; Targets</div>
       <div class="nav-item" onclick="showPage('client360')">&#128269; Client Search</div>
-      <div class="nav-item" onclick="showPage('tradingJournal')">&#128200; Trading Journal</div>
-      <div class="nav-item" onclick="showPage('callTrade')">&#128222; Call &amp; Trade</div>
-      <div class="nav-item" onclick="showPage('watchlist')">&#11088; Watchlist</div>
-      <div class="nav-item" onclick="showPage('reminders')">&#128276; Reminders</div>
-      <div class="nav-item" onclick="showPage('clientHolding')">&#128188; Client Holding</div>
-      <div class="nav-item" onclick="showPage('settlement')">&#128184; Settlement</div>
       <div class="nav-item" onclick="showPage('adminEmps')">&#128101; Employee Performance</div>
       <div class="nav-item" onclick="showPage('contest')">&#127942; Contests</div>
       <div class="nav-item" onclick="showPage('finDash')">&#128176; Finance Dashboard</div>
       <div class="nav-item" onclick="showPage('ipo')">&#128200; IPO</div>
+      <div class="nav-item" onclick="showPage('callTrade')">&#128222; Call &amp; Trade</div>
+      <div class="nav-sec" onclick="toggleGrp('gToolsA',this)"><span class="arr">&#9656;</span>Daily Tools</div>
+      <div class="nav-grp" id="gToolsA" style="display:none">
+        <div class="nav-item" onclick="showPage('tradingJournal')">&#128200; Trading Journal</div>
+        <div class="nav-item" onclick="showPage('watchlist')">&#11088; Watchlist</div>
+        <div class="nav-item" onclick="showPage('reminders')">&#128276; Reminders</div>
+        <div class="nav-item" onclick="showPage('clientHolding')">&#128188; Client Holding</div>
+        <div class="nav-item" onclick="showPage('settlement')">&#128184; Settlement</div>
+      </div>
       <div class="nav-sec" onclick="toggleGrp('gRep',this)"><span class="arr">&#9656;</span>Reports</div>
       <div class="nav-grp" id="gRep" style="display:none">
         <div class="nav-item" onclick="showPage('adminBrok')">&#36; Brokerage</div>
@@ -393,18 +396,6 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
     <div id="empNav" style="display:none">
       <div class="nav-section">My Work</div>
       <div class="nav-item" onclick="showPage('empDash')">&#9632; Dashboard</div>
-      <div class="nav-item" onclick="showPage('bizOverview')">&#128176; Business Overview</div>
-      <div class="nav-item" onclick="showPage('client360')">&#128269; Client Search</div>
-      <div class="nav-item" onclick="showPage('markAttendance')">&#9711; Attendance</div>
-      <div class="nav-item" onclick="showPage('tradingJournal')">&#128200; Trading Journal</div>
-      <div class="nav-item" onclick="showPage('callTrade')">&#128222; Call &amp; Trade</div>
-      <div class="nav-item" onclick="showPage('watchlist')">&#11088; Watchlist</div>
-      <div class="nav-item" onclick="showPage('reminders')">&#128276; Reminders</div>
-      <div class="nav-item" onclick="showPage('clientHolding')">&#128188; Client Holding</div>
-      <div class="nav-item" onclick="showPage('settlement')">&#128184; Settlement</div>
-      <div class="nav-item" onclick="showPage('contest')">&#127942; Contests</div>
-      <div class="nav-item" id="navMyTeam" style="display:none" onclick="showPage('myTeam')">&#128101; My Team</div>
-      <div class="nav-item" id="navIPO" onclick="showPage('ipo')">&#128200; IPO</div>
       <div class="nav-sec" onclick="toggleGrp('gAdd',this)"><span class="arr">&#9656;</span>Add Entry</div>
       <div class="nav-grp" id="gAdd" style="display:none">
         <div class="nav-item" onclick="showPage('addSIP')">&#43; Mutual Fund</div>
@@ -416,6 +407,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
         <div class="nav-item" id="navAddIncome" style="display:none" onclick="showPage('addIncome')">&#43; Income</div>
         <div class="nav-item" id="navAddExpense" style="display:none" onclick="showPage('addExpense')">&#43; Expense</div>
       </div>
+      <div class="nav-item" id="navMyTeam" style="display:none" onclick="showPage('myTeam')">&#128101; My Team</div>
       <div class="nav-sec" onclick="toggleGrp('gMy',this)"><span class="arr">&#9656;</span>My Records</div>
       <div class="nav-grp" id="gMy" style="display:none">
         <div class="nav-item" onclick="showPage('myBrok')">&#36; Brokerage</div>
@@ -428,6 +420,20 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
         <div class="nav-item" onclick="showPage('myStudents')">My Students</div>
         <div class="nav-item" onclick="showPage('myPoints')">&#11088; My Points</div>
       </div>
+      <div class="nav-item" onclick="showPage('contest')">&#127942; Contests</div>
+      <div class="nav-item" onclick="showPage('client360')">&#128269; Client Search</div>
+      <div class="nav-item" onclick="showPage('callTrade')">&#128222; Call &amp; Trade</div>
+      <div class="nav-sec" onclick="toggleGrp('gToolsE',this)"><span class="arr">&#9656;</span>Daily Tools</div>
+      <div class="nav-grp" id="gToolsE" style="display:none">
+        <div class="nav-item" onclick="showPage('bizOverview')">&#128176; Business Overview</div>
+        <div class="nav-item" onclick="showPage('markAttendance')">&#9711; Attendance</div>
+        <div class="nav-item" onclick="showPage('tradingJournal')">&#128200; Trading Journal</div>
+        <div class="nav-item" onclick="showPage('watchlist')">&#11088; Watchlist</div>
+        <div class="nav-item" onclick="showPage('reminders')">&#128276; Reminders</div>
+        <div class="nav-item" onclick="showPage('clientHolding')">&#128188; Client Holding</div>
+        <div class="nav-item" onclick="showPage('settlement')">&#128184; Settlement</div>
+      </div>
+      <div class="nav-item" id="navIPO" onclick="showPage('ipo')">&#128200; IPO</div>
     </div>
     <div class="nav-item" id="navMyProfile" onclick="showPage('myProfile')" style="margin:0 12px 8px;border-radius:8px;">&#128100; My Profile <span id="myProfileAlert" style="display:none;color:var(--danger);font-weight:700;">&#9679;</span></div>
     <div class="sidebar-bottom"><button class="theme-switch" id="themeSwitchBtn" onclick="toggleTheme()">&#9788; Light Mode</button><button class="btn-logout" onclick="logout()">&#8592; Logout</button></div>
@@ -940,6 +946,12 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
     <!-- CALL AND TRADE -->
     <div class="page" id="page-callTrade">
       <div class="page-header"><h1>Call and Trade</h1><p>Daily calling list — click a client to log call &amp; trade (separate from Accounts, no brokerage impact)</p></div>
+      <div style="margin-bottom:14px;display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="tab-btn active" id="ctModeTabTrading" onclick="setCTMode('trading')">&#128222; Trading Calls</button>
+        <button class="tab-btn" id="ctModeTabIPO" onclick="setCTMode('ipo')">&#128203; IPO Calling List</button>
+      </div>
+
+      <div id="ctModeTrading">
       <div class="form-card" id="ctEmpFilterCard" style="display:none;margin-bottom:16px;">
         <div class="form-group"><label>Employee</label>
           <select id="ct_empFilter" onchange="renderCallTradePage()"><option value="">All Employees</option></select>
@@ -986,6 +998,30 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
         <input class="srch" id="srch-ct" placeholder="&#128269; Search log..." oninput="renderCallTradePage()">
       </div>
       <div class="table-wrap"><div class="table-inner" id="ctTable"></div></div>
+      </div>
+
+      <div id="ctModeIPO" style="display:none;">
+        <div class="form-card" style="margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:space-between;">
+          <div><b>Current IPO Round:</b> <span id="ipoclRoundName" style="color:var(--accent,#3fbf7f);font-weight:700;">-</span></div>
+          <button class="btn-call" style="background:rgba(255,159,10,0.15);color:#ff9f0a;" onclick="openIPORoundModal()">&#128260; Start / Update IPO Round</button>
+        </div>
+        <div style="margin-bottom:16px;">
+          <button class="btn-submit" style="width:auto;display:inline-block;padding:10px 20px;" onclick="toggleIPOCLForm()">&#10133; Add Client to IPO Calling List</button>
+        </div>
+        <div class="form-card form-grid" id="ipoclFormCard" style="display:none;">
+          <div class="form-group" id="ipocl_forEmpGroup" style="display:none"><label>For Which Employee?</label><select id="ipocl_forEmp"></select></div>
+          <div class="form-group"><label>Client ID</label><input type="text" id="ipocl_cid" placeholder="e.g. FBO1234"></div>
+          <div class="form-group"><label>Client Name</label><input type="text" id="ipocl_cname" placeholder="Enter client name"></div>
+          <div class="form-group"><label>Client Phone</label><input type="tel" id="ipocl_cphone" placeholder="10-digit mobile"></div>
+          <div class="form-group"><label>Remarks (optional)</label><textarea id="ipocl_remarks" rows="2" placeholder="Add a note if any"></textarea></div>
+          <button class="btn-submit" onclick="submitIPOCallClient()">Add to IPO List</button>
+        </div>
+        <div class="stats-grid" id="ipoclStats"></div>
+        <div class="filter-bar">
+          <input class="srch" id="srch-ipocl" placeholder="&#128269; Search client..." oninput="renderIPOCallList()">
+        </div>
+        <div class="table-wrap"><div class="table-inner" id="ipoclTable"></div></div>
+      </div>
     </div>
 
     <!-- WATCHLIST -->
@@ -2586,7 +2622,7 @@ function renderMyTeamData(){
   document.getElementById('teamInsTable').innerHTML=mkTable(ins,[{k:'Date',l:'Date'},{k:'Employee Name',l:'Employee'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Policy ID'},{k:'Client Phone',l:'Phone'},{k:'Type',l:'Type'},{k:'Premium',l:'Premium',money:true}],'Insurance');
   document.getElementById('teamStudTable').innerHTML=mkStudentTable(stud,true);
 
-  var cclAll=fEmpStrict(allData.CallClients||[],uid);
+  var cclAll=fEmpStrict((allData.CallClients||[]).filter(function(r){return !isIPOPurpose(r);}),uid);
   var ctAll=fEmpStrict(allData.CallTrade||[],uid);
   var cclActive=cclAll.filter(function(r){return (r['Status']||'Active')==='Active';});
   var todayStr2=td();
@@ -2688,7 +2724,7 @@ function renderPage(id){
   else if(id==='myMeetings')renderMyMeetings();
   else if(id==='myTeam')renderMyTeamPage();
   else if(id==='tradingJournal')renderTradingJournalPage();
-  else if(id==='callTrade')renderCallTradePage();
+  else if(id==='callTrade'){renderCallTradePage();if(ctMode==='ipo')renderIPOCallList();}
   else if(id==='watchlist')renderWatchlistPage();
   else if(id==='clientHolding')renderClientHoldingPage();
   else if(id==='settlement')renderSettlementPage();
@@ -3898,43 +3934,60 @@ function mkAccTable(rows,dupSet,sortMode,amtMap){
     var nseDone=(r['NSE Trade Done']||'')==='Yes';
     var nseBtn=nseDone?'<button class="badge green" style="border:none;cursor:pointer;" onclick="undoNSETradeDone('+r['_rowNum']+')" title="NSE trade done on '+(r['NSE Trade Date']||'')+' — click to undo if marked by mistake">&#10003; NSE Trade</button>':'<button class="btn-call" style="background:rgba(255,159,10,0.15);color:#ff9f0a;" onclick="markNSETradeDone('+r['_rowNum']+')" title="Click here once the client has completed an NSE trade">&#128200; Trade Done?</button>';
     var mapBtn=(isDup&&currentUser&&currentUser.role==='admin')?('<button class="btn-call" style="background:rgba(63,191,127,0.15);color:#3fbf7f;" onclick="mapAccountDuplicate(\''+cid+'\','+(r['_rowNum']||0)+')" title="Keep THIS employee for this Client ID - deletes the other duplicate entry(ies)">&#128279; Map</button> '):'';
-    var inCT=(allData.CallClients||[]).some(function(c){return (c['Client ID']||'').trim()===cid;});
-    var ctBtn=inCT?'<span class="badge blue" style="margin-left:2px;" title="Ye client Call &amp; Trade calling list me hai">&#128222; In Call &amp; Trade</span>':('<button class="btn-call" style="background:rgba(10,132,255,0.15);color:#0a84ff;" onclick="shiftAccountToCallTrade('+r['_rowNum']+')" title="Is account ko Call &amp; Trade (daily calling list) me shift karo">&#128222;&#8594; Shift to Call &amp; Trade</button>');
+    var ctEntry=callTradeEntryFor(cid);
+    var ctBtn;
+    if(ctEntry){
+      ctBtn=isIPOPurpose(ctEntry)?'<span class="badge amber" style="margin-left:2px;" title="Ye client IPO Calling List me hai - sirf naya IPO aane par call jayega">&#128203; In IPO List</span>':'<span class="badge blue" style="margin-left:2px;" title="Ye client Call &amp; Trade calling list me hai">&#128222; In Call &amp; Trade</span>';
+    }else{
+      ctBtn='<button class="btn-call" style="background:rgba(10,132,255,0.15);color:#0a84ff;" onclick="shiftAccountToCallTrade('+r['_rowNum']+')" title="Is account ko Call &amp; Trade (daily calling list) me shift karo">&#128222;&#8594; Call &amp; Trade</button> <button class="btn-call" style="background:rgba(255,159,10,0.15);color:#ff9f0a;" onclick="shiftAccountToIPOList('+r['_rowNum']+')" title="Is account ko IPO Calling List me shift karo - sirf naya IPO aane par isko call jayega">&#128203;&#8594; IPO List</button>';
+    }
     h+='<td>'+mapBtn+'<button class="btn-call" onclick="openAccCallModal('+r['_rowNum']+')">&#128222;</button> <button class="btn-call" style="background:rgba(139,92,246,0.15);color:#8b5cf6;" onclick="openAccHoldingModal('+r['_rowNum']+')" title="View stock holding">&#128188;</button> <button class="btn-edit" onclick="openAccEditModal('+r['_rowNum']+')">&#9998;</button> <button class="btn-del" onclick="confirmDel(\'Accounts\','+r['_rowNum']+')">&#128465;</button> '+nseBtn+' '+ctBtn+'</td></tr>';
   });
   return h+'</tbody></table>';
 }
-/* v72: Accounts -> Call & Trade. Shared helper: adds a client into the Call & Trade daily-calling
-   roster (CallClients sheet) via the generic addGeneric backend action (no new backend action/sheet-
-   column needed). Never deletes/touches the Accounts record - CallClients is purely additive.
-   Idempotent by design at every call site (each caller checks isInCallTrade() first). */
+/* v72/v73: Accounts -> Call & Trade / IPO Calling List. Shared helper: adds a client into the
+   CallClients roster via the generic addGeneric backend action (no new backend action needed,
+   getSheet() auto-migrates new columns - see idealfinway_apps_script_editing_technique memory).
+   Never deletes/touches the Accounts record - CallClients is purely additive.
+   v73 splits CallClients into TWO purposes via a new 'Call Purpose' column: '' / 'Trading' (default,
+   existing 3800+ rows, unchanged meaning) vs 'IPO' (new - clients who ONLY get called when a fresh
+   IPO launches, tracked separately with its own Call/Applied/Category/UPI fields, see renderIPOCallList). */
 function isInCallTrade(cid){
   cid=(cid||'').trim();
   if(!cid)return false;
   return (allData.CallClients||[]).some(function(c){return (c['Client ID']||'').trim()===cid;});
 }
+function callTradeEntryFor(cid){
+  cid=(cid||'').trim();
+  if(!cid)return null;
+  return (allData.CallClients||[]).find(function(c){return (c['Client ID']||'').trim()===cid;})||null;
+}
+function isIPOPurpose(r){return (r&&r['Call Purpose']||'')==='IPO';}
 function addClientToCallTrade(f){
+  var purpose=f.purpose==='IPO'?'IPO':'Trading';
   var p={
     action:'addGeneric',sheet:'CallClients',
     'Client ID':f.cid,'Client Name':f.cname||'','Client Phone':f.cphone||'',
-    'Trading Type':'Call & Trade',
+    'Trading Type':purpose==='IPO'?'':'Call & Trade',
+    'Call Purpose':purpose,
+    'Current IPO Name':'','IPO Call Status':'','IPO Applied':'','IPO Category':'','UPI ID':'',
     'Employee ID':f.empId||'','Employee Name':f.empName||'','Branch':f.branch||'',
     'Added Date':td(),'Status':'Active','Remarks':f.remarks||'Added from Accounts'
   };
   if(!allData.CallClients)allData.CallClients=[];
   var localRow=Object.assign({},p,{_rowNum:'_local'+Date.now()+Math.random()});
   allData.CallClients.push(localRow);
-  showToast('Call & Trade list me add ho gaya!','success');
+  showToast((purpose==='IPO'?'IPO Calling List':'Call & Trade list')+' me add ho gaya!','success');
   renderPage(curPage());
   postData(p).then(function(res){
     if(!res||!res.success){
       var idx=allData.CallClients.indexOf(localRow);if(idx!==-1)allData.CallClients.splice(idx,1);
-      showToast('Call & Trade save failed - hataya gaya: '+(res&&res.error||''),'error');
+      showToast('Save failed - hataya gaya: '+(res&&res.error||''),'error');
       renderPage(curPage());
     }else{setTimeout(function(){loadAll(2);},600);}
   }).catch(function(e){
     var idx=allData.CallClients.indexOf(localRow);if(idx!==-1)allData.CallClients.splice(idx,1);
-    showToast('Call & Trade network error - hataya gaya: '+e.message,'error');
+    showToast('Network error - hataya gaya: '+e.message,'error');
     renderPage(curPage());
   });
 }
@@ -3943,9 +3996,18 @@ function shiftAccountToCallTrade(rowNum){
   if(!r){showToast('Account not found','error');return;}
   var cid=(r['Client ID']||'').trim();
   if(!cid){showToast('Client ID missing - pehle Client ID add karo','error');return;}
-  if(isInCallTrade(cid)){showToast('Ye client already Call & Trade list me hai','info');return;}
+  if(isInCallTrade(cid)){showToast('Ye client already ek calling list me hai','info');return;}
   if(!confirm('"'+(r['Client Name']||cid)+'" ko Call & Trade (daily calling) list me shift karein?'))return;
-  addClientToCallTrade({cid:cid,cname:r['Client Name'],cphone:r['Client Phone'],empId:r['Employee ID'],empName:r['Employee Name'],branch:r['Branch'],remarks:'Shifted from Accounts'});
+  addClientToCallTrade({cid:cid,cname:r['Client Name'],cphone:r['Client Phone'],empId:r['Employee ID'],empName:r['Employee Name'],branch:r['Branch'],remarks:'Shifted from Accounts',purpose:'Trading'});
+}
+function shiftAccountToIPOList(rowNum){
+  var r=(allData.Accounts||[]).find(function(x){return String(x['_rowNum'])===String(rowNum);});
+  if(!r){showToast('Account not found','error');return;}
+  var cid=(r['Client ID']||'').trim();
+  if(!cid){showToast('Client ID missing - pehle Client ID add karo','error');return;}
+  if(isInCallTrade(cid)){showToast('Ye client already ek calling list me hai','info');return;}
+  if(!confirm('"'+(r['Client Name']||cid)+'" ko IPO Calling List me shift karein? (Sirf IPO aane par isko call jayega)'))return;
+  addClientToCallTrade({cid:cid,cname:r['Client Name'],cphone:r['Client Phone'],empId:r['Employee ID'],empName:r['Employee Name'],branch:r['Branch'],remarks:'Shifted from Accounts',purpose:'IPO'});
 }
 var accMode='completed',myAccMode='completed',accProcessSortBy='',myAccProcessSortBy='';
 function setAccMode(mode){
@@ -6670,9 +6732,17 @@ function submitAccount(){
   var p={action:'addAccount','Date':document.getElementById('a_date').value||td(),'Employee ID':fe.id,'Employee Name':fe.name,'Branch':fe.branch,'Client Name':cn,'Client ID':cid,'Client Phone':cphoneVal,'Status':statusComputed,'Trading Active':actTrading,'SIP Active':actSIP,'Investment Active':actInv,'IPO Active':actIPO,'Remarks':document.getElementById('a_remarks').value.trim(),'Account Type':document.getElementById('a_acctype').value,'Source':document.getElementById('a_source').value,'NSE Trade Done':'No','NSE Trade Date':'','Reference':ref.refBy};
   doSubmit(p,'Accounts',document.querySelector('#page-addAcc .btn-submit'),'Add Account',function(){document.getElementById('a_cname').value='';document.getElementById('a_cid').value='';document.getElementById('a_cphone').value='';document.getElementById('a_remarks').value='';document.getElementById('a_actTrading').checked=false;document.getElementById('a_actSIP').checked=false;document.getElementById('a_actInvestment').checked=false;document.getElementById('a_actIPO').checked=false;document.getElementById('a_reftype').value='Direct';document.getElementById('a_refOther').value='';onRefTypeChange('a');if(document.getElementById('a_addToCT'))document.getElementById('a_addToCT').checked=false;});
   if(dupChk.byId){setTimeout(function(){showDupAccountAddedPopup(dupChk.byId);},400);}
+  /* v73: 'IPO Active' checkbox (already existed for the account's own flags) now ALSO auto-shifts
+     the client into the IPO Calling List, per explicit user request - no separate checkbox needed,
+     just reuse the existing one. Runs before the a_addToCT (Trading) check below so if somehow both
+     are set, IPO wins the single-slot isInCallTrade() race and Trading is silently skipped. */
+  if(actIPO==='Yes'){
+    if(!cid){showToast('Account ban gaya, lekin IPO Calling List ke liye Client ID chahiye - baad me Client ID daal ke Accounts list ke button se add karo','error');}
+    else if(!isInCallTrade(cid)){addClientToCallTrade({cid:cid,cname:cn,cphone:cphoneVal,empId:fe.id,empName:fe.name,branch:fe.branch,remarks:'Added along with new Account (IPO Active)',purpose:'IPO'});}
+  }
   if(addToCTChecked){
     if(!cid){showToast('Account ban gaya, lekin Call & Trade ke liye Client ID chahiye - baad me Client ID daal ke Accounts list ke button se add karo','error');}
-    else if(!isInCallTrade(cid)){addClientToCallTrade({cid:cid,cname:cn,cphone:cphoneVal,empId:fe.id,empName:fe.name,branch:fe.branch,remarks:'Added along with new Account'});}
+    else if(!isInCallTrade(cid)){addClientToCallTrade({cid:cid,cname:cn,cphone:cphoneVal,empId:fe.id,empName:fe.name,branch:fe.branch,remarks:'Added along with new Account',purpose:'Trading'});}
   }
 }
 
@@ -9404,9 +9474,9 @@ function setCCLType(v){
   cclTypeF=(cclTypeF===v)?'all':v;
   renderCallTradePage();
 }
-function cclRosterScoped(){var __team=currentUser?teamMembersOf(currentUser.userId):[];if(__team.length>0&&!(currentUser&&currentUser.role==='admin')){var __sel=document.getElementById('ct_empFilter');var __v=__sel?__sel.value:'';var __rows=allData.CallClients||[];if(__v){return fEmpStrict(__rows,__v);}var __scopeIds=[currentUser.userId].concat(__team.map(function(e){return e['Employee ID'];}));return fEmpStrict(__rows,__scopeIds);}
+function cclRosterScoped(){var __team=currentUser?teamMembersOf(currentUser.userId):[];if(__team.length>0&&!(currentUser&&currentUser.role==='admin')){var __sel=document.getElementById('ct_empFilter');var __v=__sel?__sel.value:'';var __rows=(allData.CallClients||[]).filter(function(r){return !isIPOPurpose(r);});if(__v){return fEmpStrict(__rows,__v);}var __scopeIds=[currentUser.userId].concat(__team.map(function(e){return e['Employee ID'];}));return fEmpStrict(__rows,__scopeIds);}
   var isAdm=currentUser&&currentUser.role==='admin';
-  var rows=allData.CallClients||[];
+  var rows=(allData.CallClients||[]).filter(function(r){return !isIPOPurpose(r);});
   if(isAdm){
     var sel=document.getElementById('ct_empFilter');
     var v=sel?sel.value:'';
@@ -9415,6 +9485,202 @@ function cclRosterScoped(){var __team=currentUser?teamMembersOf(currentUser.user
     rows=fEmpStrict(rows,currentUser.userId);
   }
   return rows;
+}
+/* ===== v73: IPO Calling List (separate from Trading roster above) =====
+   Same CallClients sheet, filtered to Call Purpose==='IPO'. These clients ONLY apply IPOs - no daily
+   trading calls. Workflow per client, in order: Call -> Applied (Yes/No) -> if Yes, Category
+   (Retail/HNI/Big HNI). UPI ID is optional, persisted (not reset by 'Start New IPO Round'). */
+function ipoCLRosterScoped(){
+  var rows=(allData.CallClients||[]).filter(function(r){return isIPOPurpose(r);});
+  var isAdm=currentUser&&currentUser.role==='admin';
+  if(isAdm)return rows;
+  var team=currentUser?teamMembersOf(currentUser.userId):[];
+  if(team.length>0){
+    var scopeIds=[currentUser.userId].concat(team.map(function(e){return e['Employee ID'];}));
+    return fEmpStrict(rows,scopeIds);
+  }
+  return currentUser?fEmpStrict(rows,currentUser.userId):rows;
+}
+function currentIPORoundName(){
+  var rows=(allData.CallClients||[]).filter(function(r){return isIPOPurpose(r);});
+  var counts={};
+  rows.forEach(function(r){var n=(r['Current IPO Name']||'').trim();if(n)counts[n]=(counts[n]||0)+1;});
+  var best='',bestN=0;
+  Object.keys(counts).forEach(function(k){if(counts[k]>bestN){best=k;bestN=counts[k];}});
+  return best;
+}
+function initIPOCLForm(){
+  if(!currentUser)return;
+  var isAdm=currentUser.role==='admin';
+  var team=teamMembersOf(currentUser.userId);
+  var grp=document.getElementById('ipocl_forEmpGroup');
+  var sel=document.getElementById('ipocl_forEmp');
+  if(!sel)return;
+  if(isAdm){
+    grp.style.display='block';
+    sel.innerHTML='';
+    employees.forEach(function(emp){var o=document.createElement('option');o.value=emp['Employee ID'];o.textContent=emp['Name'];sel.appendChild(o);});
+  } else if(team.length){
+    grp.style.display='block';
+    sel.innerHTML='<option value="'+currentUser.userId+'">'+currentUser.name+' (Myself)</option>';
+    team.forEach(function(e){var o=document.createElement('option');o.value=e['Employee ID'];o.textContent=e['Name'];sel.appendChild(o);});
+  } else {
+    grp.style.display='none';
+  }
+}
+function toggleIPOCLForm(){
+  var el=document.getElementById('ipoclFormCard');
+  var show=el.style.display==='none';
+  el.style.display=show?'block':'none';
+  if(show)initIPOCLForm();
+}
+function submitIPOCallClient(){
+  var cid=(document.getElementById('ipocl_cid').value||'').trim();
+  var cname=(document.getElementById('ipocl_cname').value||'').trim();
+  var cphone=(document.getElementById('ipocl_cphone').value||'').trim();
+  if(!cid||!cname){showToast('Please fill Client ID and Client Name','error');return;}
+  if(isInCallTrade(cid)){showToast('Ye client already ek calling list me hai','error');return;}
+  var who=forEmpObj('ipocl_forEmp');
+  var remarks=(document.getElementById('ipocl_remarks').value||'').trim();
+  ['ipocl_cid','ipocl_cname','ipocl_cphone','ipocl_remarks'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  var card=document.getElementById('ipoclFormCard');if(card)card.style.display='none';
+  addClientToCallTrade({cid:cid,cname:cname,cphone:cphone,empId:who.id,empName:who.name,branch:who.branch,remarks:remarks||'Added to IPO Calling List',purpose:'IPO'});
+}
+function ipoCLRows(){
+  var rows=ipoCLRosterScoped();
+  var q=getSrch('srch-ipocl');
+  return srchFilter(rows,q,['Client Name','Client ID','Client Phone','Employee Name']);
+}
+function renderIPOCallList(){
+  var roundName=currentIPORoundName();
+  var elR=document.getElementById('ipoclRoundName');
+  if(elR)elR.textContent=roundName||'(not set - click Start / Update IPO Round)';
+  var rows=ipoCLRows();
+  var total=rows.length;
+  var called=rows.filter(function(r){return r['IPO Call Status']==='Called';}).length;
+  var applied=rows.filter(function(r){return r['IPO Applied']==='Yes';}).length;
+  var notApplied=rows.filter(function(r){return r['IPO Applied']==='No';}).length;
+  var pending=total-called;
+  var elS=document.getElementById('ipoclStats');
+  if(elS)elS.innerHTML=mkStats([
+    {label:'Total IPO Clients',value:total,sub:'in calling list',color:'blue'},
+    {label:'Called',value:called,sub:'contacted for current IPO',color:'green'},
+    {label:'Applied',value:applied,sub:'confirmed application',color:'green'},
+    {label:'Not Applied',value:notApplied,sub:'called but skipped',color:'amber'},
+    {label:'Not Called Yet',value:pending,sub:'still need a call',color:'red'}
+  ]);
+  var elT=document.getElementById('ipoclTable');
+  if(elT)elT.innerHTML=mkIPOCallListTable(rows);
+}
+function mkIPOCallListTable(rows){
+  if(!rows||!rows.length)return '<div class="no-data">Koi IPO calling client nahi hai - upar se add karo ya Accounts se "Shift to IPO List" button se add karo</div>';
+  var isAdm=currentUser&&currentUser.role==='admin';
+  var showEmp=isAdm||(currentUser&&teamMembersOf(currentUser.userId).length>0);
+  var h='<table><thead><tr><th>Client</th><th>Phone</th>'+(showEmp?'<th>Employee</th>':'')+'<th>Call</th><th>Applied</th><th>Category</th><th>UPI ID</th><th>Actions</th></tr></thead><tbody>';
+  rows.slice().reverse().forEach(function(r){
+    var called=r['IPO Call Status']==='Called';
+    var callBadge=called?'<span class="badge green">&#10003; Called</span>':'<span class="badge red">Not Called</span>';
+    var appliedBadge;
+    if(!called)appliedBadge='<span style="color:var(--muted,#8a94a6);font-size:11px;">call pehle karo</span>';
+    else if(r['IPO Applied']==='Yes')appliedBadge='<span class="badge green">Applied</span>';
+    else if(r['IPO Applied']==='No')appliedBadge='<span class="badge red">Not Applied</span>';
+    else appliedBadge='<span class="badge amber">Pending</span>';
+    var catBadge=r['IPO Applied']==='Yes'&&r['IPO Category']?('<span class="badge blue">'+r['IPO Category']+'</span>'):'-';
+    var upiBadge=r['UPI ID']?('<span class="badge green" title="'+r['UPI ID']+'">&#10003; Saved</span>'):'<span style="color:var(--muted,#8a94a6);font-size:11px;">-</span>';
+    h+='<tr><td>'+(r['Client Name']||'-')+'<br><span style="font-size:10px;color:var(--muted,#8a94a6);">'+(r['Client ID']||'')+'</span></td>';
+    h+='<td>'+(r['Client Phone']?('<a href="tel:'+r['Client Phone']+'" style="color:var(--accent,#3fbf7f);font-weight:700;text-decoration:none;">'+r['Client Phone']+'</a>'):'-')+'</td>';
+    if(showEmp)h+='<td>'+(r['Employee Name']||'-')+'</td>';
+    h+='<td>'+callBadge+'</td><td>'+appliedBadge+'</td><td>'+catBadge+'</td><td>'+upiBadge+'</td>';
+    h+='<td><button class="btn-edit" onclick="openIPOCallStatusModal('+r['_rowNum']+')">&#9998; Update</button> <button class="btn-del" onclick="confirmDel(\'CallClients\','+r['_rowNum']+')">&#128465;</button></td></tr>';
+  });
+  return h+'</tbody></table>';
+}
+function openIPOCallStatusModal(rowNum){
+  var row=(allData.CallClients||[]).find(function(r){return String(r['_rowNum'])===String(rowNum);});
+  if(!row){showToast('Client not found - reloading','error');loadAll();return;}
+  var html='<div class="modal-title">IPO Call Status &#8212; '+(row['Client Name']||'')+'</div>';
+  html+='<p style="color:var(--muted,#8a94a6);font-size:12px;margin:-8px 0 14px;">'+(row['Client ID']||'')+(row['Client Phone']?(' &#183; '+row['Client Phone']+' &#183; <a href="tel:'+row['Client Phone']+'" style="color:var(--accent,#3fbf7f);font-weight:700;text-decoration:none;">&#128222; Call Now</a>'):'')+'</p>';
+  var callStatus=row['IPO Call Status']==='Called'?'Called':'Not Called';
+  html+='<div class="form-group"><label>Call Status</label><select id="ics_callStatus" onchange="toggleICSFields()"><option value="Not Called"'+(callStatus==='Not Called'?' selected':'')+'>Not Called</option><option value="Called"'+(callStatus==='Called'?' selected':'')+'>Called</option></select></div>';
+  html+='<div class="form-group" id="ics_appliedGroup"><label>IPO Applied?</label><select id="ics_applied" onchange="toggleICSFields()"><option value="">-- Select --</option><option value="Yes"'+(row['IPO Applied']==='Yes'?' selected':'')+'>Applied</option><option value="No"'+(row['IPO Applied']==='No'?' selected':'')+'>Not Applied</option></select></div>';
+  var cat=row['IPO Category']||'Retail';
+  html+='<div class="form-group" id="ics_categoryGroup"><label>Category</label><select id="ics_category">'+['Retail','HNI','Big HNI'].map(function(c){return '<option value="'+c+'"'+(cat===c?' selected':'')+'>'+c+'</option>';}).join('')+'</select></div>';
+  var hasUpi=!!(row['UPI ID']||'').trim();
+  html+='<div class="form-group"><label style="display:flex;align-items:center;gap:7px;font-weight:400;font-size:13px;"><input type="checkbox" id="ics_saveUpi" style="width:auto;" onchange="toggleICSUpiField()"'+(hasUpi?' checked':'')+'> UPI ID save karna hai? (future IPO ke liye, dobara nahi poochenge)</label></div>';
+  html+='<div class="form-group" id="ics_upiGroup" style="'+(hasUpi?'':'display:none;')+'"><label>UPI ID</label><input type="text" id="ics_upi" value="'+(row['UPI ID']||'')+'" placeholder="e.g. name@upi"></div>';
+  html+='<div class="form-group"><label>Remarks (optional)</label><textarea id="ics_remarks" rows="2">'+(row['Remarks']||'')+'</textarea></div>';
+  html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="saveIPOCallStatusModal('+rowNum+')">Save</button></div>';
+  document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
+  toggleICSFields();
+}
+function toggleICSFields(){
+  var cs=document.getElementById('ics_callStatus');
+  if(!cs)return;
+  var ap=document.getElementById('ics_applied');
+  var appliedGrp=document.getElementById('ics_appliedGroup');
+  var catGrp=document.getElementById('ics_categoryGroup');
+  var called=cs.value==='Called';
+  if(appliedGrp)appliedGrp.style.display=called?'block':'none';
+  var appliedYes=called&&ap&&ap.value==='Yes';
+  if(catGrp)catGrp.style.display=appliedYes?'block':'none';
+}
+function toggleICSUpiField(){
+  var chk=document.getElementById('ics_saveUpi');
+  var grp=document.getElementById('ics_upiGroup');
+  if(grp)grp.style.display=(chk&&chk.checked)?'block':'none';
+}
+function saveIPOCallStatusModal(rowNum){
+  var callStatus=document.getElementById('ics_callStatus').value;
+  var applied=callStatus==='Called'?(document.getElementById('ics_applied').value||''):'';
+  var category=(applied==='Yes')?(document.getElementById('ics_category').value||''):'';
+  var saveUpi=document.getElementById('ics_saveUpi').checked;
+  var remarks=(document.getElementById('ics_remarks').value||'').trim();
+  var vals={'IPO Call Status':callStatus,'IPO Applied':applied,'IPO Category':category,'Remarks':remarks};
+  /* UPI ID only sent (and thus only ever overwritten) if the checkbox is checked - unchecking it
+     just means "don't ask again this time", it does NOT erase a previously saved UPI ID. */
+  if(saveUpi){vals['UPI ID']=(document.getElementById('ics_upi').value||'').trim();}
+  postData({action:'editRow',sheet:'CallClients',rowNum:rowNum,vals:vals}).then(function(r){
+    closeModal();
+    if(r&&r.success){
+      showToast('IPO status updated','success');
+      patchRowLocal('CallClients',rowNum,vals);
+      renderIPOCallList();
+      setTimeout(function(){loadAll(2);},600);
+    } else showToast('Update failed','error');
+  }).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
+}
+function openIPORoundModal(){
+  var curName=currentIPORoundName();
+  var html='<div class="modal-title">Start / Update IPO Round</div>';
+  html+='<p style="color:var(--muted,#8a94a6);font-size:12px;margin:-8px 0 14px;">Naya IPO aaya? Yahan naam daalo taaki poori IPO Calling List ko pata chale abhi kis IPO ke liye call karni hai.</p>';
+  html+='<div class="form-group"><label>IPO Name</label><input type="text" id="ipr_name" value="'+curName+'" placeholder="e.g. Dhoot Transmission"></div>';
+  html+='<div class="form-group"><label style="display:flex;align-items:center;gap:7px;font-weight:400;font-size:13px;"><input type="checkbox" id="ipr_reset" style="width:auto;" checked> Sabhi clients ka Call/Applied/Category status reset kar do (naya round shuru - UPI ID save rahegi)</label></div>';
+  html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="saveIPORoundModal()">Save</button></div>';
+  document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
+}
+function saveIPORoundModal(){
+  var name=(document.getElementById('ipr_name').value||'').trim();
+  if(!name){showToast('IPO Name required','error');return;}
+  var doReset=document.getElementById('ipr_reset').checked;
+  var isAdm=currentUser&&currentUser.role==='admin';
+  var rows=(isAdm?(allData.CallClients||[]).filter(function(r){return isIPOPurpose(r);}):ipoCLRosterScoped()).filter(function(r){return String(r['_rowNum']).indexOf('_local')!==0;});
+  if(!rows.length){showToast('IPO Calling List me abhi koi (saved) client nahi hai','error');closeModal();return;}
+  closeModal();
+  showToast('IPO Round update ho raha hai... ('+rows.length+' clients)','success');
+  var seq=Promise.resolve();
+  rows.forEach(function(r){
+    seq=seq.then(function(){
+      var vals={'Current IPO Name':name};
+      if(doReset){vals['IPO Call Status']='';vals['IPO Applied']='';vals['IPO Category']='';}
+      patchRowLocal('CallClients',r['_rowNum'],vals);
+      return postData({action:'editRow',sheet:'CallClients',rowNum:r['_rowNum'],vals:vals}).catch(function(){});
+    });
+  });
+  seq.then(function(){
+    showToast('IPO Round updated for '+rows.length+' clients!','success');
+    renderIPOCallList();
+    setTimeout(function(){loadAll(2);},600);
+  });
 }
 function renderCCLTypeStats(){
   var el=document.getElementById('cclTypeStats');
@@ -9688,8 +9954,10 @@ function openAccEditModal(rowNum){
   html+='<label style="display:flex;align-items:center;gap:5px;font-weight:400;font-size:13px;"><input type="checkbox" id="ae_actInvestment" style="width:auto;"'+((row['Investment Active']||'')==='Yes'?' checked':'')+'> Investment</label>';
   html+='<label style="display:flex;align-items:center;gap:5px;font-weight:400;font-size:13px;"><input type="checkbox" id="ae_actIPO" style="width:auto;"'+((row['IPO Active']||'')==='Yes'?' checked':'')+'> IPO</label>';
   html+='</div><div style="font-size:11px;color:var(--muted,#8a94a6);margin-top:4px;">If none selected, the account will be marked Inactive</div></div>';
-  var alreadyCT=isInCallTrade(row['Client ID']);
-  html+='<div class="form-group"><label style="display:flex;align-items:center;gap:7px;font-weight:400;font-size:13px;'+(alreadyCT?'color:var(--muted,#8a94a6);':'')+'"><input type="checkbox" id="ae_addToCT" style="width:auto;"'+(alreadyCT?' checked disabled':'')+'> &#128222; Call &amp; Trade (daily calling) list me bhi add karo'+(alreadyCT?' (already isme hai)':'')+'</label></div>';
+  var ctEntryEdit=callTradeEntryFor(row['Client ID']);
+  var alreadyCT=!!ctEntryEdit;
+  var alreadyCTLabel=alreadyCT?(isIPOPurpose(ctEntryEdit)?' (already IPO List me hai)':' (already Call &amp; Trade me hai)'):'';
+  html+='<div class="form-group"><label style="display:flex;align-items:center;gap:7px;font-weight:400;font-size:13px;'+(alreadyCT?'color:var(--muted,#8a94a6);':'')+'"><input type="checkbox" id="ae_addToCT" style="width:auto;"'+(alreadyCT?' checked disabled':'')+'> &#128222; Call &amp; Trade (daily calling) list me bhi add karo'+alreadyCTLabel+'</label></div>';
   html+='<div class="form-group"><label>Remarks</label><textarea id="ae_remarks">'+(row['Remarks']||'')+'</textarea></div>';
   html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-danger" onclick="confirmDel(\'Accounts\','+rowNum+')">Delete</button><button class="btn-save" onclick="saveAccEditModal('+rowNum+')">Save</button></div>';
   document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
@@ -9720,10 +9988,15 @@ function saveAccEditModal(rowNum){
       showToast('Account updated','success');
       patchRowLocal('Accounts',rowNum,vals);
       renderPage(curPage());
+      var accRow=(allData.Accounts||[]).find(function(x){return String(x['_rowNum'])===String(rowNum);})||{};
+      /* v73: same auto-shift-to-IPO-list-on-IPO-Active logic as Add Account form, kept in sync */
+      if(actIPO==='Yes'){
+        if(!newCid){showToast('IPO Calling List ke liye Client ID chahiye - Client ID daal ke dobara try karo','error');}
+        else if(!isInCallTrade(newCid)){addClientToCallTrade({cid:newCid,cname:newCname,cphone:newCphone,empId:accRow['Employee ID'],empName:accRow['Employee Name'],branch:accRow['Branch'],remarks:'Added from Edit Account (IPO Active)',purpose:'IPO'});}
+      }
       if(addToCTChecked){
-        var accRow=(allData.Accounts||[]).find(function(x){return String(x['_rowNum'])===String(rowNum);})||{};
         if(!newCid){showToast('Call & Trade ke liye Client ID chahiye - Client ID daal ke dobara try karo','error');}
-        else if(!isInCallTrade(newCid)){addClientToCallTrade({cid:newCid,cname:newCname,cphone:newCphone,empId:accRow['Employee ID'],empName:accRow['Employee Name'],branch:accRow['Branch'],remarks:'Added from Edit Account'});}
+        else if(!isInCallTrade(newCid)){addClientToCallTrade({cid:newCid,cname:newCname,cphone:newCphone,empId:accRow['Employee ID'],empName:accRow['Employee Name'],branch:accRow['Branch'],remarks:'Added from Edit Account',purpose:'Trading'});}
       }
       setTimeout(function(){loadAll(2);},600);
     }
@@ -9787,6 +10060,17 @@ function ctStatusLabel(r){
   if(r['Pick Status']==='Not Picked')return 'Not Picked'+(r['Not Picked Reason']?' ('+r['Not Picked Reason']+')':'');
   return 'Called';
 }
+var ctMode='trading';
+function setCTMode(mode){
+  ctMode=mode;
+  var btnT=document.getElementById('ctModeTabTrading'),btnI=document.getElementById('ctModeTabIPO');
+  var divT=document.getElementById('ctModeTrading'),divI=document.getElementById('ctModeIPO');
+  if(btnT)btnT.className='tab-btn'+(mode==='trading'?' active':'');
+  if(btnI)btnI.className='tab-btn'+(mode==='ipo'?' active':'');
+  if(divT)divT.style.display=(mode==='trading'?'block':'none');
+  if(divI)divI.style.display=(mode==='ipo'?'block':'none');
+  if(mode==='ipo')renderIPOCallList();
+}
 function renderCallTradePage(){
   initCallTradeForm();initCallTradeFormTeam();
   renderCCLTypeStats();
@@ -9816,7 +10100,7 @@ function renderCallTradePage(){
     {label:'Traded Today',value:Object.keys(tradedClientSet).length,sub:'unique clients traded today',color:'green',onclick:"showCTStat('traded')"},
     {label:'Not Called Yet',value:Math.max(totalClients-calledCount,0),sub:'still pending today',color:'amber',onclick:"showCTStat('notcalled')"}
   ]);
-  window._ctStatCache={roster:cclRosterScoped().filter(function(r){return (r['Status']||'Active')==='Active';}),todayLogRows:todayLogRows};var __bd=document.getElementById('ctTeamBreakdown');if(__bd){var __teamBd=currentUser?teamMembersOf(currentUser.userId):[];var __selBd=document.getElementById('ct_empFilter');var __selValBd=__selBd?__selBd.value:'';if(__teamBd.length>0&&!__selValBd&&!(currentUser&&currentUser.role==='admin')){var __members=[{id:currentUser.userId,name:currentUser.name+' (Myself)'}].concat(__teamBd.map(function(e){return {id:e['Employee ID'],name:e['Name']};}));var __bh='<div class="table-wrap" style="margin-bottom:14px;"><div class="table-inner"><table><thead><tr><th>Employee</th><th>Total Clients</th><th>Called Today</th><th>Traded Today</th></tr></thead><tbody>';__members.forEach(function(m){var __mRoster=fEmpStrict(allData.CallClients||[],m.id).filter(function(r){return (r['Status']||'Active')==='Active';});var __mLog=fEmpStrict(allData.CallTrade||[],m.id).filter(function(r){return r['Date']===todayStr;});var __mCalled={},__mTraded={};__mLog.forEach(function(r){var __cid=(r['Client ID']||'').trim();if(r['Call Status']==='Called')__mCalled[__cid]=1;if(r['Trade Done']==='Yes')__mTraded[__cid]=1;});__bh+='<tr><td style="font-weight:600;">'+m.name+'</td><td>'+__mRoster.length+'</td><td>'+Object.keys(__mCalled).length+'</td><td>'+Object.keys(__mTraded).length+'</td></tr>';});__bh+='</tbody></table></div></div>';__bd.innerHTML=__bh;}else{__bd.innerHTML='';}}
+  window._ctStatCache={roster:cclRosterScoped().filter(function(r){return (r['Status']||'Active')==='Active';}),todayLogRows:todayLogRows};var __bd=document.getElementById('ctTeamBreakdown');if(__bd){var __teamBd=currentUser?teamMembersOf(currentUser.userId):[];var __selBd=document.getElementById('ct_empFilter');var __selValBd=__selBd?__selBd.value:'';if(__teamBd.length>0&&!__selValBd&&!(currentUser&&currentUser.role==='admin')){var __members=[{id:currentUser.userId,name:currentUser.name+' (Myself)'}].concat(__teamBd.map(function(e){return {id:e['Employee ID'],name:e['Name']};}));var __bh='<div class="table-wrap" style="margin-bottom:14px;"><div class="table-inner"><table><thead><tr><th>Employee</th><th>Total Clients</th><th>Called Today</th><th>Traded Today</th></tr></thead><tbody>';__members.forEach(function(m){var __mRoster=fEmpStrict((allData.CallClients||[]).filter(function(r){return !isIPOPurpose(r);}),m.id).filter(function(r){return (r['Status']||'Active')==='Active';});var __mLog=fEmpStrict(allData.CallTrade||[],m.id).filter(function(r){return r['Date']===todayStr;});var __mCalled={},__mTraded={};__mLog.forEach(function(r){var __cid=(r['Client ID']||'').trim();if(r['Call Status']==='Called')__mCalled[__cid]=1;if(r['Trade Done']==='Yes')__mTraded[__cid]=1;});__bh+='<tr><td style="font-weight:600;">'+m.name+'</td><td>'+__mRoster.length+'</td><td>'+Object.keys(__mCalled).length+'</td><td>'+Object.keys(__mTraded).length+'</td></tr>';});__bh+='</tbody></table></div></div>';__bd.innerHTML=__bh;}else{__bd.innerHTML='';}}
   document.getElementById('ctCalDiv').innerHTML=mkCalendar(allRows,'ctCal',{moreLabel:'More Calls',clickFn:'showCallDay'});
   document.getElementById('ctTable').innerHTML=mkCallTradeTable(rows);
   renderCTOpenTrades();
