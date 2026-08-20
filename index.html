@@ -2423,7 +2423,7 @@ function loadAll(attempt){
         SelfIPO:r.selfIpo||r.SelfIPO||[],
         GrowthTargets:r.growthTargets||r.GrowthTargets||[]
       };
-      saveCache();checkSIPAlerts();autoPunchIn();renderPage(curPage());loadEmps();setTimeout(checkDueTomorrowPopup,600);setTimeout(check315Reminder,900);setTimeout(checkWLRKComments,1200);renderAnnounceBanner();renderMyTasksBanner();if(!window._stlCleanupDone){window._stlCleanupDone=true;getJSON('cleanupOldSettlement').catch(function(){});}
+      saveCache();checkSIPAlerts();autoPunchIn();var __navTeamEarly=document.getElementById('navMyTeam');if(__navTeamEarly)__navTeamEarly.style.display=(currentUser&&currentUser.role!=='admin')?'flex':'none';var __navIPOEarly=document.getElementById('navIPO');if(__navIPOEarly)__navIPOEarly.style.display='flex';var __navIPOFinEarly=document.getElementById('navIPOFin');if(__navIPOFinEarly)__navIPOFinEarly.style.display='flex';renderPage(curPage());loadEmps();setTimeout(checkDueTomorrowPopup,600);setTimeout(check315Reminder,900);setTimeout(checkWLRKComments,1200);renderAnnounceBanner();renderMyTasksBanner();if(!window._stlCleanupDone){window._stlCleanupDone=true;getJSON('cleanupOldSettlement').catch(function(){});}
     }else if(attempt<3){
       setTimeout(function(){loadAll(attempt+1);},4000);
     }else{
