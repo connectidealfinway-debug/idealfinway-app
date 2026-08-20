@@ -4045,7 +4045,7 @@ function mkAccTable(rows,dupSet,sortMode,amtMap){
     }else{
       ctBtn='<button class="btn-call" style="background:rgba(10,132,255,0.15);color:#0a84ff;" onclick="shiftAccountToCallTrade('+r['_rowNum']+')" title="Is account ko Call &amp; Trade (daily calling list) me shift karo">&#128222;&#8594; Call &amp; Trade</button> <button class="btn-call" style="background:rgba(255,159,10,0.15);color:#ff9f0a;" onclick="shiftAccountToIPOList('+r['_rowNum']+')" title="Is account ko IPO Calling List me shift karo - sirf naya IPO aane par isko call jayega">&#128203;&#8594; IPO List</button>';
     }
-    h+='<td>'+mapBtn+'<button class="btn-call" onclick="openAccCallModal('+r['_rowNum']+')">&#128222;</button> <button class="btn-call" style="background:rgba(139,92,246,0.15);color:#8b5cf6;" onclick="openAccHoldingModal('+r['_rowNum']+')" title="View stock holding">&#128188;</button> <button class="btn-edit" onclick="openAccEditModal('+r['_rowNum']+')">&#9998;</button> <button class="btn-del" onclick="confirmDel(\'Accounts\','+r['_rowNum']+')">&#128465;</button> '+nseBtn+' '+ctBtn+'</td></tr>';
+    h+='<td>'+mapBtn+'<button class="btn-call" onclick="openAccCallModal('+r['_rowNum']+')" title="Call this client / log a call">&#128222;</button> <button class="btn-call" style="background:rgba(139,92,246,0.15);color:#8b5cf6;" onclick="openAccHoldingModal('+r['_rowNum']+')" title="View stock holding">&#128188;</button> <button class="btn-edit" onclick="openAccEditModal('+r['_rowNum']+')" title="Edit this account">&#9998;</button> '+nseBtn+' '+ctBtn+' <span style="display:inline-block;width:14px;"></span><button class="btn-del" onclick="confirmDel(\'Accounts\','+r['_rowNum']+')" title="PERMANENTLY delete this entire account (not just remove from a calling list)">&#128465; Delete Account</button></td></tr>';
   });
   return h+'</tbody></table>';
 }
@@ -8622,7 +8622,8 @@ function saveEdit(){
 
 function confirmDel(sheet,rowNum){
   if(!rowNum||rowNum<2){showToast('This new entry is still syncing - data is reloading, please delete again in 2-3 seconds','error');loadAll(2);return;}
-  document.getElementById('modalBox').innerHTML='<div class="modal-title">Delete Entry?</div><p style="color:var(--muted);font-size:13px;margin-bottom:20px;">This cannot be undone.</p><div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-danger" onclick="doDel(\''+sheet+'\','+rowNum+')">Delete</button></div>';
+  var extraWarn=sheet==='Accounts'?'<p style="color:var(--danger);font-size:13px;font-weight:700;margin-bottom:8px;">&#9888; Ye poora ACCOUNT record delete ho jayega (demat entry hi mit jayegi). Agar aap sirf isko Call &amp; Trade ya IPO calling list se hatana chahte hain, to ye button use na karein - Cancel dabayein.</p>':'';
+  document.getElementById('modalBox').innerHTML='<div class="modal-title">Delete Entry?</div>'+extraWarn+'<p style="color:var(--muted);font-size:13px;margin-bottom:20px;">This cannot be undone.</p><div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-danger" onclick="doDel(\''+sheet+'\','+rowNum+')">Delete</button></div>';
   document.getElementById('modal').className='show';
 }
 function doDel(sheet,rowNum){
