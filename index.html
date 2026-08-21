@@ -410,6 +410,12 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       <div class="nav-grp" id="gStuA" style="display:none">
         <div class="nav-item" onclick="showPage('studentPending')">&#128203; Pending Registrations <span id="stuPendingBadge" class="notif-badge" style="display:none;margin-left:6px;">0</span></div>
         <div class="nav-item" onclick="showPage('studentAllList')">&#127891; All Students</div>
+        <div class="nav-item" onclick="showPage('studentNotesAdmin')">&#128218; Notes</div>
+        <div class="nav-item" onclick="showPage('studentClassLinksAdmin')">&#127909; Class Links</div>
+        <div class="nav-item" onclick="showPage('studentTestsAdmin')">&#128221; Test Series</div>
+        <div class="nav-item" onclick="showPage('studentAttendanceAdmin')">&#128197; Attendance</div>
+        <div class="nav-item" onclick="showPage('studentSettingsAdmin')">&#9881; Refer &amp; Earn Settings</div>
+        <div class="nav-item" onclick="showPage('studentReferralsAdmin')">&#128176; Refer &amp; Earn Leads</div>
       </div>
     </div>
     <div id="finNav" style="display:none">
@@ -443,6 +449,12 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
         <div class="nav-grp" id="gStuE" style="display:none">
           <div class="nav-item" onclick="showPage('studentPending')">&#128203; Pending Registrations <span id="stuPendingBadgeE" class="notif-badge" style="display:none;margin-left:6px;">0</span></div>
           <div class="nav-item" onclick="showPage('studentAllList')">&#127891; All Students</div>
+          <div class="nav-item" onclick="showPage('studentNotesAdmin')">&#128218; Notes</div>
+          <div class="nav-item" onclick="showPage('studentClassLinksAdmin')">&#127909; Class Links</div>
+          <div class="nav-item" onclick="showPage('studentTestsAdmin')">&#128221; Test Series</div>
+          <div class="nav-item" onclick="showPage('studentAttendanceAdmin')">&#128197; Attendance</div>
+          <div class="nav-item" onclick="showPage('studentSettingsAdmin')">&#9881; Refer &amp; Earn Settings</div>
+          <div class="nav-item" onclick="showPage('studentReferralsAdmin')">&#128176; Refer &amp; Earn Leads</div>
         </div>
       </div>
       <div class="nav-sec" onclick="toggleGrp('gMy',this)"><span class="arr">&#9656;</span>My Records</div>
@@ -946,6 +958,73 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       <div class="page-header"><h1>&#127891; All Students</h1><p>Registered students ki poori list - Employee/Client data se poori tarah alag</p></div>
       <div class="filter-bar"><input type="text" class="srch" id="stuAllSearch" placeholder="Search by name, phone or batch" oninput="renderStudentAllList()" style="min-width:220px;"></div>
       <div id="stuAllTable"></div>
+    </div>
+
+    <!-- STUDENT SECTION: NOTES ADMIN -->
+    <div class="page" id="page-studentNotesAdmin">
+      <div class="page-header"><h1>&#128218; Student Notes</h1><p>PDF notes upload karein, batch-wise ya sabke liye (Batch me "All" likhein sabke liye)</p></div>
+      <div class="form-card form-grid" style="margin-bottom:16px;">
+        <div class="form-group"><label>Batch</label><input type="text" id="snA_batch" placeholder="e.g. Hisar-Morning ya All"></div>
+        <div class="form-group"><label>Title</label><input type="text" id="snA_title" placeholder="Note ka title"></div>
+        <div class="form-group" style="grid-column:1/-1;"><label>PDF File</label><input type="file" id="snA_file" accept="application/pdf"></div>
+        <div class="form-group"><button class="btn-submit" onclick="uploadStuNoteAdmin()">Upload</button></div>
+      </div>
+      <div id="snATable"></div>
+    </div>
+
+    <!-- STUDENT SECTION: CLASS LINKS ADMIN -->
+    <div class="page" id="page-studentClassLinksAdmin">
+      <div class="page-header"><h1>&#127909; Class Links</h1><p>Live class / YouTube / social media links add karein</p></div>
+      <div class="form-card form-grid" style="margin-bottom:16px;">
+        <div class="form-group"><label>Batch</label><input type="text" id="clA_batch" placeholder="e.g. Hisar-Morning ya All"></div>
+        <div class="form-group"><label>Title</label><input type="text" id="clA_title"></div>
+        <div class="form-group"><label>Type</label><select id="clA_type"><option>Live Class</option><option>YouTube</option><option>WhatsApp Group</option><option>Other</option></select></div>
+        <div class="form-group" style="grid-column:1/-1;"><label>Link URL</label><input type="text" id="clA_url" placeholder="https://..."></div>
+        <div class="form-group"><button class="btn-submit" onclick="addStuClassLinkAdmin()">Add Link</button></div>
+      </div>
+      <div id="clATable"></div>
+    </div>
+
+    <!-- STUDENT SECTION: TEST SERIES ADMIN -->
+    <div class="page" id="page-studentTestsAdmin">
+      <div class="page-header"><h1>&#128221; Test Series</h1><p>MCQ test banayein ya external test link daalein, phir Launch karein taaki students ko dikhe</p></div>
+      <div class="form-card form-grid" style="margin-bottom:16px;">
+        <div class="form-group"><label>Batch</label><input type="text" id="tsA_batch" placeholder="e.g. Hisar-Morning ya All"></div>
+        <div class="form-group"><label>Title</label><input type="text" id="tsA_title"></div>
+        <div class="form-group"><label>Type</label><select id="tsA_type" onchange="toggleTestTypeFieldsAdmin()"><option value="MCQ">In-app MCQ</option><option value="External">External Link</option></select></div>
+        <div class="form-group" id="tsA_extWrap" style="display:none;"><label>External Link</label><input type="text" id="tsA_ext" placeholder="https://..."></div>
+        <div class="form-group"><button class="btn-submit" onclick="createStuTestAdmin()">Create Test (Draft)</button></div>
+      </div>
+      <div id="tsATable"></div>
+      <div id="tsAQuestionArea" style="margin-top:20px;"></div>
+    </div>
+
+    <!-- STUDENT SECTION: ATTENDANCE ADMIN -->
+    <div class="page" id="page-studentAttendanceAdmin">
+      <div class="page-header"><h1>&#128197; Student Attendance</h1><p>Roz ki attendance mark karein</p></div>
+      <div class="form-card form-grid" style="margin-bottom:16px;">
+        <div class="form-group"><label>Date</label><input type="date" id="saA_date"></div>
+        <div class="form-group"><label>Student</label><select id="saA_student"></select></div>
+        <div class="form-group"><label>Status</label><select id="saA_status"><option>Present</option><option>Absent</option></select></div>
+        <div class="form-group"><button class="btn-submit" onclick="markStuAttendanceAdmin()">Mark</button></div>
+      </div>
+      <div id="saATable"></div>
+    </div>
+
+    <!-- STUDENT SECTION: REFER & EARN SETTINGS ADMIN -->
+    <div class="page" id="page-studentSettingsAdmin">
+      <div class="page-header"><h1>&#9881; Refer &amp; Earn Settings</h1><p>Incentive amount aur account-opening link set karein - students isi ko dekhenge</p></div>
+      <div class="form-card form-grid" style="max-width:520px;">
+        <div class="form-group"><label>Referral Incentive Amount (&#8377;)</label><input type="number" id="ssA_incentive"></div>
+        <div class="form-group" style="grid-column:1/-1;"><label>Account Opening Link</label><input type="text" id="ssA_link" placeholder="https://..."></div>
+        <div class="form-group"><button class="btn-submit" onclick="saveStuSettingsAdmin()">Save Settings</button></div>
+      </div>
+    </div>
+
+    <!-- STUDENT SECTION: REFER & EARN LEADS ADMIN -->
+    <div class="page" id="page-studentReferralsAdmin">
+      <div class="page-header"><h1>&#128176; Refer &amp; Earn - Leads</h1><p>Students dwara refer kiye gaye leads</p></div>
+      <div id="srATable"></div>
     </div>
 
     <!-- TRADING JOURNAL -->
@@ -1948,6 +2027,38 @@ var ADMIN_PASS='drrk@1401';
 var currentUser=null;
 var loginMode='admin';
 var students=[];
+var stuData={notes:[],classLinks:[],tests:[],testQuestions:[],testAttempts:[],attendance:[],settings:[],watchlist:[],journal:[],referrals:[]};
+function fetchStudentData(stuid){
+  var qs='action=getStudentData&t='+Date.now()+(stuid?('&stuid='+encodeURIComponent(stuid)):'');
+  return fetch(API+'?'+qs).then(function(r){return r.text();}).then(function(t){return JSON.parse(t);}).then(function(r){if(r&&r.success)return r;return postData({action:'getStudentData',stuid:stuid||''});}).catch(function(){return postData({action:'getStudentData',stuid:stuid||''});});
+}
+function loadStudentDataAdmin(cb){
+  fetchStudentData().then(function(r){
+    if(r&&r.success){
+      stuData={notes:r.notes||[],classLinks:r.classLinks||[],tests:r.tests||[],testQuestions:r.testQuestions||[],testAttempts:r.testAttempts||[],attendance:r.attendance||[],settings:r.settings||[],watchlist:r.watchlist||[],journal:r.journal||[],referrals:r.referrals||[]};
+      if(cb)cb(); else renderPage(curPage());
+    }
+  }).catch(function(){});
+}
+function loadStudentDataStudent(cb){
+  if(!currentUser)return;
+  fetchStudentData(currentUser.id).then(function(r){
+    if(r&&r.success){
+      stuData={notes:r.notes||[],classLinks:r.classLinks||[],tests:r.tests||[],testQuestions:r.testQuestions||[],testAttempts:r.testAttempts||[],attendance:r.attendance||[],settings:r.settings||[],watchlist:r.watchlist||[],journal:r.journal||[],referrals:r.referrals||[]};
+      if(cb)cb();
+    }
+  }).catch(function(){});
+}
+function getStuSetting(key,def){
+  var s=(stuData.settings||[]).find(function(x){return (x['Key']||'')===key;});
+  return s?s['Value']:def;
+}
+function deleteStuGenericAdmin(sheet,rowNum,cb){
+  if(!confirm('Delete karna hai?'))return;
+  postData({action:'deleteRow',sheet:sheet,rowNum:rowNum}).then(function(r){
+    if(r&&r.success){showToast('Deleted','success');loadStudentDataAdmin(cb);}else showToast('Fail','error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
 var allData={Brokerage:[],ClientBrokerage:[],ClientHolding:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[],Meetings:[],Income:[],Expense:[],Hisab:[],TradingJournal:[],CallTrade:[],CallClients:[],Watchlist:[],Reminders:[],Announcements:[],ClientDocuments:[],Resignations:[],EmployeeDataMoves:[],IPO_Master:[],IPO_Applications:[],TeamTasks:[],SelfIPO:[]};
 var employees=[];
 var filters={};
@@ -2929,6 +3040,12 @@ function renderPage(id){
   else if(id==='adminStudents')renderAdminStudents();
   else if(id==='studentPending')renderStudentPending();
   else if(id==='studentAllList')renderStudentAllList();
+  else if(id==='studentNotesAdmin')renderStudentNotesAdmin();
+  else if(id==='studentClassLinksAdmin')renderStudentClassLinksAdmin();
+  else if(id==='studentTestsAdmin')renderStudentTestsAdmin();
+  else if(id==='studentAttendanceAdmin')renderStudentAttendanceAdmin();
+  else if(id==='studentSettingsAdmin')renderStudentSettingsAdmin();
+  else if(id==='studentReferralsAdmin')renderStudentReferralsAdmin();
   else if(id==='adminAttendance')renderAdminAttendance();
   else if(id==='adminMeetings')renderAdminMeetings();
   else if(id==='manageEmps')renderManageEmps();
@@ -9165,6 +9282,7 @@ function loadStudentPortalAdmin(){
   fetchStudentPortal().then(function(r){
     if(r&&r.success){
       students=r.students||[];
+      loadStudentDataAdmin();
       var pendCount=students.filter(function(s){return (s['Status']||'')==='Pending';}).length;
       ['stuPendingBadge','stuPendingBadgeE'].forEach(function(id){
         var b=document.getElementById(id);if(!b)return;
@@ -9250,6 +9368,230 @@ function submitStudentEdit(rowNum){
   }).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
 }
 
+
+/* ===== STUDENT SECTION PHASE 2: ADMIN MANAGEMENT (Notes/ClassLinks/Tests/Attendance/Settings/Referrals) ===== */
+
+function renderStudentNotesAdmin(){
+  var el=document.getElementById('snATable');if(!el)return;
+  var list=(stuData.notes||[]).slice().reverse();
+  if(!list.length){el.innerHTML='<div class="no-data">No notes uploaded yet.</div>';return;}
+  var h='<table><thead><tr><th>Date</th><th>Batch</th><th>Title</th><th>File</th><th>Action</th></tr></thead><tbody>';
+  list.forEach(function(n){
+    h+='<tr><td>'+(n['Date']||'')+'</td><td>'+(n['Batch']||'')+'</td><td>'+(n['Title']||'')+'</td><td><a href="'+(n['Drive URL']||'#')+'" target="_blank" rel="noopener">Open</a></td>'+
+       '<td><button class="btn-del" onclick=\'deleteStuNoteAdmin('+n['_rowNum']+',"'+(n['Drive File ID']||'')+'")\'>&#128465;</button></td></tr>';
+  });
+  h+='</tbody></table>';
+  el.innerHTML=h;
+}
+function uploadStuNoteAdmin(){
+  var fileInput=document.getElementById('snA_file');
+  var file=fileInput.files[0];
+  if(!file){showToast('PDF file chunein','error');return;}
+  var title=document.getElementById('snA_title').value.trim();
+  var batch=document.getElementById('snA_batch').value.trim()||'All';
+  if(!title){showToast('Title daalein','error');return;}
+  var reader=new FileReader();
+  reader.onload=function(){
+    var base64=reader.result.split(',')[1];
+    showToast('Upload ho raha hai...','success');
+    postData({action:'uploadStudentNote','Batch':batch,'Title':title,'FileName':file.name,'MimeType':file.type||'application/pdf','FileData':base64,'Uploaded By':currentUser.name}).then(function(r){
+      if(r&&r.success){showToast('Note upload ho gaya!','success');document.getElementById('snA_title').value='';document.getElementById('snA_batch').value='';fileInput.value='';loadStudentDataAdmin(renderStudentNotesAdmin);}
+      else showToast('Fail ho gaya'+(r&&r.error?': '+r.error:''),'error');
+    }).catch(function(e){showToast('Error: '+e.message,'error');});
+  };
+  reader.readAsDataURL(file);
+}
+function deleteStuNoteAdmin(rowNum,fileId){
+  if(!confirm('Ye note delete karna hai?'))return;
+  postData({action:'deleteStudentNote',rowNum:rowNum,'Drive File ID':fileId}).then(function(r){
+    if(r&&r.success){showToast('Deleted','success');loadStudentDataAdmin(renderStudentNotesAdmin);}else showToast('Fail','error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+
+function renderStudentClassLinksAdmin(){
+  var el=document.getElementById('clATable');if(!el)return;
+  var list=(stuData.classLinks||[]).slice().reverse();
+  if(!list.length){el.innerHTML='<div class="no-data">No class links yet.</div>';return;}
+  var h='<table><thead><tr><th>Date</th><th>Batch</th><th>Title</th><th>Type</th><th>Link</th><th>Action</th></tr></thead><tbody>';
+  list.forEach(function(n){
+    h+='<tr><td>'+(n['Date']||'')+'</td><td>'+(n['Batch']||'')+'</td><td>'+(n['Title']||'')+'</td><td>'+(n['Type']||'')+'</td><td><a href="'+(n['Link URL']||'#')+'" target="_blank" rel="noopener">Open</a></td>'+
+       '<td><button class="btn-del" onclick=\'deleteStuGenericAdmin("StudentClassLinks",'+n['_rowNum']+',renderStudentClassLinksAdmin)\'>&#128465;</button></td></tr>';
+  });
+  h+='</tbody></table>';
+  el.innerHTML=h;
+}
+function addStuClassLinkAdmin(){
+  var title=document.getElementById('clA_title').value.trim();
+  var url=document.getElementById('clA_url').value.trim();
+  if(!title||!url){showToast('Title aur link dono chahiye','error');return;}
+  var p={action:'addGeneric',sheet:'StudentClassLinks','Date':td(),'Batch':document.getElementById('clA_batch').value.trim()||'All','Title':title,'Link URL':url,'Type':document.getElementById('clA_type').value,'Uploaded By':currentUser.name};
+  postData(p).then(function(r){
+    if(r&&r.success){showToast('Link add ho gaya','success');document.getElementById('clA_title').value='';document.getElementById('clA_url').value='';document.getElementById('clA_batch').value='';loadStudentDataAdmin(renderStudentClassLinksAdmin);}
+    else showToast('Fail','error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+
+function toggleTestTypeFieldsAdmin(){
+  var t=document.getElementById('tsA_type').value;
+  var wrap=document.getElementById('tsA_extWrap');
+  if(wrap)wrap.style.display=(t==='External')?'block':'none';
+}
+function renderStudentTestsAdmin(){
+  var el=document.getElementById('tsATable');if(!el)return;
+  var list=(stuData.tests||[]).slice().reverse();
+  if(!list.length){el.innerHTML='<div class="no-data">No tests created yet.</div>';document.getElementById('tsAQuestionArea').innerHTML='';return;}
+  var h='<table><thead><tr><th>Title</th><th>Batch</th><th>Type</th><th>Status</th><th>Questions</th><th>Action</th></tr></thead><tbody>';
+  list.forEach(function(t){
+    var tid=t['Test ID'];
+    var qCount=(stuData.testQuestions||[]).filter(function(q){return q['Test ID']===tid;}).length;
+    var st=t['Status']||'Draft';
+    var badge='<span class="badge '+(st==='Launched'?'green':'amber')+'">'+st+'</span>';
+    var actions='';
+    if((t['Type']||'MCQ')==='MCQ')actions+='<button class="btn-mini" onclick=\'openStuTestQuestionsAdmin("'+tid+'")\'>Questions ('+qCount+')</button> ';
+    if(st==='Draft')actions+='<button class="btn-mini add" onclick=\'toggleStuTestStatusAdmin("'+tid+'","Launched")\'>Launch</button> ';
+    else actions+='<button class="btn-mini" onclick=\'toggleStuTestStatusAdmin("'+tid+'","Draft")\'>Unlaunch</button> ';
+    actions+='<button class="btn-del" onclick="deleteStuGenericAdmin(\'StudentTests\','+t['_rowNum']+',renderStudentTestsAdmin)">&#128465;</button>';
+    h+='<tr><td>'+(t['Title']||'')+'</td><td>'+(t['Batch']||'')+'</td><td>'+(t['Type']||'')+'</td><td>'+badge+'</td><td>'+qCount+'</td><td>'+actions+'</td></tr>';
+  });
+  h+='</tbody></table>';
+  el.innerHTML=h;
+}
+function createStuTestAdmin(){
+  var title=document.getElementById('tsA_title').value.trim();
+  if(!title){showToast('Title daalein','error');return;}
+  var type=document.getElementById('tsA_type').value;
+  var ext=document.getElementById('tsA_ext').value.trim();
+  if(type==='External'&&!ext){showToast('External link daalein','error');return;}
+  var p={action:'addGeneric',sheet:'StudentTests','Test ID':'TST'+Date.now(),'Title':title,'Batch':document.getElementById('tsA_batch').value.trim()||'All','Type':type,'External Link':type==='External'?ext:'','Status':'Draft','Created By':currentUser.name,'Created Date':td()};
+  postData(p).then(function(r){
+    if(r&&r.success){showToast('Test create ho gaya (Draft)','success');document.getElementById('tsA_title').value='';document.getElementById('tsA_ext').value='';document.getElementById('tsA_batch').value='';loadStudentDataAdmin(renderStudentTestsAdmin);}
+    else showToast('Fail','error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+function toggleStuTestStatusAdmin(tid,newStatus){
+  var t=(stuData.tests||[]).find(function(x){return x['Test ID']===tid;});
+  if(!t)return;
+  if(newStatus==='Launched'&&(t['Type']||'MCQ')==='MCQ'){
+    var qCount=(stuData.testQuestions||[]).filter(function(q){return q['Test ID']===tid;}).length;
+    if(!qCount){showToast('Launch se pehle kam se kam 1 question add karein','error');return;}
+  }
+  postData({action:'editRow',sheet:'StudentTests',rowNum:t['_rowNum'],vals:{'Status':newStatus}}).then(function(r){
+    if(r&&r.success){showToast('Status update ho gaya','success');loadStudentDataAdmin(renderStudentTestsAdmin);}
+    else showToast('Fail','error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+function openStuTestQuestionsAdmin(tid){
+  var t=(stuData.tests||[]).find(function(x){return x['Test ID']===tid;});
+  var qs=(stuData.testQuestions||[]).filter(function(q){return q['Test ID']===tid;});
+  var h='<div class="form-card"><div style="font-weight:700;margin-bottom:10px;">Questions - '+(t?t['Title']:tid)+'</div>';
+  if(qs.length){
+    h+='<table><thead><tr><th>Q No</th><th>Question</th><th>Correct</th><th>Action</th></tr></thead><tbody>';
+    qs.forEach(function(q){h+='<tr><td>'+(q['Q No']||'')+'</td><td>'+(q['Question']||'')+'</td><td>'+(q['Correct Option']||'')+'</td><td><button class="btn-del" onclick=\'deleteStuGenericAdmin("StudentTestQuestions",'+q['_rowNum']+',function(){openStuTestQuestionsAdmin("'+tid+'");})\'>&#128465;</button></td></tr>';});
+    h+='</tbody></table>';
+  }
+  h+='<div style="font-weight:700;margin:14px 0 8px;">Naya Question Add Karein</div>';
+  h+='<div class="form-grid">';
+  h+='<div class="form-group" style="grid-column:1/-1;"><label>Question</label><input type="text" id="tq_question"></div>';
+  h+='<div class="form-group"><label>Option A</label><input type="text" id="tq_a"></div>';
+  h+='<div class="form-group"><label>Option B</label><input type="text" id="tq_b"></div>';
+  h+='<div class="form-group"><label>Option C</label><input type="text" id="tq_c"></div>';
+  h+='<div class="form-group"><label>Option D</label><input type="text" id="tq_d"></div>';
+  h+='<div class="form-group"><label>Correct Option</label><select id="tq_correct"><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option></select></div>';
+  h+='<div class="form-group"><button class="btn-submit" onclick=\'addStuTestQuestionAdmin("'+tid+'")\'>Add Question</button></div>';
+  h+='</div></div>';
+  document.getElementById('tsAQuestionArea').innerHTML=h;
+  document.getElementById('tsAQuestionArea').scrollIntoView({behavior:'smooth'});
+}
+function addStuTestQuestionAdmin(tid){
+  var q=document.getElementById('tq_question').value.trim();
+  if(!q){showToast('Question daalein','error');return;}
+  var existingCount=(stuData.testQuestions||[]).filter(function(x){return x['Test ID']===tid;}).length;
+  var p={action:'addGeneric',sheet:'StudentTestQuestions','Test ID':tid,'Q No':existingCount+1,'Question':q,'Option A':document.getElementById('tq_a').value.trim(),'Option B':document.getElementById('tq_b').value.trim(),'Option C':document.getElementById('tq_c').value.trim(),'Option D':document.getElementById('tq_d').value.trim(),'Correct Option':document.getElementById('tq_correct').value};
+  postData(p).then(function(r){
+    if(r&&r.success){showToast('Question add ho gaya','success');loadStudentDataAdmin(function(){openStuTestQuestionsAdmin(tid);renderStudentTestsAdmin();});}
+    else showToast('Fail','error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+
+function renderStudentAttendanceAdmin(){
+  var sel=document.getElementById('saA_student');
+  if(sel&&!sel.dataset.filled){
+    sel.innerHTML='<option value="">Select Student</option>';
+    (students||[]).filter(function(s){return (s['Status']||'')==='Active';}).forEach(function(s){
+      var o=document.createElement('option');o.value=s['Student ID'];o.textContent=(s['Name']||s['Student ID'])+' ('+(s['Batch']||'-')+')';sel.appendChild(o);
+    });
+    sel.dataset.filled='1';
+  }
+  var dateEl=document.getElementById('saA_date');if(dateEl&&!dateEl.value)dateEl.value=td();
+  var el=document.getElementById('saATable');if(!el)return;
+  var list=(stuData.attendance||[]).slice().reverse();
+  if(!list.length){el.innerHTML='<div class="no-data">No attendance marked yet.</div>';return;}
+  var h='<table><thead><tr><th>Date</th><th>Student</th><th>Batch</th><th>Status</th><th>Action</th></tr></thead><tbody>';
+  list.forEach(function(a){
+    var st=a['Status']||'';
+    h+='<tr><td>'+(a['Date']||'')+'</td><td>'+(a['Student Name']||'')+'</td><td>'+(a['Batch']||'')+'</td><td><span class="badge '+(st==='Present'?'green':'red')+'">'+st+'</span></td>'+
+       '<td><button class="btn-del" onclick=\'deleteStuGenericAdmin("StudentAttendance",'+a['_rowNum']+',renderStudentAttendanceAdmin)\'>&#128465;</button></td></tr>';
+  });
+  h+='</tbody></table>';
+  el.innerHTML=h;
+}
+function markStuAttendanceAdmin(){
+  var sid=document.getElementById('saA_student').value;
+  if(!sid){showToast('Student chunein','error');return;}
+  var s=(students||[]).find(function(x){return x['Student ID']===sid;});
+  var p={action:'addGeneric',sheet:'StudentAttendance','Date':document.getElementById('saA_date').value||td(),'Student ID':sid,'Student Name':s?s['Name']:sid,'Batch':s?s['Batch']:'','Status':document.getElementById('saA_status').value,'Marked By':currentUser.name};
+  postData(p).then(function(r){
+    if(r&&r.success){showToast('Attendance marked','success');loadStudentDataAdmin(renderStudentAttendanceAdmin);}
+    else showToast('Fail','error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+
+function renderStudentSettingsAdmin(){
+  var inc=getStuSetting('ReferIncentive','');
+  var link=getStuSetting('AccountOpenLink','');
+  var elI=document.getElementById('ssA_incentive'),elL=document.getElementById('ssA_link');
+  if(elI){elI.value=inc;}
+  if(elL){elL.value=link;}
+}
+function saveStuSettingKV(key,value,cb){
+  var existing=(stuData.settings||[]).find(function(s){return (s['Key']||'')===key;});
+  var p;
+  if(existing)p={action:'editRow',sheet:'StudentSettings',rowNum:existing['_rowNum'],vals:{'Value':value}};
+  else p={action:'addGeneric',sheet:'StudentSettings','Key':key,'Value':value};
+  postData(p).then(function(){if(cb)cb();}).catch(function(){if(cb)cb();});
+}
+function saveStuSettingsAdmin(){
+  var inc=document.getElementById('ssA_incentive').value;
+  var link=document.getElementById('ssA_link').value.trim();
+  saveStuSettingKV('ReferIncentive',inc,function(){
+    saveStuSettingKV('AccountOpenLink',link,function(){
+      showToast('Settings save ho gaye','success');
+      loadStudentDataAdmin(renderStudentSettingsAdmin);
+    });
+  });
+}
+
+function renderStudentReferralsAdmin(){
+  var el=document.getElementById('srATable');if(!el)return;
+  var list=(stuData.referrals||[]).slice().reverse();
+  if(!list.length){el.innerHTML='<div class="no-data">No leads yet.</div>';return;}
+  var h='<table><thead><tr><th>Date</th><th>Student</th><th>Lead Phone</th><th>Interested In</th><th>Availability</th><th>Message</th><th>Status</th><th>Action</th></tr></thead><tbody>';
+  list.forEach(function(r){
+    var st=r['Status']||'New';
+    h+='<tr><td>'+(r['Date']||'')+'</td><td>'+(r['Student Name']||'')+'</td><td>'+(r['Phone']||'')+'</td><td>'+(r['Interested In']||'')+'</td><td>'+(r['Availability']||'')+'</td><td>'+(r['Message']||'-')+'</td>'+
+       '<td><span class="badge '+(st==='Converted'?'green':st==='Contacted'?'amber':'red')+'">'+st+'</span></td>'+
+       '<td><select onchange=\'updateStuReferralStatusAdmin('+r['_rowNum']+',this.value)\'><option'+(st==='New'?' selected':'')+'>New</option><option'+(st==='Contacted'?' selected':'')+'>Contacted</option><option'+(st==='Converted'?' selected':'')+'>Converted</option><option'+(st==='Not Interested'?' selected':'')+'>Not Interested</option></select></td></tr>';
+  });
+  h+='</tbody></table>';
+  el.innerHTML=h;
+}
+function updateStuReferralStatusAdmin(rowNum,newStatus){
+  postData({action:'editRow',sheet:'StudentReferrals',rowNum:rowNum,vals:{'Status':newStatus}}).then(function(r){
+    if(r&&r.success){showToast('Status update ho gaya','success');loadStudentDataAdmin(renderStudentReferralsAdmin);}
+    else showToast('Fail','error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+
 /* ===== STUDENT PORTAL (student-facing, fully separate shell from admin/employee) ===== */
 function startStudentApp(){
   document.getElementById('loginWrap').style.display='none';
@@ -9265,6 +9607,13 @@ function showStuPage(id){
   var pg=document.getElementById('spage-'+id);if(pg)pg.classList.add('active');
   document.querySelectorAll('#studentAppWrap .nav-item').forEach(function(n){if(n.getAttribute('onclick')&&n.getAttribute('onclick').indexOf("'"+id+"'")!==-1)n.classList.add('active');});
   if(id==='stuDash')renderStuDash();
+  else if(id==='stuWatchlist')loadStudentDataStudent(renderStuWatchlist);
+  else if(id==='stuJournal')loadStudentDataStudent(renderStuJournal);
+  else if(id==='stuNotes')loadStudentDataStudent(renderStuNotes);
+  else if(id==='stuClasses')loadStudentDataStudent(renderStuClasses);
+  else if(id==='stuTests')loadStudentDataStudent(renderStuTests);
+  else if(id==='stuAttendance')loadStudentDataStudent(renderStuAttendance);
+  else if(id==='stuRefer')loadStudentDataStudent(renderStuRefer);
   closeStuMobileNav();
   window.scrollTo(0,0);
 }
@@ -9277,6 +9626,204 @@ function renderStuDash(){
     '<div class="stat-card"><div class="stat-label">Phone</div><div class="stat-value" style="font-size:16px;">'+(currentUser.phone||'-')+'</div></div>'+
     '</div><p style="color:var(--muted);margin-top:20px;">&#128075; Welcome! Watchlist, Trading Journal, Notes, Class Links, Test Series, Attendance aur Refer &amp; Earn jald yahan add honge.</p>';
 }
+
+/* ===== STUDENT SECTION PHASE 2: STUDENT-FACING (Watchlist/Journal/Notes/Classes/Tests/Attendance/Refer) ===== */
+
+function renderStuNotes(){
+  var batch=(currentUser.batch||'').trim();
+  var list=(stuData.notes||[]).filter(function(n){var b=(n['Batch']||'').trim();return !b||b==='All'||b==='General'||b===batch;}).slice().reverse();
+  var h='';
+  if(!list.length)h='<p style="color:var(--muted);padding:20px;">Abhi koi notes upload nahi hue.</p>';
+  else{
+    h='<div class="table-wrap"><table><thead><tr><th>Date</th><th>Title</th><th>File</th></tr></thead><tbody>';
+    list.forEach(function(n){h+='<tr><td>'+(n['Date']||'')+'</td><td>'+(n['Title']||n['FileName']||'')+'</td><td><a href="'+(n['Drive URL']||'#')+'" target="_blank" rel="noopener">&#128196; Open PDF</a></td></tr>';});
+    h+='</tbody></table></div>';
+  }
+  document.getElementById('spage-stuNotes').innerHTML='<div class="page-header"><h1>&#128218; Notes</h1><p>Class notes (PDF) yahan milenge.</p></div>'+h;
+}
+
+function renderStuClasses(){
+  var batch=(currentUser.batch||'').trim();
+  var list=(stuData.classLinks||[]).filter(function(n){var b=(n['Batch']||'').trim();return !b||b==='All'||b==='General'||b===batch;}).slice().reverse();
+  var h='';
+  if(!list.length)h='<p style="color:var(--muted);padding:20px;">Abhi koi class link nahi hai.</p>';
+  else{
+    h='<div class="table-wrap"><table><thead><tr><th>Date</th><th>Title</th><th>Type</th><th>Link</th></tr></thead><tbody>';
+    list.forEach(function(n){h+='<tr><td>'+(n['Date']||'')+'</td><td>'+(n['Title']||'')+'</td><td>'+(n['Type']||'')+'</td><td><a href="'+(n['Link URL']||'#')+'" target="_blank" rel="noopener">&#128279; Open</a></td></tr>';});
+    h+='</tbody></table></div>';
+  }
+  document.getElementById('spage-stuClasses').innerHTML='<div class="page-header"><h1>&#127909; Class Links</h1><p>Live class aur YouTube/social media links yahan milenge.</p></div>'+h;
+}
+
+function renderStuAttendance(){
+  var list=(stuData.attendance||[]).slice().reverse();
+  var present=list.filter(function(a){return (a['Status']||'')==='Present';}).length;
+  var total=list.length;
+  var pct=total?Math.round(present/total*100):0;
+  var h='<div class="stats-grid">'+mkStats([{label:'Total Marked',value:total},{label:'Present',value:present,color:'green'},{label:'Attendance %',value:pct+'%',color:pct>=75?'green':'red'}])+'</div>';
+  if(!list.length)h+='<p style="color:var(--muted);padding:20px;">Abhi attendance record nahi hai.</p>';
+  else{
+    h+='<div class="table-wrap"><table><thead><tr><th>Date</th><th>Batch</th><th>Status</th></tr></thead><tbody>';
+    list.forEach(function(a){var st=a['Status']||'';h+='<tr><td>'+(a['Date']||'')+'</td><td>'+(a['Batch']||'')+'</td><td><span class="badge '+(st==='Present'?'green':'red')+'">'+st+'</span></td></tr>';});
+    h+='</tbody></table></div>';
+  }
+  document.getElementById('spage-stuAttendance').innerHTML='<div class="page-header"><h1>&#128197; My Attendance</h1><p>Apni attendance yahan dekh sakenge.</p></div>'+h;
+}
+
+function renderStuRefer(){
+  var incentive=getStuSetting('ReferIncentive','');
+  var link=getStuSetting('AccountOpenLink','');
+  var h='<div class="stats-grid">'+mkStats([{label:'Referral Incentive',value:incentive?('&#8377;'+incentive):'-',color:'green'}])+'</div>';
+  h+='<div class="form-card" style="max-width:520px;">';
+  h+='<div style="font-weight:700;margin-bottom:10px;">Account Opening Link</div>';
+  if(link)h+='<div style="display:flex;gap:8px;align-items:center;"><input type="text" readonly value="'+link.replace(/"/g,'&quot;')+'" style="flex:1;" id="stuReferLinkInput"><button class="btn-mini add" onclick="copyStuReferLink()">&#128203; Copy</button></div>';
+  else h+='<p style="color:var(--muted);">Link abhi set nahi hai.</p>';
+  h+='</div>';
+  h+='<div class="form-card form-grid" style="margin-top:16px;">';
+  h+='<div style="font-weight:700;grid-column:1/-1;margin-bottom:4px;">Refer Karein - Lead Bhejein</div>';
+  h+='<div class="form-group"><label>Friend/Relative ka Naam</label><input type="text" id="sr_name"></div>';
+  h+='<div class="form-group"><label>Phone</label><input type="text" id="sr_phone"></div>';
+  h+='<div class="form-group"><label>Interested In</label><select id="sr_interest"><option>Demat Account</option><option>Mutual Fund SIP</option><option>Insurance</option><option>Trading Classes</option></select></div>';
+  h+='<div class="form-group"><label>Best Time to Call</label><input type="text" id="sr_avail" placeholder="e.g. evening 6-8pm"></div>';
+  h+='<div class="form-group" style="grid-column:1/-1;"><label>Message (optional)</label><input type="text" id="sr_msg"></div>';
+  h+='<div class="form-group"><button class="btn-submit" onclick="submitStuReferral()">Submit Lead</button></div>';
+  h+='</div>';
+  document.getElementById('spage-stuRefer').innerHTML='<div class="page-header"><h1>&#128176; Refer &amp; Earn</h1><p>Refer karke earn karne ka form aur account-opening link yahan milega.</p></div>'+h;
+}
+function copyStuReferLink(){
+  var el=document.getElementById('stuReferLinkInput');if(!el)return;
+  el.select();
+  try{document.execCommand('copy');showToast('Link copy ho gaya!','success');}catch(e){showToast('Copy nahi ho paya, manually select karein','error');}
+}
+function submitStuReferral(){
+  var name=document.getElementById('sr_name').value.trim();
+  var phone=document.getElementById('sr_phone').value.trim();
+  if(!name||!phone){showToast('Naam aur phone dono chahiye','error');return;}
+  var p={action:'addGeneric',sheet:'StudentReferrals','Date':td(),'Student ID':currentUser.id,'Student Name':currentUser.name,'Phone':phone,'Interested In':document.getElementById('sr_interest').value,'Availability':document.getElementById('sr_avail').value.trim(),'Message':document.getElementById('sr_msg').value.trim(),'Status':'New'};
+  postData(p).then(function(r){
+    if(r&&r.success){showToast('Lead submit ho gaya, hum jald contact karenge!','success');document.getElementById('sr_name').value='';document.getElementById('sr_phone').value='';document.getElementById('sr_avail').value='';document.getElementById('sr_msg').value='';}
+    else showToast('Fail ho gaya','error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+
+function renderStuWatchlist(){
+  var list=(stuData.watchlist||[]).slice().reverse();
+  var h='<div class="form-card form-grid" style="margin-bottom:16px;">';
+  h+='<div class="form-group"><label>Stock</label><input type="text" id="sw_stock" placeholder="e.g. RELIANCE"></div>';
+  h+='<div class="form-group" style="grid-column:1/-1;"><label>Notes</label><input type="text" id="sw_notes" placeholder="Apna reasoning/target likhein"></div>';
+  h+='<div class="form-group"><button class="btn-submit" onclick="addStuWatchlist()">Add to Watchlist</button></div>';
+  h+='</div>';
+  if(!list.length)h+='<p style="color:var(--muted);padding:20px;">Abhi watchlist khali hai.</p>';
+  else{
+    h+='<div class="table-wrap"><table><thead><tr><th>Date</th><th>Stock</th><th>Notes</th><th>Action</th></tr></thead><tbody>';
+    list.forEach(function(w){h+='<tr><td>'+(w['Date Added']||'')+'</td><td><b>'+(w['Stock']||'')+'</b></td><td>'+(w['Notes']||'-')+'</td><td><button class="btn-del" onclick="delStuWatchlist('+w['_rowNum']+')">&#128465;</button></td></tr>';});
+    h+='</tbody></table></div>';
+  }
+  document.getElementById('spage-stuWatchlist').innerHTML='<div class="page-header"><h1>&#11088; My Watchlist</h1><p>Apni khud ki stock watchlist yahan bana sakenge - employee/client watchlist se poori tarah alag.</p></div>'+h;
+}
+function addStuWatchlist(){
+  var stock=document.getElementById('sw_stock').value.trim();
+  if(!stock){showToast('Stock name daalein','error');return;}
+  var p={action:'addGeneric',sheet:'StudentWatchlist','Date Added':td(),'Student ID':currentUser.id,'Student Name':currentUser.name,'Batch':currentUser.batch||'','Stock':stock.toUpperCase(),'Notes':document.getElementById('sw_notes').value.trim(),'Status':'Active'};
+  postData(p).then(function(r){if(r&&r.success){showToast('Add ho gaya','success');loadStudentDataStudent(renderStuWatchlist);}else showToast('Fail','error');}).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+function delStuWatchlist(rowNum){
+  if(!confirm('Delete karna hai?'))return;
+  postData({action:'deleteRow',sheet:'StudentWatchlist',rowNum:rowNum}).then(function(r){if(r&&r.success){showToast('Deleted','success');loadStudentDataStudent(renderStuWatchlist);}}).catch(function(){});
+}
+
+function renderStuJournal(){
+  var list=(stuData.journal||[]).slice().reverse();
+  var h='<div class="form-card form-grid" style="margin-bottom:16px;">';
+  h+='<div class="form-group"><label>Date</label><input type="date" id="sj_date"></div>';
+  h+='<div class="form-group"><label>Stock</label><input type="text" id="sj_stock"></div>';
+  h+='<div class="form-group"><label>Direction</label><select id="sj_dir"><option>Buy</option><option>Sell</option></select></div>';
+  h+='<div class="form-group"><label>Entry Price</label><input type="number" id="sj_entry"></div>';
+  h+='<div class="form-group"><label>Exit Price</label><input type="number" id="sj_exit"></div>';
+  h+='<div class="form-group"><label>Qty</label><input type="number" id="sj_qty"></div>';
+  h+='<div class="form-group"><label>Result</label><select id="sj_result"><option>Profit</option><option>Loss</option><option>Open</option></select></div>';
+  h+='<div class="form-group" style="grid-column:1/-1;"><label>Remarks</label><input type="text" id="sj_remarks"></div>';
+  h+='<div class="form-group"><button class="btn-submit" onclick="addStuJournal()">Add Trade</button></div>';
+  h+='</div>';
+  if(!list.length)h+='<p style="color:var(--muted);padding:20px;">Abhi koi trade record nahi hai.</p>';
+  else{
+    h+='<div class="table-wrap"><table><thead><tr><th>Date</th><th>Stock</th><th>Dir</th><th>Entry</th><th>Exit</th><th>Qty</th><th>Result</th><th>Action</th></tr></thead><tbody>';
+    list.forEach(function(j){var res=j['Result']||'';h+='<tr><td>'+(j['Date']||'')+'</td><td><b>'+(j['Stock']||'')+'</b></td><td>'+(j['Direction']||'')+'</td><td>'+(j['Entry Price']||'')+'</td><td>'+(j['Exit Price']||'')+'</td><td>'+(j['Qty']||'')+'</td><td><span class="badge '+(res==='Profit'?'green':res==='Loss'?'red':'amber')+'">'+res+'</span></td><td><button class="btn-del" onclick="delStuJournal('+j['_rowNum']+')">&#128465;</button></td></tr>';});
+    h+='</tbody></table></div>';
+  }
+  document.getElementById('spage-stuJournal').innerHTML='<div class="page-header"><h1>&#128200; My Trading Journal</h1><p>Apni trades yahan record kar sakenge, employee/client trading journal se poori tarah alag.</p></div>'+h;
+}
+function addStuJournal(){
+  var stock=document.getElementById('sj_stock').value.trim();
+  if(!stock){showToast('Stock name daalein','error');return;}
+  var p={action:'addGeneric',sheet:'StudentJournal','Date':document.getElementById('sj_date').value||td(),'Student ID':currentUser.id,'Student Name':currentUser.name,'Batch':currentUser.batch||'','Stock':stock.toUpperCase(),'Direction':document.getElementById('sj_dir').value,'Entry Price':document.getElementById('sj_entry').value,'Exit Price':document.getElementById('sj_exit').value,'Qty':document.getElementById('sj_qty').value,'Result':document.getElementById('sj_result').value,'Remarks':document.getElementById('sj_remarks').value.trim()};
+  postData(p).then(function(r){if(r&&r.success){showToast('Trade add ho gaya','success');loadStudentDataStudent(renderStuJournal);}else showToast('Fail','error');}).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+function delStuJournal(rowNum){
+  if(!confirm('Delete karna hai?'))return;
+  postData({action:'deleteRow',sheet:'StudentJournal',rowNum:rowNum}).then(function(r){if(r&&r.success){showToast('Deleted','success');loadStudentDataStudent(renderStuJournal);}}).catch(function(){});
+}
+
+var stuQuizState=null;
+function renderStuTests(){
+  var batch=(currentUser.batch||'').trim();
+  var list=(stuData.tests||[]).filter(function(t){var st=(t['Status']||'');var b=(t['Batch']||'').trim();return st==='Launched'&&(!b||b==='All'||b===batch);});
+  var attempts=(stuData.testAttempts||[]);
+  var h='';
+  if(!list.length)h='<p style="color:var(--muted);padding:20px;">Abhi koi test launch nahi hua.</p>';
+  else{
+    h='<div class="table-wrap"><table><thead><tr><th>Title</th><th>Type</th><th>Action</th></tr></thead><tbody>';
+    list.forEach(function(t){
+      var tid=t['Test ID'];
+      var att=attempts.find(function(a){return a['Test ID']===tid;});
+      var typ=t['Type']||'MCQ';
+      var actionHtml='';
+      if(att)actionHtml='<span class="badge green">Score: '+(att['Score']||0)+'/'+(att['Total']||0)+'</span>';
+      else if(typ==='External')actionHtml='<a class="btn-mini add" href="'+(t['External Link']||'#')+'" target="_blank" rel="noopener">Open Test</a>';
+      else actionHtml='<button class="btn-mini add" onclick=\'startStuQuiz("'+tid+'")\'>Attempt</button>';
+      h+='<tr><td>'+(t['Title']||'')+'</td><td>'+typ+'</td><td>'+actionHtml+'</td></tr>';
+    });
+    h+='</tbody></table></div>';
+  }
+  h+='<div id="stuQuizArea" style="margin-top:20px;"></div>';
+  document.getElementById('spage-stuTests').innerHTML='<div class="page-header"><h1>&#128221; Test Series</h1><p>MCQ tests aur external test links yahan milenge, score history ke saath.</p></div>'+h;
+}
+function startStuQuiz(tid){
+  var test=(stuData.tests||[]).find(function(t){return t['Test ID']===tid;});
+  var qs=(stuData.testQuestions||[]).filter(function(q){return q['Test ID']===tid;});
+  if(!qs.length){showToast('Is test me abhi questions nahi hain','error');return;}
+  stuQuizState={tid:tid,title:test?test['Title']:'',questions:qs};
+  var h='<div class="form-card"><div style="font-weight:700;margin-bottom:12px;">'+(test?test['Title']:'Test')+'</div>';
+  qs.forEach(function(q,i){
+    h+='<div style="margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,0.1);"><div style="font-weight:600;margin-bottom:6px;">'+(i+1)+'. '+(q['Question']||'')+'</div>';
+    ['A','B','C','D'].forEach(function(opt){
+      var val=q['Option '+opt];
+      if(!val)return;
+      h+='<label style="display:block;margin:4px 0;cursor:pointer;"><input type="radio" name="stuq_'+i+'" value="'+opt+'"> '+val+'</label>';
+    });
+    h+='</div>';
+  });
+  h+='<button class="btn-submit" onclick="submitStuQuiz()">Submit Test</button> <button class="btn-cancel" onclick="document.getElementById(\'stuQuizArea\').innerHTML=\'\'">Cancel</button>';
+  h+='</div>';
+  document.getElementById('stuQuizArea').innerHTML=h;
+  document.getElementById('stuQuizArea').scrollIntoView({behavior:'smooth'});
+}
+function submitStuQuiz(){
+  if(!stuQuizState)return;
+  var qs=stuQuizState.questions;
+  var score=0;
+  qs.forEach(function(q,i){
+    var sel=document.querySelector('input[name="stuq_'+i+'"]:checked');
+    if(sel&&sel.value===(q['Correct Option']||'').trim())score++;
+  });
+  var total=qs.length;
+  var p={action:'addGeneric',sheet:'StudentTestAttempts','Test ID':stuQuizState.tid,'Test Title':stuQuizState.title,'Student ID':currentUser.id,'Student Name':currentUser.name,'Score':score,'Total':total,'Attempt Date':td()};
+  postData(p).then(function(r){
+    if(r&&r.success){showToast('Test submit ho gaya! Score: '+score+'/'+total,'success');document.getElementById('stuQuizArea').innerHTML='';stuQuizState=null;loadStudentDataStudent(renderStuTests);}
+    else showToast('Fail ho gaya','error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+
 function toggleStuMobileNav(){
   var sb=document.getElementById('stuSidebar'),bd=document.getElementById('stuMobBackdrop');
   if(!sb)return;
