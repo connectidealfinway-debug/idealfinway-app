@@ -315,15 +315,15 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
     </form>
     <div class="login-err" id="loginErr">Invalid ID or Password</div>
     <div style="text-align:center;margin-top:12px;"><a href="javascript:void(0)" onclick="showForgotPassword()" style="color:var(--accent,#3fbf7f);font-size:13px;text-decoration:none;">Forgot Password?</a></div>
-    <div id="studentRegisterLink" style="display:none;text-align:center;margin-top:8px;"><a href="javascript:void(0)" onclick="showStudentRegister()" style="color:var(--accent,#3fbf7f);font-size:13px;text-decoration:none;font-weight:600;">Naya Student? Register Karein &#8594;</a></div>
+    <div id="studentRegisterLink" style="display:none;text-align:center;margin-top:8px;"><a href="javascript:void(0)" onclick="showStudentRegister()" style="color:var(--accent,#3fbf7f);font-size:13px;text-decoration:none;font-weight:600;">New Student? Register Here &#8594;</a></div>
   </div>
   <div class="login-box" id="loginBoxStudentReg" style="display:none;">
-    <div class="login-logo"><h1>Student Registration</h1><p>Apni details bharein, approval ke baad login kar payenge</p></div>
-    <div class="form-group"><label>Full Name</label><input type="text" id="sr_name" placeholder="Apna naam likhein"></div>
-    <div class="form-group"><label>Phone Number (yeh aapki Login ID bhi hogi)</label><input type="text" id="sr_phone" placeholder="10 digit mobile number"></div>
+    <div class="login-logo"><h1>Student Registration</h1><p>Fill in your details below. You will be able to log in once your registration is approved.</p></div>
+    <div class="form-group"><label>Full Name</label><input type="text" id="sr_name" placeholder="Enter your full name"></div>
+    <div class="form-group"><label>Phone Number (this will also be your Login ID)</label><input type="text" id="sr_phone" placeholder="10 digit mobile number"></div>
     <div class="form-group"><label>Email (optional)</label><input type="email" id="sr_email" placeholder="Email ID"></div>
     <div class="form-group"><label>Batch</label><input type="text" id="sr_batch" placeholder="e.g. Aug 2026 Batch"></div>
-    <div class="form-group"><label>Set Password</label><input type="password" id="sr_pass" placeholder="Password banayein"></div>
+    <div class="form-group"><label>Set Password</label><input type="password" id="sr_pass" placeholder="Create a password"></div>
     <button class="btn-primary" type="button" onclick="submitStudentRegister()">Register</button>
     <div class="login-err" id="sr_err" style="display:none;"></div>
     <div style="text-align:center;margin-top:12px;"><a href="javascript:void(0)" onclick="showNormalLogin()" style="color:var(--accent,#3fbf7f);font-size:13px;text-decoration:none;">&#8592; Back to Login</a></div>
@@ -394,7 +394,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       <div class="nav-sec" onclick="toggleGrp('gFin',this)"><span class="arr">&#9656;</span>Finance</div>
       <div class="nav-grp" id="gFin" style="display:none">
         <div class="nav-item" onclick="showPage('finRecords')">&#8377; Income &amp; Expense</div>
-        <div class="nav-item" onclick="showPage('hisab')">&#9878; Monthly Hisab</div>
+        <div class="nav-item" onclick="showPage('hisab')">&#9878; Monthly Settlement</div>
         <div class="nav-item" onclick="showPage('addIncome')">&#43; Add Income</div>
         <div class="nav-item" onclick="showPage('addExpense')">&#43; Add Expense</div>
       </div>
@@ -424,7 +424,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       <div class="nav-item" onclick="showPage('addIncome')">&#43; Add Income</div>
       <div class="nav-item" onclick="showPage('addExpense')">&#43; Add Expense</div>
       <div class="nav-item" onclick="showPage('finRecords')">&#8377; Income &amp; Expense</div>
-      <div class="nav-item" onclick="showPage('hisab')">&#9878; Monthly Hisab</div>
+      <div class="nav-item" onclick="showPage('hisab')">&#9878; Monthly Settlement</div>
       <div class="nav-item" id="navIPOFin" onclick="showPage('ipo')">&#128200; IPO</div>
       <div class="nav-section">Attendance</div>
       <div class="nav-item" onclick="showPage('markAttendance')">&#9711; My Attendance</div>
@@ -460,7 +460,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       <div class="nav-sec" onclick="toggleGrp('gMy',this)"><span class="arr">&#9656;</span>My Records</div>
       <div class="nav-grp" id="gMy" style="display:none">
         <div class="nav-item" onclick="showPage('myBrok')">&#36; Brokerage</div>
-        <div class="nav-item" onclick="showPage('myHisab')">&#9878; My Hisab</div>
+        <div class="nav-item" onclick="showPage('myHisab')">&#9878; My Settlement</div>
         <div class="nav-item" onclick="showPage('mySIP')">SIP / MF</div>
         <div class="nav-item" onclick="showPage('myIns')">Insurance</div>
         <div class="nav-item" onclick="showPage('myAcc')">Accounts</div>
@@ -651,7 +651,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
 
     <!-- HEALTH CHECK -->
     <div class="page" id="page-healthCheck">
-      <div class="page-header"><h1>&#127981; System Health Check</h1><p>Poore app me data mistakes / inconsistencies dhoondta hai - Accounts, IPO, SIP, Employees sab jagah</p></div>
+      <div class="page-header"><h1>&#127981; System Health Check</h1><p>Scans the whole app for data mistakes / inconsistencies - Accounts, IPO, SIP, Employees, everywhere</p></div>
       <div style="margin-bottom:14px;"><button class="btn-submit" style="width:auto;padding:10px 24px;" onclick="renderHealthCheckPage()">&#8635; Run Health Check</button> <span id="healthLastRun" style="color:var(--muted);font-size:12px;margin-left:10px;"></span></div>
       <div class="stats-grid" id="healthStats"></div>
       <div id="healthResults"></div>
@@ -662,14 +662,14 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       <div class="page-header"><h1>&#128200; Growth &amp; Targets</h1><p>IdealFinway ke long-term goals ka progress - ek jagah</p></div>
       <div id="growthProgress"></div>
       <div style="margin-top:26px;">
-        <h3 style="font-size:14px;margin-bottom:12px;">Naye Demat Accounts &#8212; mahine-wise (Completed, pichhle 12 mahine)</h3>
+        <h3 style="font-size:14px;margin-bottom:12px;">New Demat Accounts &#8212; Month-wise (Completed, last 12 months)</h3>
         <div id="growthAccTrend"></div>
       </div>
       <div style="margin-top:26px;">
-        <h3 style="font-size:14px;margin-bottom:12px;">Nayi SIP Amount &#8212; mahine-wise (pichhle 12 mahine)</h3>
+        <h3 style="font-size:14px;margin-bottom:12px;">New SIP Amount &#8212; Month-wise (last 12 months)</h3>
         <div id="growthSipTrend"></div>
       </div>
-      <p style="color:var(--muted);font-size:11px;margin-top:20px;">AUM figure "Client Holding" upload se aati hai (last upload snapshot) - agar recent upload nahi hua to ye purana ho sakta hai.</p>
+      <p style="color:var(--muted);font-size:11px;margin-top:20px;">AUM figure comes from the "Client Holding" upload (last upload snapshot) - if a recent upload has not been done, this may be outdated.</p>
     </div>
 
     <!-- ADMIN SIP -->
@@ -735,7 +735,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
         <div class="table-wrap"><div class="table-inner" id="accTable"></div></div>
       </div>
       <div id="accModeProcess" style="display:none;">
-        <p style="color:var(--muted);font-size:12px;margin-bottom:10px;">Documents aa chuke hain, account punch ho chuka hai, but Client ID abhi tak nahi aayi. Jaise hi Edit (&#9998;) se Client ID daaloge, ye entry automatic "Completed Demat" me chali jayegi.</p>
+        <p style="color:var(--muted);font-size:12px;margin-bottom:10px;">Documents have been received and the account has been opened, but the Client ID has not arrived yet. As soon as you add the Client ID via Edit (&#9998;), this entry will automatically move to "Completed Demat".</p>
         <div class="filter-bar">
           <input class="srch" id="srch-accProcess" placeholder="&#128269; Search client/phone/employee..." oninput="renderAccProcessTable()"><select onchange="setAccProcessSort(this.value)" style="max-width:210px;"><option value="">Sort: Oldest First</option><option value="recent">Sort: Recent First</option></select>
         </div>
@@ -825,13 +825,13 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
 
     <!-- LEADER COMMISSION -->
     <div class="page" id="page-leaderCommission">
-      <div class="page-header"><h1>Leader Commission</h1><p>Jab team member/franchise partner apne niche naya advisor recruit karta hai, uska monthly commission (marginal slab) aur milestone bonus yahan track hota hai. Single-level: sirf direct recruiter ko milta hai.</p></div>
+      <div class="page-header"><h1>Leader Commission</h1><p>When a team member/franchise partner recruits a new advisor under them, their monthly commission (marginal slab) and milestone bonus are tracked here. Single-level: only the direct recruiter receives it.</p></div>
       <div class="filter-bar">
         <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);">Month: <input type="month" id="lcMonth" onchange="renderLeaderCommission()"></label>
       </div>
       <div class="stats-grid" id="lcStats"></div>
       <div class="table-wrap"><div class="table-inner" id="lcTable"></div></div>
-      <div class="page-header" style="margin-top:24px;"><h1 style="font-size:18px;">Account-Opening Milestone Bonus</h1><p>Recruit ke join hone ke pehle 90 din (3 mahine) ke andar 100 active accounts (last 90 din me trade) cross karne par Leader ko flat &#8377;10,000 one-time bonus.</p></div>
+      <div class="page-header" style="margin-top:24px;"><h1 style="font-size:18px;">Account-Opening Milestone Bonus</h1><p>If the Recruit crosses 100 active accounts (traded in the last 90 days) within 90 days (3 months) of joining, the Leader gets a flat &#8377;10,000 one-time bonus.</p></div>
       <div class="table-wrap"><div class="table-inner" id="lcMilestoneTable"></div></div>
     </div>
 
@@ -883,17 +883,17 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       <div class="page-header"><h1>My Team</h1><p>View and edit sub-employees' Accounts/SIP/Insurance/Students</p></div>
       <div style="margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap;">
         <button class="tab-btn active" id="myTeamTabRecruit" onclick="setMyTeamMode('recruit')">&#127919; Recruit New Advisor</button>
-        <button class="tab-btn" id="myTeamTabTasks" onclick="setMyTeamMode('tasks')">&#128221; Task Assign Karein</button>
+        <button class="tab-btn" id="myTeamTabTasks" onclick="setMyTeamMode('tasks')">&#128221; Assign Task</button>
         <button class="tab-btn" id="myTeamTabMembers" onclick="setMyTeamMode('members')">&#128101; All Members</button>
       </div>
 
       <div id="myTeamModeRecruit">
-        <div style="margin-bottom:16px;"><button class="btn-submit" onclick="showRecruitModal()">&#43; Naya Advisor Recruit Karein</button></div>
+        <div style="margin-bottom:16px;"><button class="btn-submit" onclick="showRecruitModal()">&#43; Recruit New Advisor</button></div>
         <div id="myRecruitReqBox"></div>
       </div>
 
       <div id="myTeamModeTasks" style="display:none;">
-        <div style="margin-bottom:16px;"><button class="btn-submit" onclick="openAssignTaskModal()">&#128221; + Task Assign Karein</button></div>
+        <div style="margin-bottom:16px;"><button class="btn-submit" onclick="openAssignTaskModal()">&#128221; + Assign Task</button></div>
         <div style="margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;">
           <select id="tt_filterEmp" onchange="renderTeamTasksTable()" style="max-width:200px;"><option value="">All Team Members</option></select>
           <select id="tt_filterStatus" onchange="renderTeamTasksTable()" style="max-width:160px;"><option value="">All Status</option><option value="Pending">Pending</option><option value="Done">Done</option></select>
@@ -937,8 +937,8 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
     </div>
 
     <div class="page" id="page-adminTasks">
-      <div class="page-header"><h1>&#128221; Task Assign</h1><p>Kisi bhi employee ko task assign karein aur track karein</p></div>
-      <div style="margin-bottom:16px;"><button class="btn-submit" onclick="openAdminAssignTaskModal()">&#128221; + Naya Task Assign Karein</button></div>
+      <div class="page-header"><h1>&#128221; Task Assign</h1><p>Assign a task to any employee and track it</p></div>
+      <div style="margin-bottom:16px;"><button class="btn-submit" onclick="openAdminAssignTaskModal()">&#128221; + Assign New Task</button></div>
       <div style="margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;">
         <select id="admt_filterEmp" onchange="renderAdminTasksTable()" style="max-width:220px;"><option value="">All Employees</option></select>
         <select id="admt_filterStatus" onchange="renderAdminTasksTable()" style="max-width:160px;"><option value="">All Status</option><option value="Pending">Pending</option><option value="Done">Done</option></select>
@@ -949,20 +949,20 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
 
     <!-- STUDENT SECTION: PENDING REGISTRATIONS -->
     <div class="page" id="page-studentPending">
-      <div class="page-header"><h1>&#128203; Pending Student Registrations</h1><p>Naye student registration requests - approve karein taaki wo login kar sakein</p></div>
+      <div class="page-header"><h1>&#128203; Pending Student Registrations</h1><p>New student registration requests - approve them so they can log in</p></div>
       <div id="stuPendingTable"></div>
     </div>
 
     <!-- STUDENT SECTION: ALL STUDENTS -->
     <div class="page" id="page-studentAllList">
-      <div class="page-header"><h1>&#127891; All Students</h1><p>Registered students ki poori list - Employee/Client data se poori tarah alag</p></div>
+      <div class="page-header"><h1>&#127891; All Students</h1><p>Full list of registered students - kept completely separate from Employee/Client data</p></div>
       <div class="filter-bar"><input type="text" class="srch" id="stuAllSearch" placeholder="Search by name, phone or batch" oninput="renderStudentAllList()" style="min-width:220px;"></div>
       <div id="stuAllTable"></div>
     </div>
 
     <!-- STUDENT SECTION: NOTES ADMIN -->
     <div class="page" id="page-studentNotesAdmin">
-      <div class="page-header"><h1>&#128218; Student Notes</h1><p>PDF notes upload karein, batch-wise ya sabke liye (Batch me "All" likhein sabke liye)</p></div>
+      <div class="page-header"><h1>&#128218; Student Notes</h1><p>Upload PDF notes, per batch or for everyone (enter "All" in Batch for everyone)</p></div>
       <div class="form-card form-grid" style="margin-bottom:16px;">
         <div class="form-group"><label>Batch</label><input type="text" id="snA_batch" placeholder="e.g. Hisar-Morning ya All"></div>
         <div class="form-group"><label>Title</label><input type="text" id="snA_title" placeholder="Note ka title"></div>
@@ -974,7 +974,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
 
     <!-- STUDENT SECTION: CLASS LINKS ADMIN -->
     <div class="page" id="page-studentClassLinksAdmin">
-      <div class="page-header"><h1>&#127909; Class Links</h1><p>Live class / YouTube / social media links add karein</p></div>
+      <div class="page-header"><h1>&#127909; Class Links</h1><p>Add live class / YouTube / social media links</p></div>
       <div class="form-card form-grid" style="margin-bottom:16px;">
         <div class="form-group"><label>Batch</label><input type="text" id="clA_batch" placeholder="e.g. Hisar-Morning ya All"></div>
         <div class="form-group"><label>Title</label><input type="text" id="clA_title"></div>
@@ -987,7 +987,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
 
     <!-- STUDENT SECTION: TEST SERIES ADMIN -->
     <div class="page" id="page-studentTestsAdmin">
-      <div class="page-header"><h1>&#128221; Test Series</h1><p>MCQ test banayein ya external test link daalein, phir Launch karein taaki students ko dikhe</p></div>
+      <div class="page-header"><h1>&#128221; Test Series</h1><p>Create an MCQ test or add an external test link, then Launch it so students can see it</p></div>
       <div class="form-card form-grid" style="margin-bottom:16px;">
         <div class="form-group"><label>Batch</label><input type="text" id="tsA_batch" placeholder="e.g. Hisar-Morning ya All"></div>
         <div class="form-group"><label>Title</label><input type="text" id="tsA_title"></div>
@@ -1001,7 +1001,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
 
     <!-- STUDENT SECTION: ATTENDANCE ADMIN -->
     <div class="page" id="page-studentAttendanceAdmin">
-      <div class="page-header"><h1>&#128197; Student Attendance</h1><p>Roz ki attendance mark karein</p></div>
+      <div class="page-header"><h1>&#128197; Student Attendance</h1><p>Mark daily attendance</p></div>
       <div class="form-card form-grid" style="margin-bottom:16px;">
         <div class="form-group"><label>Date</label><input type="date" id="saA_date"></div>
         <div class="form-group"><label>Student</label><select id="saA_student"></select></div>
@@ -1013,7 +1013,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
 
     <!-- STUDENT SECTION: REFER & EARN SETTINGS ADMIN -->
     <div class="page" id="page-studentSettingsAdmin">
-      <div class="page-header"><h1>&#9881; Refer &amp; Earn Settings</h1><p>Incentive amount aur account-opening link set karein - students isi ko dekhenge</p></div>
+      <div class="page-header"><h1>&#9881; Refer &amp; Earn Settings</h1><p>Set the incentive amount and account-opening link - students will see this</p></div>
       <div class="form-card form-grid" style="max-width:520px;">
         <div class="form-group"><label>Referral Incentive Amount (&#8377;)</label><input type="number" id="ssA_incentive"></div>
         <div class="form-group" style="grid-column:1/-1;"><label>Account Opening Link</label><input type="text" id="ssA_link" placeholder="https://..."></div>
@@ -1023,7 +1023,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
 
     <!-- STUDENT SECTION: REFER & EARN LEADS ADMIN -->
     <div class="page" id="page-studentReferralsAdmin">
-      <div class="page-header"><h1>&#128176; Refer &amp; Earn - Leads</h1><p>Students dwara refer kiye gaye leads</p></div>
+      <div class="page-header"><h1>&#128176; Refer &amp; Earn - Leads</h1><p>Leads referred by students</p></div>
       <div id="srATable"></div>
     </div>
 
@@ -1340,7 +1340,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
         <div class="form-group" id="a_forEmpGroup" style="display:none"><label>Entry For Which Employee?</label><select id="a_forEmp"></select></div>
         <div class="form-group"><label>Date</label><input type="date" id="a_date"></div>
         <div class="form-group"><label>Client Name</label><input type="text" id="a_cname" placeholder="Enter client name"></div>
-        <div class="form-group"><label>Client ID / Demat No <span style="color:var(--muted);font-weight:400;">- abhi na aayi ho to khaali chhod do, entry "Under Process" me chali jayegi aur Client ID edit se daalte hi automatic "Completed" me aa jayegi</span></label><input type="text" id="a_cid" placeholder="e.g. FBO1234 - ya khaali chhodo agar abhi tak nahi aayi"></div>
+        <div class="form-group"><label>Client ID / Demat No <span style="color:var(--muted);font-weight:400;">- leave blank if not received yet; the entry will go into "Under Process" and move to "Completed" automatically once you edit and add the Client ID</span></label><input type="text" id="a_cid" placeholder="e.g. FBO1234 - or leave blank if not received yet"></div>
         <div class="form-group"><label style="color:var(--danger,#ef4444);">Client Phone - required</label><input type="tel" id="a_cphone" placeholder="10-digit mobile"></div>
         <div class="form-group"><label>Account Type</label>
           <select id="a_acctype"><option value="New">New</option><option value="Transfer">Transfer</option></select>
@@ -1357,8 +1357,8 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
           </div>
           <div style="font-size:11px;color:var(--muted,#8a94a6);margin-top:4px;">If none selected, the account will be marked Inactive</div>
         </div>
-        <div class="form-group"><label style="display:flex;align-items:center;gap:7px;font-weight:400;font-size:13px;"><input type="checkbox" id="a_addToCT" style="width:auto;"> &#128222; Call &amp; Trade (daily calling) list me bhi add karo isi waqt</label></div>
-        <div class="form-group"><label>Remarks (client ke baare me kuch note - optional)</label><textarea id="a_remarks" placeholder="e.g. Family referred by X, prefers WhatsApp, budget conscious..."></textarea></div>
+        <div class="form-group"><label style="display:flex;align-items:center;gap:7px;font-weight:400;font-size:13px;"><input type="checkbox" id="a_addToCT" style="width:auto;"> &#128222; Also add to Call &amp; Trade (daily calling) list right now</label></div>
+        <div class="form-group"><label>Remarks (a short note about the client - optional)</label><textarea id="a_remarks" placeholder="e.g. Family referred by X, prefers WhatsApp, budget conscious..."></textarea></div>
         <div class="form-group"><label>How Did This Client Come? (Reference)</label>
           <select id="a_reftype" onchange="onRefTypeChange('a')">
             <option value="Direct">Direct (walk-in / no reference)</option>
@@ -1590,7 +1590,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
         <div class="table-wrap"><div class="table-inner" id="myAccTable"></div></div>
       </div>
       <div id="myAccModeProcess" style="display:none;">
-        <p style="color:var(--muted);font-size:12px;margin-bottom:10px;">Documents aa chuke hain, account punch ho chuka hai, but Client ID abhi tak nahi aayi. Jaise hi Edit (&#9998;) se Client ID daaloge, ye entry automatic "Completed Demat" me chali jayegi.</p>
+        <p style="color:var(--muted);font-size:12px;margin-bottom:10px;">Documents have been received and the account has been opened, but the Client ID has not arrived yet. As soon as you add the Client ID via Edit (&#9998;), this entry will automatically move to "Completed Demat".</p>
         <div class="filter-bar">
           <input class="srch" id="srch-myAccProcess" placeholder="&#128269; Search client/phone..." oninput="renderMyAccProcessTable()"><select onchange="setMyAccProcessSort(this.value)" style="max-width:210px;"><option value="">Sort: Oldest First</option><option value="recent">Sort: Recent First</option></select>
         </div>
@@ -1689,7 +1689,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       <div class="page-header"><h1>Client Brokerage</h1><p>Client-wise brokerage (from Choice uploads) &#8212; REMESHIRE amount</p></div>
       <div class="form-card" style="margin-bottom:14px;">
         <div class="form-group"><label>&#128269; Client ID Lookup (Total Brokerage, All Dates Combined)</label>
-          <input class="srch" id="cbrokLookupBox" placeholder="Client ID likhein e.g. FBO0515..." oninput="renderCbrokLookup()" style="width:100%;">
+          <input class="srch" id="cbrokLookupBox" placeholder="Enter Client ID e.g. FBO0515..." oninput="renderCbrokLookup()" style="width:100%;">
         </div>
         <div id="cbrokLookupResult"></div>
       </div>
@@ -1820,7 +1820,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
 
     <!-- ===== v22: MONTHLY HISAB ===== -->
     <div class="page" id="page-hisab">
-      <div class="page-header"><h1>Monthly Hisab</h1><p>Month-end settlement - auto-calculates net payable for each employee</p></div>
+      <div class="page-header"><h1>Monthly Settlement</h1><p>Month-end settlement - auto-calculates net payable for each employee</p></div>
       <div class="filter-bar">
         <span style="font-size:13px;color:var(--muted);">Month:</span>
         <input type="month" id="hisabMonth" class="srch" style="width:auto;" onchange="renderHisab()">
@@ -1828,13 +1828,13 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       <div class="stats-grid" id="hisabSummary"></div>
       <div id="hisabPL"></div>
       <div id="hisabPLDetail"></div>
-      <div class="sec-title">Employee-wise Hisab</div>
+      <div class="sec-title">Employee-wise Settlement</div>
       <div id="hisabCards"></div>
     </div>
 
     <!-- ===== v22: MY HISAB (employee payslip) ===== -->
     <div class="page" id="page-myHisab">
-      <div class="page-header"><h1>My Hisab</h1><p>Your month-wise settlement (view only)</p></div>
+      <div class="page-header"><h1>My Settlement</h1><p>Your month-wise settlement (view only)</p></div>
       <div id="myHisabCards"></div>
     </div>
 
@@ -1849,15 +1849,15 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       </div>
 
       <div id="ipoModeSelf" style="display:none;">
-        <p style="color:var(--muted);font-size:13px;margin:-8px 0 16px;">Aapke khud ke / family ke IPO applications ka personal record — company ke business IPO figures me nahi judta. IPO Name select karke rakhein to agli entries me dobara nahi likhna padega; Amount bhi usi IPO+Category ki last entry se apne aap bhar jayega (manually badal bhi sakte hain).</p>
+        <p style="color:var(--muted);font-size:13px;margin:-8px 0 16px;">A personal record of your own / family IPO applications &#8212; separate from the company business IPO figures. Select and keep the IPO Name so you do not have to type it again next time; the Amount will also auto-fill from the last entry for that IPO+Category (you can still change it manually).</p>
         <div class="form-card" style="margin-bottom:16px;">
           <div class="form-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:6px 20px;">
             <div class="form-group"><label>Date</label><input type="date" id="si_date"></div>
             <div class="form-group"><label>IPO Name</label><input type="text" id="si_ipoName" list="dl_si_ipoName" placeholder="e.g. Tata Capital" oninput="onSelfIPOFieldChange()" onchange="onSelfIPOFieldChange()"><datalist id="dl_si_ipoName"></datalist><div class="qp-row" id="qp_si_ipoName"></div></div>
-            <div class="form-group"><label>Client ID (jisme lagaya)</label><input type="text" id="si_clientId" list="dl_si_clientId" placeholder="e.g. FBO1234 / apna naam"><datalist id="dl_si_clientId"></datalist><div class="qp-row" id="qp_si_clientId"></div></div>
+            <div class="form-group"><label>Client ID (in whose name it was applied)</label><input type="text" id="si_clientId" list="dl_si_clientId" placeholder="e.g. FBO1234 / your name"><datalist id="dl_si_clientId"></datalist><div class="qp-row" id="qp_si_clientId"></div></div>
             <div class="form-group"><label>Client / Investor Naam</label><input type="text" id="si_clientName" list="dl_si_clientName" placeholder="e.g. Ramesh Kumar"><datalist id="dl_si_clientName"></datalist><div class="qp-row" id="qp_si_clientName"></div></div>
             <div class="form-group"><label>Category</label><select id="si_cat" onchange="onSelfIPOFieldChange()"><option>Retail</option><option>sHNI</option><option>bHNI</option></select></div>
-            <div class="form-group"><label>Amount (manual bhi kar sakte hain)</label><input type="number" id="si_amount" list="dl_si_amount" placeholder="e.g. 15000"><datalist id="dl_si_amount"></datalist><div class="qp-row" id="qp_si_amount"></div></div>
+            <div class="form-group"><label>Amount (can also enter manually)</label><input type="number" id="si_amount" list="dl_si_amount" placeholder="e.g. 15000"><datalist id="dl_si_amount"></datalist><div class="qp-row" id="qp_si_amount"></div></div>
             <div class="form-group"><label>Bank</label><input type="text" id="si_bank" list="dl_si_bank" placeholder="e.g. HDFC Bank"><datalist id="dl_si_bank"></datalist></div>
             <div class="form-group"><label>UPI ID</label><input type="text" id="si_upi" list="dl_si_upi" placeholder="e.g. name@okhdfc"><datalist id="dl_si_upi"></datalist><div class="qp-row" id="qp_si_upi"></div></div>
             <div class="form-group"><label>PAN Card</label><input type="text" id="si_pan" list="dl_si_pan" placeholder="e.g. ABCDE1234F" style="text-transform:uppercase;"><datalist id="dl_si_pan"></datalist></div>
@@ -1870,7 +1870,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       </div>
 
       <div id="ipoModeBuy" style="display:none;">
-      <div id="ipoNoAccessMsg" class="no-data" style="display:none;">&#128274; Ye section (Application Buy) sirf admin-approved employees ke liye hai. Access ke liye admin se baat karein.</div>
+      <div id="ipoNoAccessMsg" class="no-data" style="display:none;">&#128274; This section (Application Buy) is only for admin-approved employees. Contact admin for access.</div>
       <div id="ipoBuyAccessWrap">
       <div class="form-card form-grid" style="margin-bottom:16px;">
         <div class="form-group"><label>Select IPO</label><select id="ipo_select" onchange="onIPOSelectChange()"></select></div>
@@ -1914,7 +1914,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
               <div class="form-group"><label>Reference</label><input type="text" id="ipoAdd_ref" placeholder="Employee / client / anyone"></div>
               <div class="form-group"><label>Category</label><select id="ipoAdd_cat"><option>Retail</option><option>sHNI</option><option>bHNI</option></select></div>
               <div class="form-group"><label>Buy Rate (&#8377;/application)</label><input type="number" id="ipoAdd_buyrate" placeholder="e.g. 15000"></div>
-              <div class="form-group" style="grid-column:1/-1;"><label>Remarks</label><input type="text" id="ipoAdd_remarks" placeholder="Client ke baare me, payment ke baare me - kuch bhi note"></div>
+              <div class="form-group" style="grid-column:1/-1;"><label>Remarks</label><input type="text" id="ipoAdd_remarks" placeholder="Any note about the client, payment, etc."></div>
               <div class="form-group" style="align-self:end;"><button class="btn-submit" onclick="submitIPOApplications()">Add</button></div>
             </div>
             <p style="color:var(--muted);font-size:11px;margin-top:6px;">Broker (Choice/Other) is set per application below the table, since one batch can split across brokers.</p>
@@ -1984,32 +1984,32 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       <div id="stuDashBox"></div>
     </div>
     <div class="page" id="spage-stuWatchlist">
-      <div class="page-header"><h1>&#11088; My Watchlist</h1><p>Apni khud ki stock watchlist yahan bana sakenge - employee/client watchlist se poori tarah alag.</p></div>
-      <p style="color:var(--muted);padding:20px;">&#128679; Yeh feature jald launch hoga.</p>
+      <div class="page-header"><h1>&#11088; My Watchlist</h1><p>Build your own stock watchlist here - fully separate from the employee/client watchlist.</p></div>
+      <p style="color:var(--muted);padding:20px;">&#128679; This feature is launching soon.</p>
     </div>
     <div class="page" id="spage-stuJournal">
-      <div class="page-header"><h1>&#128200; My Trading Journal</h1><p>Apni trades yahan record kar sakenge, employee/client trading journal se poori tarah alag.</p></div>
-      <p style="color:var(--muted);padding:20px;">&#128679; Yeh feature jald launch hoga.</p>
+      <div class="page-header"><h1>&#128200; My Trading Journal</h1><p>Record your own trades here - fully separate from the employee/client trading journal.</p></div>
+      <p style="color:var(--muted);padding:20px;">&#128679; This feature is launching soon.</p>
     </div>
     <div class="page" id="spage-stuNotes">
-      <div class="page-header"><h1>&#128218; Notes</h1><p>Class notes (PDF) yahan milenge.</p></div>
-      <p style="color:var(--muted);padding:20px;">&#128679; Yeh feature jald launch hoga.</p>
+      <div class="page-header"><h1>&#128218; Notes</h1><p>Class notes (PDF) will appear here.</p></div>
+      <p style="color:var(--muted);padding:20px;">&#128679; This feature is launching soon.</p>
     </div>
     <div class="page" id="spage-stuClasses">
-      <div class="page-header"><h1>&#127909; Class Links</h1><p>Live class aur YouTube/social media links yahan milenge.</p></div>
-      <p style="color:var(--muted);padding:20px;">&#128679; Yeh feature jald launch hoga.</p>
+      <div class="page-header"><h1>&#127909; Class Links</h1><p>Live class and YouTube/social media links will appear here.</p></div>
+      <p style="color:var(--muted);padding:20px;">&#128679; This feature is launching soon.</p>
     </div>
     <div class="page" id="spage-stuTests">
-      <div class="page-header"><h1>&#128221; Test Series</h1><p>MCQ tests aur external test links yahan milenge, score history ke saath.</p></div>
-      <p style="color:var(--muted);padding:20px;">&#128679; Yeh feature jald launch hoga.</p>
+      <div class="page-header"><h1>&#128221; Test Series</h1><p>MCQ tests and external test links will appear here, along with your score history.</p></div>
+      <p style="color:var(--muted);padding:20px;">&#128679; This feature is launching soon.</p>
     </div>
     <div class="page" id="spage-stuAttendance">
-      <div class="page-header"><h1>&#128197; My Attendance</h1><p>Apni attendance yahan dekh sakenge.</p></div>
-      <p style="color:var(--muted);padding:20px;">&#128679; Yeh feature jald launch hoga.</p>
+      <div class="page-header"><h1>&#128197; My Attendance</h1><p>View your attendance here.</p></div>
+      <p style="color:var(--muted);padding:20px;">&#128679; This feature is launching soon.</p>
     </div>
     <div class="page" id="spage-stuRefer">
-      <div class="page-header"><h1>&#128176; Refer &amp; Earn</h1><p>Refer karke earn karne ka form aur account-opening link yahan milega.</p></div>
-      <p style="color:var(--muted);padding:20px;">&#128679; Yeh feature jald launch hoga.</p>
+      <div class="page-header"><h1>&#128176; Refer &amp; Earn</h1><p>The referral form and account-opening link will appear here.</p></div>
+      <p style="color:var(--muted);padding:20px;">&#128679; This feature is launching soon.</p>
     </div>
   </main>
 </div>
@@ -2054,7 +2054,7 @@ function getStuSetting(key,def){
   return s?s['Value']:def;
 }
 function deleteStuGenericAdmin(sheet,rowNum,cb){
-  if(!confirm('Delete karna hai?'))return;
+  if(!confirm('Delete this?'))return;
   postData({action:'deleteRow',sheet:sheet,rowNum:rowNum}).then(function(r){
     if(r&&r.success){showToast('Deleted','success');loadStudentDataAdmin(cb);}else showToast('Fail','error');
   }).catch(function(e){showToast('Error: '+e.message,'error');});
@@ -2191,7 +2191,7 @@ function checkSIPAlerts(){
   ['sipAlert','sipAlertSIP','sipAlertAdminDash','sipAlertAdminSIP'].forEach(function(id){
     var el=document.getElementById(id);if(!el)return;
     if(due.length>0){
-      el.innerHTML='&#9888; <strong>SIP Due (agle 3 din, har month automatic repeat):</strong> '+due.map(function(r){var d=nextDue(r['SIP Due Date']);var day=('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2);return (r['Client Name']||'')+(isAdm?' ['+(r['Employee Name']||'-')+']':'')+' &#8212; '+day+' ('+fmt(r['Amount']||0)+')';}).join(' &nbsp;&#183;&nbsp; ');
+      el.innerHTML='&#9888; <strong>SIP Due (next 3 days, repeats automatically every month):</strong> '+due.map(function(r){var d=nextDue(r['SIP Due Date']);var day=('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2);return (r['Client Name']||'')+(isAdm?' ['+(r['Employee Name']||'-')+']':'')+' &#8212; '+day+' ('+fmt(r['Amount']||0)+')';}).join(' &nbsp;&#183;&nbsp; ');
       el.classList.add('show');
     } else {el.classList.remove('show');}
   });
@@ -2213,8 +2213,8 @@ function studentLogin(){
     var s=findStudentLogin(id,pass);
     if(!s){err.textContent='Invalid ID or Password';err.style.display='block';return;}
     var st=(s['Status']||'').trim();
-    if(st==='Pending'){err.textContent='Aapka registration abhi approve hona baki hai. Thodi der baad try karein.';err.style.display='block';return;}
-    if(st==='Rejected'){err.textContent='Aapki registration request reject ho gayi hai. Office se sampark karein.';err.style.display='block';return;}
+    if(st==='Pending'){err.textContent='Your registration is still awaiting approval. Please try again shortly.';err.style.display='block';return;}
+    if(st==='Rejected'){err.textContent='Your registration request was rejected. Please contact the office.';err.style.display='block';return;}
     currentUser={id:s['Student ID'],name:s['Name'],batch:s['Batch'],role:'student',userId:s['Student ID'],phone:s['Phone'],email:s['Email']};
     startStudentApp();
   }
@@ -2236,27 +2236,27 @@ function submitStudentRegister(){
   var pass=(document.getElementById('sr_pass').value||'').trim();
   var err=document.getElementById('sr_err');
   err.style.display='none';
-  if(!name||!phone||!pass){err.textContent='Naam, Phone aur Password zaroori hai';err.style.display='block';return;}
-  if(phone.length<10){err.textContent='Sahi phone number likhein';err.style.display='block';return;}
+  if(!name||!phone||!pass){err.textContent='Name, Phone and Password are required';err.style.display='block';return;}
+  if(phone.length<10){err.textContent='Please enter a valid phone number';err.style.display='block';return;}
   err.textContent='Checking...';err.style.color='var(--accent,#3fb27f)';err.style.display='block';
   fetchStudentPortal().then(function(r){
     var list=(r&&r.success)?(r.students||[]):[];
     students=list;
     if(list.find(function(s){return (s['Student ID']||'').trim()===phone;})){
-      err.style.color='';err.textContent='Yeh phone number pehle se registered hai. Login karein ya office se sampark karein.';err.style.display='block';
+      err.style.color='';err.textContent='This phone number is already registered. Please log in, or contact the office.';err.style.display='block';
       return null;
     }
     return postData({action:'addGeneric',sheet:'StudentPortal','Student ID':phone,'Password':pass,'Name':name,'Phone':phone,'Email':email,'Batch':batch,'Status':'Pending','Registered Date':td()});
   }).then(function(res){
     if(!res)return;
     if(res.success){
-      err.style.color='var(--accent,#3fb27f)';err.textContent='Registration ho gayi! Approval ke baad aap Student ID (phone number) aur password se login kar sakenge.';err.style.display='block';
+      err.style.color='var(--accent,#3fb27f)';err.textContent='Registration successful! Once approved, you can log in with your Student ID (phone number) and password.';err.style.display='block';
       document.getElementById('sr_name').value='';document.getElementById('sr_phone').value='';document.getElementById('sr_email').value='';document.getElementById('sr_batch').value='';document.getElementById('sr_pass').value='';
       setTimeout(function(){showNormalLogin();setLoginMode('student',document.getElementById('loginTabStudent'));},2200);
     }else{
-      err.style.color='';err.textContent='Registration fail ho gaya'+(res.error?': '+res.error:'')+' - dobara try karein';err.style.display='block';
+      err.style.color='';err.textContent='Registration failed'+(res.error?': '+res.error:'')+' - please try again';err.style.display='block';
     }
-  }).catch(function(){err.style.color='';err.textContent='Network error - dobara try karein';err.style.display='block';});
+  }).catch(function(){err.style.color='';err.textContent='Network error - please try again';err.style.display='block';});
 }
 function login(){
   var id=(document.getElementById('loginId').value||'').trim();
@@ -2425,7 +2425,7 @@ function buildReminderHTML(r){
   var isAdm=currentUser&&currentUser.role==='admin';
   var h='<div class="modal-title">&#128276; Today\'s Reminder - '+td()+'</div>';
   if(r.myTasks&&r.myTasks.length){
-    h+='<div style="font-weight:700;color:#8b5cf6;margin:4px 0 8px;">&#128221; Aapko Task Assign Hua Hai:</div>';
+    h+='<div style="font-weight:700;color:#8b5cf6;margin:4px 0 8px;">&#128221; You Have Been Assigned a Task:</div>';
     h+='<div style="max-height:220px;overflow:auto;margin-bottom:14px;">'+r.myTasks.map(function(t){
       return '<div style="padding:8px 4px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:13px;">'
         +'<div style="margin-bottom:6px;"><b>'+(t['Task']||'-')+'</b>'+(t['Client Name']?' &#183; '+t['Client Name']:'')+' <span style="color:var(--muted,#8a94a6);font-size:11px;">(by '+(t['Assigned By Name']||'-')+', '+(t['Date Assigned']||'')+')</span></div>'
@@ -2444,7 +2444,7 @@ function buildReminderHTML(r){
     }).join('')+'</div>';
   }
   if(r.sipTomorrow.length){
-    h+='<div style="font-weight:700;color:var(--accent,#3fbf7f);margin:4px 0 8px;">&#128197; SIP Due (agle 3 din, har mahine automatic repeat) &#8212; call the client to remind them:</div>';
+    h+='<div style="font-weight:700;color:var(--accent,#3fbf7f);margin:4px 0 8px;">&#128197; SIP Due (next 3 days, repeats every month) &#8212; call the client to remind them:</div>';
     h+='<div style="max-height:200px;overflow:auto;margin-bottom:14px;">'+r.sipTomorrow.map(function(row){
       var ph=(row['Client Phone']||'').replace(/[^\d+]/g,'');
       var dd2=nextDue(row['SIP Due Date']);
@@ -2500,7 +2500,7 @@ function buildReminderHTML(r){
     var wlRowNums=r.watchlistAlerts.map(function(w){return w['_rowNum'];});
     h+='<div style="font-weight:700;color:#8b5cf6;margin:4px 0 8px;">&#128269; New Watchlist Stocks:</div>';
     h+='<div style="padding:8px 4px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:13px;margin-bottom:14px;">'
-      +'<div style="margin-bottom:8px;">'+wlEmpNames.join(', ')+' ne '+r.watchlistAlerts.length+' stock(s) daale hain &#8212; check karo aur RK Comment add karo.</div>'
+      +'<div style="margin-bottom:8px;">'+wlEmpNames.join(', ')+' added '+r.watchlistAlerts.length+' stock(s) &#8212; check and add an RK Comment.</div>'
       +'<button class="btn-mini" onclick="closeModal();showPage(\'watchlist\');">&#128064; View</button> '
       +'<button class="btn-mini" onclick="dismissWLNewAlertsBtn('+JSON.stringify(wlRowNums)+')">&#10003; Checked</button>'
       +'</div>';
@@ -3358,7 +3358,7 @@ function mkWatchlistTable(rows,showEmp){
     h+='<td style="font-size:11px;color:var(--muted);">'+(r['Pattern']||'-')+'</td>';
     h+='<td style="font-size:12px;color:var(--muted);white-space:normal;max-width:220px;">'+(r['Notes']||'-')+'</td>';
     if(isAdm){
-      h+='<td style="min-width:170px;"><input type="text" class="rk-comment-input" data-rownum="'+r['_rowNum']+'" value="'+escAttr(r['RK Comments']||'')+'" placeholder="Apna comment likhein... (dusri jagah click karte hi save ho jayega)" style="width:100%;font-size:12px;padding:5px 7px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.04);color:inherit;" onblur="wlRKCommentBlur(this)" onkeydown="if(event.key===&#39;Enter&#39;){this.blur();}"></td>';
+      h+='<td style="min-width:170px;"><input type="text" class="rk-comment-input" data-rownum="'+r['_rowNum']+'" value="'+escAttr(r['RK Comments']||'')+'" placeholder="Write your comment... (saves automatically when you click elsewhere)" style="width:100%;font-size:12px;padding:5px 7px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.04);color:inherit;" onblur="wlRKCommentBlur(this)" onkeydown="if(event.key===&#39;Enter&#39;){this.blur();}"></td>';
     }else{
       h+='<td style="font-size:12px;white-space:normal;max-width:220px;color:'+(r['RK Comments']?'#3fbf7f':'var(--muted)')+';">'+(r['RK Comments']?('&#128172; '+r['RK Comments']):'-')+'</td>';
     }
@@ -3404,7 +3404,7 @@ function checkWLRKComments(){
   playAlertSound();
   var rkRowNums=newOnes.map(function(r){return r['_rowNum'];});
   var h='<div class="modal-title">&#128172; RK Comments on Your Watchlist</div>';
-  h+='<div style="color:var(--muted,#8a94a6);margin-bottom:10px;font-size:13px;">RK ne aapke daale gaye stocks pe comment kiya hai:</div>';
+  h+='<div style="color:var(--muted,#8a94a6);margin-bottom:10px;font-size:13px;">RK has commented on the stocks you added:</div>';
   h+='<div style="max-height:260px;overflow:auto;margin-bottom:14px;">'+newOnes.map(function(r){
     return '<div style="padding:8px 4px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:13px;">'
       +'<b>'+(r['Stock']||'-')+'</b><div style="color:#3fbf7f;margin-top:4px;">&#128172; '+(r['RK Comments']||'')+'</div>'
@@ -3511,17 +3511,17 @@ function submitSelfIPO(){
   var amount=document.getElementById('si_amount').value;
   var clientId=(document.getElementById('si_clientId').value||'').trim();
   var pan=(document.getElementById('si_pan').value||'').trim().toUpperCase();
-  if(!ipoName){showToast('IPO Name zaroori hai','error');return;}
+  if(!ipoName){showToast('IPO Name is required','error');return;}
   var dupe=findSelfIPODupe(ipoName,pan,clientId);
   if(dupe){
     var which=(pan&&(dupe['PAN']||'').trim().toUpperCase()===pan)?('PAN '+pan):('Client ID '+clientId);
-    showToast('Is IPO ('+ipoName+') ke liye '+which+' already add ho chuka hai ('+(dupe['Employee Name']||'')+', '+(dupe['Date']||'')+') — 2 clients ka PAN/Client ID same nahi ho sakta','error');
+    showToast('This '+which+' has already been added for IPO ('+ipoName+') ('+(dupe['Employee Name']||'')+', '+(dupe['Date']||'')+') &#8212; 2 clients cannot have the same PAN/Client ID','error');
     return;
   }
   var p={action:'addSelfIPO','Date':document.getElementById('si_date').value||td(),'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch||'','IPO Name':ipoName,'Client ID':clientId,'Client Name':(document.getElementById('si_clientName').value||'').trim(),'Bank':(document.getElementById('si_bank').value||'').trim(),'UPI ID':(document.getElementById('si_upi').value||'').trim(),'PAN':pan,'Category':document.getElementById('si_cat').value,'Amount':amount||'','Status':'Applied','Remarks':(document.getElementById('si_remarks').value||'').trim()};
   postData(p).then(function(r){
     if(r&&r.success){
-      showToast('Self IPO entry add ho gayi','success');
+      showToast('Self IPO entry added','success');
       /* v76: IPO Name/Category/Amount sticky rakhe (baar baar select na karna pade) - sirf client-specific fields clear */
       ['si_clientId','si_clientName','si_bank','si_upi','si_pan','si_remarks'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});
       setTimeout(function(){loadAll(2);populateSelfIPODatalists();},600);
@@ -3549,7 +3549,7 @@ function renderSelfIPOPage(){
     {label:'Allotted',value:allotted,sub:'out of '+applied,color:'green'},
     {label:'Total Amount',value:fmt(totAmt),sub:'applied so far',color:'blue'}
   ]);
-  if(!rows.length){box.innerHTML='<div class="no-data">Koi entry nahi hai abhi</div>';return;}
+  if(!rows.length){box.innerHTML='<div class="no-data">No entries yet</div>';return;}
   rows=rows.slice().sort(function(a,b){return (b['Date']||'').localeCompare(a['Date']||'');});
   var h='<table><thead><tr>'+(isAdm?'<th>Employee</th>':'')+'<th>Date</th><th>IPO Name</th><th>Client ID</th><th>Client Naam</th><th>Category</th><th>Amount</th><th>Bank</th><th>UPI</th><th>PAN</th><th>Status</th><th>Remarks</th><th></th></tr></thead><tbody>';
   rows.forEach(function(r){
@@ -3565,7 +3565,7 @@ function renderSelfIPOPage(){
 }
 function openEditSelfIPOModal(rowNum){
   var r=(allData.SelfIPO||[]).find(function(x){return String(x['_rowNum'])===String(rowNum);});
-  if(!r){showToast('Entry nahi mila','error');return;}
+  if(!r){showToast('Entry not found','error');return;}
   var h='<div class="modal-title">Edit Self Application Entry</div>';
   h+='<div class="form-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:6px 20px;">';
   h+='<div class="form-group"><label>Date</label><input type="date" id="esi_date" value="'+siEsc(r['Date']||'')+'"></div>';
@@ -3586,13 +3586,13 @@ function openEditSelfIPOModal(rowNum){
 }
 function submitEditSelfIPO(rowNum){
   var ipoName=(document.getElementById('esi_ipoName').value||'').trim();
-  if(!ipoName){showToast('IPO Name zaroori hai','error');return;}
+  if(!ipoName){showToast('IPO Name is required','error');return;}
   var editClientId=(document.getElementById('esi_clientId').value||'').trim();
   var editPan=(document.getElementById('esi_pan').value||'').trim().toUpperCase();
   var editDupe=findSelfIPODupe(ipoName,editPan,editClientId,rowNum);
   if(editDupe){
     var editWhich=(editPan&&(editDupe['PAN']||'').trim().toUpperCase()===editPan)?('PAN '+editPan):('Client ID '+editClientId);
-    showToast('Is IPO ('+ipoName+') ke liye '+editWhich+' already ek aur entry me add hai ('+(editDupe['Employee Name']||'')+', '+(editDupe['Date']||'')+') — 2 clients ka PAN/Client ID same nahi ho sakta','error');
+    showToast('This '+editWhich+' is already added in another entry for IPO ('+ipoName+') ('+(editDupe['Employee Name']||'')+', '+(editDupe['Date']||'')+') &#8212; 2 clients cannot have the same PAN/Client ID','error');
     return;
   }
   var vals={
@@ -3611,7 +3611,7 @@ function submitEditSelfIPO(rowNum){
   patchRowLocal('SelfIPO',rowNum,vals);
   closeModal();renderSelfIPOPage();
   postData({action:'editRow',sheet:'SelfIPO',rowNum:rowNum,vals:vals}).then(function(r){
-    if(r&&r.success){showToast('Update ho gaya','success');setTimeout(function(){loadAll(2);populateSelfIPODatalists();},600);}
+    if(r&&r.success){showToast('Updated','success');setTimeout(function(){loadAll(2);populateSelfIPODatalists();},600);}
     else showToast('Failed: '+(r&&r.error||''),'error');
   }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
@@ -3622,16 +3622,16 @@ function renderMyTasksBanner(){
   var pending=(allData.TeamTasks||[]).filter(function(t){return t['Assigned To']===currentUser.userId&&(t['Status']||'Pending')!=='Done';});
   if(!pending.length){el.style.display='none';el.innerHTML='';return;}
   el.style.display='flex';
-  el.innerHTML='<span>&#128221;</span><span>Aapko '+pending.length+' naya task assign hua hai &#8212; '+(pending[0]['Task']||'')+(pending.length>1?' (+'+(pending.length-1)+' aur)':'')+'</span>'
+  el.innerHTML='<span>&#128221;</span><span>You have '+pending.length+' new task(s) assigned &#8212; '+(pending[0]['Task']||'')+(pending.length>1?' (+'+(pending.length-1)+' more)':'')+'</span>'
     +'<button class="btn-mini" style="margin-left:auto;" onclick="showReminderModal()">&#128064; Dekhein</button>';
 }
 function openMarkTaskDoneModal(rowNum){
   var t=(allData.TeamTasks||[]).find(function(x){return String(x['_rowNum'])===String(rowNum);});
-  if(!t){showToast('Task nahi mila','error');return;}
-  var h='<div class="modal-title">&#10003; Task Done Karein</div>';
+  if(!t){showToast('Task not found','error');return;}
+  var h='<div class="modal-title">&#10003; Mark Task Done</div>';
   h+='<div style="color:var(--muted,#8a94a6);margin-bottom:10px;font-size:13px;"><b>'+(t['Task']||'-')+'</b>'+(t['Client Name']?' &#183; '+t['Client Name']:'')+'</div>';
-  h+='<div class="form-group"><label>Remarks (kya baat hui / kya hua)</label><textarea id="mtd_remarks" rows="3" placeholder="e.g. Client se baat ho gayi, meeting fix ho gayi 15 tarikh ko"></textarea></div>';
-  h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="submitMarkTaskDone('+rowNum+')">Done Mark Karein</button></div>';
+  h+='<div class="form-group"><label>Remarks (what happened / what was discussed)</label><textarea id="mtd_remarks" rows="3" placeholder="e.g. Spoke with the client, meeting scheduled for the 15th"></textarea></div>';
+  h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="submitMarkTaskDone('+rowNum+')">Mark Done</button></div>';
   document.getElementById('modalBox').innerHTML=h;
   document.getElementById('modal').className='show';
 }
@@ -3641,7 +3641,7 @@ function submitMarkTaskDone(rowNum){
   patchRowLocal('TeamTasks',rowNum,vals);
   closeModal();renderMyTasksBanner();renderNotifBell();
   postData({action:'editRow',sheet:'TeamTasks',rowNum:rowNum,vals:vals}).then(function(r){
-    if(r&&r.success){showToast('Task done mark ho gaya','success');setTimeout(function(){loadAll(2);},600);}
+    if(r&&r.success){showToast('Task marked done','success');setTimeout(function(){loadAll(2);},600);}
     else showToast('Failed: '+(r&&r.error||''),'error');
   }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
@@ -3679,7 +3679,7 @@ function renderAdminTasksTable(){
     {label:'Pending',value:pending,sub:'not done yet',color:'amber'},
     {label:'Done',value:done,sub:'completed',color:'green'}
   ]);
-  if(!rows.length){box.innerHTML='<div class="no-data">Koi task nahi mila</div>';return;}
+  if(!rows.length){box.innerHTML='<div class="no-data">No tasks found</div>';return;}
   rows=rows.slice().sort(function(a,b){
     var aDone=(a['Status']==='Done')?1:0,bDone=(b['Status']==='Done')?1:0;
     if(aDone!==bDone)return aDone-bDone;
@@ -3700,10 +3700,10 @@ function renderAdminTasksTable(){
 }
 function openAdminAssignTaskModal(){
   var team=adminAllTaskEmployees();
-  var h='<div class="modal-title">&#128221; Naya Task Assign Karein</div>';
-  h+='<div class="form-group"><label>Kisko Task Dena Hai</label><select id="at_emp">'+team.map(function(e){return '<option value="'+e['Employee ID']+'">'+e['Name']+'</option>';}).join('')+'</select></div>';
+  var h='<div class="modal-title">&#128221; Assign New Task</div>';
+  h+='<div class="form-group"><label>Assign Task To</label><select id="at_emp">'+team.map(function(e){return '<option value="'+e['Employee ID']+'">'+e['Name']+'</option>';}).join('')+'</select></div>';
   h+='<div class="form-group"><label>Client Name (optional)</label><input type="text" id="at_client" placeholder="e.g. Ramesh Kumar"></div>';
-  h+='<div class="form-group"><label>Task Kya Karna Hai</label><textarea id="at_task" rows="3" placeholder="e.g. Is client ko call karo, meeting karke aao"></textarea></div>';
+  h+='<div class="form-group"><label>What Needs to Be Done</label><textarea id="at_task" rows="3" placeholder="e.g. Call this client, arrange a meeting"></textarea></div>';
   h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-submit" onclick="submitAssignTask()">Assign Task</button></div>';
   document.getElementById('modalBox').innerHTML=h;
   document.getElementById('modal').className='show';
@@ -3718,10 +3718,10 @@ function populateTeamTaskEmpSelect(){
 }
 function openAssignTaskModal(){
   var team=taskAssignableEmployees();
-  var h='<div class="modal-title">&#128221; Naya Task Assign Karein</div>';
-  h+='<div class="form-group"><label>Kisko Task Dena Hai</label><select id="at_emp">'+team.map(function(e){return '<option value="'+e['Employee ID']+'">'+e['Name']+'</option>';}).join('')+'</select></div>';
+  var h='<div class="modal-title">&#128221; Assign New Task</div>';
+  h+='<div class="form-group"><label>Assign Task To</label><select id="at_emp">'+team.map(function(e){return '<option value="'+e['Employee ID']+'">'+e['Name']+'</option>';}).join('')+'</select></div>';
   h+='<div class="form-group"><label>Client Name (optional)</label><input type="text" id="at_client" placeholder="e.g. Ramesh Kumar"></div>';
-  h+='<div class="form-group"><label>Task Kya Karna Hai</label><textarea id="at_task" rows="3" placeholder="e.g. Is client ko call karo, meeting karke aao"></textarea></div>';
+  h+='<div class="form-group"><label>What Needs to Be Done</label><textarea id="at_task" rows="3" placeholder="e.g. Call this client, arrange a meeting"></textarea></div>';
   h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-submit" onclick="submitAssignTask()">Assign Task</button></div>';
   document.getElementById('modalBox').innerHTML=h;
   document.getElementById('modal').className='show';
@@ -3730,13 +3730,13 @@ function submitAssignTask(){
   var empId=document.getElementById('at_emp').value;
   var client=document.getElementById('at_client').value.trim();
   var task=document.getElementById('at_task').value.trim();
-  if(!task){showToast('Task likhna zaroori hai','error');return;}
+  if(!task){showToast('Task description is required','error');return;}
   var isSelf=empId===currentUser.userId;
   var emp=isSelf?{'Name':currentUser.name,'Branch':currentUser.branch||''}:employees.find(function(e){return e['Employee ID']===empId;});
-  if(!emp){showToast('Employee nahi mila','error');return;}
+  if(!emp){showToast('Employee not found','error');return;}
   var p={action:'addTeamTask','Date Assigned':td(),'Assigned By':currentUser.userId,'Assigned By Name':currentUser.name,'Assigned To':empId,'Assigned To Name':(isSelf?'Myself':emp['Name']),'Branch':emp['Branch']||'','Client Name':client,'Task':task,'Status':'Pending'};
   postData(p).then(function(r){
-    if(r&&r.success){showToast('Task assign ho gaya','success');closeModal();setTimeout(function(){loadAll(2);},600);}
+    if(r&&r.success){showToast('Task assigned','success');closeModal();setTimeout(function(){loadAll(2);},600);}
     else showToast('Failed: '+(r&&r.error||''),'error');
   }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
@@ -3755,7 +3755,7 @@ function renderTeamTasksTable(){
     {label:'Pending',value:pending,sub:'not done yet',color:'amber'},
     {label:'Done',value:done,sub:'completed',color:'green'}
   ]);
-  if(!rows.length){box.innerHTML='<div class="no-data">Koi task nahi mila</div>';return;}
+  if(!rows.length){box.innerHTML='<div class="no-data">No tasks found</div>';return;}
   rows=rows.slice().sort(function(a,b){
     var aDone=(a['Status']==='Done')?1:0,bDone=(b['Status']==='Done')?1:0;
     if(aDone!==bDone)return aDone-bDone;
@@ -3776,12 +3776,12 @@ function renderTeamTasksTable(){
 }
 function openEditTeamTaskModal(rowNum){
   var t=(allData.TeamTasks||[]).find(function(x){return String(x['_rowNum'])===String(rowNum);});
-  if(!t){showToast('Task nahi mila','error');return;}
+  if(!t){showToast('Task not found','error');return;}
   var team=(currentUser&&currentUser.role==='admin')?adminAllTaskEmployees():taskAssignableEmployees();
-  var h='<div class="modal-title">&#9998; Task Edit Karein</div>';
+  var h='<div class="modal-title">&#9998; Edit Task</div>';
   h+='<div class="form-group"><label>Kisko Task Diya</label><select id="ett_emp">'+team.map(function(e){return '<option value="'+e['Employee ID']+'"'+(e['Employee ID']===t['Assigned To']?' selected':'')+'>'+e['Name']+'</option>';}).join('')+'</select></div>';
   h+='<div class="form-group"><label>Client Name (optional)</label><input type="text" id="ett_client" value="'+siEsc(t['Client Name']||'')+'"></div>';
-  h+='<div class="form-group"><label>Task Kya Karna Hai</label><textarea id="ett_task" rows="3">'+siEsc(t['Task']||'')+'</textarea></div>';
+  h+='<div class="form-group"><label>What Needs to Be Done</label><textarea id="ett_task" rows="3">'+siEsc(t['Task']||'')+'</textarea></div>';
   h+='<div class="form-group"><label>Status</label><select id="ett_status"><option'+((t['Status']||'Pending')==='Pending'?' selected':'')+'>Pending</option><option'+(t['Status']==='Done'?' selected':'')+'>Done</option></select></div>';
   h+='<div class="form-group"><label>Remarks</label><input type="text" id="ett_remarks" value="'+siEsc(t['Remarks']||'')+'"></div>';
   h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="submitEditTeamTask('+rowNum+')">Save</button></div>';
@@ -3793,7 +3793,7 @@ function submitEditTeamTask(rowNum){
   var isSelf=empId===currentUser.userId;
   var emp=isSelf?{'Name':'Myself','Branch':currentUser.branch||''}:employees.find(function(e){return e['Employee ID']===empId;});
   var task=(document.getElementById('ett_task').value||'').trim();
-  if(!task){showToast('Task likhna zaroori hai','error');return;}
+  if(!task){showToast('Task description is required','error');return;}
   var vals={
     'Assigned To':empId,
     'Assigned To Name':emp?emp['Name']:'',
@@ -3806,7 +3806,7 @@ function submitEditTeamTask(rowNum){
   patchRowLocal('TeamTasks',rowNum,vals);
   closeModal();renderTeamTasksTable();renderMyTasksBanner();
   postData({action:'editRow',sheet:'TeamTasks',rowNum:rowNum,vals:vals}).then(function(r){
-    if(r&&r.success){showToast('Task update ho gaya','success');setTimeout(function(){loadAll(2);},600);}
+    if(r&&r.success){showToast('Task updated','success');setTimeout(function(){loadAll(2);},600);}
     else showToast('Failed: '+(r&&r.error||''),'error');
   }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
@@ -4352,9 +4352,9 @@ function mkAccTable(rows,dupSet,sortMode,amtMap){
     var ctEntry=callTradeEntryFor(cid);
     var ctBtn;
     if(ctEntry){
-      ctBtn=isIPOPurpose(ctEntry)?'<span class="badge amber" style="margin-left:2px;" title="Ye client IPO Calling List me hai - sirf naya IPO aane par call jayega">&#128203; In IPO List</span>':'<span class="badge blue" style="margin-left:2px;" title="Ye client Call &amp; Trade calling list me hai">&#128222; In Call &amp; Trade</span>';
+      ctBtn=isIPOPurpose(ctEntry)?'<span class="badge amber" style="margin-left:2px;" title="This client is in the IPO Calling List - will only be called when a new IPO comes">&#128203; In IPO List</span>':'<span class="badge blue" style="margin-left:2px;" title="This client is in the Call &amp; Trade calling list">&#128222; In Call &amp; Trade</span>';
     }else{
-      ctBtn='<button class="btn-call" style="background:rgba(10,132,255,0.15);color:#0a84ff;" onclick="shiftAccountToCallTrade('+r['_rowNum']+')" title="Is account ko Call &amp; Trade (daily calling list) me shift karo">&#128222;&#8594; Call &amp; Trade</button> <button class="btn-call" style="background:rgba(255,159,10,0.15);color:#ff9f0a;" onclick="shiftAccountToIPOList('+r['_rowNum']+')" title="Is account ko IPO Calling List me shift karo - sirf naya IPO aane par isko call jayega">&#128203;&#8594; IPO List</button>';
+      ctBtn='<button class="btn-call" style="background:rgba(10,132,255,0.15);color:#0a84ff;" onclick="shiftAccountToCallTrade('+r['_rowNum']+')" title="Shift this account to the Call &amp; Trade (daily calling) list">&#128222;&#8594; Call &amp; Trade</button> <button class="btn-call" style="background:rgba(255,159,10,0.15);color:#ff9f0a;" onclick="shiftAccountToIPOList('+r['_rowNum']+')" title="Shift this account to the IPO Calling List - will only be called when a new IPO comes">&#128203;&#8594; IPO List</button>';
     }
     h+='<td>'+mapBtn+'<button class="btn-call" onclick="openAccCallModal('+r['_rowNum']+')" title="Call this client / log a call">&#128222;</button> <button class="btn-call" style="background:rgba(139,92,246,0.15);color:#8b5cf6;" onclick="openAccHoldingModal('+r['_rowNum']+')" title="View stock holding">&#128188;</button> <button class="btn-edit" onclick="openAccEditModal('+r['_rowNum']+')" title="Edit this account">&#9998;</button> '+nseBtn+' '+ctBtn+' <span style="display:inline-block;width:14px;"></span><button class="btn-del" onclick="confirmDel(\'Accounts\','+r['_rowNum']+')" title="PERMANENTLY delete this entire account (not just remove from a calling list)">&#128465; Delete Account</button></td></tr>';
   });
@@ -4392,17 +4392,17 @@ function addClientToCallTrade(f){
   if(!allData.CallClients)allData.CallClients=[];
   var localRow=Object.assign({},p,{_rowNum:'_local'+Date.now()+Math.random()});
   allData.CallClients.push(localRow);
-  showToast((purpose==='IPO'?'IPO Calling List':'Call & Trade list')+' me add ho gaya!','success');
+  showToast((purpose==='IPO'?'IPO Calling List':'Call & Trade list')+' - added','success');
   renderPage(curPage());
   postData(p).then(function(res){
     if(!res||!res.success){
       var idx=allData.CallClients.indexOf(localRow);if(idx!==-1)allData.CallClients.splice(idx,1);
-      showToast('Save failed - hataya gaya: '+(res&&res.error||''),'error');
+      showToast('Save failed - removed: '+(res&&res.error||''),'error');
       renderPage(curPage());
     }else{setTimeout(function(){loadAll(2);},600);}
   }).catch(function(e){
     var idx=allData.CallClients.indexOf(localRow);if(idx!==-1)allData.CallClients.splice(idx,1);
-    showToast('Network error - hataya gaya: '+e.message,'error');
+    showToast('Network error - removed: '+e.message,'error');
     renderPage(curPage());
   });
 }
@@ -4410,18 +4410,18 @@ function shiftAccountToCallTrade(rowNum){
   var r=(allData.Accounts||[]).find(function(x){return String(x['_rowNum'])===String(rowNum);});
   if(!r){showToast('Account not found','error');return;}
   var cid=(r['Client ID']||'').trim();
-  if(!cid){showToast('Client ID missing - pehle Client ID add karo','error');return;}
-  if(isInCallTrade(cid)){showToast('Ye client already ek calling list me hai','info');return;}
-  if(!confirm('"'+(r['Client Name']||cid)+'" ko Call & Trade (daily calling) list me shift karein?'))return;
+  if(!cid){showToast('Client ID missing - please add the Client ID first','error');return;}
+  if(isInCallTrade(cid)){showToast('This client is already in a calling list','info');return;}
+  if(!confirm('Shift "'+(r['Client Name']||cid)+'" to the Call & Trade (daily calling) list?'))return;
   addClientToCallTrade({cid:cid,cname:r['Client Name'],cphone:r['Client Phone'],empId:r['Employee ID'],empName:r['Employee Name'],branch:r['Branch'],remarks:'Shifted from Accounts',purpose:'Trading'});
 }
 function shiftAccountToIPOList(rowNum){
   var r=(allData.Accounts||[]).find(function(x){return String(x['_rowNum'])===String(rowNum);});
   if(!r){showToast('Account not found','error');return;}
   var cid=(r['Client ID']||'').trim();
-  if(!cid){showToast('Client ID missing - pehle Client ID add karo','error');return;}
-  if(isInCallTrade(cid)){showToast('Ye client already ek calling list me hai','info');return;}
-  if(!confirm('"'+(r['Client Name']||cid)+'" ko IPO Calling List me shift karein? (Sirf IPO aane par isko call jayega)'))return;
+  if(!cid){showToast('Client ID missing - please add the Client ID first','error');return;}
+  if(isInCallTrade(cid)){showToast('This client is already in a calling list','info');return;}
+  if(!confirm('Shift "'+(r['Client Name']||cid)+'" to the IPO Calling List? (Will only be called when a new IPO comes)'))return;
   addClientToCallTrade({cid:cid,cname:r['Client Name'],cphone:r['Client Phone'],empId:r['Employee ID'],empName:r['Employee Name'],branch:r['Branch'],remarks:'Shifted from Accounts',purpose:'IPO'});
 }
 var accMode='completed',myAccMode='completed',accProcessSortBy='',myAccProcessSortBy='';
@@ -4456,7 +4456,7 @@ function accDaysPending(dateStr){
    khud-ba-khud "Completed" table me chali jayegi (renderAccTable/renderMyAccTable already filter
    on Client ID presence) aur is process-table se hat jayegi. */
 function mkAccProcessTable(rows,isAdmin){
-  if(!rows||!rows.length)return '<div class="no-data">Koi Under Process account nahi hai</div>';
+  if(!rows||!rows.length)return '<div class="no-data">No Under Process accounts</div>';
   var h='<table><thead><tr><th>Date</th>'+(isAdmin?'<th>Employee</th>':'')+'<th>Client</th><th>Phone</th><th>Days Pending</th><th>Remarks</th><th>Actions</th></tr></thead><tbody>';
   rows.forEach(function(r){
     var days=accDaysPending(r['Date']);
@@ -4466,7 +4466,7 @@ function mkAccProcessTable(rows,isAdmin){
       (isAdmin?'<td>'+(r['Employee Name']||'-')+'</td>':'')+
       '<td>'+(r['Client Name']||'-')+'</td>'+
       '<td>'+(r['Client Phone']||'-')+'</td>'+
-      '<td>'+(urgent?'<span style="color:var(--danger,#ef4444);font-weight:700;">':'')+(days===null?'-':(days+' din'))+(urgent?'</span>':'')+'</td>'+
+      '<td>'+(urgent?'<span style="color:var(--danger,#ef4444);font-weight:700;">':'')+(days===null?'-':(days+' days'))+(urgent?'</span>':'')+'</td>'+
       '<td style="font-size:11px;">'+(r['Remarks']||'-')+'</td>'+
       '<td><button class="btn-edit" onclick="openAccEditModal('+r['_rowNum']+')">&#9998; Client ID Add Karo</button> <button class="btn-del" onclick="confirmDel(\'Accounts\','+r['_rowNum']+')">&#128465;</button></td>'+
     '</tr>';
@@ -4522,18 +4522,18 @@ function runHealthCheck(){
   var empIdSet={};empList.forEach(function(e){var id=(e['Employee ID']||'').trim().toLowerCase();if(id)empIdSet[id]=true;});
   var empIdCount={};empList.forEach(function(e){var id=(e['Employee ID']||'').trim();if(!id)return;empIdCount[id]=(empIdCount[id]||0)+1;});
   Object.keys(empIdCount).forEach(function(id){
-    if(empIdCount[id]>1)add('critical','Employees','Duplicate Employee ID','"'+id+'" Employee list me '+empIdCount[id]+' baar hai - login/data mix-up ho sakta hai.',{label:'Manage Employees',fn:function(){showPage('manageEmps');}});
+    if(empIdCount[id]>1)add('critical','Employees','Duplicate Employee ID','"'+id+'" appears '+empIdCount[id]+' times in the Employee list - could cause login/data mix-ups.',{label:'Manage Employees',fn:function(){showPage('manageEmps');}});
   });
   empList.forEach(function(e){
     var id=(e['Employee ID']||'').trim();if(!id)return;
     var nm=e['Name']||id;
     if((e['Status']||'Active')==='Active'){
-      if(!(e['Branch']||'').trim())add('warning','Employees','Branch missing','"'+nm+'" ka Branch khaali hai.',{label:'Fix',fn:function(){showPage('manageEmps');editEmpModal(id);}});
-      if(!(e['Password']||'').trim())add('critical','Employees','Password missing','"'+nm+'" login nahi kar payega - password khaali hai.',{label:'Fix',fn:function(){showPage('manageEmps');editEmpModal(id);}});
+      if(!(e['Branch']||'').trim())add('warning','Employees','Branch missing','"'+nm+'" has no Branch set.',{label:'Fix',fn:function(){showPage('manageEmps');editEmpModal(id);}});
+      if(!(e['Password']||'').trim())add('critical','Employees','Password missing','"'+nm+'" will not be able to log in - password is empty.',{label:'Fix',fn:function(){showPage('manageEmps');editEmpModal(id);}});
     }
     (e['Parent ID']||'').split(',').map(function(s){return s.trim();}).filter(Boolean).forEach(function(pid){
-      if(pid.toLowerCase()===id.toLowerCase())add('critical','Employees','Employee is own Parent','"'+nm+'" khud apna Parent ID bana hua hai - My Team me loop ban sakta hai.',{label:'Fix',fn:function(){showPage('manageEmps');editEmpModal(id);}});
-      else if(!empIdSet[pid.toLowerCase()])add('warning','Employees','Parent ID broken reference','"'+nm+'" ka Parent ID "'+pid+'" kisi existing Employee ID se match nahi karta.',{label:'Fix',fn:function(){showPage('manageEmps');editEmpModal(id);}});
+      if(pid.toLowerCase()===id.toLowerCase())add('critical','Employees','Employee is own Parent','"'+nm+'" is set as their own Parent ID - this can create a loop in My Team.',{label:'Fix',fn:function(){showPage('manageEmps');editEmpModal(id);}});
+      else if(!empIdSet[pid.toLowerCase()])add('warning','Employees','Parent ID broken reference','Parent ID "'+pid+'" set for "'+nm+'" does not match any existing Employee ID.',{label:'Fix',fn:function(){showPage('manageEmps');editEmpModal(id);}});
     });
   });
 
@@ -4543,19 +4543,19 @@ function runHealthCheck(){
   accAll.forEach(function(r){var cid=(r['Client ID']||'').trim();if(!cid)return;var eid=(r['Employee ID']||'').trim().toLowerCase();if(!accCidMap[cid])accCidMap[cid]={};accCidMap[cid][eid]=true;});
   Object.keys(accCidMap).forEach(function(cid){
     var eids=Object.keys(accCidMap[cid]);
-    if(eids.length>1)add('critical','Accounts','Duplicate Client ID (different employees)','Client ID "'+cid+'" '+eids.length+' alag employees ke paas hai - brokerage/commission galat employee ko ja sakta hai.',{label:'View in Accounts',fn:function(){healthGoToSearch('adminAcc','srch-acc',cid);}});
+    if(eids.length>1)add('critical','Accounts','Duplicate Client ID (different employees)','Client ID "'+cid+'" belongs to '+eids.length+' different employees - brokerage/commission could go to the wrong employee.',{label:'View in Accounts',fn:function(){healthGoToSearch('adminAcc','srch-acc',cid);}});
   });
   accAll.filter(function(r){return (r['Client ID']||'').trim();}).forEach(function(r){
-    if(!(r['Client Phone']||'').trim())add('warning','Accounts','Phone missing','"'+(r['Client Name']||r['Client ID']||'-')+'" ('+(r['Client ID']||'-')+') ka phone number khaali hai.',{label:'View in Accounts',fn:function(){healthGoToSearch('adminAcc','srch-acc',r['Client Name']||r['Client ID']);}});
+    if(!(r['Client Phone']||'').trim())add('warning','Accounts','Phone missing','"'+(r['Client Name']||r['Client ID']||'-')+'" ('+(r['Client ID']||'-')+') has no phone number.',{label:'View in Accounts',fn:function(){healthGoToSearch('adminAcc','srch-acc',r['Client Name']||r['Client ID']);}});
   });
   accAll.filter(function(r){return !(r['Client ID']||'').trim();}).forEach(function(r){
     var d=daysAgo(r['Date']);
-    if(d!==null&&d>=14)add('warning','Accounts','Under Process 14+ din se pending','"'+(r['Client Name']||'-')+'" ka account '+d+' din se Under Process hai - Client ID follow up karo.',{label:'View Under Process',fn:function(){setAccMode('process');healthGoToSearch('adminAcc','srch-accProcess',r['Client Name']);}});
+    if(d!==null&&d>=14)add('warning','Accounts','Under Process 14+ days pending','"'+(r['Client Name']||'-')+'" account has been Under Process for '+d+' days - follow up on the Client ID.',{label:'View Under Process',fn:function(){setAccMode('process');healthGoToSearch('adminAcc','srch-accProcess',r['Client Name']);}});
   });
 
   /* ---- SIP / Mutual Fund ---- */
   (allData.SIP||[]).forEach(function(r){
-    if((r['Type']||'SIP')==='SIP'&&!(r['SIP Due Date']||'').trim())add('warning','SIP','Due Date missing','"'+(r['Client Name']||'-')+'" ki SIP me Due Date nahi hai - monthly recurring reminder kabhi nahi aayega.',{label:'View in SIP',fn:function(){healthGoToSearch('adminSIP','srch-sip',r['Client Name']);}});
+    if((r['Type']||'SIP')==='SIP'&&!(r['SIP Due Date']||'').trim())add('warning','SIP','Due Date missing','The SIP for "'+(r['Client Name']||'-')+'" has no Due Date set - the monthly recurring reminder will never trigger.',{label:'View in SIP',fn:function(){healthGoToSearch('adminSIP','srch-sip',r['Client Name']);}});
   });
 
   /* ---- IPO (Application Buy) ---- */
@@ -4573,7 +4573,7 @@ function runHealthCheck(){
   Object.keys(panMap).forEach(function(k){
     if(panMap[k].length>1){
       var r=panMap[k][0];
-      add('critical','IPO','Duplicate PAN in same IPO','PAN "'+r['PAN']+'" "'+(ipoNameById[r['IPO_ID']]||'-')+'" me '+panMap[k].length+' baar hai - 2 clients ka PAN same nahi ho sakta.',{label:'View in IPO',fn:ipoGoTo(r['IPO_ID'])});
+      add('critical','IPO','Duplicate PAN in same IPO','PAN "'+r['PAN']+'" appears '+panMap[k].length+' times in "'+(ipoNameById[r['IPO_ID']]||'-')+'" - 2 clients cannot have the same PAN.',{label:'View in IPO',fn:ipoGoTo(r['IPO_ID'])});
     }
   });
   ipoApps.forEach(function(r){
@@ -4582,21 +4582,21 @@ function runHealthCheck(){
       var override=r['Penalty'];
       var hasOverride=override!==undefined&&override!==null&&String(override).trim()!=='';
       var effPen=hasOverride?(parseFloat(override)||0):(parseFloat(ipoM&&ipoM['Rejection_Penalty'])||0);
-      if(effPen===0)add('warning','IPO','Rejection Penalty not set','"'+(r['Client_Name']||r['PAN']||'-')+'" ("'+(ipoNameById[r['IPO_ID']]||'-')+'") Rejected hai but effective penalty abhi 0 hai - client payment galat calculate hoga.',{label:'View in IPO',fn:ipoGoTo(r['IPO_ID'])});
+      if(effPen===0)add('warning','IPO','Rejection Penalty not set','"'+(r['Client_Name']||r['PAN']||'-')+'" ("'+(ipoNameById[r['IPO_ID']]||'-')+'") is Rejected but the effective penalty is currently 0 - client payment will be calculated incorrectly.',{label:'View in IPO',fn:ipoGoTo(r['IPO_ID'])});
     }
     if(!(r['PAN']||'').trim()){
       var d=daysAgo(r['Created_Date']);
-      if(d!==null&&d>=7)add('info','IPO','PAN missing 7+ din se','"'+(ipoNameById[r['IPO_ID']]||'-')+'" ki ek application me '+d+' din se PAN nahi bhara gaya.',{label:'View in IPO',fn:ipoGoTo(r['IPO_ID'])});
+      if(d!==null&&d>=7)add('info','IPO','PAN missing 7+ days','An application in "'+(ipoNameById[r['IPO_ID']]||'-')+'" has had no PAN filled in for '+d+' days.',{label:'View in IPO',fn:ipoGoTo(r['IPO_ID'])});
     }
     if((r['Status']||'Pending')!=='Pending'&&r['Resold']!=='Yes'&&r['Payment_Done']!=='Yes'){
       var d2=daysAgo(r['Created_Date']);
-      if(d2!==null&&d2>=14)add('info','IPO','Client Payment pending 14+ din se','"'+(r['Client_Name']||r['PAN']||'-')+'" ("'+(ipoNameById[r['IPO_ID']]||'-')+'") ka result aa chuka hai ('+(r['Status']||'-')+') but "Payment Settled" abhi mark nahi hua - jab tak settle nahi hota, iska amount Net Payable/Receivable me outstanding dikhta rahega.',{label:'View in IPO',fn:ipoGoTo(r['IPO_ID'])});
+      if(d2!==null&&d2>=14)add('info','IPO','Client Payment pending 14+ days','"'+(r['Client_Name']||r['PAN']||'-')+'" ("'+(ipoNameById[r['IPO_ID']]||'-')+'") result is out ('+(r['Status']||'-')+') but "Payment Settled" is not marked yet - until it is settled, this amount will keep showing as outstanding in Net Payable/Receivable.',{label:'View in IPO',fn:ipoGoTo(r['IPO_ID'])});
     }
   });
   ipoMasters.forEach(function(m){
     var hasAllotted=ipoApps.some(function(r){return r['IPO_ID']===m['IPO_ID']&&r['Status']==='Allotted';});
     var allZero=(parseFloat(m['Retail_Gain'])||0)===0&&(parseFloat(m['sHNI_Gain'])||0)===0&&(parseFloat(m['bHNI_Gain'])||0)===0;
-    if(hasAllotted&&allZero)add('warning','IPO','Listing Gain not set','"'+(m['IPO_Name']||'-')+'" me Allotted applications hain but Listing Gain abhi 0 hai - profit galat (0) dikhega.',{label:'View in IPO',fn:ipoGoTo(m['IPO_ID'])});
+    if(hasAllotted&&allZero)add('warning','IPO','Listing Gain not set','"'+(m['IPO_Name']||'-')+'" has Allotted applications but Listing Gain is currently 0 - profit will show incorrectly (0).',{label:'View in IPO',fn:ipoGoTo(m['IPO_ID'])});
   });
 
   /* ---- Self Application (SelfIPO) ---- */
@@ -4614,13 +4614,13 @@ function runHealthCheck(){
     if(selfKeyMap[k].length>1){
       var r=selfKeyMap[k][0];
       if(flaggedSelfRows[r['_rowNum']])return;flaggedSelfRows[r['_rowNum']]=true;
-      add('warning','Self Application','Duplicate PAN/Client ID in same IPO','"'+(r['IPO Name']||'-')+'" me ek hi PAN/Client ID '+selfKeyMap[k].length+' baar add hua hai.',{label:'View',fn:function(){showPage('ipo');setIPOMode('self',true);}});
+      add('warning','Self Application','Duplicate PAN/Client ID in same IPO','The same PAN/Client ID has been added '+selfKeyMap[k].length+' times in "'+(r['IPO Name']||'-')+'".',{label:'View',fn:function(){showPage('ipo');setIPOMode('self',true);}});
     }
   });
 
   /* ---- Insurance ---- */
   (allData.Insurance||[]).forEach(function(r){
-    if(!(r['Client Phone']||'').trim())add('info','Insurance','Phone missing','"'+(r['Client Name']||'-')+'" ka phone number Insurance record me khaali hai.',{label:'View in Insurance',fn:function(){healthGoToSearch('adminIns','srch-ins',r['Client Name']);}});
+    if(!(r['Client Phone']||'').trim())add('info','Insurance','Phone missing','"'+(r['Client Name']||'-')+'" has no phone number in the Insurance record.',{label:'View in Insurance',fn:function(){healthGoToSearch('adminIns','srch-ins',r['Client Name']);}});
   });
 
   /* ---- Monthly Hisab (payout calculation audit) - money-critical, checked mechanically ---- */
@@ -4629,8 +4629,8 @@ function runHealthCheck(){
   hisabRows.forEach(function(r){
     var share=parseFloat(r['Brok Share'])||0,adds=parseFloat(r['Additions'])||0,deds=parseFloat(r['Deductions'])||0;
     var storedNet=parseFloat(r['Net Payable'])||0,expectedNet=r2(share+adds-deds);
-    if(Math.abs(expectedNet-storedNet)>0.5)add('critical','Hisab (Payout)','Net Payable math mismatch','"'+(r['Employee Name']||r['Employee ID'])+'" ('+r['Month']+'): stored Net Payable '+fmt(storedNet)+' hai but Brok Share+Additions-Deductions = '+fmt(expectedNet)+' banta hai - mismatch check karo.',{label:'View in Hisab',fn:hisabGoTo(r['Month'])});
-    if(storedNet<0)add('warning','Hisab (Payout)','Negative Net Payable','"'+(r['Employee Name']||r['Employee ID'])+'" ('+r['Month']+') ka Net Payable negative ('+fmt(storedNet)+') hai - Deductions, Brok Share+Additions se zyada hain.',{label:'View in Hisab',fn:hisabGoTo(r['Month'])});
+    if(Math.abs(expectedNet-storedNet)>0.5)add('critical','Settlement (Payout)','Net Payable math mismatch','"'+(r['Employee Name']||r['Employee ID'])+'" ('+r['Month']+'): stored Net Payable is '+fmt(storedNet)+' but Brok Share+Additions-Deductions works out to '+fmt(expectedNet)+' - check the mismatch.',{label:'View in Settlement',fn:hisabGoTo(r['Month'])});
+    if(storedNet<0)add('warning','Settlement (Payout)','Negative Net Payable','"'+(r['Employee Name']||r['Employee ID'])+'" ('+r['Month']+') has a negative Net Payable ('+fmt(storedNet)+') - Deductions exceed Brok Share+Additions.',{label:'View in Settlement',fn:hisabGoTo(r['Month'])});
   });
   /* Anomaly-vs-history: current month ke Commission%/Additions ko employee ki apni purani history se compare karo */
   var hcLatestMonth=curMonth();
@@ -4643,11 +4643,11 @@ function runHealthCheck(){
     var curPct=parseFloat(r['Commission %']),curAdd=parseFloat(r['Additions'])||0;
     if(pcts.length>=2){
       var avgPct=pcts.reduce(function(s,v){return s+v;},0)/pcts.length;
-      if(!isNaN(curPct)&&Math.abs(curPct-avgPct)>=15)add('warning','Hisab (Payout)','Commission % unusual vs history','"'+(r['Employee Name']||eid)+'" ka is mahine Commission % ('+curPct+'%) inke history ke average ('+Math.round(avgPct)+'%) se bahut alag hai - double check karo before paying.',{label:'View in Hisab',fn:hisabGoTo(hcLatestMonth)});
+      if(!isNaN(curPct)&&Math.abs(curPct-avgPct)>=15)add('warning','Settlement (Payout)','Commission % unusual vs history','Commission % this month ('+curPct+'%) for "'+(r['Employee Name']||eid)+'" is very different from the history average ('+Math.round(avgPct)+'%) - double check before paying.',{label:'View in Settlement',fn:hisabGoTo(hcLatestMonth)});
     }
     if(addSums.length>=2){
       var avgAdd=addSums.reduce(function(s,v){return s+v;},0)/addSums.length;
-      if(curAdd>500&&curAdd>(avgAdd*1.6+500))add('warning','Hisab (Payout)','Additions unusual vs history','"'+(r['Employee Name']||eid)+'" ki is mahine Additions ('+fmt(curAdd)+') inke history ke average ('+fmt(r2(avgAdd))+') se bahut zyada hain - line items verify karo.',{label:'View in Hisab',fn:hisabGoTo(hcLatestMonth)});
+      if(curAdd>500&&curAdd>(avgAdd*1.6+500))add('warning','Settlement (Payout)','Additions unusual vs history','Additions this month ('+fmt(curAdd)+') for "'+(r['Employee Name']||eid)+'" are much higher than the history average ('+fmt(r2(avgAdd))+') - verify the line items.',{label:'View in Settlement',fn:hisabGoTo(hcLatestMonth)});
     }
   });
 
@@ -4660,18 +4660,18 @@ function renderHealthCheckPage(){
   var counts={critical:0,warning:0,info:0};
   issues.forEach(function(i){counts[i.sev]=(counts[i.sev]||0)+1;});
   statsEl.innerHTML=mkStats([
-    {label:'Total Issues',value:issues.length,sub:'sabhi sections milakar',color:issues.length?'red':'green'},
-    {label:'Critical',value:counts.critical||0,sub:'turant fix karo',color:'red'},
-    {label:'Warning',value:counts.warning||0,sub:'jald dekh lo',color:'amber'},
+    {label:'Total Issues',value:issues.length,sub:'across all sections',color:issues.length?'red':'green'},
+    {label:'Critical',value:counts.critical||0,sub:'fix immediately',color:'red'},
+    {label:'Warning',value:counts.warning||0,sub:'review soon',color:'amber'},
     {label:'Info',value:counts.info||0,sub:'FYI',color:'blue'}
   ]);
   var cats={};issues.forEach(function(i){if(!cats[i.cat])cats[i.cat]=[];cats[i.cat].push(i);});
-  var order=['Employees','Accounts','SIP','IPO','Self Application','Insurance','Hisab (Payout)'];
+  var order=['Employees','Accounts','SIP','IPO','Self Application','Insurance','Settlement (Payout)'];
   var catKeys=Object.keys(cats).sort(function(a,b){var ia=order.indexOf(a),ib=order.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib);});
   var sevRank={critical:0,warning:1,info:2};
   var h='';
   if(!issues.length){
-    h='<div class="no-data" style="padding:40px;text-align:center;font-size:15px;color:var(--accent,#3fbf7f);">&#9989; Koi mistake nahi mili - sab kuch theek hai!</div>';
+    h='<div class="no-data" style="padding:40px;text-align:center;font-size:15px;color:var(--accent,#3fbf7f);">&#9989; No issues found - everything looks good!</div>';
   } else {
     catKeys.forEach(function(cat){
       var list=cats[cat].slice().sort(function(a,b){return sevRank[a.sev]-sevRank[b.sev];});
@@ -4706,12 +4706,12 @@ function renderHealthCheckPage(){
 var GROWTH_METRICS={
   accounts:{label:'Demat Accounts (Completed)',unit:'',compute:function(){return (allData.Accounts||[]).filter(function(r){return (r['Client ID']||'').trim();}).length;}},
   aum:{label:'Mutual Fund / Portfolio AUM (Client Holding upload se)',unit:'₹',compute:function(){return holdingClientAgg(holdingScopedRows()).reduce(function(s,c){return s+(c.totalValue||0);},0);}},
-  sip_amount:{label:'SIP Monthly Amount (sabhi active SIP entries)',unit:'₹',compute:function(){return (allData.SIP||[]).filter(function(r){return (r['Type']||'SIP')==='SIP';}).reduce(function(s,r){return s+(parseFloat(r['Amount'])||0);},0);}},
+  sip_amount:{label:'SIP Monthly Amount (all active SIP entries)',unit:'&#8377;',compute:function(){return (allData.SIP||[]).filter(function(r){return (r['Type']||'SIP')==='SIP';}).reduce(function(s,r){return s+(parseFloat(r['Amount'])||0);},0);}},
   insurance_premium:{label:'Insurance Total Premium',unit:'₹',compute:function(){return (allData.Insurance||[]).reduce(function(s,r){return s+(parseFloat(r['Premium'])||0);},0);}},
   insurance_count:{label:'Insurance Policies Count',unit:'',compute:function(){return (allData.Insurance||[]).length;}},
   brokerage_total:{label:'Total Brokerage (all-time)',unit:'₹',compute:function(){return (allData.ClientBrokerage||[]).reduce(function(s,r){return s+(parseFloat(r['Amount'])||0);},0);}},
-  brokerage_month:{label:'Brokerage - Is Mahine (auto current month)',unit:'₹',compute:function(){var mo=curMonth();return (allData.ClientBrokerage||[]).filter(function(r){return monthOf(r['Date'])===mo;}).reduce(function(s,r){return s+(parseFloat(r['Amount'])||0);},0);}},
-  brokerage_year:{label:'Brokerage - Is Saal (auto current calendar year)',unit:'₹',compute:function(){var yr=new Date().getFullYear();return (allData.ClientBrokerage||[]).filter(function(r){var d=new Date(r['Date']||'');return !isNaN(d)&&d.getFullYear()===yr;}).reduce(function(s,r){return s+(parseFloat(r['Amount'])||0);},0);}},
+  brokerage_month:{label:'Brokerage - This Month (auto current month)',unit:'&#8377;',compute:function(){var mo=curMonth();return (allData.ClientBrokerage||[]).filter(function(r){return monthOf(r['Date'])===mo;}).reduce(function(s,r){return s+(parseFloat(r['Amount'])||0);},0);}},
+  brokerage_year:{label:'Brokerage - This Year (auto current calendar year)',unit:'&#8377;',compute:function(){var yr=new Date().getFullYear();return (allData.ClientBrokerage||[]).filter(function(r){var d=new Date(r['Date']||'');return !isNaN(d)&&d.getFullYear()===yr;}).reduce(function(s,r){return s+(parseFloat(r['Amount'])||0);},0);}},
   manual:{label:'Custom / Manual (khud value update karo)',unit:'',compute:null}
 };
 function growthTargetCurrentValue(t){
@@ -4734,24 +4734,24 @@ function mkProgressBar(t){
   var pending=tgt-curVal;
   var pendingLabel=pending>0?(isMoney?fmt(pending):Math.round(pending).toLocaleString('en-IN')):null;
   var isPeriod=(t['Metric']==='brokerage_month'||t['Metric']==='brokerage_year');
-  var periodNote=t['Metric']==='brokerage_month'?'har mahine 1 tareek ko reset hoga':(t['Metric']==='brokerage_year'?'har saal January me reset hoga':'');
+  var periodNote=t['Metric']==='brokerage_month'?'resets on the 1st of every month':(t['Metric']==='brokerage_year'?'resets every January':'');
   var rn=t['_rowNum'];
   var h='<div class="gprog-wrap">';
   h+='<div class="gprog-label"><span><b>'+(t['Label']||m.label)+'</b> <span style="color:var(--muted);font-weight:400;">('+m.label+')</span>'+(t['Deadline']?' &#8212; '+t['Deadline'].split('-').reverse().join('-')+' tak':'')+'</span>';
   h+='<span>'+curLabel+' / '+tgtLabel+' ('+Math.round(pct)+'%) <button class="btn-mini" style="padding:2px 6px;" onclick="openGrowthTargetModal('+rn+')">&#9998;</button> <button class="btn-mini" style="padding:2px 6px;" onclick="confirmDel(\'GrowthTargets\','+rn+')">&#128465;</button></span></div>';
   h+='<div class="gprog-track"><div class="gprog-fill" style="width:'+pct+'%;"></div></div>';
-  h+='<div style="font-size:11px;color:var(--muted,#8a94a6);margin-top:4px;">'+(pendingLabel?('Pending: '+pendingLabel+(isMoney?' ':'')+(daysLeft!==null?' &middot; ':'')):(pct>=100&&tgt>0?'Target poora ho gaya! &#127881;'+(daysLeft!==null?' &middot; ':''):''))+(daysLeft===null?'':(daysLeft>=0?(daysLeft+' din baaki'):('deadline '+Math.abs(daysLeft)+' din pehle nikal chuki')))+(isPeriod?' &middot; '+periodNote:'')+'</div>';
+  h+='<div style="font-size:11px;color:var(--muted,#8a94a6);margin-top:4px;">'+(pendingLabel?('Pending: '+pendingLabel+(isMoney?' ':'')+(daysLeft!==null?' &middot; ':'')):(pct>=100&&tgt>0?'Target completed! &#127881;'+(daysLeft!==null?' &middot; ':''):''))+(daysLeft===null?'':(daysLeft>=0?(daysLeft+' days left'):('deadline passed '+Math.abs(daysLeft)+' days ago')))+(isPeriod?' &middot; '+periodNote:'')+'</div>';
   h+='</div>';
   return h;
 }
 function openGrowthTargetModal(rowNum){
   var row=rowNum?(allData.GrowthTargets||[]).find(function(r){return String(r['_rowNum'])===String(rowNum);}):null;
-  var html='<div class="modal-title">'+(row?'Edit Target':'Naya Target Set Karo')+'</div>';
-  html+='<div class="form-group"><label>Label</label><input type="text" id="gt_label" value="'+(row?(row['Label']||''):'')+'" placeholder="e.g. Insurance Premium, Brokerage, ya kuch bhi apna naam"></div>';
+  var html='<div class="modal-title">'+(row?'Edit Target':'Set New Target')+'</div>';
+  html+='<div class="form-group"><label>Label</label><input type="text" id="gt_label" value="'+(row?(row['Label']||''):'')+'" placeholder="e.g. Insurance Premium, Brokerage, or any name you like"></div>';
   html+='<div class="form-group"><label>Kis se current value nikale (Metric)</label><select id="gt_metric" onchange="onGrowthMetricChange()">';
   Object.keys(GROWTH_METRICS).forEach(function(k){html+='<option value="'+k+'"'+(row&&row['Metric']===k?' selected':'')+'>'+GROWTH_METRICS[k].label+'</option>';});
   html+='</select></div>';
-  html+='<div class="form-group" id="gt_manualGroup" style="display:none;"><label>Current Value <span style="color:var(--muted);font-weight:400;">- jab bhi progress badhe, yaha aake number update kar dena</span></label><input type="number" id="gt_manual" value="'+(row?(parseFloat(row['Manual_Value'])||0):0)+'"></div>';
+  html+='<div class="form-group" id="gt_manualGroup" style="display:none;"><label>Current Value <span style="color:var(--muted);font-weight:400;">- update this number here whenever progress increases</span></label><input type="number" id="gt_manual" value="'+(row?(parseFloat(row['Manual_Value'])||0):0)+'"></div>';
   html+='<div class="form-group"><label>Target Value</label><input type="number" id="gt_target" value="'+(row?(parseFloat(row['Target_Value'])||0):'')+'"></div>';
   html+='<div class="form-group"><label>Deadline</label><input type="date" id="gt_deadline" value="'+(row?(row['Deadline']||''):'')+'"></div>';
   html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button>'+(row?('<button class="btn-danger" onclick="confirmDel(\'GrowthTargets\','+rowNum+')">Delete</button>'):'')+'<button class="btn-save" onclick="saveGrowthTarget('+(rowNum||'null')+')">Save</button></div>';
@@ -4776,7 +4776,7 @@ function saveGrowthTarget(rowNum){
   if(rowNum){
     postData({action:'editRow',sheet:'GrowthTargets',rowNum:rowNum,vals:vals}).then(function(r){
       closeModal();
-      if(r&&r.success){patchRowLocal('GrowthTargets',rowNum,vals);renderGrowthPage();showToast('Target update ho gaya','success');}
+      if(r&&r.success){patchRowLocal('GrowthTargets',rowNum,vals);renderGrowthPage();showToast('Target updated','success');}
       else showToast('Save failed: '+(r&&r.error||''),'error');
     }).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
   } else {
@@ -4784,7 +4784,7 @@ function saveGrowthTarget(rowNum){
     for(var k in vals)p[k]=vals[k];
     postData(p).then(function(r){
       closeModal();
-      if(r&&r.success){showToast('Naya target add ho gaya','success');loadAll(2);setTimeout(renderGrowthPage,700);}
+      if(r&&r.success){showToast('New target added','success');loadAll(2);setTimeout(renderGrowthPage,700);}
       else showToast('Add failed: '+(r&&r.error||''),'error');
     }).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
   }
@@ -4831,12 +4831,12 @@ function renderGrowthPage(){
   if(!progEl)return;
   var targets=allData.GrowthTargets||[];
   if(!targets.length){
-    if(!window._growthSeeded){window._growthSeeded=true;progEl.innerHTML='<div class="no-data">Default targets set kiye ja rahe hain...</div>';seedDefaultGrowthTargets();}
+    if(!window._growthSeeded){window._growthSeeded=true;progEl.innerHTML='<div class="no-data">Setting default targets...</div>';seedDefaultGrowthTargets();}
     return;
   }
   var ph='';
   targets.forEach(function(t){ph+=mkProgressBar(t);});
-  ph+='<button class="btn-mini" style="margin-top:6px;" onclick="openGrowthTargetModal()">&#43; Naya Target Set Karo</button>';
+  ph+='<button class="btn-mini" style="margin-top:6px;" onclick="openGrowthTargetModal()">&#43; Set New Target</button>';
   progEl.innerHTML=ph;
 
   var months=growthLast12Months();
@@ -6883,7 +6883,7 @@ function openLeadCallModal(rowNum){
     html+='<div style="color:var(--muted,#8a94a6);font-size:12px;margin-bottom:14px;">No call log exists yet for this lead.</div>';
   }
   html+='<div class="form-group"><label>Today\'s Call Remarks (what was discussed)</label><textarea id="leadCallRemarks" placeholder="e.g. Interested, call again next week..."></textarea></div>';
-  html+='<div class="form-group"><label style="display:flex;align-items:center;gap:6px;font-weight:400;"><input type="checkbox" id="leadCallSetReminder" onchange="document.getElementById(\'leadCallReminderDateWrap\').style.display=this.checked?\'block\':\'none\'" style="width:auto;"> Future ke liye reminder bhi lagayein</label></div>';
+  html+='<div class="form-group"><label style="display:flex;align-items:center;gap:6px;font-weight:400;"><input type="checkbox" id="leadCallSetReminder" onchange="document.getElementById(\'leadCallReminderDateWrap\').style.display=this.checked?\'block\':\'none\'" style="width:auto;"> Also set a reminder for later</label></div>';
   html+='<div class="form-group" id="leadCallReminderDateWrap" style="display:none;"><label>Reminder Date</label><input type="date" id="leadCallReminderDate"></div>';
   html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="saveLeadCall('+rowNum+')">Save Call Log</button></div>';
   document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
@@ -7195,11 +7195,11 @@ function submitAccount(){
      just reuse the existing one. Runs before the a_addToCT (Trading) check below so if somehow both
      are set, IPO wins the single-slot isInCallTrade() race and Trading is silently skipped. */
   if(actIPO==='Yes'){
-    if(!cid){showToast('Account ban gaya, lekin IPO Calling List ke liye Client ID chahiye - baad me Client ID daal ke Accounts list ke button se add karo','error');}
+    if(!cid){showToast('Account created, but Client ID is needed for the IPO Calling List - add the Client ID later using the button in the Accounts list','error');}
     else if(!isInCallTrade(cid)){addClientToCallTrade({cid:cid,cname:cn,cphone:cphoneVal,empId:fe.id,empName:fe.name,branch:fe.branch,remarks:'Added along with new Account (IPO Active)',purpose:'IPO'});}
   }
   if(addToCTChecked){
-    if(!cid){showToast('Account ban gaya, lekin Call & Trade ke liye Client ID chahiye - baad me Client ID daal ke Accounts list ke button se add karo','error');}
+    if(!cid){showToast('Account created, but Client ID is needed for Call & Trade - add the Client ID later using the button in the Accounts list','error');}
     else if(!isInCallTrade(cid)){addClientToCallTrade({cid:cid,cname:cn,cphone:cphoneVal,empId:fe.id,empName:fe.name,branch:fe.branch,remarks:'Added along with new Account',purpose:'Trading'});}
   }
 }
@@ -8033,7 +8033,7 @@ function renderClientHoldingPage(){
   var efEl=document.getElementById('hld_empFilter');if(efEl)efEl.style.display=isAdm?'inline-block':'none';
   if(isAdm)populateHoldingEmpFilter();
   var staleBox=document.getElementById('hldStaleBox');
-  if(staleBox)staleBox.innerHTML=isHoldingStale()?('<div class="prev-warn">&#9888; Holding data last updated on '+holdingUploadDate()+' - 15+ din se purani ho chuki hai, naya file upload karo taaki sahi jaankari mile.</div>'):'';
+  if(staleBox)staleBox.innerHTML=isHoldingStale()?('<div class="prev-warn">&#9888; Holding data last updated on '+holdingUploadDate()+' - it is over 15 days old, please upload a new file for accurate data.</div>'):'';
   var rows=holdingScopedRows();
   var agg=holdingClientAgg(rows);
   var q=getSrch('srch-hld');
@@ -8510,7 +8510,7 @@ function renderFinDash(){
     {label:'Income (entries)',value:fmt(tInc),sub:inc.length+' entries',color:'green'},
     {label:'Client Brokerage',value:fmt(tCB),sub:'from Choice uploads',color:'blue'},
     {label:'Expense',value:fmt(tExp),sub:exp.length+' entries',color:'red'},
-    {label:'Team Payable (Hisab)',value:fmt(payable),sub:mo?(ht.empCount+' employees (matched from Monthly Hisab)'):'all months',color:'amber'}
+    {label:'Team Payable (Settlement)',value:fmt(payable),sub:mo?(ht.empCount+' employees (matched from Monthly Settlement)'):'all months',color:'amber'}
   ];
   if(currentUser&&currentUser.role==='admin')fdCards.push({label:'Net Profit',value:fmt(r2(tInc+tCB-tExp-payable)),sub:'income - expense - payable',color:'purple'});
   document.getElementById('finDashStats').innerHTML=mkStats(fdCards);
@@ -8555,7 +8555,7 @@ function recalcAutoLines(eid){
   if(!st){showToast('Row not found','error');return;}
   var e=employees.find(function(x){return x['Employee ID']===eid;});
   if(!e){showToast('Employee not found','error');return;}
-  if(!confirm('Auto-lines (Fixed Salary, Student Referral Commission, Leader Commission, Shared-client commission) is row ke liye dobara calculate honge. Baaki manually add ki gayi Additions/Deductions untouched rahengi. Continue?'))return;
+  if(!confirm('Auto-lines (Fixed Salary, Student Referral Commission, Leader Commission, Shared-client commission) will be recalculated for this row. Other manually added Additions/Deductions will remain untouched. Continue?'))return;
   var mo=hisabSt.month;
   var cbMonth=fMonth(allData.ClientBrokerage||[],mo);
   function empBrokR(id){return r2(cbMonth.filter(function(r){return (r['Employee ID']||'').trim().toLowerCase()===String(id).trim().toLowerCase();}).reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0));}
@@ -8569,7 +8569,7 @@ function recalcAutoLines(eid){
     return true;
   });
   st.lines=fresh.concat(keep);
-  showToast('Auto lines refresh ho gayi - check karke Save dabayein','success');
+  showToast('Auto lines refreshed - review and click Save','success');
   renderHisab();
 }
 function renderHisab(){
@@ -8689,7 +8689,7 @@ function renderHisab(){
     cardsH+='<button class="btn-mini add" onclick="addHisabLine(\''+eid+'\',\'add\')">+ Addition</button>';
     cardsH+='<button class="btn-mini ded" onclick="addHisabLine(\''+eid+'\',\'ded\')">&#8722; Deduction</button>';
     cardsH+='<button class="btn-mini" style="border-color:var(--blue);color:var(--blue);" onclick="saveHisabRow(\''+eid+'\')">&#128190; Save</button>';
-    cardsH+='<button class="btn-mini" style="border-color:var(--purple);color:var(--purple);" onclick="recalcAutoLines(\''+eid+'\')" title="Fixed Salary/Student Referral/Leader Commission jaise auto-lines dobara calculate karo (manual Additions/Deductions untouched rahenge)">&#128260; Recalculate</button>';
+    cardsH+='<button class="btn-mini" style="border-color:var(--purple);color:var(--purple);" onclick="recalcAutoLines(\''+eid+'\')" title="Recalculate auto-lines like Fixed Salary/Student Referral/Leader Commission (manual Additions/Deductions stay untouched)">&#128260; Recalculate</button>';
     if(st.status!=='Paid')cardsH+='<button class="btn-mini" style="border-color:var(--accent);color:var(--accent);" onclick="markHisabPaid(\''+eid+'\')">&#10003; Mark Paid</button>';
     cardsH+='</div></div>';
   }
@@ -8791,7 +8791,7 @@ function saveHisabRow(eid){
   var p=hisabPayload(eid);
   showToast('Saving...','success');
   postData(p).then(function(r){
-    if(r&&r.success){hisabSt.rows[eid].saved=true;upsertLocalHisab(p);showToast('Hisab saved!','success');}
+    if(r&&r.success){hisabSt.rows[eid].saved=true;upsertLocalHisab(p);showToast('Settlement saved!','success');}
     else showToast('Failed: '+(r&&r.error||''),'error');
   }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
@@ -8933,7 +8933,7 @@ function saveEdit(){
 
 function confirmDel(sheet,rowNum){
   if(!rowNum||rowNum<2){showToast('This new entry is still syncing - data is reloading, please delete again in 2-3 seconds','error');loadAll(2);return;}
-  var extraWarn=sheet==='Accounts'?'<p style="color:var(--danger);font-size:13px;font-weight:700;margin-bottom:8px;">&#9888; Ye poora ACCOUNT record delete ho jayega (demat entry hi mit jayegi). Agar aap sirf isko Call &amp; Trade ya IPO calling list se hatana chahte hain, to ye button use na karein - Cancel dabayein.</p>':'';
+  var extraWarn=sheet==='Accounts'?'<p style="color:var(--danger);font-size:13px;font-weight:700;margin-bottom:8px;">&#9888; This will delete the whole ACCOUNT record (the demat entry itself will be erased). If you only want to remove it from the Call &amp; Trade or IPO calling list, do not use this button - click Cancel instead.</p>':'';
   document.getElementById('modalBox').innerHTML='<div class="modal-title">Delete Entry?</div>'+extraWarn+'<p style="color:var(--muted);font-size:13px;margin-bottom:20px;">This cannot be undone.</p><div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-danger" onclick="doDel(\''+sheet+'\','+rowNum+')">Delete</button></div>';
   document.getElementById('modal').className='show';
 }
@@ -8987,7 +8987,7 @@ function renderLeaderCommission(){
   var leaders=employees.filter(function(e){return directRecruitsOf(e['Employee ID']).length>0;});
   var grandTotal=0,h='';
   if(!leaders.length){
-    h='<div class="no-data">Abhi koi Leader-Recruit pair set nahi hai. Manage Employees me employee edit karke "Recruiter (Leader)" field set karein.</div>';
+    h='<div class="no-data">No Leader-Recruit pair set yet. Edit an employee in Manage Employees and set the "Recruiter (Leader)" field.</div>';
   }else{
     h='<table><thead><tr><th>Leader</th><th>Recruit</th><th>Recruit Brokerage ('+mo+')</th><th>Recruit Share %</th><th>Residual</th><th>Leader Commission (Marginal Slab)</th></tr></thead><tbody>';
     leaders.forEach(function(ld){
@@ -9005,7 +9005,7 @@ function renderLeaderCommission(){
   }
   document.getElementById('lcStats').innerHTML=mkStats([
     {label:'Leaders (with active recruits)',value:leaders.filter(function(l){return directRecruitsOf(l['Employee ID']).length>0;}).length,sub:'',color:'blue'},
-    {label:'Total Leader Commission ('+mo+')',value:fmt(r2(grandTotal)),sub:"auto-added to Leader's Monthly Hisab",color:'amber'}
+    {label:'Total Leader Commission ('+mo+')',value:fmt(r2(grandTotal)),sub:"auto-added to Leader's Monthly Settlement",color:'amber'}
   ]);
   document.getElementById('lcTable').innerHTML=h;
   renderLeaderMilestones();
@@ -9013,9 +9013,9 @@ function renderLeaderCommission(){
 function renderLeaderMilestones(){
   var recruits=employees.filter(function(e){return (e['Recruiter ID']||'').trim()&&(e['Status']||'Active')==='Active';});
   var h='';
-  if(!recruits.length){h='<div class="no-data">Koi recruit nahi mila.</div>';}
+  if(!recruits.length){h='<div class="no-data">No recruits found.</div>';}
   else{
-    h='<table><thead><tr><th>Recruit</th><th>Leader</th><th>Join Date</th><th>Active Accounts (last 90 din trade)</th><th>Status</th><th>Action</th></tr></thead><tbody>';
+    h='<table><thead><tr><th>Recruit</th><th>Leader</th><th>Join Date</th><th>Active Accounts (last 90 days trade)</th><th>Status</th><th>Action</th></tr></thead><tbody>';
     recruits.forEach(function(rc){
       var ms=milestoneStatusFor(rc);
       var ld=employees.find(function(x){return x['Employee ID']===rc['Recruiter ID'];});
@@ -9032,13 +9032,13 @@ function renderLeaderMilestones(){
 function logMilestoneBonus(btn){
   var lid=btn.dataset.lid,rid=btn.dataset.rid,rname=btn.dataset.rname;
   var ld=employees.find(function(x){return x['Employee ID']===lid;});
-  if(!confirm('Confirm: '+(ld?ld['Name']:lid)+' ko '+rname+' ke 100-account milestone ka ₹10,000 bonus diya ja raha hai.\n\nYe sirf LOG hoga (dobara double-count nahi hoga) - Monthly Hisab me is Leader ke current month me ek Addition line khud "Add Line" se add karni hogi taaki payout me shamil ho.'))return;
+  if(!confirm('Confirm: give '+(ld?ld['Name']:lid)+' a &#8377;10,000 bonus for the 100-account milestone of '+rname+'.\n\nThis will only be LOGGED (it will not be double-counted) - a manual Addition line must be added for this Leader in the current month via "Add Line" in Monthly Settlement so it is included in the payout.'))return;
   var p={action:'addGeneric',sheet:'LeaderMilestoneBonus','Date':td(),'Leader Employee ID':lid,'Leader Employee Name':ld?ld['Name']:lid,'Recruit Employee ID':rid,'Recruit Employee Name':rname,'Milestone':'100 Accounts in 3 Months','Bonus Amount':10000,'Notes':''};
   postData(p).then(function(r){
     if(r&&r.success){
       allData.LeaderMilestoneBonus=allData.LeaderMilestoneBonus||[];
       allData.LeaderMilestoneBonus.push({'Date':td(),'Leader Employee ID':lid,'Leader Employee Name':ld?ld['Name']:lid,'Recruit Employee ID':rid,'Recruit Employee Name':rname,'Milestone':'100 Accounts in 3 Months','Bonus Amount':'10000','Notes':''});
-      showToast('Milestone logged! Ab Monthly Hisab me is Leader ke liye manually Addition line add karein.','success');
+      showToast('Milestone logged! Now add the Addition line manually for this Leader in Monthly Settlement.','success');
       renderLeaderMilestones();
     }else showToast('Failed: '+(r&&r.error||''),'error');
   }).catch(function(e){showToast('Error: '+e.message,'error');});
@@ -9078,12 +9078,12 @@ function rejoinEmp(empId){
 }
 
 function showRecruitModal(){
-  var h='<div class="modal-title">Naya Advisor Recruit Karein</div>';
-  h+='<div style="color:var(--muted);font-size:12px;margin-bottom:8px;">Yeh request Admin ko approval ke liye jayegi. Commission % aur Salary Admin approve karte waqt set karega.</div>';
+  var h='<div class="modal-title">Recruit New Advisor</div>';
+  h+='<div style="color:var(--muted);font-size:12px;margin-bottom:8px;">This request will go to Admin for approval. Commission % and Salary will be set by Admin at approval time.</div>';
   h+='<div class="form-group"><label>New Employee ID</label><input type="text" id="rr_id" placeholder="e.g. Ideal.name"></div>';
   h+='<div class="form-group"><label>Full Name</label><input type="text" id="rr_name"></div>';
   h+='<div class="form-group"><label>Branch</label><select id="rr_branch"><option>Hisar</option><option>Adampur</option><option>Rohtak</option><option>Tohana</option></select></div>';
-  h+='<div class="form-group"><label>Password (advisor apna login isi se karega)</label><input type="text" id="rr_pass"></div>';
+  h+='<div class="form-group"><label>Password (the advisor will use this to log in)</label><input type="text" id="rr_pass"></div>';
   h+='<div class="form-group"><label>Remarks (optional)</label><input type="text" id="rr_remarks"></div>';
   h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="submitRecruitReq()">Send for Approval</button></div>';
   document.getElementById('modalBox').innerHTML=h;document.getElementById('modal').className='show';
@@ -9093,7 +9093,7 @@ function submitRecruitReq(){
   if(!id||!name||!pass){showToast('ID, Name and Password required','error');return;}
   if(employees.find(function(e){return e['Employee ID']===id;})){showToast('ID already exists','error');return;}
   var p={action:'submitRecruitRequest','Requested By ID':currentUser.userId,'Requested By Name':currentUser.name,'New Employee ID':id,'New Employee Name':name,'Branch':document.getElementById('rr_branch').value,'Role':'employee','Password':pass,'Remarks':document.getElementById('rr_remarks').value.trim()};
-  postData(p).then(function(r){closeModal();if(r&&r.success){showToast('Request bheja gaya! Admin approve karega to advisor active ho jayega.','success');loadAll();}else showToast('Failed: '+(r&&r.error||''),'error');}).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
+  postData(p).then(function(r){closeModal();if(r&&r.success){showToast('Request sent! Once Admin approves, the advisor will become active.','success');loadAll();}else showToast('Failed: '+(r&&r.error||''),'error');}).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
 }
 function renderMyRecruitReqs(){
   var host=document.getElementById('myRecruitReqBox');if(!host)return;
@@ -9134,7 +9134,7 @@ function showApproveRecruitModal(rowNum){
   if(!req)return;
   var h='<div class="modal-title">Approve: '+req['New Employee Name']+'</div>';
   h+='<div style="color:var(--muted);font-size:12px;margin-bottom:8px;">Recruiter: '+(req['Requested By Name']||req['Requested By ID'])+' &#183; Branch: '+req['Branch']+'</div>';
-  h+='<div class="form-group"><label>Commission % (advisor ko brokerage ka kitna % milega)</label><input type="number" id="ar_comm" value="50" min="0" max="100"></div>';
+  h+='<div class="form-group"><label>Commission % (what % of brokerage the advisor gets)</label><input type="number" id="ar_comm" value="50" min="0" max="100"></div>';
   h+='<div class="form-group"><label>Fixed Salary (&#8377;/month, 0 if none)</label><input type="number" id="ar_sal" value="0"></div>';
   h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" data-row="'+rowNum+'" onclick="approveRecruitReq(this)">Approve &amp; Activate</button></div>';
   document.getElementById('modalBox').innerHTML=h;document.getElementById('modal').className='show';
@@ -9145,7 +9145,7 @@ function approveRecruitReq(btn){
   var sal=parseFloat(document.getElementById('ar_sal').value)||0;
   postData({action:'approveRecruitRequest','_rowNum':rowNum,'Commission':comm,'Salary':sal}).then(function(r){
     closeModal();
-    if(r&&r.success){showToast('Approved! Advisor active ho gaya, Recruiter apne "My Team" me dekh sakega.','success');loadAll();loadEmps();}
+    if(r&&r.success){showToast('Approved! The advisor is now active and the Recruiter will see them under "My Team".','success');loadAll();loadEmps();}
     else showToast('Failed: '+(r&&r.error||''),'error');
   }).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
 }
@@ -9199,7 +9199,7 @@ function showAddEmpModal(){
   h+='<div class="form-group"><label>Sub-team Of (Parents) - you can select multiple</label><div style="max-height:160px;overflow-y:auto;border:1px solid var(--border,rgba(255,255,255,.15));border-radius:8px;padding:8px;">';
   employees.forEach(function(e){h+='<label style="display:flex;align-items:center;gap:6px;font-weight:400;font-size:13px;padding:3px 0;"><input type="checkbox" class="ne_parent_cb" value="'+e['Employee ID']+'" style="width:auto;"> '+e['Name']+' ('+e['Employee ID']+')</label>';});
   h+='</div></div>';
-  h+='<div class="form-group"><label>Recruiter (Leader) - jisne is naye advisor ko recruit kiya (Leader Commission ke liye, optional)</label><select id="ne_recruiter"><option value="">-- None --</option>';
+  h+='<div class="form-group"><label>Recruiter (Leader) - who recruited this new advisor (for Leader Commission, optional)</label><select id="ne_recruiter"><option value="">-- None --</option>';
   employees.forEach(function(e){h+='<option value="'+e['Employee ID']+'">'+e['Name']+' ('+e['Employee ID']+')</option>';});
   h+='</select></div>';
   h+='<div class="form-group"><label>Join Date (milestone bonus 3-month window ke liye)</label><input type="date" id="ne_joindate" value="'+td()+'"></div>';
@@ -9251,7 +9251,7 @@ function editEmpModal(empId){
   var curParentIds=parentIdsOf(emp);
   employees.forEach(function(e){if(e['Employee ID']===empId)return;h+='<label style="display:flex;align-items:center;gap:6px;font-weight:400;font-size:13px;padding:3px 0;"><input type="checkbox" class="ee_parent_cb" value="'+e['Employee ID']+'" style="width:auto;"'+(curParentIds.indexOf(e['Employee ID'])!==-1?' checked':'')+'> '+e['Name']+' ('+e['Employee ID']+')</label>';});
   h+='</div></div>';
-  h+='<div class="form-group"><label>Recruiter (Leader) - jisne is advisor ko recruit kiya (Leader Commission ke liye, optional)</label><select id="ee_recruiter"><option value="">-- None --</option>';
+  h+='<div class="form-group"><label>Recruiter (Leader) - who recruited this advisor (for Leader Commission, optional)</label><select id="ee_recruiter"><option value="">-- None --</option>';
   employees.forEach(function(e){if(e['Employee ID']===empId)return;h+='<option value="'+e['Employee ID']+'"'+((emp['Recruiter ID']||'')===e['Employee ID']?' selected':'')+'>'+e['Name']+' ('+e['Employee ID']+')</option>';});
   h+='</select></div>';
   h+='<div class="form-group"><label>Join Date (milestone bonus 3-month window ke liye)</label><input type="date" id="ee_joindate" value="'+(emp['Join Date']||'')+'"></div>';
@@ -9295,7 +9295,7 @@ function loadStudentPortalAdmin(){
 function renderStudentPending(){
   var el=document.getElementById('stuPendingTable');if(!el)return;
   var pend=(students||[]).filter(function(s){return (s['Status']||'')==='Pending';});
-  if(!pend.length){el.innerHTML='<p style="color:var(--muted);padding:20px;">Koi pending registration nahi hai.</p>';return;}
+  if(!pend.length){el.innerHTML='<p style="color:var(--muted);padding:20px;">No pending registrations.</p>';return;}
   var h='<table><thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Batch</th><th>Registered</th><th>Action</th></tr></thead><tbody>';
   pend.forEach(function(s){
     h+='<tr><td>'+(s['Name']||'')+'</td><td>'+(s['Phone']||'')+'</td><td>'+(s['Email']||'')+'</td><td>'+(s['Batch']||'')+'</td><td>'+(s['Registered Date']||'')+'</td>'+
@@ -9306,15 +9306,15 @@ function renderStudentPending(){
 }
 function approveStudent(rowNum){
   postData({action:'editRow',sheet:'StudentPortal',rowNum:rowNum,vals:{'Status':'Active','Approved By':currentUser.name,'Approved Date':td()}}).then(function(r){
-    if(r&&r.success){showToast('Student approve ho gaya','success');loadStudentPortalAdmin();}
-    else showToast('Fail ho gaya'+(r&&r.error?': '+r.error:''),'error');
+    if(r&&r.success){showToast('Student approved','success');loadStudentPortalAdmin();}
+    else showToast('Failed'+(r&&r.error?': '+r.error:''),'error');
   }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
 function rejectStudent(rowNum){
-  if(!confirm('Is registration ko reject karna hai?'))return;
+  if(!confirm('Reject this registration?'))return;
   postData({action:'editRow',sheet:'StudentPortal',rowNum:rowNum,vals:{'Status':'Rejected'}}).then(function(r){
     if(r&&r.success){showToast('Reject kar diya','success');loadStudentPortalAdmin();}
-    else showToast('Fail ho gaya'+(r&&r.error?': '+r.error:''),'error');
+    else showToast('Failed'+(r&&r.error?': '+r.error:''),'error');
   }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
 function renderStudentAllList(){
@@ -9324,7 +9324,7 @@ function renderStudentAllList(){
     if(!f)return true;
     return ((s['Name']||'')+' '+(s['Phone']||'')+' '+(s['Batch']||'')).toLowerCase().indexOf(f)!==-1;
   });
-  if(!list.length){el.innerHTML='<p style="color:var(--muted);padding:20px;">Koi student nahi mila.</p>';return;}
+  if(!list.length){el.innerHTML='<p style="color:var(--muted);padding:20px;">No students found.</p>';return;}
   var h='<table><thead><tr><th>Name</th><th>Phone</th><th>Batch</th><th>Status</th><th>Registered</th><th>Action</th></tr></thead><tbody>';
   list.forEach(function(s){
     var stat=s['Status']||'';
@@ -9341,7 +9341,7 @@ function renderStudentAllList(){
 }
 function toggleStudentStatus(rowNum,newStatus){
   postData({action:'editRow',sheet:'StudentPortal',rowNum:rowNum,vals:{'Status':newStatus}}).then(function(r){
-    if(r&&r.success){showToast('Status update ho gaya','success');loadStudentPortalAdmin();}
+    if(r&&r.success){showToast('Status updated','success');loadStudentPortalAdmin();}
     else showToast('Fail'+(r&&r.error?': '+r.error:''),'error');
   }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
@@ -9363,7 +9363,7 @@ function submitStudentEdit(rowNum){
     'Email':document.getElementById('se_email').value.trim(),
     'Batch':document.getElementById('se_batch').value.trim()}};
   postData(p).then(function(r){
-    if(r&&r.success){showToast('Update ho gaya','success');closeModal();loadStudentPortalAdmin();}
+    if(r&&r.success){showToast('Updated','success');closeModal();loadStudentPortalAdmin();}
     else showToast('Fail'+(r&&r.error?': '+r.error:''),'error');
   }).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
 }
@@ -9389,20 +9389,20 @@ function uploadStuNoteAdmin(){
   if(!file){showToast('PDF file chunein','error');return;}
   var title=document.getElementById('snA_title').value.trim();
   var batch=document.getElementById('snA_batch').value.trim()||'All';
-  if(!title){showToast('Title daalein','error');return;}
+  if(!title){showToast('Please enter a title','error');return;}
   var reader=new FileReader();
   reader.onload=function(){
     var base64=reader.result.split(',')[1];
-    showToast('Upload ho raha hai...','success');
+    showToast('Uploading...','success');
     postData({action:'uploadStudentNote','Batch':batch,'Title':title,'FileName':file.name,'MimeType':file.type||'application/pdf','FileData':base64,'Uploaded By':currentUser.name}).then(function(r){
-      if(r&&r.success){showToast('Note upload ho gaya!','success');document.getElementById('snA_title').value='';document.getElementById('snA_batch').value='';fileInput.value='';loadStudentDataAdmin(renderStudentNotesAdmin);}
-      else showToast('Fail ho gaya'+(r&&r.error?': '+r.error:''),'error');
+      if(r&&r.success){showToast('Note uploaded!','success');document.getElementById('snA_title').value='';document.getElementById('snA_batch').value='';fileInput.value='';loadStudentDataAdmin(renderStudentNotesAdmin);}
+      else showToast('Failed'+(r&&r.error?': '+r.error:''),'error');
     }).catch(function(e){showToast('Error: '+e.message,'error');});
   };
   reader.readAsDataURL(file);
 }
 function deleteStuNoteAdmin(rowNum,fileId){
-  if(!confirm('Ye note delete karna hai?'))return;
+  if(!confirm('Delete this note?'))return;
   postData({action:'deleteStudentNote',rowNum:rowNum,'Drive File ID':fileId}).then(function(r){
     if(r&&r.success){showToast('Deleted','success');loadStudentDataAdmin(renderStudentNotesAdmin);}else showToast('Fail','error');
   }).catch(function(e){showToast('Error: '+e.message,'error');});
@@ -9423,10 +9423,10 @@ function renderStudentClassLinksAdmin(){
 function addStuClassLinkAdmin(){
   var title=document.getElementById('clA_title').value.trim();
   var url=document.getElementById('clA_url').value.trim();
-  if(!title||!url){showToast('Title aur link dono chahiye','error');return;}
+  if(!title||!url){showToast('Both title and link are required','error');return;}
   var p={action:'addGeneric',sheet:'StudentClassLinks','Date':td(),'Batch':document.getElementById('clA_batch').value.trim()||'All','Title':title,'Link URL':url,'Type':document.getElementById('clA_type').value,'Uploaded By':currentUser.name};
   postData(p).then(function(r){
-    if(r&&r.success){showToast('Link add ho gaya','success');document.getElementById('clA_title').value='';document.getElementById('clA_url').value='';document.getElementById('clA_batch').value='';loadStudentDataAdmin(renderStudentClassLinksAdmin);}
+    if(r&&r.success){showToast('Link added','success');document.getElementById('clA_title').value='';document.getElementById('clA_url').value='';document.getElementById('clA_batch').value='';loadStudentDataAdmin(renderStudentClassLinksAdmin);}
     else showToast('Fail','error');
   }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
@@ -9458,13 +9458,13 @@ function renderStudentTestsAdmin(){
 }
 function createStuTestAdmin(){
   var title=document.getElementById('tsA_title').value.trim();
-  if(!title){showToast('Title daalein','error');return;}
+  if(!title){showToast('Please enter a title','error');return;}
   var type=document.getElementById('tsA_type').value;
   var ext=document.getElementById('tsA_ext').value.trim();
-  if(type==='External'&&!ext){showToast('External link daalein','error');return;}
+  if(type==='External'&&!ext){showToast('Please enter the external link','error');return;}
   var p={action:'addGeneric',sheet:'StudentTests','Test ID':'TST'+Date.now(),'Title':title,'Batch':document.getElementById('tsA_batch').value.trim()||'All','Type':type,'External Link':type==='External'?ext:'','Status':'Draft','Created By':currentUser.name,'Created Date':td()};
   postData(p).then(function(r){
-    if(r&&r.success){showToast('Test create ho gaya (Draft)','success');document.getElementById('tsA_title').value='';document.getElementById('tsA_ext').value='';document.getElementById('tsA_batch').value='';loadStudentDataAdmin(renderStudentTestsAdmin);}
+    if(r&&r.success){showToast('Test created (Draft)','success');document.getElementById('tsA_title').value='';document.getElementById('tsA_ext').value='';document.getElementById('tsA_batch').value='';loadStudentDataAdmin(renderStudentTestsAdmin);}
     else showToast('Fail','error');
   }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
@@ -9473,10 +9473,10 @@ function toggleStuTestStatusAdmin(tid,newStatus){
   if(!t)return;
   if(newStatus==='Launched'&&(t['Type']||'MCQ')==='MCQ'){
     var qCount=(stuData.testQuestions||[]).filter(function(q){return q['Test ID']===tid;}).length;
-    if(!qCount){showToast('Launch se pehle kam se kam 1 question add karein','error');return;}
+    if(!qCount){showToast('Add at least 1 question before launching','error');return;}
   }
   postData({action:'editRow',sheet:'StudentTests',rowNum:t['_rowNum'],vals:{'Status':newStatus}}).then(function(r){
-    if(r&&r.success){showToast('Status update ho gaya','success');loadStudentDataAdmin(renderStudentTestsAdmin);}
+    if(r&&r.success){showToast('Status updated','success');loadStudentDataAdmin(renderStudentTestsAdmin);}
     else showToast('Fail','error');
   }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
@@ -9489,7 +9489,7 @@ function openStuTestQuestionsAdmin(tid){
     qs.forEach(function(q){h+='<tr><td>'+(q['Q No']||'')+'</td><td>'+(q['Question']||'')+'</td><td>'+(q['Correct Option']||'')+'</td><td><button class="btn-del" onclick=\'deleteStuGenericAdmin("StudentTestQuestions",'+q['_rowNum']+',function(){openStuTestQuestionsAdmin("'+tid+'");})\'>&#128465;</button></td></tr>';});
     h+='</tbody></table>';
   }
-  h+='<div style="font-weight:700;margin:14px 0 8px;">Naya Question Add Karein</div>';
+  h+='<div style="font-weight:700;margin:14px 0 8px;">Add New Question</div>';
   h+='<div class="form-grid">';
   h+='<div class="form-group" style="grid-column:1/-1;"><label>Question</label><input type="text" id="tq_question"></div>';
   h+='<div class="form-group"><label>Option A</label><input type="text" id="tq_a"></div>';
@@ -9504,11 +9504,11 @@ function openStuTestQuestionsAdmin(tid){
 }
 function addStuTestQuestionAdmin(tid){
   var q=document.getElementById('tq_question').value.trim();
-  if(!q){showToast('Question daalein','error');return;}
+  if(!q){showToast('Please enter the question','error');return;}
   var existingCount=(stuData.testQuestions||[]).filter(function(x){return x['Test ID']===tid;}).length;
   var p={action:'addGeneric',sheet:'StudentTestQuestions','Test ID':tid,'Q No':existingCount+1,'Question':q,'Option A':document.getElementById('tq_a').value.trim(),'Option B':document.getElementById('tq_b').value.trim(),'Option C':document.getElementById('tq_c').value.trim(),'Option D':document.getElementById('tq_d').value.trim(),'Correct Option':document.getElementById('tq_correct').value};
   postData(p).then(function(r){
-    if(r&&r.success){showToast('Question add ho gaya','success');loadStudentDataAdmin(function(){openStuTestQuestionsAdmin(tid);renderStudentTestsAdmin();});}
+    if(r&&r.success){showToast('Question added','success');loadStudentDataAdmin(function(){openStuTestQuestionsAdmin(tid);renderStudentTestsAdmin();});}
     else showToast('Fail','error');
   }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
@@ -9565,7 +9565,7 @@ function saveStuSettingsAdmin(){
   var link=document.getElementById('ssA_link').value.trim();
   saveStuSettingKV('ReferIncentive',inc,function(){
     saveStuSettingKV('AccountOpenLink',link,function(){
-      showToast('Settings save ho gaye','success');
+      showToast('Settings saved','success');
       loadStudentDataAdmin(renderStudentSettingsAdmin);
     });
   });
@@ -9587,7 +9587,7 @@ function renderStudentReferralsAdmin(){
 }
 function updateStuReferralStatusAdmin(rowNum,newStatus){
   postData({action:'editRow',sheet:'StudentReferrals',rowNum:rowNum,vals:{'Status':newStatus}}).then(function(r){
-    if(r&&r.success){showToast('Status update ho gaya','success');loadStudentDataAdmin(renderStudentReferralsAdmin);}
+    if(r&&r.success){showToast('Status updated','success');loadStudentDataAdmin(renderStudentReferralsAdmin);}
     else showToast('Fail','error');
   }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
@@ -9624,7 +9624,7 @@ function renderStuDash(){
     '<div class="stat-card"><div class="stat-label">Name</div><div class="stat-value" style="font-size:16px;">'+(currentUser.name||'-')+'</div></div>'+
     '<div class="stat-card"><div class="stat-label">Batch</div><div class="stat-value" style="font-size:16px;">'+(currentUser.batch||'-')+'</div></div>'+
     '<div class="stat-card"><div class="stat-label">Phone</div><div class="stat-value" style="font-size:16px;">'+(currentUser.phone||'-')+'</div></div>'+
-    '</div><p style="color:var(--muted);margin-top:20px;">&#128075; Welcome! Watchlist, Trading Journal, Notes, Class Links, Test Series, Attendance aur Refer &amp; Earn jald yahan add honge.</p>';
+    '</div><p style="color:var(--muted);margin-top:20px;">&#128075; Welcome! Watchlist, Trading Journal, Notes, Class Links, Test Series, Attendance and Refer &amp; Earn will be added here soon.</p>';
 }
 
 /* ===== STUDENT SECTION PHASE 2: STUDENT-FACING (Watchlist/Journal/Notes/Classes/Tests/Attendance/Refer) ===== */
@@ -9633,26 +9633,26 @@ function renderStuNotes(){
   var batch=(currentUser.batch||'').trim();
   var list=(stuData.notes||[]).filter(function(n){var b=(n['Batch']||'').trim();return !b||b==='All'||b==='General'||b===batch;}).slice().reverse();
   var h='';
-  if(!list.length)h='<p style="color:var(--muted);padding:20px;">Abhi koi notes upload nahi hue.</p>';
+  if(!list.length)h='<p style="color:var(--muted);padding:20px;">No notes uploaded yet.</p>';
   else{
     h='<div class="table-wrap"><table><thead><tr><th>Date</th><th>Title</th><th>File</th></tr></thead><tbody>';
     list.forEach(function(n){h+='<tr><td>'+(n['Date']||'')+'</td><td>'+(n['Title']||n['FileName']||'')+'</td><td><a href="'+(n['Drive URL']||'#')+'" target="_blank" rel="noopener">&#128196; Open PDF</a></td></tr>';});
     h+='</tbody></table></div>';
   }
-  document.getElementById('spage-stuNotes').innerHTML='<div class="page-header"><h1>&#128218; Notes</h1><p>Class notes (PDF) yahan milenge.</p></div>'+h;
+  document.getElementById('spage-stuNotes').innerHTML='<div class="page-header"><h1>&#128218; Notes</h1><p>Class notes (PDF) will appear here.</p></div>'+h;
 }
 
 function renderStuClasses(){
   var batch=(currentUser.batch||'').trim();
   var list=(stuData.classLinks||[]).filter(function(n){var b=(n['Batch']||'').trim();return !b||b==='All'||b==='General'||b===batch;}).slice().reverse();
   var h='';
-  if(!list.length)h='<p style="color:var(--muted);padding:20px;">Abhi koi class link nahi hai.</p>';
+  if(!list.length)h='<p style="color:var(--muted);padding:20px;">No class links yet.</p>';
   else{
     h='<div class="table-wrap"><table><thead><tr><th>Date</th><th>Title</th><th>Type</th><th>Link</th></tr></thead><tbody>';
     list.forEach(function(n){h+='<tr><td>'+(n['Date']||'')+'</td><td>'+(n['Title']||'')+'</td><td>'+(n['Type']||'')+'</td><td><a href="'+(n['Link URL']||'#')+'" target="_blank" rel="noopener">&#128279; Open</a></td></tr>';});
     h+='</tbody></table></div>';
   }
-  document.getElementById('spage-stuClasses').innerHTML='<div class="page-header"><h1>&#127909; Class Links</h1><p>Live class aur YouTube/social media links yahan milenge.</p></div>'+h;
+  document.getElementById('spage-stuClasses').innerHTML='<div class="page-header"><h1>&#127909; Class Links</h1><p>Live class and YouTube/social media links will appear here.</p></div>'+h;
 }
 
 function renderStuAttendance(){
@@ -9661,13 +9661,13 @@ function renderStuAttendance(){
   var total=list.length;
   var pct=total?Math.round(present/total*100):0;
   var h='<div class="stats-grid">'+mkStats([{label:'Total Marked',value:total},{label:'Present',value:present,color:'green'},{label:'Attendance %',value:pct+'%',color:pct>=75?'green':'red'}])+'</div>';
-  if(!list.length)h+='<p style="color:var(--muted);padding:20px;">Abhi attendance record nahi hai.</p>';
+  if(!list.length)h+='<p style="color:var(--muted);padding:20px;">No attendance recorded yet.</p>';
   else{
     h+='<div class="table-wrap"><table><thead><tr><th>Date</th><th>Batch</th><th>Status</th></tr></thead><tbody>';
     list.forEach(function(a){var st=a['Status']||'';h+='<tr><td>'+(a['Date']||'')+'</td><td>'+(a['Batch']||'')+'</td><td><span class="badge '+(st==='Present'?'green':'red')+'">'+st+'</span></td></tr>';});
     h+='</tbody></table></div>';
   }
-  document.getElementById('spage-stuAttendance').innerHTML='<div class="page-header"><h1>&#128197; My Attendance</h1><p>Apni attendance yahan dekh sakenge.</p></div>'+h;
+  document.getElementById('spage-stuAttendance').innerHTML='<div class="page-header"><h1>&#128197; My Attendance</h1><p>View your attendance here.</p></div>'+h;
 }
 
 function renderStuRefer(){
@@ -9677,10 +9677,10 @@ function renderStuRefer(){
   h+='<div class="form-card" style="max-width:520px;">';
   h+='<div style="font-weight:700;margin-bottom:10px;">Account Opening Link</div>';
   if(link)h+='<div style="display:flex;gap:8px;align-items:center;"><input type="text" readonly value="'+link.replace(/"/g,'&quot;')+'" style="flex:1;" id="stuReferLinkInput"><button class="btn-mini add" onclick="copyStuReferLink()">&#128203; Copy</button></div>';
-  else h+='<p style="color:var(--muted);">Link abhi set nahi hai.</p>';
+  else h+='<p style="color:var(--muted);">Link not set yet.</p>';
   h+='</div>';
   h+='<div class="form-card form-grid" style="margin-top:16px;">';
-  h+='<div style="font-weight:700;grid-column:1/-1;margin-bottom:4px;">Refer Karein - Lead Bhejein</div>';
+  h+='<div style="font-weight:700;grid-column:1/-1;margin-bottom:4px;">Refer - Send a Lead</div>';
   h+='<div class="form-group"><label>Friend/Relative ka Naam</label><input type="text" id="sr_name"></div>';
   h+='<div class="form-group"><label>Phone</label><input type="text" id="sr_phone"></div>';
   h+='<div class="form-group"><label>Interested In</label><select id="sr_interest"><option>Demat Account</option><option>Mutual Fund SIP</option><option>Insurance</option><option>Trading Classes</option></select></div>';
@@ -9688,21 +9688,21 @@ function renderStuRefer(){
   h+='<div class="form-group" style="grid-column:1/-1;"><label>Message (optional)</label><input type="text" id="sr_msg"></div>';
   h+='<div class="form-group"><button class="btn-submit" onclick="submitStuReferral()">Submit Lead</button></div>';
   h+='</div>';
-  document.getElementById('spage-stuRefer').innerHTML='<div class="page-header"><h1>&#128176; Refer &amp; Earn</h1><p>Refer karke earn karne ka form aur account-opening link yahan milega.</p></div>'+h;
+  document.getElementById('spage-stuRefer').innerHTML='<div class="page-header"><h1>&#128176; Refer &amp; Earn</h1><p>The referral form and account-opening link will appear here.</p></div>'+h;
 }
 function copyStuReferLink(){
   var el=document.getElementById('stuReferLinkInput');if(!el)return;
   el.select();
-  try{document.execCommand('copy');showToast('Link copy ho gaya!','success');}catch(e){showToast('Copy nahi ho paya, manually select karein','error');}
+  try{document.execCommand('copy');showToast('Link copied!','success');}catch(e){showToast('Could not copy - please select and copy manually','error');}
 }
 function submitStuReferral(){
   var name=document.getElementById('sr_name').value.trim();
   var phone=document.getElementById('sr_phone').value.trim();
-  if(!name||!phone){showToast('Naam aur phone dono chahiye','error');return;}
+  if(!name||!phone){showToast('Both name and phone are required','error');return;}
   var p={action:'addGeneric',sheet:'StudentReferrals','Date':td(),'Student ID':currentUser.id,'Student Name':currentUser.name,'Phone':phone,'Interested In':document.getElementById('sr_interest').value,'Availability':document.getElementById('sr_avail').value.trim(),'Message':document.getElementById('sr_msg').value.trim(),'Status':'New'};
   postData(p).then(function(r){
-    if(r&&r.success){showToast('Lead submit ho gaya, hum jald contact karenge!','success');document.getElementById('sr_name').value='';document.getElementById('sr_phone').value='';document.getElementById('sr_avail').value='';document.getElementById('sr_msg').value='';}
-    else showToast('Fail ho gaya','error');
+    if(r&&r.success){showToast('Lead submitted, we will contact you soon!','success');document.getElementById('sr_name').value='';document.getElementById('sr_phone').value='';document.getElementById('sr_avail').value='';document.getElementById('sr_msg').value='';}
+    else showToast('Failed','error');
   }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
 
@@ -9710,25 +9710,25 @@ function renderStuWatchlist(){
   var list=(stuData.watchlist||[]).slice().reverse();
   var h='<div class="form-card form-grid" style="margin-bottom:16px;">';
   h+='<div class="form-group"><label>Stock</label><input type="text" id="sw_stock" placeholder="e.g. RELIANCE"></div>';
-  h+='<div class="form-group" style="grid-column:1/-1;"><label>Notes</label><input type="text" id="sw_notes" placeholder="Apna reasoning/target likhein"></div>';
+  h+='<div class="form-group" style="grid-column:1/-1;"><label>Notes</label><input type="text" id="sw_notes" placeholder="Write your reasoning/target"></div>';
   h+='<div class="form-group"><button class="btn-submit" onclick="addStuWatchlist()">Add to Watchlist</button></div>';
   h+='</div>';
-  if(!list.length)h+='<p style="color:var(--muted);padding:20px;">Abhi watchlist khali hai.</p>';
+  if(!list.length)h+='<p style="color:var(--muted);padding:20px;">Your watchlist is empty.</p>';
   else{
     h+='<div class="table-wrap"><table><thead><tr><th>Date</th><th>Stock</th><th>Notes</th><th>Action</th></tr></thead><tbody>';
     list.forEach(function(w){h+='<tr><td>'+(w['Date Added']||'')+'</td><td><b>'+(w['Stock']||'')+'</b></td><td>'+(w['Notes']||'-')+'</td><td><button class="btn-del" onclick="delStuWatchlist('+w['_rowNum']+')">&#128465;</button></td></tr>';});
     h+='</tbody></table></div>';
   }
-  document.getElementById('spage-stuWatchlist').innerHTML='<div class="page-header"><h1>&#11088; My Watchlist</h1><p>Apni khud ki stock watchlist yahan bana sakenge - employee/client watchlist se poori tarah alag.</p></div>'+h;
+  document.getElementById('spage-stuWatchlist').innerHTML='<div class="page-header"><h1>&#11088; My Watchlist</h1><p>Build your own stock watchlist here - fully separate from the employee/client watchlist.</p></div>'+h;
 }
 function addStuWatchlist(){
   var stock=document.getElementById('sw_stock').value.trim();
-  if(!stock){showToast('Stock name daalein','error');return;}
+  if(!stock){showToast('Please enter the stock name','error');return;}
   var p={action:'addGeneric',sheet:'StudentWatchlist','Date Added':td(),'Student ID':currentUser.id,'Student Name':currentUser.name,'Batch':currentUser.batch||'','Stock':stock.toUpperCase(),'Notes':document.getElementById('sw_notes').value.trim(),'Status':'Active'};
-  postData(p).then(function(r){if(r&&r.success){showToast('Add ho gaya','success');loadStudentDataStudent(renderStuWatchlist);}else showToast('Fail','error');}).catch(function(e){showToast('Error: '+e.message,'error');});
+  postData(p).then(function(r){if(r&&r.success){showToast('Added','success');loadStudentDataStudent(renderStuWatchlist);}else showToast('Fail','error');}).catch(function(e){showToast('Error: '+e.message,'error');});
 }
 function delStuWatchlist(rowNum){
-  if(!confirm('Delete karna hai?'))return;
+  if(!confirm('Delete this?'))return;
   postData({action:'deleteRow',sheet:'StudentWatchlist',rowNum:rowNum}).then(function(r){if(r&&r.success){showToast('Deleted','success');loadStudentDataStudent(renderStuWatchlist);}}).catch(function(){});
 }
 
@@ -9745,22 +9745,22 @@ function renderStuJournal(){
   h+='<div class="form-group" style="grid-column:1/-1;"><label>Remarks</label><input type="text" id="sj_remarks"></div>';
   h+='<div class="form-group"><button class="btn-submit" onclick="addStuJournal()">Add Trade</button></div>';
   h+='</div>';
-  if(!list.length)h+='<p style="color:var(--muted);padding:20px;">Abhi koi trade record nahi hai.</p>';
+  if(!list.length)h+='<p style="color:var(--muted);padding:20px;">No trades recorded yet.</p>';
   else{
     h+='<div class="table-wrap"><table><thead><tr><th>Date</th><th>Stock</th><th>Dir</th><th>Entry</th><th>Exit</th><th>Qty</th><th>Result</th><th>Action</th></tr></thead><tbody>';
     list.forEach(function(j){var res=j['Result']||'';h+='<tr><td>'+(j['Date']||'')+'</td><td><b>'+(j['Stock']||'')+'</b></td><td>'+(j['Direction']||'')+'</td><td>'+(j['Entry Price']||'')+'</td><td>'+(j['Exit Price']||'')+'</td><td>'+(j['Qty']||'')+'</td><td><span class="badge '+(res==='Profit'?'green':res==='Loss'?'red':'amber')+'">'+res+'</span></td><td><button class="btn-del" onclick="delStuJournal('+j['_rowNum']+')">&#128465;</button></td></tr>';});
     h+='</tbody></table></div>';
   }
-  document.getElementById('spage-stuJournal').innerHTML='<div class="page-header"><h1>&#128200; My Trading Journal</h1><p>Apni trades yahan record kar sakenge, employee/client trading journal se poori tarah alag.</p></div>'+h;
+  document.getElementById('spage-stuJournal').innerHTML='<div class="page-header"><h1>&#128200; My Trading Journal</h1><p>Record your own trades here - fully separate from the employee/client trading journal.</p></div>'+h;
 }
 function addStuJournal(){
   var stock=document.getElementById('sj_stock').value.trim();
-  if(!stock){showToast('Stock name daalein','error');return;}
+  if(!stock){showToast('Please enter the stock name','error');return;}
   var p={action:'addGeneric',sheet:'StudentJournal','Date':document.getElementById('sj_date').value||td(),'Student ID':currentUser.id,'Student Name':currentUser.name,'Batch':currentUser.batch||'','Stock':stock.toUpperCase(),'Direction':document.getElementById('sj_dir').value,'Entry Price':document.getElementById('sj_entry').value,'Exit Price':document.getElementById('sj_exit').value,'Qty':document.getElementById('sj_qty').value,'Result':document.getElementById('sj_result').value,'Remarks':document.getElementById('sj_remarks').value.trim()};
-  postData(p).then(function(r){if(r&&r.success){showToast('Trade add ho gaya','success');loadStudentDataStudent(renderStuJournal);}else showToast('Fail','error');}).catch(function(e){showToast('Error: '+e.message,'error');});
+  postData(p).then(function(r){if(r&&r.success){showToast('Trade added','success');loadStudentDataStudent(renderStuJournal);}else showToast('Fail','error');}).catch(function(e){showToast('Error: '+e.message,'error');});
 }
 function delStuJournal(rowNum){
-  if(!confirm('Delete karna hai?'))return;
+  if(!confirm('Delete this?'))return;
   postData({action:'deleteRow',sheet:'StudentJournal',rowNum:rowNum}).then(function(r){if(r&&r.success){showToast('Deleted','success');loadStudentDataStudent(renderStuJournal);}}).catch(function(){});
 }
 
@@ -9770,7 +9770,7 @@ function renderStuTests(){
   var list=(stuData.tests||[]).filter(function(t){var st=(t['Status']||'');var b=(t['Batch']||'').trim();return st==='Launched'&&(!b||b==='All'||b===batch);});
   var attempts=(stuData.testAttempts||[]);
   var h='';
-  if(!list.length)h='<p style="color:var(--muted);padding:20px;">Abhi koi test launch nahi hua.</p>';
+  if(!list.length)h='<p style="color:var(--muted);padding:20px;">No tests launched yet.</p>';
   else{
     h='<div class="table-wrap"><table><thead><tr><th>Title</th><th>Type</th><th>Action</th></tr></thead><tbody>';
     list.forEach(function(t){
@@ -9786,12 +9786,12 @@ function renderStuTests(){
     h+='</tbody></table></div>';
   }
   h+='<div id="stuQuizArea" style="margin-top:20px;"></div>';
-  document.getElementById('spage-stuTests').innerHTML='<div class="page-header"><h1>&#128221; Test Series</h1><p>MCQ tests aur external test links yahan milenge, score history ke saath.</p></div>'+h;
+  document.getElementById('spage-stuTests').innerHTML='<div class="page-header"><h1>&#128221; Test Series</h1><p>MCQ tests and external test links will appear here, along with your score history.</p></div>'+h;
 }
 function startStuQuiz(tid){
   var test=(stuData.tests||[]).find(function(t){return t['Test ID']===tid;});
   var qs=(stuData.testQuestions||[]).filter(function(q){return q['Test ID']===tid;});
-  if(!qs.length){showToast('Is test me abhi questions nahi hain','error');return;}
+  if(!qs.length){showToast('This test has no questions yet','error');return;}
   stuQuizState={tid:tid,title:test?test['Title']:'',questions:qs};
   var h='<div class="form-card"><div style="font-weight:700;margin-bottom:12px;">'+(test?test['Title']:'Test')+'</div>';
   qs.forEach(function(q,i){
@@ -9819,8 +9819,8 @@ function submitStuQuiz(){
   var total=qs.length;
   var p={action:'addGeneric',sheet:'StudentTestAttempts','Test ID':stuQuizState.tid,'Test Title':stuQuizState.title,'Student ID':currentUser.id,'Student Name':currentUser.name,'Score':score,'Total':total,'Attempt Date':td()};
   postData(p).then(function(r){
-    if(r&&r.success){showToast('Test submit ho gaya! Score: '+score+'/'+total,'success');document.getElementById('stuQuizArea').innerHTML='';stuQuizState=null;loadStudentDataStudent(renderStuTests);}
-    else showToast('Fail ho gaya','error');
+    if(r&&r.success){showToast('Test submitted! Score: '+score+'/'+total,'success');document.getElementById('stuQuizArea').innerHTML='';stuQuizState=null;loadStudentDataStudent(renderStuTests);}
+    else showToast('Failed','error');
   }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
 
@@ -10558,7 +10558,7 @@ function submitIPOCallClient(){
   var cname=(document.getElementById('ipocl_cname').value||'').trim();
   var cphone=(document.getElementById('ipocl_cphone').value||'').trim();
   if(!cid||!cname){showToast('Please fill Client ID and Client Name','error');return;}
-  if(isInCallTrade(cid)){showToast('Ye client already ek calling list me hai','error');return;}
+  if(isInCallTrade(cid)){showToast('This client is already in a calling list','error');return;}
   var who=forEmpObj('ipocl_forEmp');
   var remarks=(document.getElementById('ipocl_remarks').value||'').trim();
   ['ipocl_cid','ipocl_cname','ipocl_cphone','ipocl_remarks'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
@@ -10592,7 +10592,7 @@ function renderIPOCallList(){
   if(elT)elT.innerHTML=mkIPOCallListTable(rows);
 }
 function mkIPOCallListTable(rows){
-  if(!rows||!rows.length)return '<div class="no-data">Koi IPO calling client nahi hai - upar se add karo ya Accounts se "Shift to IPO List" button se add karo</div>';
+  if(!rows||!rows.length)return '<div class="no-data">No IPO calling clients - add from above, or use the "Shift to IPO List" button in Accounts</div>';
   var isAdm=currentUser&&currentUser.role==='admin';
   var showEmp=isAdm||(currentUser&&teamMembersOf(currentUser.userId).length>0);
   var h='<table><thead><tr><th>Client</th><th>Phone</th>'+(showEmp?'<th>Employee</th>':'')+'<th>Call</th><th>Applied</th><th>Category</th><th>UPI ID</th><th>Actions</th></tr></thead><tbody>';
@@ -10600,7 +10600,7 @@ function mkIPOCallListTable(rows){
     var called=r['IPO Call Status']==='Called';
     var callBadge=called?'<span class="badge green">&#10003; Called</span>':'<span class="badge red">Not Called</span>';
     var appliedBadge;
-    if(!called)appliedBadge='<span style="color:var(--muted,#8a94a6);font-size:11px;">call pehle karo</span>';
+    if(!called)appliedBadge='<span style="color:var(--muted,#8a94a6);font-size:11px;">call first</span>';
     else if(r['IPO Applied']==='Yes')appliedBadge='<span class="badge green">Applied</span>';
     else if(r['IPO Applied']==='No')appliedBadge='<span class="badge red">Not Applied</span>';
     else appliedBadge='<span class="badge amber">Pending</span>';
@@ -10625,7 +10625,7 @@ function openIPOCallStatusModal(rowNum){
   var cat=row['IPO Category']||'Retail';
   html+='<div class="form-group" id="ics_categoryGroup"><label>Category</label><select id="ics_category">'+['Retail','HNI','Big HNI'].map(function(c){return '<option value="'+c+'"'+(cat===c?' selected':'')+'>'+c+'</option>';}).join('')+'</select></div>';
   var hasUpi=!!(row['UPI ID']||'').trim();
-  html+='<div class="form-group"><label style="display:flex;align-items:center;gap:7px;font-weight:400;font-size:13px;"><input type="checkbox" id="ics_saveUpi" style="width:auto;" onchange="toggleICSUpiField()"'+(hasUpi?' checked':'')+'> UPI ID save karna hai? (future IPO ke liye, dobara nahi poochenge)</label></div>';
+  html+='<div class="form-group"><label style="display:flex;align-items:center;gap:7px;font-weight:400;font-size:13px;"><input type="checkbox" id="ics_saveUpi" style="width:auto;" onchange="toggleICSUpiField()"'+(hasUpi?' checked':'')+'> Save UPI ID? (for future IPOs, will not ask again)</label></div>';
   html+='<div class="form-group" id="ics_upiGroup" style="'+(hasUpi?'':'display:none;')+'"><label>UPI ID</label><input type="text" id="ics_upi" value="'+(row['UPI ID']||'')+'" placeholder="e.g. name@upi"></div>';
   html+='<div class="form-group"><label>Remarks (optional)</label><textarea id="ics_remarks" rows="2">'+(row['Remarks']||'')+'</textarea></div>';
   html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="saveIPOCallStatusModal('+rowNum+')">Save</button></div>';
@@ -10671,9 +10671,9 @@ function saveIPOCallStatusModal(rowNum){
 function openIPORoundModal(){
   var curName=currentIPORoundName();
   var html='<div class="modal-title">Start / Update IPO Round</div>';
-  html+='<p style="color:var(--muted,#8a94a6);font-size:12px;margin:-8px 0 14px;">Naya IPO aaya? Yahan naam daalo taaki poori IPO Calling List ko pata chale abhi kis IPO ke liye call karni hai.</p>';
+  html+='<p style="color:var(--muted,#8a94a6);font-size:12px;margin:-8px 0 14px;">New IPO? Enter the name here so the whole IPO Calling List knows which IPO to call about.</p>';
   html+='<div class="form-group"><label>IPO Name</label><input type="text" id="ipr_name" value="'+curName+'" placeholder="e.g. Dhoot Transmission"></div>';
-  html+='<div class="form-group"><label style="display:flex;align-items:center;gap:7px;font-weight:400;font-size:13px;"><input type="checkbox" id="ipr_reset" style="width:auto;" checked> Sabhi clients ka Call/Applied/Category status reset kar do (naya round shuru - UPI ID save rahegi)</label></div>';
+  html+='<div class="form-group"><label style="display:flex;align-items:center;gap:7px;font-weight:400;font-size:13px;"><input type="checkbox" id="ipr_reset" style="width:auto;" checked> Reset Call/Applied/Category status for all clients (new round starting - UPI ID will be kept)</label></div>';
   html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="saveIPORoundModal()">Save</button></div>';
   document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
 }
@@ -10683,9 +10683,9 @@ function saveIPORoundModal(){
   var doReset=document.getElementById('ipr_reset').checked;
   var isAdm=currentUser&&currentUser.role==='admin';
   var rows=(isAdm?(allData.CallClients||[]).filter(function(r){return isIPOPurpose(r);}):ipoCLRosterScoped()).filter(function(r){return String(r['_rowNum']).indexOf('_local')!==0;});
-  if(!rows.length){showToast('IPO Calling List me abhi koi (saved) client nahi hai','error');closeModal();return;}
+  if(!rows.length){showToast('No (saved) clients in the IPO Calling List yet','error');closeModal();return;}
   closeModal();
-  showToast('IPO Round update ho raha hai... ('+rows.length+' clients)','success');
+  showToast('Updating IPO Round... ('+rows.length+' clients)','success');
   var seq=Promise.resolve();
   rows.forEach(function(r){
     seq=seq.then(function(){
@@ -10979,8 +10979,8 @@ function openAccEditModal(rowNum){
   html+='</div><div style="font-size:11px;color:var(--muted,#8a94a6);margin-top:4px;">If none selected, the account will be marked Inactive</div></div>';
   var ctEntryEdit=callTradeEntryFor(row['Client ID']);
   var alreadyCT=!!ctEntryEdit;
-  var alreadyCTLabel=alreadyCT?(isIPOPurpose(ctEntryEdit)?' (already IPO List me hai)':' (already Call &amp; Trade me hai)'):'';
-  html+='<div class="form-group"><label style="display:flex;align-items:center;gap:7px;font-weight:400;font-size:13px;'+(alreadyCT?'color:var(--muted,#8a94a6);':'')+'"><input type="checkbox" id="ae_addToCT" style="width:auto;"'+(alreadyCT?' checked disabled':'')+'> &#128222; Call &amp; Trade (daily calling) list me bhi add karo'+alreadyCTLabel+'</label></div>';
+  var alreadyCTLabel=alreadyCT?(isIPOPurpose(ctEntryEdit)?' (already in IPO List)':' (already in Call &amp; Trade)'):'';
+  html+='<div class="form-group"><label style="display:flex;align-items:center;gap:7px;font-weight:400;font-size:13px;'+(alreadyCT?'color:var(--muted,#8a94a6);':'')+'"><input type="checkbox" id="ae_addToCT" style="width:auto;"'+(alreadyCT?' checked disabled':'')+'> &#128222; Also add to the Call &amp; Trade (daily calling) list'+alreadyCTLabel+'</label></div>';
   html+='<div class="form-group"><label>Remarks</label><textarea id="ae_remarks">'+(row['Remarks']||'')+'</textarea></div>';
   html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-danger" onclick="confirmDel(\'Accounts\','+rowNum+')">Delete</button><button class="btn-save" onclick="saveAccEditModal('+rowNum+')">Save</button></div>';
   document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
@@ -11014,11 +11014,11 @@ function saveAccEditModal(rowNum){
       var accRow=(allData.Accounts||[]).find(function(x){return String(x['_rowNum'])===String(rowNum);})||{};
       /* v73: same auto-shift-to-IPO-list-on-IPO-Active logic as Add Account form, kept in sync */
       if(actIPO==='Yes'){
-        if(!newCid){showToast('IPO Calling List ke liye Client ID chahiye - Client ID daal ke dobara try karo','error');}
+        if(!newCid){showToast('Client ID is needed for the IPO Calling List - add the Client ID and try again','error');}
         else if(!isInCallTrade(newCid)){addClientToCallTrade({cid:newCid,cname:newCname,cphone:newCphone,empId:accRow['Employee ID'],empName:accRow['Employee Name'],branch:accRow['Branch'],remarks:'Added from Edit Account (IPO Active)',purpose:'IPO'});}
       }
       if(addToCTChecked){
-        if(!newCid){showToast('Call & Trade ke liye Client ID chahiye - Client ID daal ke dobara try karo','error');}
+        if(!newCid){showToast('Client ID is needed for Call & Trade - add the Client ID and try again','error');}
         else if(!isInCallTrade(newCid)){addClientToCallTrade({cid:newCid,cname:newCname,cphone:newCphone,empId:accRow['Employee ID'],empName:accRow['Employee Name'],branch:accRow['Branch'],remarks:'Added from Edit Account',purpose:'Trading'});}
       }
       setTimeout(function(){loadAll(2);},600);
@@ -11042,7 +11042,7 @@ function openAccCallModal(rowNum){
     html+='<div style="color:var(--muted,#8a94a6);font-size:12px;margin-bottom:14px;">No call log exists yet for this client.</div>';
   }
   html+='<div class="form-group"><label>Today\'s Call Remarks (what was discussed)</label><textarea id="accCallRemarks" placeholder="e.g. Needs SIP restart, call again next week..."></textarea></div>';
-  html+='<div class="form-group"><label style="display:flex;align-items:center;gap:6px;font-weight:400;"><input type="checkbox" id="accCallSetReminder" onchange="document.getElementById(\'accCallReminderDateWrap\').style.display=this.checked?\'block\':\'none\'" style="width:auto;"> Future ke liye reminder bhi lagayein</label></div>';
+  html+='<div class="form-group"><label style="display:flex;align-items:center;gap:6px;font-weight:400;"><input type="checkbox" id="accCallSetReminder" onchange="document.getElementById(\'accCallReminderDateWrap\').style.display=this.checked?\'block\':\'none\'" style="width:auto;"> Also set a reminder for later</label></div>';
   html+='<div class="form-group" id="accCallReminderDateWrap" style="display:none;"><label>Reminder Date</label><input type="date" id="accCallReminderDate"></div>';
   html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="saveAccCall('+rowNum+')">Save Call Log</button></div>';
   document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
@@ -11557,7 +11557,7 @@ function openIPOAppEditModal(rowNum){
   html+='<div class="form-group"><label>Mobile</label><input type="text" id="ipe_mobile" value="'+(row['Mobile']||'')+'"></div>';
   html+='<div class="form-group"><label>Client ID (Choice/demat)</label><input type="text" id="ipe_clientid" value="'+(row['Client_ID']||'')+'" style="text-transform:uppercase;"></div>';
   html+='<div class="form-group"><label>Reference</label><input type="text" id="ipe_ref" value="'+(row['Reference']||'')+'"></div>';
-  html+='<div class="form-group"><label>Remarks</label><textarea id="ipe_remarks" rows="2" placeholder="Client ke baare me, payment ke baare me - kuch bhi note">'+(row['Remarks']||'')+'</textarea></div>';
+  html+='<div class="form-group"><label>Remarks</label><textarea id="ipe_remarks" rows="2" placeholder="Any note about the client, payment, etc.">'+(row['Remarks']||'')+'</textarea></div>';
   html+='<div class="form-group"><label>Category</label><select id="ipe_cat">';
   ['Retail','sHNI','bHNI'].forEach(function(c){html+='<option'+(row['Category']===c?' selected':'')+'>'+c+'</option>';});
   html+='</select></div>';
@@ -12135,7 +12135,7 @@ function openEditIPOGainsModal(){
   html+='<div class="form-group"><label>Retail Listing Gain (&#8377;/application)</label><input type="number" id="ipg_retail" value="'+(parseFloat(ipo['Retail_Gain'])||0)+'"></div>';
   html+='<div class="form-group"><label>sHNI Listing Gain (&#8377;/application)</label><input type="number" id="ipg_shni" value="'+(parseFloat(ipo['sHNI_Gain'])||0)+'"></div>';
   html+='<div class="form-group"><label>bHNI Listing Gain (&#8377;/application)</label><input type="number" id="ipg_bhni" value="'+(parseFloat(ipo['bHNI_Gain'])||0)+'"></div>';
-  html+='<p style="color:var(--muted);font-size:12px;margin:14px 0 10px;border-top:1px solid var(--border,#2a2f3a);padding-top:10px;">&#8377;/application penalty auto-applied to ALL applications marked <b>Rejection</b> in this IPO. Ek specific application ka penalty alag rakhna ho to us application ke Edit (&#9998;) button se manually set kar sakte ho — wahan blank chhodne par yehi default use hoga.</p>';
+  html+='<p style="color:var(--muted);font-size:12px;margin:14px 0 10px;border-top:1px solid var(--border,#2a2f3a);padding-top:10px;">&#8377;/application penalty auto-applied to ALL applications marked <b>Rejection</b> in this IPO. To set a different penalty for a specific application, use its Edit (&#9998;) button to set it manually &#8212; leaving it blank there will use this default.</p>';
   html+='<div class="form-group"><label>Rejection Penalty (&#8377;/application)</label><input type="number" id="ipg_penalty" value="'+(parseFloat(ipo['Rejection_Penalty'])||0)+'"></div>';
   html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="saveIPOGains('+ipo['_rowNum']+')">Save</button></div>';
   document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
