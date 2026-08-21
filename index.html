@@ -2211,7 +2211,7 @@ function studentLogin(){
   err.style.display='none';
   function tryLogin(){
     var s=findStudentLogin(id,pass);
-    if(!s){err.textContent='Invalid ID or Password';err.style.display='block';return;}
+    if(!s){err.textContent='Invalid ID or Password. Use your phone number as the Student ID, not your name.';err.style.display='block';return;}
     var st=(s['Status']||'').trim();
     if(st==='Pending'){err.textContent='Your registration is still awaiting approval. Please try again shortly.';err.style.display='block';return;}
     if(st==='Rejected'){err.textContent='Your registration request was rejected. Please contact the office.';err.style.display='block';return;}
@@ -2301,8 +2301,8 @@ function setLoginMode(m,btn){
   if(btn)btn.classList.add('active');
   var lbl=document.getElementById('loginIdLabel');
   var regLink=document.getElementById('studentRegisterLink');
-  if(m==='student'){lbl.textContent='Student ID (Phone Number)';regLink.style.display='block';}
-  else{lbl.textContent='Employee / Admin ID';regLink.style.display='none';}
+  if(m==='student'){lbl.textContent='Student ID (Phone Number)';regLink.style.display='block';document.getElementById('loginId').placeholder='e.g. 9876543210 (your phone number)';}
+  else{lbl.textContent='Employee / Admin ID';regLink.style.display='none';document.getElementById('loginId').placeholder='Enter your ID';}
   document.getElementById('loginId').value='';document.getElementById('loginPass').value='';
   document.getElementById('loginErr').style.display='none';
 }
