@@ -4729,6 +4729,18 @@ function runHealthCheck(){
     var eids=Object.keys(accCidMap[cid]);
     if(eids.length>1)add('critical','Accounts','Duplicate Client ID (different team members)','Client ID "'+cid+'" belongs to '+eids.length+' different team members - brokerage/commission could go to the wrong team member.',{label:'View in Accounts',fn:function(){healthGoToSearch('adminAcc','srch-acc',cid);}});
   });
+  /* Client ID looks like a raw phone number - classic sign of Name/ID/Phone fields getting shifted at entry time (e.g. FBO1684 case: real ID went into Name, phone went into ID, phone field lost its value) */
+  accAll.filter(function(r){return (r['Client ID']||'').trim();}).forEach(function(r){
+    var cidV=(r['Client ID']||'').trim();
+    if(/^[6-9]\d{9}$/.test(cidV))add('critical','Accounts','Client ID looks like a phone number','"'+(r['Client Name']||'-')+'" has Client ID "'+cidV+'" which looks like a phone number, not a real Client ID - fields were likely entered in the wrong boxes (Name/ID/Phone got shifted). Check if the real ID ended up in the Name field instead.',{label:'View in Accounts',fn:function(){healthGoToSearch('adminAcc','srch-acc',r['Client Name']||cidV);}});
+  });
+  /* Client Phone present but not a plausible phone number (e.g. "Inactive", a PAN, a masked value, or a 9-digit typo) */
+  accAll.filter(function(r){return (r['Client ID']||'').trim();}).forEach(function(r){
+    var ph=(r['Client Phone']||'').trim();
+    if(!ph)return;
+    var digits=ph.replace(/\D/g,'');
+    if(digits.length<10)add('warning','Accounts','Phone looks invalid','"'+(r['Client Name']||r['Client ID']||'-')+'" ('+(r['Client ID']||'-')+') has Client Phone "'+ph+'" which does not look like a valid 10-digit phone number - could be a typo, a wrong value in the wrong field, or a masked entry.',{label:'View in Accounts',fn:function(){healthGoToSearch('adminAcc','srch-acc',r['Client Name']||r['Client ID']);}});
+  });
   accAll.filter(function(r){return (r['Client ID']||'').trim();}).forEach(function(r){
     if(!(r['Client Phone']||'').trim())add('warning','Accounts','Phone missing','"'+(r['Client Name']||r['Client ID']||'-')+'" ('+(r['Client ID']||'-')+') has no phone number.',{label:'View in Accounts',fn:function(){healthGoToSearch('adminAcc','srch-acc',r['Client Name']||r['Client ID']);}});
   });
