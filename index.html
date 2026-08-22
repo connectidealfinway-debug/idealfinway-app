@@ -520,6 +520,15 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
             <button class="btn-save" onclick="sendAnnouncement()">&#128276; Send</button>
             <div id="announceAdminList" style="margin-top:10px;"></div>
           </div>
+          <div class="form-card" style="margin-bottom:16px;">
+            <div class="form-group"><label>&#128279; Manage Links (Account Opening Link, or any link)</label></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+              <input type="text" id="lnk_label" placeholder="Label e.g. Account Opening Link" style="flex:1;min-width:140px;">
+              <input type="text" id="lnk_url" placeholder="https://..." style="flex:1;min-width:160px;">
+              <button class="btn-save" onclick="addLink()">+ Add</button>
+            </div>
+            <div id="linksAdminList"></div>
+          </div>
         </div>
       </div>
       <div class="filter-bar">
@@ -2077,7 +2086,7 @@ function deleteStuGenericAdmin(sheet,rowNum,cb){
     if(r&&r.success){showToast('Deleted','success');loadStudentDataAdmin(cb);}else showToast('Fail','error');
   }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
-var allData={Brokerage:[],ClientBrokerage:[],ClientHolding:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[],Meetings:[],Income:[],Expense:[],Hisab:[],TradingJournal:[],CallTrade:[],CallClients:[],Watchlist:[],Reminders:[],Announcements:[],ClientDocuments:[],Resignations:[],EmployeeDataMoves:[],IPO_Master:[],IPO_Applications:[],TeamTasks:[],SelfIPO:[]};
+var allData={Brokerage:[],ClientBrokerage:[],ClientHolding:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[],Meetings:[],Income:[],Expense:[],Hisab:[],TradingJournal:[],CallTrade:[],CallClients:[],Watchlist:[],Reminders:[],Announcements:[],ClientDocuments:[],Resignations:[],EmployeeDataMoves:[],IPO_Master:[],IPO_Applications:[],TeamTasks:[],SelfIPO:[],Links:[]};
 var employees=[];
 var filters={};
 var accStat='all',myAccStat='all',dashF='today',accDupOnly=false,teamWorkingOnly=false,bizScope='own',accSortBy='',myAccSortBy='',teamAccSortBy='';
@@ -2662,7 +2671,7 @@ function startApp(){
 }
 
 function logout(){
-  currentUser=null;autoPunched=false;ipoMode='buy';ipoModeUserSet=false;allData={Brokerage:[],ClientBrokerage:[],ClientHolding:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[],Meetings:[],Income:[],Expense:[],Hisab:[],TradingJournal:[],CallTrade:[],CallClients:[],Watchlist:[],Reminders:[],Announcements:[],ClientDocuments:[],IPO_Master:[],IPO_Applications:[],TeamTasks:[],SelfIPO:[]};
+  currentUser=null;autoPunched=false;ipoMode='buy';ipoModeUserSet=false;allData={Brokerage:[],ClientBrokerage:[],ClientHolding:[],SIP:[],Insurance:[],Accounts:[],Leads:[],Students:[],Attendance:[],Points:[],Meetings:[],Income:[],Expense:[],Hisab:[],TradingJournal:[],CallTrade:[],CallClients:[],Watchlist:[],Reminders:[],Announcements:[],ClientDocuments:[],IPO_Master:[],IPO_Applications:[],TeamTasks:[],SelfIPO:[],Links:[]};
   document.getElementById('loginWrap').style.display='flex';
   document.getElementById('appWrap').style.display='none';
   var stuWrap=document.getElementById('studentAppWrap');if(stuWrap)stuWrap.style.display='none';
@@ -2753,6 +2762,7 @@ function loadAll(attempt){
         Insurance:r.insurance||r.Insurance||[],
         Accounts:r.accounts||r.Accounts||[],
         Leads:r.leads||r.Leads||[],
+        Links:r.links||r.Links||[],
         Students:r.students||r.Students||[],
         Attendance:r.attendance||r.Attendance||[],
         Points:r.points||r.Points||[],
@@ -2776,7 +2786,7 @@ function loadAll(attempt){
         SelfIPO:r.selfIpo||r.SelfIPO||[],
         GrowthTargets:r.growthTargets||r.GrowthTargets||[]
       };
-      saveCache();checkSIPAlerts();autoPunchIn();var __navTeamEarly=document.getElementById('navMyTeam');if(__navTeamEarly)__navTeamEarly.style.display=(currentUser&&currentUser.role!=='admin')?'flex':'none';var __navIPOEarly=document.getElementById('navIPO');if(__navIPOEarly)__navIPOEarly.style.display='flex';var __navIPOFinEarly=document.getElementById('navIPOFin');if(__navIPOFinEarly)__navIPOFinEarly.style.display='flex';renderPage(curPage());loadEmps();setTimeout(checkMyTasksPopup,300);setTimeout(checkDueTomorrowPopup,600);setTimeout(check315Reminder,900);setTimeout(checkWLRKComments,1200);renderAnnounceBanner();renderMyTasksBanner();if(!window._stlCleanupDone){window._stlCleanupDone=true;getJSON('cleanupOldSettlement').catch(function(){});}
+      saveCache();checkSIPAlerts();autoPunchIn();var __navTeamEarly=document.getElementById('navMyTeam');if(__navTeamEarly)__navTeamEarly.style.display=(currentUser&&currentUser.role!=='admin')?'flex':'none';var __navIPOEarly=document.getElementById('navIPO');if(__navIPOEarly)__navIPOEarly.style.display='flex';var __navIPOFinEarly=document.getElementById('navIPOFin');if(__navIPOFinEarly)__navIPOFinEarly.style.display='flex';renderPage(curPage());loadEmps();setTimeout(checkMyTasksPopup,300);setTimeout(checkDueTomorrowPopup,600);setTimeout(check315Reminder,900);setTimeout(checkWLRKComments,1200);renderAnnounceBanner();renderMyTasksBanner();renderLinksBanner();renderLinksAdminBox();if(!window._stlCleanupDone){window._stlCleanupDone=true;getJSON('cleanupOldSettlement').catch(function(){});}
     }else if(attempt<3){
       setTimeout(function(){loadAll(attempt+1);},4000);
     }else{
@@ -4104,7 +4114,7 @@ function deactivateAnnouncement(rowNum){
 }
 function annTargetLabel(r){
   var t=(r['Target']||'').trim();
-  if(!t||t==='ALL')return 'All Employees';
+  if(!t||t==='ALL')return 'All Team Members';
   var ids=t.split(',').map(function(x){return x.trim();});
   var names=ids.map(function(id){var e=employees.find(function(x){return x['Employee ID']===id;});return e?e['Name']:id;});
   return names.join(', ');
@@ -4153,6 +4163,73 @@ function renderAnnounceBanner(){
   if(active.length>1){
     window._annBannerTimer=setInterval(function(){_annBannerIdx++;showOne();},5000);
   }
+}
+
+/* ===== LINKS (admin-managed quick-access links e.g. Account Opening Link) ===== */
+function copyLinkText(txt){
+  var ta=document.createElement('textarea');
+  ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);
+  ta.select();
+  try{document.execCommand('copy');showToast('Link copied!','success');}
+  catch(e){showToast('Could not copy - please copy manually','error');}
+  document.body.removeChild(ta);
+}
+function addLink(){
+  var label=(document.getElementById('lnk_label').value||'').trim();
+  var url=(document.getElementById('lnk_url').value||'').trim();
+  if(!label||!url){showToast('Enter both label and URL','error');return;}
+  if(!/^https?:\/\//i.test(url)){showToast('URL must start with http:// or https://','error');return;}
+  var p={action:'addGeneric',sheet:'Links','Date':td(),'Label':label,'URL':url,'Active':'Yes','Employee ID':currentUser.userId,'Employee Name':currentUser.name};
+  postData(p).then(function(r){
+    if(r&&r.success){
+      showToast('Link added!','success');
+      document.getElementById('lnk_label').value='';document.getElementById('lnk_url').value='';
+      if(!allData.Links)allData.Links=[];
+      allData.Links.push(p);
+      renderLinksAdminBox();renderLinksBanner();
+      setTimeout(function(){loadAll(2);},600);
+    }else showToast('Failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+function deleteLink(rowNum){
+  if(!confirm('Remove this link for everyone?'))return;
+  patchRowLocal('Links',rowNum,{'Active':'No'});renderLinksAdminBox();renderLinksBanner();
+  postData({action:'editRow',sheet:'Links',rowNum:rowNum,vals:{'Active':'No'}}).then(function(r){
+    if(r&&r.success){showToast('Link removed','success');setTimeout(function(){loadAll(2);},600);}
+    else showToast('Failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+function renderLinksAdminBox(){
+  var el=document.getElementById('linksAdminList');
+  if(!el||!currentUser||currentUser.role!=='admin')return;
+  var rows=(allData.Links||[]).filter(function(r){return r['Active']==='Yes';});
+  if(!rows.length){el.innerHTML='<div style="font-size:12px;color:var(--muted);">No links added yet</div>';return;}
+  var h='';
+  rows.slice().reverse().forEach(function(r){
+    h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.08);font-size:12px;gap:8px;">'
+      +'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><b>'+(r['Label']||'')+'</b> <span style="color:var(--muted);">'+(r['URL']||'')+'</span></span>'
+      +'<button class="btn-del" onclick="deleteLink('+r['_rowNum']+')" style="font-size:11px;flex-shrink:0;">Remove</button>'
+      +'</div>';
+  });
+  el.innerHTML=h;
+}
+function renderLinksBanner(){
+  var el=document.getElementById('linksBanner');
+  if(!el||!currentUser)return;
+  var rows=(allData.Links||[]).filter(function(r){return r['Active']==='Yes';});
+  if(!rows.length){el.style.display='none';el.innerHTML='';return;}
+  el.style.display='flex';
+  var h='<span>&#128279;</span>';
+  rows.forEach(function(r,i){
+    var url=(r['URL']||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+    var label=(r['Label']||'Link').replace(/</g,'&lt;');
+    h+='<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.15);padding:4px 10px;border-radius:20px;">'
+      +'<b style="font-size:12px;">'+label+'</b>'
+      +'<a href="'+url+'" target="_blank" rel="noopener" style="color:#fff;text-decoration:none;font-size:12px;" title="Open">&#128279; Open</a>'
+      +'<button onclick="copyLinkText(\''+url+'\')" style="background:rgba(255,255,255,0.25);border:none;color:#fff;border-radius:12px;padding:2px 8px;font-size:11px;cursor:pointer;">&#128203; Copy</button>'
+      +'</span>';
+  });
+  el.innerHTML=h;
 }
 function srchFilter(rows,q,fields){
   if(!q)return rows;
@@ -6457,15 +6534,14 @@ function searchClient360(){
   (allData.SIP||[]).forEach(consider);
   (allData.Insurance||[]).forEach(consider);
   var candidates=Object.keys(map).map(function(k){return map[k];}).filter(function(c){
-    if(scopeIds&&!scopeIds[(c.empId||'').toLowerCase()])return false;
     return (c.cid||'').toLowerCase().indexOf(q)!==-1||(c.name||'').toLowerCase().indexOf(q)!==-1;
-  }).slice(0,30);
+  }).map(function(c){c.inScope=!scopeIds||!!scopeIds[(c.empId||'').toLowerCase()];return c;}).slice(0,30);
   if(!candidates.length){resultsEl.innerHTML='<div class="no-data">No client found matching "'+q+'"</div>';return;}
   if(candidates.length===1){resultsEl.innerHTML='';showClient360Profile(candidates[0].cid,candidates[0].name);return;}
   var h='<div class="form-card" style="margin-bottom:16px;"><div style="font-weight:700;font-size:13px;margin-bottom:10px;color:var(--muted);">'+candidates.length+' matches - click to view</div>';
   candidates.forEach(function(c){
     h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;" onclick="showClient360Profile(\''+(c.cid||'').replace(/'/g,"\\\\'")+'\',\''+(c.name||'').replace(/'/g,"\\\\'")+'\')">'+
-      '<div><b>'+(c.name||'-')+'</b> <span style="color:var(--muted);font-size:12px;">'+(c.cid||'no ID')+'</span></div>'+
+      '<div><b>'+(c.name||'-')+'</b> <span style="color:var(--muted);font-size:12px;">'+(c.cid||'no ID')+'</span>'+(c.inScope?'':' <span class="badge amber" style="margin-left:6px;font-size:10px;">restricted view</span>')+'</div>'+
       '<div style="font-size:12px;color:var(--muted);">'+(c.emp||'-')+' &#8594;</div></div>';
   });
   h+='</div>';
@@ -6483,6 +6559,24 @@ function showClient360Profile(cid,name){
   var sipRows=(allData.SIP||[]).filter(matches);
   var insRows=(allData.Insurance||[]).filter(matches); var holdRows=(allData.ClientHolding||[]).filter(matches); var ledgerBal=holdRows.length?parseFloat(holdRows[0]['Ledger Balance'])||0:null;
   var acc=accRows[0]||{};
+  var empIdOfClient=(acc['Employee ID']||(cbrokRows[0]&&cbrokRows[0]['Employee ID'])||(sipRows[0]&&sipRows[0]['Employee ID'])||(insRows[0]&&insRows[0]['Employee ID'])||'').trim();
+  var empNameOfClient=acc['Employee Name']||(cbrokRows[0]&&cbrokRows[0]['Employee Name'])||(sipRows[0]&&sipRows[0]['Employee Name'])||(insRows[0]&&insRows[0]['Employee Name'])||'-';
+  var c360Scope=client360ScopeIds();
+  var c360InScope=!c360Scope||!!c360Scope[empIdOfClient.toLowerCase()];
+  if(!c360InScope){
+    var ltdName=acc['Client Name']||name||(cbrokRows[0]&&cbrokRows[0]['Client Name'])||'Unknown';
+    var ltdId=acc['Client ID']||cid||(cbrokRows[0]&&cbrokRows[0]['Client ID'])||'-';
+    var ltdPhone=acc['Client Phone']||(cbrokRows[0]&&cbrokRows[0]['Client Phone'])||'';
+    var lh='<div class="form-card" style="margin-bottom:16px;">'+
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;color:var(--muted);font-size:12px;font-weight:700;">&#128274; RESTRICTED - this client belongs to another team member</div>'+
+      '<div style="font-size:19px;font-weight:700;">'+ltdName+'</div>'+
+      '<div style="color:var(--muted);font-size:13px;margin-top:4px;">Client ID: <b style="color:var(--text);">'+ltdId+'</b>'+(ltdPhone?' &#183; Mobile: <b style="color:var(--text);">'+ltdPhone+'</b>':'')+'</div>'+
+      '<div style="color:var(--muted);font-size:13px;margin-top:8px;">This account belongs to: <b style="color:var(--accent);">'+empNameOfClient+'</b> ('+(empIdOfClient||'-')+')</div>'+
+      '<div style="color:var(--muted);font-size:12px;margin-top:12px;">Brokerage, SIP, holding and other financial details are only visible to '+empNameOfClient+' and their reporting team.</div>'+
+    '</div>';
+    document.getElementById('c360_profile').innerHTML=lh;
+    return;
+  }
   var phone=acc['Client Phone']||(cbrokRows[0]&&cbrokRows[0]['Client Phone'])||'';
   var totalBrok=r2(cbrokRows.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0));
   var sipAmt=r2(sipRows.filter(function(r){return (r['Type']||'SIP')==='SIP';}).reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0));
