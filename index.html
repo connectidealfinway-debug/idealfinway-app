@@ -1971,10 +1971,10 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
     <div class="nav-item active" onclick="showStuPage('stuDash')">&#9632; Dashboard</div>
     <div class="nav-item" onclick="showStuPage('stuWatchlist')">&#11088; Watchlist</div>
     <div class="nav-item" onclick="showStuPage('stuJournal')">&#128200; Trading Journal</div>
+    <div class="nav-item" onclick="showStuPage('stuPaperTrading')">&#128202; Paper Trading</div>
     <div class="nav-item" onclick="showStuPage('stuNotes')">&#128218; Notes</div>
     <div class="nav-item" onclick="showStuPage('stuClasses')">&#127909; Class Links</div>
     <div class="nav-item" onclick="showStuPage('stuTests')">&#128221; Test Series</div>
-    <div class="nav-item" onclick="showStuPage('stuAttendance')">&#128197; Attendance</div>
     <div class="nav-item" onclick="showStuPage('stuRefer')">&#128176; Refer &amp; Earn</div>
     <div class="sidebar-bottom"><button class="btn-logout" onclick="logout()">&#8592; Logout</button></div>
   </nav>
@@ -1984,12 +1984,13 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       <div id="stuDashBox"></div>
     </div>
     <div class="page" id="spage-stuWatchlist">
-      <div class="page-header"><h1>&#11088; My Watchlist</h1><p>Build your own stock watchlist here - fully separate from the employee/client watchlist.</p></div>
-      <p style="color:var(--muted);padding:20px;">&#128679; This feature is launching soon.</p>
+      <div class="page-header"><h1>&#11088; My Watchlist</h1><p>Build and track your personal stock watchlist.</p></div>
     </div>
     <div class="page" id="spage-stuJournal">
-      <div class="page-header"><h1>&#128200; My Trading Journal</h1><p>Record your own trades here - fully separate from the employee/client trading journal.</p></div>
-      <p style="color:var(--muted);padding:20px;">&#128679; This feature is launching soon.</p>
+      <div class="page-header"><h1>&#128200; My Trading Journal</h1><p>Track your intraday, swing and positional trades.</p></div>
+    </div>
+    <div class="page" id="spage-stuPaperTrading">
+      <div class="page-header"><h1>&#128202; Paper Trading</h1><p>Practice trading with virtual money.</p></div>
     </div>
     <div class="page" id="spage-stuNotes">
       <div class="page-header"><h1>&#128218; Notes</h1><p>Class notes (PDF) will appear here.</p></div>
@@ -2027,7 +2028,7 @@ var ADMIN_PASS='drrk@1401';
 var currentUser=null;
 var loginMode='admin';
 var students=[];
-var stuData={notes:[],classLinks:[],tests:[],testQuestions:[],testAttempts:[],attendance:[],settings:[],watchlist:[],journal:[],referrals:[]};
+var stuData={notes:[],classLinks:[],tests:[],testQuestions:[],testAttempts:[],attendance:[],settings:[],watchlist:[],journal:[],paperTrades:[],referrals:[]};
 function fetchStudentData(stuid){
   var qs='action=getStudentData&t='+Date.now()+(stuid?('&stuid='+encodeURIComponent(stuid)):'');
   return fetch(API+'?'+qs).then(function(r){return r.text();}).then(function(t){return JSON.parse(t);}).then(function(r){if(r&&r.success)return r;return postData({action:'getStudentData',stuid:stuid||''});}).catch(function(){return postData({action:'getStudentData',stuid:stuid||''});});
@@ -2035,7 +2036,7 @@ function fetchStudentData(stuid){
 function loadStudentDataAdmin(cb){
   fetchStudentData().then(function(r){
     if(r&&r.success){
-      stuData={notes:r.notes||[],classLinks:r.classLinks||[],tests:r.tests||[],testQuestions:r.testQuestions||[],testAttempts:r.testAttempts||[],attendance:r.attendance||[],settings:r.settings||[],watchlist:r.watchlist||[],journal:r.journal||[],referrals:r.referrals||[]};
+      stuData={notes:r.notes||[],classLinks:r.classLinks||[],tests:r.tests||[],testQuestions:r.testQuestions||[],testAttempts:r.testAttempts||[],attendance:r.attendance||[],settings:r.settings||[],watchlist:r.watchlist||[],journal:r.journal||[],paperTrades:r.paperTrades||[],referrals:r.referrals||[]};
       if(cb)cb(); else renderPage(curPage());
     }
   }).catch(function(){});
@@ -2044,7 +2045,7 @@ function loadStudentDataStudent(cb){
   if(!currentUser)return;
   fetchStudentData(currentUser.id).then(function(r){
     if(r&&r.success){
-      stuData={notes:r.notes||[],classLinks:r.classLinks||[],tests:r.tests||[],testQuestions:r.testQuestions||[],testAttempts:r.testAttempts||[],attendance:r.attendance||[],settings:r.settings||[],watchlist:r.watchlist||[],journal:r.journal||[],referrals:r.referrals||[]};
+      stuData={notes:r.notes||[],classLinks:r.classLinks||[],tests:r.tests||[],testQuestions:r.testQuestions||[],testAttempts:r.testAttempts||[],attendance:r.attendance||[],settings:r.settings||[],watchlist:r.watchlist||[],journal:r.journal||[],paperTrades:r.paperTrades||[],referrals:r.referrals||[]};
       if(cb)cb();
     }
   }).catch(function(){});
@@ -9609,6 +9610,7 @@ function showStuPage(id){
   if(id==='stuDash')renderStuDash();
   else if(id==='stuWatchlist')loadStudentDataStudent(renderStuWatchlist);
   else if(id==='stuJournal')loadStudentDataStudent(renderStuJournal);
+  else if(id==='stuPaperTrading')loadStudentDataStudent(renderStuPaperTrading);
   else if(id==='stuNotes')loadStudentDataStudent(renderStuNotes);
   else if(id==='stuClasses')loadStudentDataStudent(renderStuClasses);
   else if(id==='stuTests')loadStudentDataStudent(renderStuTests);
@@ -9676,7 +9678,7 @@ function renderStuRefer(){
   var h='<div class="stats-grid">'+mkStats([{label:'Referral Incentive',value:incentive?('&#8377;'+incentive):'-',color:'green'}])+'</div>';
   h+='<div class="form-card" style="max-width:520px;">';
   h+='<div style="font-weight:700;margin-bottom:10px;">Account Opening Link</div>';
-  if(link)h+='<div style="display:flex;gap:8px;align-items:center;"><input type="text" readonly value="'+link.replace(/"/g,'&quot;')+'" style="flex:1;" id="stuReferLinkInput"><button class="btn-mini add" onclick="copyStuReferLink()">&#128203; Copy</button></div>';
+  if(link)h+='<div style="display:flex;gap:8px;align-items:center;"><input type="text" readonly value="'+link.replace(/"/g,'&quot;')+'" style="flex:1;" id="stuReferLinkInput"><button class="btn-mini add" onclick="copyStuReferLink()">&#128203; Copy</button><a href="'+link.replace(/"/g,'&quot;')+'" target="_blank" rel="noopener" class="btn-mini add" style="text-decoration:none;text-align:center;">&#128279; Open</a></div>';
   else h+='<p style="color:var(--muted);">Link not set yet.</p>';
   h+='</div>';
   h+='<div class="form-card form-grid" style="margin-top:16px;">';
@@ -9706,63 +9708,431 @@ function submitStuReferral(){
   }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
 
+/* ===== STUDENT WATCHLIST (mirrors employee Watchlist exactly: Stock/Pattern/Notes/Star/Traded) ===== */
+var stuWlStatF='all';
+function setStuWLFilter(f){stuWlStatF=f;renderStuWatchlist();}
+function populateStuWLPattern(){
+  var dl=document.getElementById('su_wl_patternList');if(!dl)return;
+  var names={};(stuData.watchlist||[]).forEach(function(r){var p=(r['Pattern']||'').trim();if(p)names[p]=1;});
+  dl.innerHTML=Object.keys(names).sort().map(function(p){return '<option value="'+p+'">';}).join('');
+}
 function renderStuWatchlist(){
-  var list=(stuData.watchlist||[]).slice().reverse();
-  var h='<div class="form-card form-grid" style="margin-bottom:16px;">';
-  h+='<div class="form-group"><label>Stock</label><input type="text" id="sw_stock" placeholder="e.g. RELIANCE"></div>';
-  h+='<div class="form-group" style="grid-column:1/-1;"><label>Notes</label><input type="text" id="sw_notes" placeholder="Write your reasoning/target"></div>';
-  h+='<div class="form-group"><button class="btn-submit" onclick="addStuWatchlist()">Add to Watchlist</button></div>';
+  var rows=(stuData.watchlist||[]).filter(function(r){return (r['Status']||'Active')==='Active';});
+  var q=getSrch('srch-suwl');rows=srchFilter(rows,q,['Stock','Notes','Pattern']);
+  var starredRows=rows.filter(function(r){return r['Starred']==='Yes';});
+  var shown=stuWlStatF==='starred'?starredRows:rows;
+  var h='<div class="page-header"><h1>&#11088; My Watchlist</h1><p>Build and track your personal stock watchlist.</p></div>';
+  h+='<div class="form-card form-grid">';
+  h+='<div class="form-group"><label>Stock</label><input type="text" id="su_wl_stock" placeholder="e.g. RELIANCE" style="text-transform:uppercase;"></div>';
+  h+='<div class="form-group"><label>Pattern</label><input type="text" id="su_wl_pattern" list="su_wl_patternList" placeholder="Type to search (e.g. Cup) or write your own" autocomplete="off"><datalist id="su_wl_patternList"></datalist></div>';
+  h+='<div class="form-group" style="grid-column:1/-1;"><label>Notes</label><textarea id="su_wl_notes" placeholder="e.g. Breakout occurred, Flag &amp; Pole pattern formed" rows="2"></textarea></div>';
+  h+='<div class="form-group" style="display:flex;align-items:center;gap:8px;"><label style="margin:0;display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="su_wl_star" style="width:16px;height:16px;">&#11088; Must Watch (Star)</label></div>';
+  h+='<button class="btn-save" style="grid-column:1/-1;" onclick="submitStuWatchlist()">+ Add to Watchlist</button>';
   h+='</div>';
-  if(!list.length)h+='<p style="color:var(--muted);padding:20px;">Your watchlist is empty.</p>';
-  else{
-    h+='<div class="table-wrap"><table><thead><tr><th>Date</th><th>Stock</th><th>Notes</th><th>Action</th></tr></thead><tbody>';
-    list.forEach(function(w){h+='<tr><td>'+(w['Date Added']||'')+'</td><td><b>'+(w['Stock']||'')+'</b></td><td>'+(w['Notes']||'-')+'</td><td><button class="btn-del" onclick="delStuWatchlist('+w['_rowNum']+')">&#128465;</button></td></tr>';});
-    h+='</tbody></table></div>';
-  }
-  document.getElementById('spage-stuWatchlist').innerHTML='<div class="page-header"><h1>&#11088; My Watchlist</h1><p>Build your own stock watchlist here - fully separate from the employee/client watchlist.</p></div>'+h;
+  h+='<div class="filter-bar"><input class="srch" id="srch-suwl" value="'+escAttr(q)+'" placeholder="&#128269; Search stock..." oninput="renderStuWatchlist()"></div>';
+  h+='<div class="stats-grid">'+mkStats([
+    {label:'Total Stocks',value:rows.length,sub:'click to view all',color:'blue',onclick:"setStuWLFilter('all')"},
+    {label:'Starred (Must Watch)',value:starredRows.length,sub:'click to view starred',color:'amber',onclick:"setStuWLFilter('starred')"}
+  ])+'</div>';
+  h+='<div class="table-wrap"><div class="table-inner">'+mkStuWatchlistTable(shown)+'</div></div>';
+  document.getElementById('spage-stuWatchlist').innerHTML=h;
+  populateStuWLPattern();
 }
-function addStuWatchlist(){
-  var stock=document.getElementById('sw_stock').value.trim();
-  if(!stock){showToast('Please enter the stock name','error');return;}
-  var p={action:'addGeneric',sheet:'StudentWatchlist','Date Added':td(),'Student ID':currentUser.id,'Student Name':currentUser.name,'Batch':currentUser.batch||'','Stock':stock.toUpperCase(),'Notes':document.getElementById('sw_notes').value.trim(),'Status':'Active'};
-  postData(p).then(function(r){if(r&&r.success){showToast('Added','success');loadStudentDataStudent(renderStuWatchlist);}else showToast('Fail','error');}).catch(function(e){showToast('Error: '+e.message,'error');});
+function mkStuWatchlistTable(rows){
+  if(!rows||!rows.length)return '<div class="no-data">No stocks in watchlist</div>';
+  var sorted=rows.slice().sort(function(a,b){
+    var as=a['Starred']==='Yes'?1:0, bs=b['Starred']==='Yes'?1:0;
+    if(as!==bs)return bs-as;
+    return (b['Date Added']||'').localeCompare(a['Date Added']||'');
+  });
+  var h='<table><thead><tr><th></th><th>Date</th><th>Stock</th><th>Pattern</th><th>Notes</th><th>Traded?</th><th>Actions</th></tr></thead><tbody>';
+  sorted.forEach(function(r){
+    var starred=r['Starred']==='Yes';
+    var traded=r['Traded']==='Yes';
+    h+='<tr'+(starred?' style="background:rgba(245,158,11,0.12);"':'')+'>';
+    h+='<td><span style="cursor:pointer;font-size:16px;color:'+(starred?'#f59e0b':'var(--muted)')+';" onclick="toggleStuWLStar('+r['_rowNum']+',\''+(r['Starred']||'No')+'\')">'+(starred?'&#9733;':'&#9734;')+'</span></td>';
+    h+='<td>'+(r['Date Added']||'-')+'</td>';
+    h+='<td style="font-weight:600;">'+(r['Stock']||'-')+'</td>';
+    h+='<td style="font-size:11px;color:var(--muted);">'+(r['Pattern']||'-')+'</td>';
+    h+='<td style="font-size:12px;color:var(--muted);white-space:normal;max-width:220px;">'+(r['Notes']||'-')+'</td>';
+    h+='<td><span class="badge '+(traded?'green':'amber')+'" style="cursor:pointer;" onclick="toggleStuWLTraded('+r['_rowNum']+',\''+(r['Traded']||'No')+'\')">'+(traded?'&#10003; Traded':'Not Traded')+'</span></td>';
+    h+='<td><button class="btn-del" onclick="stuDeleteOwn(\'StudentWatchlist\','+r['_rowNum']+',renderStuWatchlist)">&#128465;</button></td>';
+    h+='</tr>';
+  });
+  return h+'</tbody></table>';
 }
-function delStuWatchlist(rowNum){
+function submitStuWatchlist(){
+  var stock=(document.getElementById('su_wl_stock').value||'').trim().toUpperCase();
+  var notes=(document.getElementById('su_wl_notes').value||'').trim();
+  var pattern=(document.getElementById('su_wl_pattern').value||'').trim();
+  var starred=document.getElementById('su_wl_star').checked?'Yes':'No';
+  if(!stock){showToast('Enter stock name','error');return;}
+  var p={action:'addGeneric',sheet:'StudentWatchlist',
+    'Date Added':td(),'Student ID':currentUser.id,'Student Name':currentUser.name,'Batch':currentUser.batch||'',
+    'Stock':stock,'Notes':notes,'Pattern':pattern,'Starred':starred,'Traded':'No','Status':'Active'};
+  postData(p).then(function(r){
+    if(r&&r.success){showToast('Added to watchlist!','success');loadStudentDataStudent(renderStuWatchlist);}
+    else showToast('Save failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){showToast('Network error: '+e.message,'error');});
+}
+function toggleStuWLStar(rowNum,current){
+  var v=current==='Yes'?'No':'Yes';
+  postData({action:'editRow',sheet:'StudentWatchlist',rowNum:rowNum,vals:{'Starred':v}}).then(function(r){
+    if(r&&r.success)loadStudentDataStudent(renderStuWatchlist);else showToast('Failed','error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+function toggleStuWLTraded(rowNum,current){
+  var v=current==='Yes'?'No':'Yes';
+  postData({action:'editRow',sheet:'StudentWatchlist',rowNum:rowNum,vals:{'Traded':v}}).then(function(r){
+    if(r&&r.success)loadStudentDataStudent(renderStuWatchlist);else showToast('Failed','error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+function stuDeleteOwn(sheet,rowNum,cb){
   if(!confirm('Delete this?'))return;
-  postData({action:'deleteRow',sheet:'StudentWatchlist',rowNum:rowNum}).then(function(r){if(r&&r.success){showToast('Deleted','success');loadStudentDataStudent(renderStuWatchlist);}}).catch(function(){});
+  postData({action:'deleteRow',sheet:sheet,rowNum:rowNum}).then(function(r){
+    if(r&&r.success){showToast('Deleted','success');loadStudentDataStudent(cb);}else showToast('Delete failed','error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
 
+/* ===== STUDENT TRADING JOURNAL (mirrors employee Trading Journal - Personal trades only, no Client Group) ===== */
+var stuTjTimeF='all', stuTjStatF='all';
+function setStuTJTimeF(f){stuTjTimeF=f;renderStuJournal();}
+function setStuTJStatF(f){stuTjStatF=f;renderStuJournal();}
+function populateStuTJStrategy(){
+  var typeSel=document.getElementById('su_tj_type');
+  var sel=document.getElementById('su_tj_strategy');
+  if(!typeSel||!sel)return;
+  var list=(typeSel.value==='Intraday')?TJ_STRATEGIES_INTRADAY:TJ_STRATEGIES_SWING;
+  var prev=sel.value;
+  sel.innerHTML=list.map(function(s){return '<option value="'+s+'">'+s+'</option>';}).join('');
+  if(list.indexOf(prev)!==-1)sel.value=prev;
+  toggleStuTJStrategyOther();
+}
+function toggleStuTJStrategyOther(){
+  var sel=document.getElementById('su_tj_strategy');
+  var box=document.getElementById('su_tj_strategyOtherGroup');
+  if(!sel||!box)return;
+  box.style.display=(sel.value==='Other')?'block':'none';
+}
+function toggleStuTJInstrument(){
+  var instr=document.getElementById('su_tj_instrument').value;
+  var isFO=(instr==='Future & Option');
+  var foGrp=document.getElementById('su_tj_foTypeGroup');
+  if(foGrp)foGrp.style.display=isFO?'block':'none';
+  var foType=document.getElementById('su_tj_foType')?document.getElementById('su_tj_foType').value:'Future';
+  var isOption=isFO&&foType==='Option';
+  var otG=document.getElementById('su_tj_optTypeGroup'),skG=document.getElementById('su_tj_strikeGroup');
+  if(otG)otG.style.display=isOption?'block':'none';
+  if(skG)skG.style.display=isOption?'block':'none';
+}
+function initStuTJForm(){
+  var e=document.getElementById('su_tj_date');if(e&&!e.value)e.value=td();
+  var stratSel=document.getElementById('su_tj_strategy');
+  if(stratSel&&!stratSel.options.length)populateStuTJStrategy();
+  var instSel=document.getElementById('su_tj_instrument');
+  if(instSel)toggleStuTJInstrument();
+}
 function renderStuJournal(){
-  var list=(stuData.journal||[]).slice().reverse();
-  var h='<div class="form-card form-grid" style="margin-bottom:16px;">';
-  h+='<div class="form-group"><label>Date</label><input type="date" id="sj_date"></div>';
-  h+='<div class="form-group"><label>Stock</label><input type="text" id="sj_stock"></div>';
-  h+='<div class="form-group"><label>Direction</label><select id="sj_dir"><option>Buy</option><option>Sell</option></select></div>';
-  h+='<div class="form-group"><label>Entry Price</label><input type="number" id="sj_entry"></div>';
-  h+='<div class="form-group"><label>Exit Price</label><input type="number" id="sj_exit"></div>';
-  h+='<div class="form-group"><label>Qty</label><input type="number" id="sj_qty"></div>';
-  h+='<div class="form-group"><label>Result</label><select id="sj_result"><option>Profit</option><option>Loss</option><option>Open</option></select></div>';
-  h+='<div class="form-group" style="grid-column:1/-1;"><label>Remarks</label><input type="text" id="sj_remarks"></div>';
-  h+='<div class="form-group"><button class="btn-submit" onclick="addStuJournal()">Add Trade</button></div>';
+  var rows=stuData.journal||[];
+  rows=fDate(rows,stuTjTimeF);
+  var openStatuses=['Open','1st Target Done'];
+  if(stuTjStatF==='open')rows=rows.filter(function(r){return openStatuses.indexOf(r['Status'])!==-1;});
+  else if(stuTjStatF==='closed')rows=rows.filter(function(r){return openStatuses.indexOf(r['Status'])===-1;});
+  var q=getSrch('srch-sutj');rows=srchFilter(rows,q,['Stock','Remarks']);
+  var closed=rows.filter(function(r){return openStatuses.indexOf(r['Status'])===-1;});
+  var targetHits=closed.filter(function(r){return r['Status']==='Target Done'||r['Status']==='2nd Target Done';});
+  var slHits=closed.filter(function(r){return r['Status']==='SL Done';});
+  var winLossBase=targetHits.length+slHits.length;
+  var winRate=winLossBase?Math.round(targetHits.length/winLossBase*100):0;
+  var totalPL=closed.reduce(function(s,r){return s+(parseFloat(r['Result'])||0);},0);
+  var openRows=rows.filter(function(r){return openStatuses.indexOf(r['Status'])!==-1;});
+
+  var h='<div class="page-header"><h1>&#128200; My Trading Journal</h1><p>Track your intraday, swing and positional trades.</p></div>';
+  h+='<div class="form-card form-grid">';
+  h+='<div class="form-group"><label>Date</label><input type="date" id="su_tj_date"></div>';
+  h+='<div class="form-group"><label>Stock Symbol</label><input type="text" id="su_tj_stock" placeholder="e.g. RELIANCE" style="text-transform:uppercase"></div>';
+  h+='<div class="form-group"><label>Direction</label><select id="su_tj_direction"><option value="Buy">Buy</option><option value="Sell">Sell</option></select></div>';
+  h+='<div class="form-group"><label>Trade Type</label><select id="su_tj_type" onchange="populateStuTJStrategy()"><option value="Intraday">Intraday</option><option value="Swing">Swing</option><option value="Positional">Positional</option></select></div>';
+  h+='<div class="form-group"><label>Strategy</label><select id="su_tj_strategy" onchange="toggleStuTJStrategyOther()"></select></div>';
+  h+='<div class="form-group" id="su_tj_strategyOtherGroup" style="display:none"><label>Strategy (type)</label><input type="text" id="su_tj_strategyOther" placeholder="Custom pattern/strategy"></div>';
+  h+='<div class="form-group"><label>Instrument</label><select id="su_tj_instrument" onchange="toggleStuTJInstrument()"><option value="Stock">Stock</option><option value="Future &amp; Option">Future &amp; Option</option></select></div>';
+  h+='<div class="form-group" id="su_tj_foTypeGroup" style="display:none"><label>F&amp;O Type</label><select id="su_tj_foType" onchange="toggleStuTJInstrument()"><option value="Future">Future</option><option value="Option">Option</option></select></div>';
+  h+='<div class="form-group" id="su_tj_optTypeGroup" style="display:none"><label>Call / Put</label><select id="su_tj_optType"><option value="CE (Call)">CE (Call)</option><option value="PE (Put)">PE (Put)</option></select></div>';
+  h+='<div class="form-group" id="su_tj_strikeGroup" style="display:none"><label>Strike Price</label><input type="number" id="su_tj_strike" placeholder="e.g. 57400"></div>';
+  h+='<div class="form-group"><label>Entry Price</label><input type="number" id="su_tj_entry" placeholder="Entry price"></div>';
+  h+='<div class="form-group"><label>Stop Loss</label><input type="number" id="su_tj_sl" placeholder="Stop loss price"></div>';
+  h+='<div class="form-group"><label>Target 1</label><input type="number" id="su_tj_t1" placeholder="First target price"></div>';
+  h+='<div class="form-group"><label>Target 2 (optional)</label><input type="number" id="su_tj_t2" placeholder="Second target price"></div>';
+  h+='<div class="form-group"><label>Quantity</label><input type="number" id="su_tj_qty" placeholder="Number of shares"></div>';
+  h+='<div class="form-group"><label>Remarks</label><textarea id="su_tj_remarks" placeholder="What went right or wrong in this trade..."></textarea></div>';
+  h+='<button class="btn-submit" onclick="submitStuTrade()">Add Trade</button>';
   h+='</div>';
-  if(!list.length)h+='<p style="color:var(--muted);padding:20px;">No trades recorded yet.</p>';
-  else{
-    h+='<div class="table-wrap"><table><thead><tr><th>Date</th><th>Stock</th><th>Dir</th><th>Entry</th><th>Exit</th><th>Qty</th><th>Result</th><th>Action</th></tr></thead><tbody>';
-    list.forEach(function(j){var res=j['Result']||'';h+='<tr><td>'+(j['Date']||'')+'</td><td><b>'+(j['Stock']||'')+'</b></td><td>'+(j['Direction']||'')+'</td><td>'+(j['Entry Price']||'')+'</td><td>'+(j['Exit Price']||'')+'</td><td>'+(j['Qty']||'')+'</td><td><span class="badge '+(res==='Profit'?'green':res==='Loss'?'red':'amber')+'">'+res+'</span></td><td><button class="btn-del" onclick="delStuJournal('+j['_rowNum']+')">&#128465;</button></td></tr>';});
-    h+='</tbody></table></div>';
+  h+='<div class="filter-bar">';
+  ['all','today','yesterday','week','month'].forEach(function(f){
+    var lbl=f==='all'?'All Time':f.charAt(0).toUpperCase()+f.slice(1)+(f==='week'?' (This)':f==='month'?' (This)':'');
+    if(f==='week')lbl='This Week'; if(f==='month')lbl='This Month';
+    h+='<button class="filter-btn'+(stuTjTimeF===f?' active':'')+'" onclick="setStuTJTimeF(\''+f+'\')">'+lbl+'</button>';
+  });
+  h+='<span style="color:var(--muted);font-size:12px;">Status:</span>';
+  [['all','All'],['open','Open'],['closed','Closed']].forEach(function(pair){
+    h+='<button class="filter-btn'+(stuTjStatF===pair[0]?' active':'')+'" onclick="setStuTJStatF(\''+pair[0]+'\')">'+pair[1]+'</button>';
+  });
+  h+='<input class="srch" id="srch-sutj" value="'+escAttr(q)+'" placeholder="&#128269; Search stock/remarks..." oninput="renderStuJournal()"></div>';
+  h+='<div class="stats-grid">'+mkStats([
+    {label:'Total Trades',value:rows.length,sub:'',color:'blue'},
+    {label:'Open / Pending',value:openRows.length,sub:'running trades',color:'amber'},
+    {label:'Closed Trades',value:closed.length,sub:'',color:'purple'},
+    {label:'Win Rate',value:winRate+'%',sub:targetHits.length+' Target vs '+slHits.length+' SL',color:winRate>=50?'green':'amber'},
+    {label:'Total P&amp;L',value:fmt(totalPL),sub:totalPL>=0?'Net profit':'Net loss',color:totalPL>=0?'green':'red'}
+  ])+'</div>';
+  h+='<div class="table-wrap"><div class="table-inner">'+mkStuTradeTable(rows)+'</div></div>';
+  document.getElementById('spage-stuJournal').innerHTML=h;
+  initStuTJForm();
+}
+function mkStuTradeTable(rows){
+  if(!rows||!rows.length)return '<div class="no-data">No trades found</div>';
+  var h='<table><thead><tr><th>Date</th><th>Stock</th><th>Dir</th><th>Type</th><th>Strategy</th><th>Entry</th><th>SL</th><th>T1/T2</th><th>Qty</th><th>Status</th><th>Exit</th><th>P&amp;L</th><th>Remarks</th><th>Actions</th></tr></thead><tbody>';
+  rows.slice().reverse().forEach(function(r){
+    var pl=parseFloat(r['Result']);
+    var plPct=parseFloat(r['Result %']);
+    var hasPL=!isNaN(pl)&&r['Exit Price']!=='';
+    var instLabel=(r['Instrument']==='Future & Option')?(r['FO Type']==='Option'?(' '+(r['Option Type']||'')+' '+(r['Strike Price']||'')):' FUT'):'';
+    h+='<tr>';
+    h+='<td>'+(r['Date']||'-')+'</td>';
+    h+='<td style="font-weight:600;">'+(r['Stock']||'-')+'<span style="color:var(--muted);font-weight:400;font-size:11px;">'+instLabel+'</span></td>';
+    h+='<td>'+(r['Direction']||'-')+'</td>';
+    h+='<td>'+(r['Trade Type']||'-')+'</td>';
+    h+='<td style="font-size:11px;">'+(r['Strategy']||'-')+'</td>';
+    h+='<td>'+(r['Entry Price']||'-')+'</td>';
+    h+='<td>'+(r['SL']||'-')+'</td>';
+    h+='<td>'+(r['Target1']||'-')+(r['Target2']?'/'+r['Target2']:'')+'</td>';
+    h+='<td>'+(r['Qty']||'-')+'</td>';
+    h+='<td><span class="badge '+statusBadgeColor(r['Status'])+'">'+(r['Status']||'Open')+'</span></td>';
+    h+='<td>'+(r['Exit Price']||'-')+'</td>';
+    h+='<td style="'+(hasPL?('color:'+(pl>=0?'var(--accent)':'var(--danger)')+';font-weight:700;'):'')+'">'+(hasPL?(fmt(pl)+' ('+(plPct>=0?'+':'')+plPct+'%)'):'-')+'</td>';
+    h+='<td style="max-width:150px;font-size:11px;color:var(--muted);white-space:normal;">'+(r['Remarks']||'-')+'</td>';
+    h+='<td><button class="btn-edit" onclick="openStuTradeModal('+r['_rowNum']+')">&#9998;</button> <button class="btn-del" onclick="stuDeleteOwn(\'StudentJournal\','+r['_rowNum']+',renderStuJournal)">&#128465;</button></td>';
+    h+='</tr>';
+  });
+  return h+'</tbody></table>';
+}
+function submitStuTrade(){
+  var stock=(document.getElementById('su_tj_stock').value||'').trim().toUpperCase();
+  var entry=parseFloat(document.getElementById('su_tj_entry').value);
+  var sl=parseFloat(document.getElementById('su_tj_sl').value);
+  var t1=parseFloat(document.getElementById('su_tj_t1').value);
+  var qty=parseFloat(document.getElementById('su_tj_qty').value);
+  if(!stock||isNaN(entry)||isNaN(sl)||isNaN(t1)||isNaN(qty)){showToast('Please fill Stock, Entry Price, Stop Loss, Target 1 and Quantity','error');return;}
+  var t2v=document.getElementById('su_tj_t2').value;
+  var stratSelEl=document.getElementById('su_tj_strategy');
+  var strategy=stratSelEl?stratSelEl.value:'';
+  if(strategy==='Other')strategy=(document.getElementById('su_tj_strategyOther').value||'').trim()||'Other';
+  var instrument=document.getElementById('su_tj_instrument')?document.getElementById('su_tj_instrument').value:'Stock';
+  var isFO=(instrument==='Future & Option');
+  var foType=isFO?(document.getElementById('su_tj_foType').value||''):'';
+  var isOption=isFO&&foType==='Option';
+  var optType=isOption?(document.getElementById('su_tj_optType').value||''):'';
+  var strikeV=isOption?document.getElementById('su_tj_strike').value:'';
+  if(isOption&&!strikeV){showToast('Please fill Strike Price','error');return;}
+  var p={
+    action:'addGeneric',sheet:'StudentJournal',
+    'Date':document.getElementById('su_tj_date').value||td(),
+    'Student ID':currentUser.id,'Student Name':currentUser.name,'Batch':currentUser.batch||'',
+    'Stock':stock,'Direction':document.getElementById('su_tj_direction').value,
+    'Trade Type':document.getElementById('su_tj_type').value,
+    'Strategy':strategy,
+    'Instrument':instrument,'FO Type':foType,'Option Type':optType,'Strike Price':strikeV?parseFloat(strikeV):'',
+    'Entry Price':entry,'SL':sl,'Target1':t1,'Target2':t2v?parseFloat(t2v):'',
+    'Qty':qty,'Status':'Open','Remarks':(document.getElementById('su_tj_remarks').value||'').trim()
+  };
+  postData(p).then(function(r){
+    if(r&&r.success){showToast('Trade added!','success');loadStudentDataStudent(renderStuJournal);}
+    else showToast('Save failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){showToast('Network error: '+e.message,'error');});
+}
+function openStuTradeModal(rowNum){
+  var row=(stuData.journal||[]).find(function(r){return String(r['_rowNum'])===String(rowNum);});
+  if(!row){showToast('Trade not found - reloading','error');loadStudentDataStudent(renderStuJournal);return;}
+  var statuses=['Open','1st Target Done','Target Done','2nd Target Done','SL Done','BEP (Break Even)','Manually Closed'];
+  var html='<div class="modal-title">Manage Trade &#8212; '+(row['Stock']||'')+'</div>';
+  html+='<div class="form-group"><label>Stock Symbol</label><input type="text" id="sutm_stock" value="'+(row['Stock']||'')+'"></div>';
+  html+='<div class="form-group"><label>Entry Price</label><input type="number" id="sutm_entry" value="'+(row['Entry Price']||'')+'"></div>';
+  html+='<div class="form-group"><label>Stop Loss</label><input type="number" id="sutm_sl" value="'+(row['SL']||'')+'"></div>';
+  html+='<div class="form-group"><label>Target 1</label><input type="number" id="sutm_t1" value="'+(row['Target1']||'')+'"></div>';
+  html+='<div class="form-group"><label>Target 2</label><input type="number" id="sutm_t2" value="'+(row['Target2']||'')+'"></div>';
+  html+='<div class="form-group"><label>Quantity</label><input type="number" id="sutm_qty" value="'+(row['Qty']||'')+'"></div>';
+  html+='<div class="form-group"><label>Status</label><select id="sutm_status" onchange="toggleSuTMExit()">'+statuses.map(function(s){return '<option value="'+s+'"'+(row['Status']===s?' selected':'')+'>'+s+'</option>';}).join('')+'</select></div>';
+  var showExit=(row['Status']!=='Open'&&row['Status']!=='1st Target Done');
+  html+='<div class="form-group" id="sutm_exitGroup" style="display:'+(showExit?'block':'none')+'"><label>Exit Price *</label><input type="number" id="sutm_exit" value="'+(row['Exit Price']||'')+'"></div>';
+  html+='<div class="form-group"><label>Remarks</label><textarea id="sutm_remarks">'+(row['Remarks']||'')+'</textarea></div>';
+  html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="saveStuTradeModal('+rowNum+',\''+(row['Direction']||'Buy')+'\')">Save</button></div>';
+  document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
+}
+function toggleSuTMExit(){
+  var s=document.getElementById('sutm_status').value;
+  var show=(s!=='Open'&&s!=='1st Target Done');
+  document.getElementById('sutm_exitGroup').style.display=show?'block':'none';
+}
+function saveStuTradeModal(rowNum,direction){
+  var status=document.getElementById('sutm_status').value;
+  var entry=parseFloat(document.getElementById('sutm_entry').value)||0;
+  var qty=parseFloat(document.getElementById('sutm_qty').value)||0;
+  var vals={
+    'Stock':(document.getElementById('sutm_stock').value||'').trim().toUpperCase(),
+    'Entry Price':entry,'SL':document.getElementById('sutm_sl').value,
+    'Target1':document.getElementById('sutm_t1').value,'Target2':document.getElementById('sutm_t2').value,
+    'Qty':qty,'Status':status,'Remarks':(document.getElementById('sutm_remarks').value||'').trim()
+  };
+  var exitEl=document.getElementById('sutm_exit');
+  if(status!=='Open'&&status!=='1st Target Done'){
+    if(!exitEl||exitEl.value===''){showToast('Exit Price is required when closing a trade (for P&L)','error');return;}
+    var exit=parseFloat(exitEl.value);
+    var result=(exit-entry)*qty*(direction==='Buy'?1:-1);
+    var resultPct=(entry&&qty)?(result/(entry*qty)*100):0;
+    vals['Exit Price']=exit;
+    vals['Exit Date']=td();
+    vals['Result']=Math.round(result*100)/100;
+    vals['Result %']=Math.round(resultPct*100)/100;
   }
-  document.getElementById('spage-stuJournal').innerHTML='<div class="page-header"><h1>&#128200; My Trading Journal</h1><p>Record your own trades here - fully separate from the employee/client trading journal.</p></div>'+h;
+  postData({action:'editRow',sheet:'StudentJournal',rowNum:rowNum,vals:vals}).then(function(r){
+    closeModal();
+    if(r&&r.success){showToast('Trade updated','success');loadStudentDataStudent(renderStuJournal);}
+    else showToast('Update failed','error');
+  }).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
 }
-function addStuJournal(){
-  var stock=document.getElementById('sj_stock').value.trim();
-  if(!stock){showToast('Please enter the stock name','error');return;}
-  var p={action:'addGeneric',sheet:'StudentJournal','Date':document.getElementById('sj_date').value||td(),'Student ID':currentUser.id,'Student Name':currentUser.name,'Batch':currentUser.batch||'','Stock':stock.toUpperCase(),'Direction':document.getElementById('sj_dir').value,'Entry Price':document.getElementById('sj_entry').value,'Exit Price':document.getElementById('sj_exit').value,'Qty':document.getElementById('sj_qty').value,'Result':document.getElementById('sj_result').value,'Remarks':document.getElementById('sj_remarks').value.trim()};
-  postData(p).then(function(r){if(r&&r.success){showToast('Trade added','success');loadStudentDataStudent(renderStuJournal);}else showToast('Fail','error');}).catch(function(e){showToast('Error: '+e.message,'error');});
+
+/* ===== STUDENT PAPER TRADING (virtual capital, manual buy/sell, cross-student leaderboard) ===== */
+var STU_PAPER_CAPITAL=100000;
+var stuPtStatF='all';
+var stuLeaderboard=[];
+function setStuPTStatF(f){stuPtStatF=f;renderStuPaperTrading();}
+function stuPtPositions(){return stuData.paperTrades||[];}
+function stuPtAvailableCash(){
+  var rows=stuPtPositions();
+  var deployed=rows.filter(function(r){return r['Status']==='Open';}).reduce(function(s,r){return s+(parseFloat(r['Entry Price'])||0)*(parseFloat(r['Qty'])||0);},0);
+  var realized=rows.filter(function(r){return r['Status']==='Closed';}).reduce(function(s,r){return s+(parseFloat(r['P&L'])||0);},0);
+  return STU_PAPER_CAPITAL-deployed+realized;
 }
-function delStuJournal(rowNum){
-  if(!confirm('Delete this?'))return;
-  postData({action:'deleteRow',sheet:'StudentJournal',rowNum:rowNum}).then(function(r){if(r&&r.success){showToast('Deleted','success');loadStudentDataStudent(renderStuJournal);}}).catch(function(){});
+function renderStuPaperTrading(){
+  var rows=stuPtPositions();
+  var open=rows.filter(function(r){return r['Status']==='Open';});
+  var closedAll=rows.filter(function(r){return r['Status']==='Closed';});
+  var shown=stuPtStatF==='open'?open:(stuPtStatF==='closed'?closedAll:rows);
+  var realizedPL=closedAll.reduce(function(s,r){return s+(parseFloat(r['P&L'])||0);},0);
+  var wins=closedAll.filter(function(r){return (parseFloat(r['P&L'])||0)>0;}).length;
+  var winRate=closedAll.length?Math.round(wins/closedAll.length*100):0;
+  var cash=stuPtAvailableCash();
+  var portfolioValue=cash+open.reduce(function(s,r){return s+(parseFloat(r['Entry Price'])||0)*(parseFloat(r['Qty'])||0);},0);
+
+  var h='<div class="page-header"><h1>&#128202; Paper Trading</h1><p>Practice trading with virtual money &#8212; starting capital &#8377;'+STU_PAPER_CAPITAL.toLocaleString('en-IN')+'.</p></div>';
+  h+='<div class="stats-grid">'+mkStats([
+    {label:'Available Cash',value:fmt(cash),sub:'virtual balance',color:'blue'},
+    {label:'Portfolio Value',value:fmt(portfolioValue),sub:'cash + open positions (at entry)',color:'purple'},
+    {label:'Realized P&amp;L',value:fmt(realizedPL),sub:realizedPL>=0?'Net profit':'Net loss',color:realizedPL>=0?'green':'red'},
+    {label:'Win Rate',value:winRate+'%',sub:closedAll.length+' closed trades',color:winRate>=50?'green':'amber'},
+    {label:'Open Positions',value:open.length,sub:'click to view',color:'amber',onclick:"setStuPTStatF('open')"}
+  ])+'</div>';
+  h+='<div class="form-card form-grid">';
+  h+='<div class="form-group"><label>Stock</label><input type="text" id="su_pt_stock" placeholder="e.g. RELIANCE" style="text-transform:uppercase;"></div>';
+  h+='<div class="form-group"><label>Direction</label><select id="su_pt_direction"><option value="Buy">Buy</option><option value="Sell">Sell</option></select></div>';
+  h+='<div class="form-group"><label>Entry Price</label><input type="number" id="su_pt_entry" placeholder="Entry price"></div>';
+  h+='<div class="form-group"><label>Quantity</label><input type="number" id="su_pt_qty" placeholder="Number of shares"></div>';
+  h+='<div class="form-group" style="grid-column:1/-1;"><label>Remarks</label><input type="text" id="su_pt_remarks" placeholder="Why are you taking this trade?"></div>';
+  h+='<button class="btn-submit" onclick="submitStuPaperTrade()">Place Virtual Trade</button>';
+  h+='</div>';
+  h+='<div class="filter-bar">';
+  [['all','All'],['open','Open'],['closed','Closed']].forEach(function(pair){
+    h+='<button class="filter-btn'+(stuPtStatF===pair[0]?' active':'')+'" onclick="setStuPTStatF(\''+pair[0]+'\')">'+pair[1]+'</button>';
+  });
+  h+='</div>';
+  h+='<div class="table-wrap"><div class="table-inner">'+mkStuPaperTradeTable(shown)+'</div></div>';
+  h+='<div style="margin-top:24px;"><h3 style="margin-bottom:10px;">&#127942; Leaderboard</h3><div class="table-wrap"><div class="table-inner" id="su_pt_leaderboard"><div class="no-data">Loading...</div></div></div></div>';
+  document.getElementById('spage-stuPaperTrading').innerHTML=h;
+  loadStuPTLeaderboard();
 }
+function mkStuPaperTradeTable(rows){
+  if(!rows||!rows.length)return '<div class="no-data">No paper trades yet</div>';
+  var h='<table><thead><tr><th>Date</th><th>Stock</th><th>Dir</th><th>Entry</th><th>Qty</th><th>Status</th><th>Exit</th><th>P&amp;L</th><th>Remarks</th><th>Actions</th></tr></thead><tbody>';
+  rows.slice().reverse().forEach(function(r){
+    var isOpen=r['Status']==='Open';
+    var pl=parseFloat(r['P&L']);
+    var hasPL=!isOpen&&!isNaN(pl);
+    h+='<tr>';
+    h+='<td>'+(r['Date']||'-')+'</td>';
+    h+='<td style="font-weight:600;">'+(r['Stock']||'-')+'</td>';
+    h+='<td>'+(r['Direction']||'-')+'</td>';
+    h+='<td>'+(r['Entry Price']||'-')+'</td>';
+    h+='<td>'+(r['Qty']||'-')+'</td>';
+    h+='<td><span class="badge '+(isOpen?'amber':'purple')+'">'+(r['Status']||'Open')+'</span></td>';
+    h+='<td>'+(r['Exit Price']||'-')+'</td>';
+    h+='<td style="'+(hasPL?('color:'+(pl>=0?'var(--accent)':'var(--danger)')+';font-weight:700;'):'')+'">'+(hasPL?fmt(pl):'-')+'</td>';
+    h+='<td style="max-width:150px;font-size:11px;color:var(--muted);white-space:normal;">'+(r['Remarks']||'-')+'</td>';
+    h+='<td>'+(isOpen?('<button class="btn-edit" onclick="openStuPaperCloseModal('+r['_rowNum']+')">Close</button> '):'')+'<button class="btn-del" onclick="stuDeleteOwn(\'StudentPaperTrades\','+r['_rowNum']+',renderStuPaperTrading)">&#128465;</button></td>';
+    h+='</tr>';
+  });
+  return h+'</tbody></table>';
+}
+function submitStuPaperTrade(){
+  var stock=(document.getElementById('su_pt_stock').value||'').trim().toUpperCase();
+  var entry=parseFloat(document.getElementById('su_pt_entry').value);
+  var qty=parseFloat(document.getElementById('su_pt_qty').value);
+  if(!stock||isNaN(entry)||isNaN(qty)||qty<=0){showToast('Please fill Stock, Entry Price and Quantity','error');return;}
+  var cost=entry*qty;
+  if(cost>stuPtAvailableCash()){showToast('Not enough virtual cash for this trade','error');return;}
+  var p={
+    action:'addGeneric',sheet:'StudentPaperTrades',
+    'Date':td(),'Student ID':currentUser.id,'Student Name':currentUser.name,'Batch':currentUser.batch||'',
+    'Stock':stock,'Direction':document.getElementById('su_pt_direction').value,
+    'Entry Price':entry,'Qty':qty,'Exit Price':'','Exit Date':'','Status':'Open','P&L':'',
+    'Remarks':(document.getElementById('su_pt_remarks').value||'').trim()
+  };
+  postData(p).then(function(r){
+    if(r&&r.success){showToast('Virtual trade placed!','success');loadStudentDataStudent(renderStuPaperTrading);}
+    else showToast('Save failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){showToast('Network error: '+e.message,'error');});
+}
+function openStuPaperCloseModal(rowNum){
+  var row=(stuData.paperTrades||[]).find(function(r){return String(r['_rowNum'])===String(rowNum);});
+  if(!row){showToast('Trade not found - reloading','error');loadStudentDataStudent(renderStuPaperTrading);return;}
+  var html='<div class="modal-title">Close Trade &#8212; '+(row['Stock']||'')+'</div>';
+  html+='<div style="color:var(--muted);font-size:12px;margin-bottom:10px;">Entry: '+(row['Entry Price']||'')+' &#183; Qty: '+(row['Qty']||'')+' &#183; '+(row['Direction']||'')+'</div>';
+  html+='<div class="form-group"><label>Exit Price *</label><input type="number" id="supt_exit"></div>';
+  html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="saveStuPaperClose('+rowNum+',\''+(row['Direction']||'Buy')+'\','+(parseFloat(row['Entry Price'])||0)+','+(parseFloat(row['Qty'])||0)+')">Close Trade</button></div>';
+  document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
+}
+function saveStuPaperClose(rowNum,direction,entry,qty){
+  var exitEl=document.getElementById('supt_exit');
+  if(!exitEl||exitEl.value===''){showToast('Exit Price is required','error');return;}
+  var exit=parseFloat(exitEl.value);
+  var pl=(exit-entry)*qty*(direction==='Buy'?1:-1);
+  var vals={'Exit Price':exit,'Exit Date':td(),'Status':'Closed','P&L':Math.round(pl*100)/100};
+  postData({action:'editRow',sheet:'StudentPaperTrades',rowNum:rowNum,vals:vals}).then(function(r){
+    closeModal();
+    if(r&&r.success){showToast('Trade closed','success');loadStudentDataStudent(renderStuPaperTrading);}
+    else showToast('Update failed','error');
+  }).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
+}
+function loadStuPTLeaderboard(){
+  getJSON('getPaperTradingLeaderboard').then(function(r){
+    if(r&&r.success){stuLeaderboard=r.leaderboard||[];renderStuPTLeaderboard();}
+  }).catch(function(){});
+}
+function renderStuPTLeaderboard(){
+  var el=document.getElementById('su_pt_leaderboard');
+  if(!el)return;
+  var list=stuLeaderboard.slice().sort(function(a,b){return b.totalPL-a.totalPL;});
+  if(!list.length){el.innerHTML='<div class="no-data">No closed paper trades yet - be the first!</div>';return;}
+  var h='<table><thead><tr><th>#</th><th>Student</th><th>Batch</th><th>Closed Trades</th><th>Win Rate</th><th>Total P&amp;L</th></tr></thead><tbody>';
+  list.forEach(function(s,i){
+    var isMe=currentUser&&String(s.studentId)===String(currentUser.id);
+    h+='<tr'+(isMe?' style="background:rgba(99,102,241,0.12);"':'')+'>';
+    h+='<td>'+(i+1)+'</td><td style="font-weight:600;">'+(s.name||s.studentId)+(isMe?' (You)':'')+'</td><td>'+(s.batch||'-')+'</td><td>'+s.closedTrades+'</td><td>'+s.winRate+'%</td>';
+    h+='<td style="'+(s.totalPL>=0?'color:var(--accent);':'color:var(--danger);')+'font-weight:700;">'+fmt(s.totalPL)+'</td>';
+    h+='</tr>';
+  });
+  el.innerHTML=h+'</tbody></table>';
+}
+
 
 var stuQuizState=null;
 function renderStuTests(){
