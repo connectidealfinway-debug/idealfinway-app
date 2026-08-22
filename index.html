@@ -1371,6 +1371,8 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
         <div class="form-group"><label>How Was It Opened (Source)</label>
           <select id="a_source"><option value="Online">Online (via Link)</option><option value="Offline">Offline</option></select>
         </div>
+        <div class="form-group"><label>Location <span style="color:var(--muted);font-weight:400;">- where is the client from? (city/town) - optional</span></label><input type="text" id="a_location" placeholder="e.g. Hisar"></div>
+        <div class="form-group"><label>Profession <span style="color:var(--muted);font-weight:400;">- what does the client do for work? - optional</span></label><input type="text" id="a_profession" placeholder="e.g. Farmer, Business, Job, Student"></div>
         <div class="form-group"><label>Active In (you can select multiple)</label>
           <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;">
             <label style="display:flex;align-items:center;gap:5px;font-weight:400;font-size:13px;"><input type="checkbox" id="a_actTrading" style="width:auto;"> Trading</label>
@@ -4519,7 +4521,7 @@ function mkAccTable(rows,dupSet,sortMode,amtMap){
     var starred=r['Starred']==='Yes';
     h+='<tr'+(isDup?' class="dup-row"':'')+'>'+
       '<td><span style="cursor:pointer;font-size:16px;color:'+(starred?'#f59e0b':'var(--muted)')+';" onclick="toggleAccStar('+r['_rowNum']+',\''+(r['Starred']||'No')+'\')" title="'+(starred?'Important client - click to unstar':'Click to mark as important client')+'">'+(starred?'&#9733;':'&#9734;')+'</span></td>'+
-      '<td>'+r['Date']+'</td><td>'+r['Employee Name']+'</td><td>'+r['Client Name']+contestBadgeForAccountDate(r['Date'])+'</td>'+
+      '<td>'+r['Date']+'</td><td>'+r['Employee Name']+'</td><td>'+r['Client Name']+' <span style="cursor:pointer;color:var(--accent);" onclick="openAccInfoModal('+r['_rowNum']+')" title="View Reference, Location, Profession &amp; other details">&#8505;&#65039;</span>'+contestBadgeForAccountDate(r['Date'])+'</td>'+
       '<td>'+(isDup?'<span class="dup-badge">&#9888;</span>':'')+cid+'</td>'+
       '<td>'+r['Client Phone']+'</td>';
     h+='<td>'+(r['Last Call Date']?('<b>'+r['Last Call Date']+'</b><br><span style="font-size:10px;color:var(--muted,#8a94a6);">'+(r['Last Call Remarks']||'-')+'</span>'):'<span style="font-size:11px;color:var(--muted,#8a94a6);">Not called yet</span>')+(r['Remarks']?('<br><span style="font-size:10px;color:#3fbf7f;" title="General remarks about this client">&#128221; '+r['Remarks']+'</span>'):'')+'</td>';
@@ -4538,9 +4540,58 @@ function mkAccTable(rows,dupSet,sortMode,amtMap){
     if(inCT)ctBtn+='<span class="badge blue" style="margin-left:2px;" title="This client is in the Call &amp; Trade calling list">&#128222; Call &amp; Trade</span> ';
     if(inIPOL)ctBtn+='<span class="badge amber" style="margin-left:2px;" title="This client is in the IPO Calling List - will only be called when a new IPO comes">&#128203; IPO List</span> ';
     if(!inCT||!inIPOL)ctBtn+='<button class="btn-call" style="background:rgba(10,132,255,0.15);color:#0a84ff;" onclick="openAddToListModal('+r['_rowNum']+')" title="Add this client to the Call &amp; Trade and/or IPO Calling list">&#8594; Add to List</button>';
-    h+='<td>'+mapBtn+'<button class="btn-call" onclick="openAccCallModal('+r['_rowNum']+')" title="Call this client / log a call">&#128222;</button> <button class="btn-call" style="background:rgba(139,92,246,0.15);color:#8b5cf6;" onclick="openAccHoldingModal('+r['_rowNum']+')" title="View stock holding">&#128188;</button> <button class="btn-edit" onclick="openAccEditModal('+r['_rowNum']+')" title="Edit this account">&#9998;</button> '+nseBtn+' '+ctBtn+' <span style="display:inline-block;width:14px;"></span><button class="btn-del" onclick="confirmDel(\'Accounts\','+r['_rowNum']+')" title="PERMANENTLY delete this entire account (not just remove from a calling list)">&#128465; Delete Account</button></td></tr>';
+    h+='<td><button class="btn-call" onclick="openAccCallModal('+r['_rowNum']+')" title="Call this client / log a call">&#128222;</button> <button class="btn-edit" onclick="openAccEditModal('+r['_rowNum']+')" title="Edit this account">&#9998;</button> '+ctBtn+' <button class="btn-call" style="background:rgba(138,148,166,0.15);color:var(--muted,#8a94a6);" onclick="openAccMoreModal('+r['_rowNum']+')" title="More: Portfolio, NSE Trade, Delete'+(isDup?', Map duplicate':'')+'">&#8942;</button></td></tr>';
   });
   return h+'</tbody></table>';
+}
+/* v79: consolidated Info modal (Reference/Location/Profession/Account Type/Source) - keeps the open
+   table view simple/uncluttered per explicit user request; details only show on click. */
+function openAccInfoModal(rowNum){
+  var r=(allData.Accounts||[]).find(function(x){return String(x['_rowNum'])===String(rowNum);});
+  if(!r){showToast('Account not found','error');return;}
+  var row=function(label,val,icon){return '<div style="display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.08);font-size:13px;"><span style="color:var(--muted);">'+(icon?icon+' ':'')+label+'</span><span style="font-weight:600;text-align:right;">'+(val&&String(val).trim()?val:'<span style="color:var(--muted);font-weight:400;">-</span>')+'</span></div>';};
+  var html='<div class="modal-title">Client Info &#8212; '+(r['Client Name']||'')+'</div>';
+  html+=row('How Client Came (Reference)',r['Reference'],'&#128100;');
+  html+=row('Location',r['Location'],'&#128205;');
+  html+=row('Profession / Business',r['Profession'],'&#128188;');
+  html+=row('Account Type',r['Account Type'],'&#128203;');
+  html+=row('Source',r['Source'],'&#127760;');
+  if((r['Remarks']||'').trim())html+=row('Remarks',r['Remarks'],'&#128221;');
+  html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Close</button><button class="btn-save" onclick="closeModal();openAccEditModal('+rowNum+');">Edit</button></div>';
+  document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
+}
+/* v79: 'More' modal - Portfolio/Holding, NSE Trade toggle, duplicate Map (admin only), Delete Account.
+   Recomputes duplicate-ID status locally since this is called outside mkAccTable's dupSet context. */
+function accDupInfoFor(cid){
+  cid=(cid||'').trim();if(!cid)return null;
+  var eids=[];
+  (allData.Accounts||[]).forEach(function(r){
+    if((r['Client ID']||'').trim()!==cid)return;
+    var e=(r['Employee ID']||r['Employee Name']||'').trim();
+    if(e&&eids.indexOf(e)===-1)eids.push(e);
+  });
+  return eids.length>1?eids:null;
+}
+function openAccMoreModal(rowNum){
+  var r=(allData.Accounts||[]).find(function(x){return String(x['_rowNum'])===String(rowNum);});
+  if(!r){showToast('Account not found','error');return;}
+  var cid=(r['Client ID']||'').trim();
+  var isDup=accDupInfoFor(cid);
+  var nseDone=(r['NSE Trade Done']||'')==='Yes';
+  var html='<div class="modal-title">More Actions &#8212; '+(r['Client Name']||cid)+'</div>';
+  html+='<div style="display:flex;flex-direction:column;gap:10px;">';
+  html+='<button class="btn-call" style="background:rgba(139,92,246,0.15);color:#8b5cf6;width:100%;" onclick="closeModal();openAccHoldingModal('+rowNum+');">&#128188; View Portfolio / Stock Holding</button>';
+  if(nseDone){
+    html+='<button class="badge green" style="border:none;cursor:pointer;width:100%;padding:8px;" onclick="closeModal();undoNSETradeDone('+rowNum+');" title="NSE trade done on '+(r['NSE Trade Date']||'')+' — click to undo if marked by mistake">&#10003; NSE Trade Done - click to undo</button>';
+  }else{
+    html+='<button class="btn-call" style="background:rgba(255,159,10,0.15);color:#ff9f0a;width:100%;" onclick="closeModal();markNSETradeDone('+rowNum+');">&#128200; Mark NSE Trade Done</button>';
+  }
+  if(isDup&&currentUser&&currentUser.role==='admin'){
+    html+='<button class="btn-call" style="background:rgba(63,191,127,0.15);color:#3fbf7f;width:100%;" onclick="closeModal();mapAccountDuplicate(\''+cid+'\','+rowNum+');" title="Keep THIS team member for this Client ID - deletes the other duplicate entry(ies)">&#128279; Map Duplicate (keep this one)</button>';
+  }
+  html+='<button class="btn-del" style="width:100%;" onclick="closeModal();confirmDel(\'Accounts\','+rowNum+');" title="PERMANENTLY delete this entire account (not just remove from a calling list)">&#128465; Delete Account</button>';
+  html+='</div><div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button></div>';
+  document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
 }
 /* v72/v73: Accounts -> Call & Trade / IPO Calling List. Shared helper: adds a client into the
    CallClients roster via the generic addGeneric backend action (no new backend action needed,
@@ -7482,8 +7533,8 @@ function submitAccount(){
   var statusComputed=(actTrading==='Yes'||actSIP==='Yes'||actInv==='Yes'||actIPO==='Yes')?'Active':'Inactive';
   var cphoneVal=document.getElementById('a_cphone').value.trim();
   var addToCTChecked=document.getElementById('a_addToCT')&&document.getElementById('a_addToCT').checked;
-  var p={action:'addAccount','Date':document.getElementById('a_date').value||td(),'Employee ID':fe.id,'Employee Name':fe.name,'Branch':fe.branch,'Client Name':cn,'Client ID':cid,'Client Phone':cphoneVal,'Status':statusComputed,'Trading Active':actTrading,'SIP Active':actSIP,'Investment Active':actInv,'IPO Active':actIPO,'Remarks':document.getElementById('a_remarks').value.trim(),'Account Type':document.getElementById('a_acctype').value,'Source':document.getElementById('a_source').value,'NSE Trade Done':'No','NSE Trade Date':'','Reference':ref.refBy};
-  doSubmit(p,'Accounts',document.querySelector('#page-addAcc .btn-submit'),'Add Account',function(){document.getElementById('a_cname').value='';document.getElementById('a_cid').value='';document.getElementById('a_cphone').value='';document.getElementById('a_remarks').value='';document.getElementById('a_actTrading').checked=false;document.getElementById('a_actSIP').checked=false;document.getElementById('a_actInvestment').checked=false;document.getElementById('a_actIPO').checked=false;document.getElementById('a_reftype').value='Direct';document.getElementById('a_refOther').value='';onRefTypeChange('a');if(document.getElementById('a_addToCT'))document.getElementById('a_addToCT').checked=false;});
+  var p={action:'addAccount','Date':document.getElementById('a_date').value||td(),'Employee ID':fe.id,'Employee Name':fe.name,'Branch':fe.branch,'Client Name':cn,'Client ID':cid,'Client Phone':cphoneVal,'Status':statusComputed,'Trading Active':actTrading,'SIP Active':actSIP,'Investment Active':actInv,'IPO Active':actIPO,'Remarks':document.getElementById('a_remarks').value.trim(),'Account Type':document.getElementById('a_acctype').value,'Source':document.getElementById('a_source').value,'NSE Trade Done':'No','NSE Trade Date':'','Reference':ref.refBy,'Location':(document.getElementById('a_location').value||'').trim(),'Profession':(document.getElementById('a_profession').value||'').trim()};
+  doSubmit(p,'Accounts',document.querySelector('#page-addAcc .btn-submit'),'Add Account',function(){document.getElementById('a_cname').value='';document.getElementById('a_cid').value='';document.getElementById('a_cphone').value='';document.getElementById('a_remarks').value='';document.getElementById('a_location').value='';document.getElementById('a_profession').value='';document.getElementById('a_actTrading').checked=false;document.getElementById('a_actSIP').checked=false;document.getElementById('a_actInvestment').checked=false;document.getElementById('a_actIPO').checked=false;document.getElementById('a_reftype').value='Direct';document.getElementById('a_refOther').value='';onRefTypeChange('a');if(document.getElementById('a_addToCT'))document.getElementById('a_addToCT').checked=false;});
   if(dupChk.byId){setTimeout(function(){showDupAccountAddedPopup(dupChk.byId);},400);}
   /* v73: 'IPO Active' checkbox (already existed for the account's own flags) now ALSO auto-shifts
      the client into the IPO Calling List, per explicit user request - no separate checkbox needed,
@@ -11635,6 +11686,8 @@ function openAccEditModal(rowNum){
   html+='<div class="form-group"><label>Client Name</label><input type="text" id="ae_cname" value="'+(row['Client Name']||'')+'"></div>';
   html+='<div class="form-group"><label>Client ID / Demat No</label><input type="text" id="ae_cid" value="'+(row['Client ID']||'')+'"></div>';
   html+='<div class="form-group"><label>Client Phone</label><input type="text" id="ae_cphone" value="'+(row['Client Phone']||'')+'"></div>';
+  html+='<div class="form-group"><label>Location <span style="color:var(--muted);font-weight:400;">- optional</span></label><input type="text" id="ae_location" value="'+(row['Location']||'')+'" placeholder="e.g. Hisar"></div>';
+  html+='<div class="form-group"><label>Profession <span style="color:var(--muted);font-weight:400;">- optional</span></label><input type="text" id="ae_profession" value="'+(row['Profession']||'')+'" placeholder="e.g. Farmer, Business, Job, Student"></div>';
   html+='<div class="form-group"><label>Active In</label><div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;">';
   html+='<label style="display:flex;align-items:center;gap:5px;font-weight:400;font-size:13px;"><input type="checkbox" id="ae_actTrading" style="width:auto;"'+((row['Trading Active']||'')==='Yes'?' checked':'')+'> Trading</label>';
   html+='<label style="display:flex;align-items:center;gap:5px;font-weight:400;font-size:13px;"><input type="checkbox" id="ae_actSIP" style="width:auto;"'+((row['SIP Active']||'')==='Yes'?' checked':'')+'> SIP</label>';
@@ -11664,6 +11717,8 @@ function saveAccEditModal(rowNum){
     'Client Name':newCname,
     'Client ID':newCid,
     'Client Phone':newCphone,
+    'Location':(document.getElementById('ae_location').value||'').trim(),
+    'Profession':(document.getElementById('ae_profession').value||'').trim(),
     'Trading Active':actTrading,'SIP Active':actSIP,'Investment Active':actInv,'IPO Active':actIPO,
     'Remarks':(document.getElementById('ae_remarks').value||'').trim(),
     'Status':statusComputed
