@@ -2293,7 +2293,15 @@ function login(){
   var pass=(document.getElementById('loginPass').value||'').trim();
   var err=document.getElementById('loginErr');
   err.textContent='Invalid ID or Password';err.style.display='none';
-  if(id===ADMIN_ID&&pass===ADMIN_PASS){currentUser={id:id,name:'Ravikant Sharma',branch:'Hisar',role:'admin',userId:id};startApp();return;}
+  /* v83: strict tab separation - Admin tab ONLY accepts the admin credentials, Team tab ONLY
+     accepts employee credentials. Previously this function tried admin-match first regardless
+     of which tab was selected, so a team member entering their own ID/password while the Admin
+     tab was active (or vice versa) could still log in - fixed by gating on loginMode up front. */
+  if(loginMode==='admin'){
+    if(id===ADMIN_ID&&pass===ADMIN_PASS){currentUser={id:id,name:'Ravikant Sharma',branch:'Hisar',role:'admin',userId:id};startApp();return;}
+    err.textContent='Invalid Admin ID or Password';err.style.display='block';
+    return;
+  }
   var emp=findEmpLogin(id,pass);
   if(emp){currentUser={id:emp['Employee ID'],name:emp['Name'],branch:emp['Branch'],role:emp['Role']||'employee',userId:emp['Employee ID'],FinanceAccess:emp['FinanceAccess']||'No',IPO_Access:emp['IPO_Access']||'No',StudentAccess:emp['StudentAccess']||'No'};startApp();return;}
   /* employees list abhi load nahi hui (ya fail ho gayi) — abhi fetch karke dobara try karo */
