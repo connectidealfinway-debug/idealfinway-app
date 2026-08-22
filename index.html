@@ -4533,13 +4533,11 @@ function mkAccTable(rows,dupSet,sortMode,amtMap){
     var nseDone=(r['NSE Trade Done']||'')==='Yes';
     var nseBtn=nseDone?'<button class="badge green" style="border:none;cursor:pointer;" onclick="undoNSETradeDone('+r['_rowNum']+')" title="NSE trade done on '+(r['NSE Trade Date']||'')+' — click to undo if marked by mistake">&#10003; NSE Trade</button>':'<button class="btn-call" style="background:rgba(255,159,10,0.15);color:#ff9f0a;" onclick="markNSETradeDone('+r['_rowNum']+')" title="Click here once the client has completed an NSE trade">&#128200; Trade Done?</button>';
     var mapBtn=(isDup&&currentUser&&currentUser.role==='admin')?('<button class="btn-call" style="background:rgba(63,191,127,0.15);color:#3fbf7f;" onclick="mapAccountDuplicate(\''+cid+'\','+(r['_rowNum']||0)+')" title="Keep THIS team member for this Client ID - deletes the other duplicate entry(ies)">&#128279; Map</button> '):'';
-    var ctEntry=callTradeEntryFor(cid);
-    var ctBtn;
-    if(ctEntry){
-      ctBtn=isIPOPurpose(ctEntry)?'<span class="badge amber" style="margin-left:2px;" title="This client is in the IPO Calling List - will only be called when a new IPO comes">&#128203; In IPO List</span>':'<span class="badge blue" style="margin-left:2px;" title="This client is in the Call &amp; Trade calling list">&#128222; In Call &amp; Trade</span>';
-    }else{
-      ctBtn='<button class="btn-call" style="background:rgba(10,132,255,0.15);color:#0a84ff;" onclick="shiftAccountToCallTrade('+r['_rowNum']+')" title="Shift this account to the Call &amp; Trade (daily calling) list">&#128222;&#8594; Call &amp; Trade</button> <button class="btn-call" style="background:rgba(255,159,10,0.15);color:#ff9f0a;" onclick="shiftAccountToIPOList('+r['_rowNum']+')" title="Shift this account to the IPO Calling List - will only be called when a new IPO comes">&#128203;&#8594; IPO List</button>';
-    }
+    var inCT=isInCallTrade(cid,'Trading'),inIPOL=isInCallTrade(cid,'IPO');
+    var ctBtn='';
+    if(inCT)ctBtn+='<span class="badge blue" style="margin-left:2px;" title="This client is in the Call &amp; Trade calling list">&#128222; Call &amp; Trade</span> ';
+    if(inIPOL)ctBtn+='<span class="badge amber" style="margin-left:2px;" title="This client is in the IPO Calling List - will only be called when a new IPO comes">&#128203; IPO List</span> ';
+    if(!inCT||!inIPOL)ctBtn+='<button class="btn-call" style="background:rgba(10,132,255,0.15);color:#0a84ff;" onclick="openAddToListModal('+r['_rowNum']+')" title="Add this client to the Call &amp; Trade and/or IPO Calling list">&#8594; Add to List</button>';
     h+='<td>'+mapBtn+'<button class="btn-call" onclick="openAccCallModal('+r['_rowNum']+')" title="Call this client / log a call">&#128222;</button> <button class="btn-call" style="background:rgba(139,92,246,0.15);color:#8b5cf6;" onclick="openAccHoldingModal('+r['_rowNum']+')" title="View stock holding">&#128188;</button> <button class="btn-edit" onclick="openAccEditModal('+r['_rowNum']+')" title="Edit this account">&#9998;</button> '+nseBtn+' '+ctBtn+' <span style="display:inline-block;width:14px;"></span><button class="btn-del" onclick="confirmDel(\'Accounts\','+r['_rowNum']+')" title="PERMANENTLY delete this entire account (not just remove from a calling list)">&#128465; Delete Account</button></td></tr>';
   });
   return h+'</tbody></table>';
@@ -4551,15 +4549,23 @@ function mkAccTable(rows,dupSet,sortMode,amtMap){
    v73 splits CallClients into TWO purposes via a new 'Call Purpose' column: '' / 'Trading' (default,
    existing 3800+ rows, unchanged meaning) vs 'IPO' (new - clients who ONLY get called when a fresh
    IPO launches, tracked separately with its own Call/Applied/Category/UPI fields, see renderIPOCallList). */
-function isInCallTrade(cid){
+function isInCallTrade(cid,purpose){
   cid=(cid||'').trim();
   if(!cid)return false;
-  return (allData.CallClients||[]).some(function(c){return (c['Client ID']||'').trim()===cid;});
+  return (allData.CallClients||[]).some(function(c){
+    if((c['Client ID']||'').trim()!==cid)return false;
+    if(!purpose)return true;
+    return (isIPOPurpose(c)?'IPO':'Trading')===purpose;
+  });
 }
-function callTradeEntryFor(cid){
+function callTradeEntryFor(cid,purpose){
   cid=(cid||'').trim();
   if(!cid)return null;
-  return (allData.CallClients||[]).find(function(c){return (c['Client ID']||'').trim()===cid;})||null;
+  return (allData.CallClients||[]).find(function(c){
+    if((c['Client ID']||'').trim()!==cid)return false;
+    if(!purpose)return true;
+    return (isIPOPurpose(c)?'IPO':'Trading')===purpose;
+  })||null;
 }
 function isIPOPurpose(r){return (r&&r['Call Purpose']||'')==='IPO';}
 function addClientToCallTrade(f){
@@ -4595,7 +4601,7 @@ function shiftAccountToCallTrade(rowNum){
   if(!r){showToast('Account not found','error');return;}
   var cid=(r['Client ID']||'').trim();
   if(!cid){showToast('Client ID missing - please add the Client ID first','error');return;}
-  if(isInCallTrade(cid)){showToast('This client is already in a calling list','info');return;}
+  if(isInCallTrade(cid,'Trading')){showToast('This client is already in the Call & Trade list','info');return;}
   if(!confirm('Shift "'+(r['Client Name']||cid)+'" to the Call & Trade (daily calling) list?'))return;
   addClientToCallTrade({cid:cid,cname:r['Client Name'],cphone:r['Client Phone'],empId:r['Employee ID'],empName:r['Employee Name'],branch:r['Branch'],remarks:'Shifted from Accounts',purpose:'Trading'});
 }
@@ -4604,9 +4610,37 @@ function shiftAccountToIPOList(rowNum){
   if(!r){showToast('Account not found','error');return;}
   var cid=(r['Client ID']||'').trim();
   if(!cid){showToast('Client ID missing - please add the Client ID first','error');return;}
-  if(isInCallTrade(cid)){showToast('This client is already in a calling list','info');return;}
+  if(isInCallTrade(cid,'IPO')){showToast('This client is already in the IPO Calling List','info');return;}
   if(!confirm('Shift "'+(r['Client Name']||cid)+'" to the IPO Calling List? (Will only be called when a new IPO comes)'))return;
   addClientToCallTrade({cid:cid,cname:r['Client Name'],cphone:r['Client Phone'],empId:r['Employee ID'],empName:r['Employee Name'],branch:r['Branch'],remarks:'Shifted from Accounts',purpose:'IPO'});
+}
+/* v79: unified Add-to-List modal (Call & Trade + IPO Calling List can both be selected, not mutually
+   exclusive anymore - fixes bug where adding to one blocked adding to the other for the same client). */
+function openAddToListModal(rowNum){
+  var r=(allData.Accounts||[]).find(function(x){return String(x['_rowNum'])===String(rowNum);});
+  if(!r){showToast('Account not found','error');return;}
+  var cid=(r['Client ID']||'').trim();
+  if(!cid){showToast('Client ID missing - please add the Client ID first','error');return;}
+  var inCT=isInCallTrade(cid,'Trading'),inIPOL=isInCallTrade(cid,'IPO');
+  var html='<div class="modal-title">Add to List &#8212; '+(r['Client Name']||cid)+'</div>';
+  html+='<div class="form-group"><label style="display:flex;align-items:center;gap:7px;font-weight:400;font-size:14px;'+(inCT?'color:var(--muted,#8a94a6);':'')+'"><input type="checkbox" id="atl_ct" style="width:auto;"'+(inCT?' checked disabled':'')+'> &#128222; Call &amp; Trade (daily calling)'+(inCT?' - already added':'')+'</label></div>';
+  html+='<div class="form-group"><label style="display:flex;align-items:center;gap:7px;font-weight:400;font-size:14px;'+(inIPOL?'color:var(--muted,#8a94a6);':'')+'"><input type="checkbox" id="atl_ipo" style="width:auto;"'+(inIPOL?' checked disabled':'')+'> &#128203; IPO Calling List (only called when a new IPO comes)'+(inIPOL?' - already added':'')+'</label></div>';
+  html+='<div style="font-size:11px;color:var(--muted,#8a94a6);margin-bottom:10px;">Select one or both - the client will be added to every list you check.</div>';
+  html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="submitAddToListModal('+rowNum+')">Add</button></div>';
+  document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
+}
+function submitAddToListModal(rowNum){
+  var r=(allData.Accounts||[]).find(function(x){return String(x['_rowNum'])===String(rowNum);});
+  if(!r){showToast('Account not found','error');return;}
+  var cid=(r['Client ID']||'').trim();
+  var ctChk=document.getElementById('atl_ct'),ipoChk=document.getElementById('atl_ipo');
+  var wantCT=ctChk&&ctChk.checked&&!ctChk.disabled;
+  var wantIPO=ipoChk&&ipoChk.checked&&!ipoChk.disabled;
+  if(!wantCT&&!wantIPO){showToast('Select at least one list','error');return;}
+  closeModal();
+  var base={cid:cid,cname:r['Client Name'],cphone:r['Client Phone'],empId:r['Employee ID'],empName:r['Employee Name'],branch:r['Branch'],remarks:'Shifted from Accounts'};
+  if(wantCT&&!isInCallTrade(cid,'Trading'))addClientToCallTrade(Object.assign({},base,{purpose:'Trading'}));
+  if(wantIPO&&!isInCallTrade(cid,'IPO'))addClientToCallTrade(Object.assign({},base,{purpose:'IPO'}));
 }
 var accMode='completed',myAccMode='completed',accProcessSortBy='',myAccProcessSortBy='';
 function setAccMode(mode){
@@ -7457,11 +7491,11 @@ function submitAccount(){
      are set, IPO wins the single-slot isInCallTrade() race and Trading is silently skipped. */
   if(actIPO==='Yes'){
     if(!cid){showToast('Account created, but Client ID is needed for the IPO Calling List - add the Client ID later using the button in the Accounts list','error');}
-    else if(!isInCallTrade(cid)){addClientToCallTrade({cid:cid,cname:cn,cphone:cphoneVal,empId:fe.id,empName:fe.name,branch:fe.branch,remarks:'Added along with new Account (IPO Active)',purpose:'IPO'});}
+    else if(!isInCallTrade(cid,'IPO')){addClientToCallTrade({cid:cid,cname:cn,cphone:cphoneVal,empId:fe.id,empName:fe.name,branch:fe.branch,remarks:'Added along with new Account (IPO Active)',purpose:'IPO'});}
   }
   if(addToCTChecked){
     if(!cid){showToast('Account created, but Client ID is needed for Call & Trade - add the Client ID later using the button in the Accounts list','error');}
-    else if(!isInCallTrade(cid)){addClientToCallTrade({cid:cid,cname:cn,cphone:cphoneVal,empId:fe.id,empName:fe.name,branch:fe.branch,remarks:'Added along with new Account',purpose:'Trading'});}
+    else if(!isInCallTrade(cid,'Trading')){addClientToCallTrade({cid:cid,cname:cn,cphone:cphoneVal,empId:fe.id,empName:fe.name,branch:fe.branch,remarks:'Added along with new Account',purpose:'Trading'});}
   }
 }
 
@@ -11188,7 +11222,7 @@ function submitIPOCallClient(){
   var cname=(document.getElementById('ipocl_cname').value||'').trim();
   var cphone=(document.getElementById('ipocl_cphone').value||'').trim();
   if(!cid||!cname){showToast('Please fill Client ID and Client Name','error');return;}
-  if(isInCallTrade(cid)){showToast('This client is already in a calling list','error');return;}
+  if(isInCallTrade(cid,'IPO')){showToast('This client is already in the IPO Calling List','error');return;}
   var who=forEmpObj('ipocl_forEmp');
   var remarks=(document.getElementById('ipocl_remarks').value||'').trim();
   ['ipocl_cid','ipocl_cname','ipocl_cphone','ipocl_remarks'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
@@ -11607,9 +11641,8 @@ function openAccEditModal(rowNum){
   html+='<label style="display:flex;align-items:center;gap:5px;font-weight:400;font-size:13px;"><input type="checkbox" id="ae_actInvestment" style="width:auto;"'+((row['Investment Active']||'')==='Yes'?' checked':'')+'> Investment</label>';
   html+='<label style="display:flex;align-items:center;gap:5px;font-weight:400;font-size:13px;"><input type="checkbox" id="ae_actIPO" style="width:auto;"'+((row['IPO Active']||'')==='Yes'?' checked':'')+'> IPO</label>';
   html+='</div><div style="font-size:11px;color:var(--muted,#8a94a6);margin-top:4px;">If none selected, the account will be marked Inactive</div></div>';
-  var ctEntryEdit=callTradeEntryFor(row['Client ID']);
-  var alreadyCT=!!ctEntryEdit;
-  var alreadyCTLabel=alreadyCT?(isIPOPurpose(ctEntryEdit)?' (already in IPO List)':' (already in Call &amp; Trade)'):'';
+  var alreadyCT=isInCallTrade(row['Client ID'],'Trading');
+  var alreadyCTLabel=alreadyCT?' (already in Call &amp; Trade)':'';
   html+='<div class="form-group"><label style="display:flex;align-items:center;gap:7px;font-weight:400;font-size:13px;'+(alreadyCT?'color:var(--muted,#8a94a6);':'')+'"><input type="checkbox" id="ae_addToCT" style="width:auto;"'+(alreadyCT?' checked disabled':'')+'> &#128222; Also add to the Call &amp; Trade (daily calling) list'+alreadyCTLabel+'</label></div>';
   html+='<div class="form-group"><label>Remarks</label><textarea id="ae_remarks">'+(row['Remarks']||'')+'</textarea></div>';
   html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-danger" onclick="confirmDel(\'Accounts\','+rowNum+')">Delete</button><button class="btn-save" onclick="saveAccEditModal('+rowNum+')">Save</button></div>';
@@ -11645,11 +11678,11 @@ function saveAccEditModal(rowNum){
       /* v73: same auto-shift-to-IPO-list-on-IPO-Active logic as Add Account form, kept in sync */
       if(actIPO==='Yes'){
         if(!newCid){showToast('Client ID is needed for the IPO Calling List - add the Client ID and try again','error');}
-        else if(!isInCallTrade(newCid)){addClientToCallTrade({cid:newCid,cname:newCname,cphone:newCphone,empId:accRow['Employee ID'],empName:accRow['Employee Name'],branch:accRow['Branch'],remarks:'Added from Edit Account (IPO Active)',purpose:'IPO'});}
+        else if(!isInCallTrade(newCid,'IPO')){addClientToCallTrade({cid:newCid,cname:newCname,cphone:newCphone,empId:accRow['Employee ID'],empName:accRow['Employee Name'],branch:accRow['Branch'],remarks:'Added from Edit Account (IPO Active)',purpose:'IPO'});}
       }
       if(addToCTChecked){
         if(!newCid){showToast('Client ID is needed for Call & Trade - add the Client ID and try again','error');}
-        else if(!isInCallTrade(newCid)){addClientToCallTrade({cid:newCid,cname:newCname,cphone:newCphone,empId:accRow['Employee ID'],empName:accRow['Employee Name'],branch:accRow['Branch'],remarks:'Added from Edit Account',purpose:'Trading'});}
+        else if(!isInCallTrade(newCid,'Trading')){addClientToCallTrade({cid:newCid,cname:newCname,cphone:newCphone,empId:accRow['Employee ID'],empName:accRow['Employee Name'],branch:accRow['Branch'],remarks:'Added from Edit Account',purpose:'Trading'});}
       }
       setTimeout(function(){loadAll(2);},600);
     }
