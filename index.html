@@ -7102,12 +7102,13 @@ function renderEmpDash(){
   var gStud=calcGrowth(allData.Students||[],uid,'',true);
   var myPts=fEmp(allData.Points||[],uid).reduce(function(s,r){return s+parseFloat(r['Points']||0);},0);
   var pct=getCommission(uid);
-  var myCB=fDate(fEmp(allData.ClientBrokerage||[],uid),f).reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
+  var brokField=empBrokAmtField(uid);
+  var myCB=fDate(fEmp(allData.ClientBrokerage||[],uid),f).reduce(function(s,r){return s+parseFloat(r[brokField]||0);},0);
   var myMan=fDate(fEmp(allData.Brokerage||[],uid),f).reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
   var myTot=r2(myCB+myMan);
   var isPtnr=isPartnerRole(uid);
   var shareVal=isPtnr?myPoolShare(uid,f):r2(myTot*pct/100);
-  var shareSub=isPtnr?''+pct+'% of profit pool (after income - expense - staff payout)':''+pct+'% of total brokerage';
+  var shareSub=isPtnr?''+pct+'% of profit pool (after income - expense - staff payout)':''+pct+'% of '+(brokField==='Total Brokerage'?'total':'remisier')+' brokerage';
   document.getElementById('empDashStats').innerHTML=mkStats([
     {label:'Total Brokerage',value:fmt(myTot),sub:'client: '+fmt(r2(myCB))+' &#183; manual: '+fmt(r2(myMan)),color:'green'},
     {label:'My Share ('+pct+'%)',value:fmt(shareVal),sub:shareSub,color:'blue'},
@@ -7126,10 +7127,11 @@ function renderMyBrok(){
   var uid=currentUser.userId;
   var f=filters['myBrok']||'month';
   var pct=getCommission(uid);
+  var brokField=empBrokAmtField(uid);
   var myC=fEmp(allData.ClientBrokerage||[],uid);
   var cRows=fDate(myC,f);
-  var cT=cRows.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
-  var cLife=myC.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
+  var cT=cRows.reduce(function(s,r){return s+parseFloat(r[brokField]||0);},0);
+  var cLife=myC.reduce(function(s,r){return s+parseFloat(r[brokField]||0);},0);
   var myRows=fEmp(allData.Brokerage||[],uid);
   var rows=fDate(myRows,f);
   var t=rows.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
@@ -7139,7 +7141,7 @@ function renderMyBrok(){
   var comb=r2(cT+t);
   var isPtnr=isPartnerRole(uid);
   var shareVal2=isPtnr?myPoolShare(uid,f):r2(comb*pct/100);
-  var shareSub2=isPtnr?''+pct+'% of profit pool (after income - expense - staff payout)':''+pct+'% of total';
+  var shareSub2=isPtnr?''+pct+'% of profit pool (after income - expense - staff payout)':''+pct+'% of '+(brokField==='Total Brokerage'?'total':'remisier');
   document.getElementById('myBrokStats').innerHTML=mkStats([
     {label:periodLabel(f)+' Total Brokerage',value:fmt(comb),sub:'client: '+fmt(r2(cT))+' &#183; manual: '+fmt(r2(t)),color:'green',onclick:"showMyBrokStat('period')"},
     {label:'My Share ('+pct+'%)',value:fmt(shareVal2),sub:shareSub2,color:'blue'},
@@ -7154,14 +7156,14 @@ function renderMyBrok(){
     if(myCBView==='matrix'){
       h+=mkMatrix(cRows);
     }else if(myCBView==='clients'){
-      var agg=aggByClient(cRows);
+      var agg=aggByClient(cRows,brokField);
       h+='<table><thead><tr><th>#</th><th>Client ID</th><th>Client Name</th><th>Entries</th><th>Brokerage</th><th>My Share ('+pct+'%)</th></tr></thead><tbody>';
       agg.forEach(function(c,i){h+='<tr><td>'+(i+1)+'</td><td>'+(c.cid||'-')+'</td><td style="font-weight:600;">'+(c.name||'-')+'</td><td>'+c.n+'</td><td class="money">'+fmt(c.amt)+'</td><td class="money">'+fmt(r2(c.amt*pct/100))+'</td></tr>';});
       h+='</tbody></table>';
     }else{
       h+='<table><thead><tr><th>Date</th><th>Client ID</th><th>Client Name</th><th>Brokerage</th><th>My Share ('+pct+'%)</th></tr></thead><tbody>';
-      cRows.slice().sort(function(a,b){return new Date(b['Date'])-new Date(a['Date'])||parseFloat(b['Amount']||0)-parseFloat(a['Amount']||0);}).forEach(function(r){
-        var amt=parseFloat(r['Amount']||0);
+      cRows.slice().sort(function(a,b){return new Date(b['Date'])-new Date(a['Date'])||parseFloat(b[brokField]||0)-parseFloat(a[brokField]||0);}).forEach(function(r){
+        var amt=parseFloat(r[brokField]||0);
         h+='<tr><td>'+r['Date']+'</td><td>'+(r['Client ID']||'-')+'</td><td style="font-weight:600;">'+(r['Client Name']||'-')+'</td><td class="money">'+fmt(amt)+'</td><td class="money">'+fmt(r2(amt*pct/100))+'</td></tr>';
       });
       h+='</tbody></table>';
@@ -7826,6 +7828,21 @@ function getCommission(uid){
   var c=e?parseFloat(e['Commission']):NaN;
   return isNaN(c)?50:c;
 }
+/* v85: Brokerage Sharing Basis - "Remisier" (default, existing behavior unchanged: % of the brokerage
+   share that Choice's REMISIER franchise passes on to IdealFinway) vs "Total" (new: % of the client's
+   FULL Choice brokerage, before IdealFinway's own remisier cut - for special advisor arrangements where
+   the advisor's % is agreed on the full brokerage rather than just IdealFinway's remisier share).
+   Manual (non-Choice-upload) 'Brokerage' sheet entries have no Total Brokerage column, so they always
+   use 'Amount' regardless of basis - only Choice-uploaded ClientBrokerage rows are basis-aware. */
+function getEmpBrokBasis(uid){
+  var e=employees.find(function(x){return (x['Employee ID']||'').trim().toLowerCase()===String(uid).trim().toLowerCase();});
+  return (e&&e['Brokerage Basis']==='Total')?'Total':'Remisier';
+}
+function empBrokAmtField(uid){return getEmpBrokBasis(uid)==='Total'?'Total Brokerage':'Amount';}
+function empBrokFromRows(uid,rows){
+  var field=empBrokAmtField(uid);
+  return r2(rows.filter(function(r){return (r['Employee ID']||'').trim().toLowerCase()===String(uid).trim().toLowerCase();}).reduce(function(s,r){return s+parseFloat(r[field]||0);},0));
+}
 /* v51: FIX - "parseFloat(x)||50" jaisa pattern galat h kyunki 0 bhi JS me falsy hota h, isliye jab admin Commission % ko
    0 set karta tha to woh silently 50 ban jata tha. numOrDefault() sirf tab default deta h jab value genuinely NaN/khaali ho. */
 function numOrDefault(v,def){var n=parseFloat(v);return isNaN(n)?def:n;}
@@ -7936,7 +7953,7 @@ function computeHisabTotals(mo){
   var inc=fMonth(allData.Income||[],mo),exp=fMonth(allData.Expense||[],mo);
   var tInc=r2(inc.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0));
   var tExp=r2(exp.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0));
-  function empBrok(eid){return r2(cbMonth.filter(function(r){return (r['Employee ID']||'').trim().toLowerCase()===String(eid).trim().toLowerCase();}).reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0));}
+  function empBrok(eid){return empBrokFromRows(eid,cbMonth);}
   var SHARED=[{from:'jh_hansi',to:'ideal.himanshu',pct:25,label:'JH_HANSI (Jai Himanshu) clients (25%)'}];
   var emps=employees.filter(function(e){
     var role=(e['Role']||'employee').toLowerCase();
@@ -8035,9 +8052,10 @@ function hisabMonthsInRange(f){
 var cbrokView='clients',myCBView='entries';
 function setCBrokView(v){cbrokView=v;var mp={cbrokTabC:'clients',cbrokTabM:'matrix',cbrokTabE:'entries'};Object.keys(mp).forEach(function(id){var el=document.getElementById(id);if(el)el.className='tab-btn'+(mp[id]===v?' active':'');});renderCBrok();}
 function setMyCBView(v){myCBView=v;var mp={myCBTabC:'clients',myCBTabM:'matrix',myCBTabE:'entries'};Object.keys(mp).forEach(function(id){var el=document.getElementById(id);if(el)el.className='tab-btn'+(mp[id]===v?' active':'');});renderMyBrok();}
-function aggByClient(rows){
+function aggByClient(rows,amtField){
+  amtField=amtField||'Amount';
   var m={};
-  rows.forEach(function(r){var k=(r['Client ID']||'').trim().toUpperCase();if(!m[k])m[k]={cid:r['Client ID'],name:r['Client Name']||'',emp:r['Employee Name']||'',amt:0,n:0};m[k].amt+=parseFloat(r['Amount']||0);m[k].n++;if(r['Client Name'])m[k].name=r['Client Name'];});
+  rows.forEach(function(r){var k=(r['Client ID']||'').trim().toUpperCase();if(!m[k])m[k]={cid:r['Client ID'],name:r['Client Name']||'',emp:r['Employee Name']||'',amt:0,n:0};m[k].amt+=parseFloat(r[amtField]||0);m[k].n++;if(r['Client Name'])m[k].name=r['Client Name'];});
   return Object.keys(m).map(function(k){return m[k];}).sort(function(a,b){return b.amt-a.amt;});
 }
 /* Choice back-office jaisa: rows=clients (top pehle), columns=dates */
@@ -8199,8 +8217,8 @@ function buildChoicePreview(){
     var emp=(hit&&hit.id)?hit:{id:OFFICE_ID,name:'Office client',branch:'Hisar'};
     if(hit&&hit.id)matched++;else unmatched.push(r);
     total+=r.amt;
-    if(!empSum[emp.id])empSum[emp.id]={name:emp.name,branch:emp.branch,amt:0,n:0};
-    empSum[emp.id].amt+=r.amt;empSum[emp.id].n++;
+    if(!empSum[emp.id])empSum[emp.id]={name:emp.name,branch:emp.branch,amt:0,tot:0,n:0};
+    empSum[emp.id].amt+=r.amt;empSum[emp.id].tot+=(r.tot||0);empSum[emp.id].n++;
     return {r:r,emp:emp};
   });
   var dup=(allData.ClientBrokerage||[]).some(function(x){return x['From Date']===p.from&&x['To Date']===p.to;});
@@ -8217,7 +8235,10 @@ function buildChoicePreview(){
   h+='<div class="table-wrap" style="margin-bottom:16px;"><div class="table-inner"><table><thead><tr><th>Team</th><th>Branch</th><th>Clients</th><th>Brokerage</th><th>Share</th></tr></thead><tbody>';
   Object.keys(empSum).sort(function(a,b){return empSum[b].amt-empSum[a].amt;}).forEach(function(k){
     var e=empSum[k];var pc=(k===ADMIN_ID)?0:getCommission(k);
-    h+='<tr><td style="font-weight:600;">'+e.name+(k===ADMIN_ID?' (Direct/Unmatched)':'')+'</td><td>'+e.branch+'</td><td>'+e.n+'</td><td class="money">'+fmt(e.amt)+'</td><td class="money">'+(pc?fmt(r2(e.amt*pc/100))+' ('+pc+'%)':'-')+'</td></tr>';
+    var basis=(k===ADMIN_ID)?'Remisier':getEmpBrokBasis(k);
+    var shareBase=basis==='Total'?e.tot:e.amt;
+    var basisTag=basis==='Total'?' <span class="badge amber" title="This team member\'s Commission % applies to the FULL Choice brokerage (Total), not just this Remisier share">Total Brok</span>':'';
+    h+='<tr><td style="font-weight:600;">'+e.name+(k===ADMIN_ID?' (Direct/Unmatched)':'')+basisTag+'</td><td>'+e.branch+'</td><td>'+e.n+'</td><td class="money">'+fmt(e.amt)+'</td><td class="money">'+(pc?fmt(r2(shareBase*pc/100))+' ('+pc+'%)':'-')+'</td></tr>';
   });
   h+='</tbody></table></div></div>';
   if(unmatched.length){
@@ -8843,11 +8864,15 @@ function renderCBrok(){
   ]);
   window._cbrokStatCache={life:all,period:rows,working:rows};
   var em={};
-  rows.forEach(function(r){var id=r['Employee ID']||'?';if(!em[id])em[id]={name:r['Employee Name']||id,branch:r['Branch']||'',amt:0,n:0};em[id].amt+=parseFloat(r['Amount']||0);em[id].n++;});
+  rows.forEach(function(r){var id=r['Employee ID']||'?';if(!em[id])em[id]={name:r['Employee Name']||id,branch:r['Branch']||'',amt:0,tot:0,n:0};em[id].amt+=parseFloat(r['Amount']||0);em[id].tot+=parseFloat(r['Total Brokerage']||0);em[id].n++;});
   var ks=Object.keys(em).sort(function(a,b){return em[b].amt-em[a].amt;});
   var cards='<div class="emp-grid">';
-  ks.forEach(function(id,i){var e=em[id];var pc=(id===ADMIN_ID)?0:getCommission(id);
-    cards+='<div class="emp-card"><div class="emp-name">#'+(i+1)+' '+e.name+'</div><div class="emp-meta">'+e.branch+' &#183; '+e.n+' clients</div><div class="emp-stats"><div class="emp-stat"><div class="emp-stat-val">'+fmt(e.amt)+'</div><div class="emp-stat-lbl">Brokerage</div></div><div class="emp-stat"><div class="emp-stat-val">'+(pc?fmt(r2(e.amt*pc/100)):'-')+'</div><div class="emp-stat-lbl">Share'+(pc?' ('+pc+'%)':'')+'</div></div></div></div>';});
+  ks.forEach(function(id,i){
+    var e=em[id];var pc=(id===ADMIN_ID)?0:getCommission(id);
+    var basis=(id===ADMIN_ID)?'Remisier':getEmpBrokBasis(id);
+    var shareBase=basis==='Total'?e.tot:e.amt;
+    var basisTag=basis==='Total'?' <span class="badge amber" style="font-size:9px;">Total Brok</span>':'';
+    cards+='<div class="emp-card"><div class="emp-name">#'+(i+1)+' '+e.name+basisTag+'</div><div class="emp-meta">'+e.branch+' &#183; '+e.n+' clients</div><div class="emp-stats"><div class="emp-stat"><div class="emp-stat-val">'+fmt(e.amt)+'</div><div class="emp-stat-lbl">Brokerage</div></div><div class="emp-stat"><div class="emp-stat-val">'+(pc?fmt(r2(shareBase*pc/100)):'-')+'</div><div class="emp-stat-lbl">Share'+(pc?' ('+pc+'%)':'')+'</div></div></div></div>';});
   cards+='</div>';
   document.getElementById('cbrokEmpCards').innerHTML=ks.length?cards:'';
   document.getElementById('cbrokChart').innerHTML=mkDailyChart(rows,'&#128200; Daily Brokerage');
@@ -9009,7 +9034,7 @@ function recalcAutoLines(eid){
   if(!confirm('Auto-lines (Fixed Salary, Student Referral Commission, Leader Commission, Shared-client commission) will be recalculated for this row. Other manually added Additions/Deductions will remain untouched. Continue?'))return;
   var mo=hisabSt.month;
   var cbMonth=fMonth(allData.ClientBrokerage||[],mo);
-  function empBrokR(id){return r2(cbMonth.filter(function(r){return (r['Employee ID']||'').trim().toLowerCase()===String(id).trim().toLowerCase();}).reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0));}
+  function empBrokR(id){return empBrokFromRows(id,cbMonth);}
   var incR=fMonth(allData.Income||[],mo);
   var fresh=computeAutoLines(e,empBrokR,incR);
   var autoExact={'Fixed Salary':1,'Student Referral Commission (10%)':1};
@@ -9041,7 +9066,7 @@ function renderHisab(){
   var inc=fMonth(allData.Income||[],mo),exp=fMonth(allData.Expense||[],mo);
   var tInc=r2(inc.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0));
   var tExp=r2(exp.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0));
-  function empBrok(eid){return r2(cbMonth.filter(function(r){return (r['Employee ID']||'').trim().toLowerCase()===String(eid).trim().toLowerCase();}).reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0));}
+  function empBrok(eid){return empBrokFromRows(eid,cbMonth);}
   var emps=employees.filter(function(e){
     var role=(e['Role']||'employee').toLowerCase();
     if((e['Status']||'Active')!=='Active'||role==='admin')return false;
@@ -9286,16 +9311,16 @@ function renderMyHisab(){
 
 /* ===== v25: CALENDAR DAY DETAIL ===== */
 function showMyBrokDay(ds){
-  var uid=currentUser.userId,pct=getCommission(uid);
+  var uid=currentUser.userId,pct=getCommission(uid),brokField=empBrokAmtField(uid);
   var rows=fEmp(allData.ClientBrokerage||[],uid).filter(function(r){return r['Date']===ds;});
   var man=fEmp(allData.Brokerage||[],uid).filter(function(r){return r['Date']===ds;});
-  var cT=rows.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
+  var cT=rows.reduce(function(s,r){return s+parseFloat(r[brokField]||0);},0);
   var mT=man.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
   var h='<div class="day-detail"><h3><span>&#128197; '+ds+' &#8212; '+rows.length+' traded clients &#183; Total: '+fmt(r2(cT+mT))+' &#183; My Share: '+fmt(r2((cT+mT)*pct/100))+'</span><span class="day-close" onclick="document.getElementById(\'myBrokDayDiv\').innerHTML=\'\'">&#10005; Close</span></h3>';
   if(rows.length){
     h+='<div class="table-inner"><table><thead><tr><th>#</th><th>Client ID</th><th>Client Name</th><th>Brokerage</th><th>My Share ('+pct+'%)</th></tr></thead><tbody>';
-    rows.slice().sort(function(a,b){return parseFloat(b['Amount']||0)-parseFloat(a['Amount']||0);}).forEach(function(r,i){
-      var amt=parseFloat(r['Amount']||0);
+    rows.slice().sort(function(a,b){return parseFloat(b[brokField]||0)-parseFloat(a[brokField]||0);}).forEach(function(r,i){
+      var amt=parseFloat(r[brokField]||0);
       h+='<tr><td>'+(i+1)+'</td><td>'+(r['Client ID']||'-')+'</td><td style="font-weight:600;">'+(r['Client Name']||'-')+'</td><td class="money">'+fmt(amt)+'</td><td class="money">'+fmt(r2(amt*pct/100))+'</td></tr>';
     });
     h+='</tbody></table></div>';
@@ -9310,14 +9335,17 @@ function showCBrokDay(ds){
   var t=rows.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
   var uniq={};rows.forEach(function(r){uniq[(r['Client ID']||'').trim().toUpperCase()]=1;});
   var em={};
-  rows.forEach(function(r){var id=r['Employee ID']||'?';if(!em[id])em[id]={name:r['Employee Name']||id,cl:{},amt:0};em[id].amt+=parseFloat(r['Amount']||0);em[id].cl[(r['Client ID']||'').trim().toUpperCase()]=1;});
+  rows.forEach(function(r){var id=r['Employee ID']||'?';if(!em[id])em[id]={name:r['Employee Name']||id,cl:{},amt:0,tot:0};em[id].amt+=parseFloat(r['Amount']||0);em[id].tot+=parseFloat(r['Total Brokerage']||0);em[id].cl[(r['Client ID']||'').trim().toUpperCase()]=1;});
   var ks=Object.keys(em).sort(function(a,b){return em[b].amt-em[a].amt;});
   var h='<div class="day-detail"><h3><span>&#128197; '+ds+' &#8212; Total Traded Clients: '+Object.keys(uniq).length+' &#183; Total Brokerage: '+fmt(r2(t))+'</span><span class="day-close" onclick="document.getElementById(\'cbrokDayDiv\').innerHTML=\'\'">&#10005; Close</span></h3>';
   if(ks.length){
     h+='<div class="table-inner"><table><thead><tr><th>#</th><th>Team</th><th>Traded Clients</th><th>Total Brokerage</th><th>Share</th></tr></thead><tbody>';
     ks.forEach(function(id,i){
       var e=em[id];var pc=(id===ADMIN_ID)?0:getCommission(id);
-      h+='<tr><td>'+(i+1)+'</td><td style="font-weight:600;">'+e.name+'</td><td>'+Object.keys(e.cl).length+'</td><td class="money">'+fmt(r2(e.amt))+'</td><td class="money">'+(pc?fmt(r2(e.amt*pc/100))+' ('+pc+'%)':'-')+'</td></tr>';
+      var basis=(id===ADMIN_ID)?'Remisier':getEmpBrokBasis(id);
+      var shareBase=basis==='Total'?e.tot:e.amt;
+      var basisTag=basis==='Total'?' <span class="badge amber" style="font-size:9px;">Total Brok</span>':'';
+      h+='<tr><td>'+(i+1)+'</td><td style="font-weight:600;">'+e.name+basisTag+'</td><td>'+Object.keys(e.cl).length+'</td><td class="money">'+fmt(r2(e.amt))+'</td><td class="money">'+(pc?fmt(r2(shareBase*pc/100))+' ('+pc+'%)':'-')+'</td></tr>';
     });
     h+='</tbody></table></div>';
     h+='<div style="margin-top:10px;font-size:12px;color:var(--muted);">Avg per client: <b style="color:var(--accent);">'+fmt(Object.keys(uniq).length?r2(t/Object.keys(uniq).length):0)+'</b></div>';
@@ -9413,7 +9441,7 @@ function renderManageEmps(){
     var kycLabel=allDocsOk?('<span class="badge green" title="PAN: '+panV+' &#183; Aadhaar: XXXX-XXXX-'+aadV.slice(-4)+' &#183; Photo/PAN/Aadhaar (front+back) docs uploaded">&#10003; Verified</span>'):'<span class="badge red" title="PAN/Aadhaar/Photo/documents incomplete - Aadhaar needs both Front and Back">&#9888; incomplete</span>';
     var photoUrl=empPhotoUrl(e['Employee ID']);
     var photoHTML=photoUrl?'<img src="'+photoUrl+'" style="width:36px;height:36px;border-radius:50%;object-fit:cover;">':'<div style="width:36px;height:36px;border-radius:50%;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--muted);">'+initialsOf(e['Name'])+'</div>';
-    h+='<tr><td style="cursor:pointer;" data-id="'+e['Employee ID']+'" onclick="editEmpModal(this.dataset.id)" title="Click to view/edit">'+photoHTML+'</td><td>'+(e['Employee ID']||'-')+'</td><td style="font-weight:600;">'+(e['Name']||'-')+'</td><td>'+(e['Branch']||'-')+'</td><td>'+(e['Role']==='employee'?'Team':(e['Role']||'Team'))+'</td><td>'+pLabel+'</td><td>'+recLabel+'</td><td style="font-weight:700;color:var(--accent);">'+(e['Commission']!==''&&e['Commission']!==undefined?e['Commission']+'%':'50%')+'</td><td>'+(parseFloat(e['Salary'])>0?fmt(e['Salary']):'-')+'</td><td>'+(em?em:'<span class="badge red" title="Email missing - salary slip email will not be sent">&#9888; missing</span>')+'</td><td>'+kycLabel+'</td><td><span class="badge '+(isAct?'green':'red')+'">'+(isAct?'Active':'Inactive')+'</span></td><td>';
+    h+='<tr><td style="cursor:pointer;" data-id="'+e['Employee ID']+'" onclick="editEmpModal(this.dataset.id)" title="Click to view/edit">'+photoHTML+'</td><td>'+(e['Employee ID']||'-')+'</td><td style="font-weight:600;">'+(e['Name']||'-')+'</td><td>'+(e['Branch']||'-')+'</td><td>'+(e['Role']==='employee'?'Team':(e['Role']||'Team'))+'</td><td>'+pLabel+'</td><td>'+recLabel+'</td><td style="font-weight:700;color:var(--accent);">'+(e['Commission']!==''&&e['Commission']!==undefined?e['Commission']+'%':'50%')+(e['Brokerage Basis']==='Total'?' <span class="badge amber" style="font-size:9px;" title="This % applies to the FULL Choice brokerage (Total), not just the Remisier share IdealFinway receives">Total Brok</span>':'')+'</td><td>'+(parseFloat(e['Salary'])>0?fmt(e['Salary']):'-')+'</td><td>'+(em?em:'<span class="badge red" title="Email missing - salary slip email will not be sent">&#9888; missing</span>')+'</td><td>'+kycLabel+'</td><td><span class="badge '+(isAct?'green':'red')+'">'+(isAct?'Active':'Inactive')+'</span></td><td>';
     h+='<button class="btn-edit" data-id="'+e['Employee ID']+'" onclick="editEmpModal(this.dataset.id)">&#9998; Edit</button>';
     h+='<button class="btn-edit" data-id="'+e['Employee ID']+'" onclick="viewEmpDocsModal(this.dataset.id)">&#128193; Docs</button>';
     if(isAct){
@@ -9434,7 +9462,7 @@ function renderLeaderCommission(){
   if(!inp.value)inp.value=curMonth();
   var mo=inp.value;
   var cbMonth=fMonth(allData.ClientBrokerage||[],mo);
-  function empBrokLC(eid){return r2(cbMonth.filter(function(r){return (r['Employee ID']||'').trim().toLowerCase()===String(eid).trim().toLowerCase();}).reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0));}
+  function empBrokLC(eid){return empBrokFromRows(eid,cbMonth);}
   var leaders=employees.filter(function(e){return directRecruitsOf(e['Employee ID']).length>0;});
   var grandTotal=0,h='';
   if(!leaders.length){
@@ -9644,6 +9672,8 @@ function showAddEmpModal(){
   h+='<div class="form-group"><label>Role</label><select id="ne_role" onchange="toggleNeDesignation()"><option value="employee">Team</option><option value="finance">Finance (Settlement &amp; Income/Expense)</option><option value="partner">Partner (% of net profit)</option><option value="admin">Admin</option></select></div>';
   h+='<div class="form-group" id="ne_desig_wrap"><label>Designation (shown on salary slip)</label><select id="ne_desig"><option value="">-- none --</option><option>Relationship Manager</option><option>Advisor</option><option>Leader</option><option>Partner</option></select></div>';
   h+='<div class="form-group"><label>Commission % (team member: % of brokerage &#183; partner: % of net profit)</label><input type="number" id="ne_comm" value="50" min="0" max="100"></div>';
+  h+='<div class="form-group" id="ne_brokbasis_wrap"><label>Brokerage Sharing Basis</label><select id="ne_brokbasis"><option value="Remisier">Remisier Brokerage % (default)</option><option value="Total">Total Brokerage %</option></select></div>';
+  h+='<div id="ne_brokbasis_note" style="color:var(--muted);font-size:12px;margin:-4px 0 6px;">Remisier = % of the brokerage share Choice&#39;s remisier franchise passes on to IdealFinway (existing default). Total Brokerage = % of the client&#39;s FULL Choice brokerage before IdealFinway&#39;s own cut &#8212; use only for special arrangements.</div>';
   h+='<div class="form-group"><label>Fixed Salary (&#8377;/month, 0 if none)</label><input type="number" id="ne_sal" value="0"></div>';
   h+='<div class="form-group"><label>Password</label><input type="text" id="ne_pass"></div>';
   h+='<div style="color:var(--muted);font-size:12px;margin:-4px 0 6px;">Gmail ID, PAN &amp; Aadhaar are not filled here - the team member will complete their own profile (My Profile page) after their first login.</div>';
@@ -9662,10 +9692,18 @@ function showAddEmpModal(){
 function toggleNeDesignation(){
   var r=document.getElementById('ne_role'),w=document.getElementById('ne_desig_wrap');
   if(r&&w)w.style.display=(r.value==='employee'||r.value==='partner')?'block':'none';
+  var bw=document.getElementById('ne_brokbasis_wrap'),bn=document.getElementById('ne_brokbasis_note');
+  var showBB=r&&(r.value==='employee'||r.value==='finance');
+  if(bw)bw.style.display=showBB?'block':'none';
+  if(bn)bn.style.display=showBB?'block':'none';
 }
 function toggleEeDesignation(){
   var r=document.getElementById('ee_role'),w=document.getElementById('ee_desig_wrap');
   if(r&&w)w.style.display=(r.value==='employee'||r.value==='partner')?'block':'none';
+  var bw=document.getElementById('ee_brokbasis_wrap'),bn=document.getElementById('ee_brokbasis_note');
+  var showBB=r&&(r.value==='employee'||r.value==='finance');
+  if(bw)bw.style.display=showBB?'block':'none';
+  if(bn)bn.style.display=showBB?'block':'none';
 }
 function isValidPAN(v){return /^[A-Z]{5}[0-9]{4}[A-Z]$/.test((v||'').trim().toUpperCase());}
 function isValidAadhaar(v){return /^\d{12}$/.test((v||'').replace(/\s/g,''));}
@@ -9675,7 +9713,7 @@ function addEmployee(){
   var id=document.getElementById('ne_id').value.trim(),name=document.getElementById('ne_name').value.trim(),pass=document.getElementById('ne_pass').value.trim();
   if(!id||!name||!pass){showToast('ID, Name and Password required','error');return;}
   if(employees.find(function(e){return e['Employee ID']===id;})){showToast('ID already exists','error');return;}
-  var p={action:'addEmployee','Employee ID':id,'Name':name,'Branch':document.getElementById('ne_branch').value,'Role':document.getElementById('ne_role').value,'Designation':document.getElementById('ne_desig')?document.getElementById('ne_desig').value:'','Password':pass,'Status':'Active','Commission':numOrDefault(document.getElementById('ne_comm').value,50),'Email':'','Salary':parseFloat(document.getElementById('ne_sal').value)||0,'Parent ID':(function(){var ids=Array.prototype.slice.call(document.querySelectorAll('.ne_parent_cb:checked')).map(function(el){return el.value;});var rid=document.getElementById('ne_recruiter').value;if(rid&&ids.indexOf(rid)===-1)ids.push(rid);return ids.join(',');})(),'Recruiter ID':document.getElementById('ne_recruiter').value||'','Join Date':document.getElementById('ne_joindate').value||''};
+  var p={action:'addEmployee','Employee ID':id,'Name':name,'Branch':document.getElementById('ne_branch').value,'Role':document.getElementById('ne_role').value,'Designation':document.getElementById('ne_desig')?document.getElementById('ne_desig').value:'','Password':pass,'Status':'Active','Commission':numOrDefault(document.getElementById('ne_comm').value,50),'Email':'','Salary':parseFloat(document.getElementById('ne_sal').value)||0,'Parent ID':(function(){var ids=Array.prototype.slice.call(document.querySelectorAll('.ne_parent_cb:checked')).map(function(el){return el.value;});var rid=document.getElementById('ne_recruiter').value;if(rid&&ids.indexOf(rid)===-1)ids.push(rid);return ids.join(',');})(),'Recruiter ID':document.getElementById('ne_recruiter').value||'','Join Date':document.getElementById('ne_joindate').value||'','Brokerage Basis':document.getElementById('ne_brokbasis')?document.getElementById('ne_brokbasis').value:'Remisier'};
   postData(p).then(function(r){closeModal();if(r&&r.success){showToast('Employee added! They can complete Gmail/PAN/Aadhaar from My Profile after login.','success');loadEmps();}else showToast('Failed: '+(r&&r.error||''),'error');}).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
 }
 
@@ -9693,6 +9731,8 @@ function editEmpModal(empId){
   ['','Relationship Manager','Advisor','Leader','Partner'].forEach(function(d){h+='<option value="'+d+'"'+((emp['Designation']||'')===d?' selected':'')+'>'+(d||'-- none --')+'</option>';});
   h+='</select></div>';
   h+='<div class="form-group"><label>Commission % (team member: % of brokerage &#183; partner: % of net profit)</label><input type="number" id="ee_comm" value="'+(emp['Commission']!==''&&emp['Commission']!==undefined?emp['Commission']:50)+'" min="0" max="100"></div>';
+  h+='<div class="form-group" id="ee_brokbasis_wrap"><label>Brokerage Sharing Basis</label><select id="ee_brokbasis"><option value="Remisier"'+((emp['Brokerage Basis']||'Remisier')==='Remisier'?' selected':'')+'>Remisier Brokerage % (default)</option><option value="Total"'+(emp['Brokerage Basis']==='Total'?' selected':'')+'>Total Brokerage %</option></select></div>';
+  h+='<div id="ee_brokbasis_note" style="color:var(--muted);font-size:12px;margin:-4px 0 6px;">Remisier = % of the brokerage share Choice&#39;s remisier franchise passes on to IdealFinway (existing default). Total Brokerage = % of the client&#39;s FULL Choice brokerage before IdealFinway&#39;s own cut &#8212; use only for special arrangements.</div>';
   h+='<div class="form-group"><label>Fixed Salary (&#8377;/month)</label><input type="number" id="ee_sal" value="'+(parseFloat(emp['Salary'])||0)+'"></div>';
   h+='<div class="form-group"><label>Gmail ID <span style="color:var(--muted);font-weight:400;">(team member fills via My Profile)</span></label><input type="email" id="ee_email" value="'+(emp['Email']||'')+'" placeholder="teammember@gmail.com"></div>';
   h+='<div class="form-group"><label>PAN Number <span style="color:var(--muted);font-weight:400;">(team member fills via My Profile)</span></label><input type="text" id="ee_pan" value="'+(emp['PAN']||'')+'" placeholder="ABCDE1234F" maxlength="10" style="text-transform:uppercase;"></div>';
@@ -9722,7 +9762,7 @@ function saveEmp(empId){
   if(email&&!isValidEmail(email)){showToast('Gmail ID looks invalid - fix it or leave blank','error');return;}
   if(pan&&!isValidPAN(pan)){showToast('PAN format looks invalid (expected ABCDE1234F) - fix it or leave blank','error');return;}
   if(aadhaar&&!isValidAadhaar(aadhaar)){showToast('Aadhaar must be 12 digits - fix it or leave blank','error');return;}
-  var p={action:'updateEmployee','Employee ID':empId,_rowNum:emp._rowNum,'Name':document.getElementById('ee_name').value.trim(),'Branch':document.getElementById('ee_branch').value,'Role':document.getElementById('ee_role').value||'employee','Designation':document.getElementById('ee_desig')?document.getElementById('ee_desig').value:'','Status':emp['Status']||'Active','Commission':numOrDefault(document.getElementById('ee_comm').value,50),'Email':email,'Salary':parseFloat(document.getElementById('ee_sal').value)||0,'Parent ID':Array.prototype.slice.call(document.querySelectorAll('.ee_parent_cb:checked')).map(function(el){return el.value;}).join(','),'FinanceAccess':document.getElementById('ee_finaccess').checked?'Yes':'No','IPO_Access':document.getElementById('ee_ipoaccess').checked?'Yes':'No','StudentAccess':document.getElementById('ee_studentaccess')?(document.getElementById('ee_studentaccess').checked?'Yes':'No'):(emp['StudentAccess']||'No'),'PAN':pan,'Aadhaar':aadhaar,'Recruiter ID':document.getElementById('ee_recruiter')?document.getElementById('ee_recruiter').value:(emp['Recruiter ID']||''),'Join Date':document.getElementById('ee_joindate')?document.getElementById('ee_joindate').value:(emp['Join Date']||'')};
+  var p={action:'updateEmployee','Employee ID':empId,_rowNum:emp._rowNum,'Name':document.getElementById('ee_name').value.trim(),'Branch':document.getElementById('ee_branch').value,'Role':document.getElementById('ee_role').value||'employee','Designation':document.getElementById('ee_desig')?document.getElementById('ee_desig').value:'','Status':emp['Status']||'Active','Commission':numOrDefault(document.getElementById('ee_comm').value,50),'Email':email,'Salary':parseFloat(document.getElementById('ee_sal').value)||0,'Parent ID':Array.prototype.slice.call(document.querySelectorAll('.ee_parent_cb:checked')).map(function(el){return el.value;}).join(','),'FinanceAccess':document.getElementById('ee_finaccess').checked?'Yes':'No','IPO_Access':document.getElementById('ee_ipoaccess').checked?'Yes':'No','StudentAccess':document.getElementById('ee_studentaccess')?(document.getElementById('ee_studentaccess').checked?'Yes':'No'):(emp['StudentAccess']||'No'),'PAN':pan,'Aadhaar':aadhaar,'Recruiter ID':document.getElementById('ee_recruiter')?document.getElementById('ee_recruiter').value:(emp['Recruiter ID']||''),'Join Date':document.getElementById('ee_joindate')?document.getElementById('ee_joindate').value:(emp['Join Date']||''),'Brokerage Basis':document.getElementById('ee_brokbasis')?document.getElementById('ee_brokbasis').value:(emp['Brokerage Basis']||'Remisier')};
   (function(){var rid=p['Recruiter ID'];if(rid){var ids=(p['Parent ID']||'').split(',').map(function(x){return x.trim();}).filter(Boolean);if(ids.indexOf(rid)===-1){ids.push(rid);p['Parent ID']=ids.join(',');}}})();
   var np=document.getElementById('ee_pass').value.trim();if(np)p['Password']=np;
   postData(p).then(function(r){closeModal();if(r&&r.success){showToast('Updated!','success');loadEmps();}else showToast('Failed','error');}).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
