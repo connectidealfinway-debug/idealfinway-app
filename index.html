@@ -10822,10 +10822,17 @@ function toggleTJStrategyOther(){
 }
 function toggleTJGroupName(){
   var v=document.getElementById('tj_entryType').value;
-  document.getElementById('tj_groupNameGroup').style.display=(v==='Client Group')?'block':'none';
-  if(v==='Client Group')populateTJGroupNames();
+  var isGroup=(v==='Client Group');
+  document.getElementById('tj_groupNameGroup').style.display=isGroup?'block':'none';
+  if(isGroup)populateTJGroupNames();
+  /* v83: Quantity stays visible for Client Group trades too, just optional (not compulsory) -
+     previously it was hidden and force-cleared whenever Client Group was selected. */
   var qg=document.getElementById('tj_qtyGroup');
-  if(qg){qg.style.display=(v==='Client Group')?'none':'block';if(v==='Client Group')document.getElementById('tj_qty').value='';}
+  if(qg){
+    qg.style.display='block';
+    var qtyLbl=qg.querySelector('label');
+    if(qtyLbl)qtyLbl.innerHTML='Quantity'+(isGroup?' <span style="color:var(--muted);font-weight:400;">- optional</span>':'');
+  }
 }
 function populateTJGroupNames(){
   var sel=document.getElementById('tj_groupNameSel');
@@ -10874,8 +10881,11 @@ function submitTrade(){
   var entryType=document.getElementById('tj_entryType').value;
   var isGroup=(entryType==='Client Group');
   var qtyRaw=document.getElementById('tj_qty').value;
-  var qty=isGroup?'':parseFloat(qtyRaw);
-  if(!stock||isNaN(entry)||isNaN(sl)||isNaN(t1)||(!isGroup&&isNaN(qty))){showToast('Please fill Stock, Entry Price, Stop Loss, Target 1'+(isGroup?'':' and Quantity'),'error');return;}
+  /* v83: Quantity is optional for Client Group trades (field stays visible, just not required) -
+     still required for Personal trades, unchanged. */
+  var qtyParsed=parseFloat(qtyRaw);
+  var qty=isNaN(qtyParsed)?'':qtyParsed;
+  if(!stock||isNaN(entry)||isNaN(sl)||isNaN(t1)||(!isGroup&&qty==='')){showToast('Please fill Stock, Entry Price, Stop Loss, Target 1'+(isGroup?'':' and Quantity'),'error');return;}
   var groupName=isGroup?(document.getElementById('tj_groupName').value||'').trim():'';
   var t2v=document.getElementById('tj_t2').value;
   var stratSelEl=document.getElementById('tj_strategy');
