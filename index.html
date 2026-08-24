@@ -1881,12 +1881,14 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
         <p style="color:var(--muted);font-size:13px;margin:-8px 0 16px;">A personal record of your own / family IPO applications &#8212; separate from the company business IPO figures. Select and keep the IPO Name so you do not have to type it again next time; the Amount will also auto-fill from the last entry for that IPO+Category (you can still change it manually).</p>
         <div class="form-card" style="margin-bottom:16px;">
           <div class="form-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:6px 20px;">
+            <div class="form-group"><label>Select IPO</label><select id="si_ipoSelect" onchange="onSelfIPOSelectChange()"></select></div>
+            <div class="form-group"><label>&nbsp;</label><button class="btn-mini add" type="button" onclick="openNewIPOModal(true)">&#43; New IPO</button></div>
+            <div class="form-group"><label>&nbsp;</label><button class="btn-mini" type="button" onclick="openEditIPOGainsModal(true)">&#9998; Edit Listing Gains</button></div>
             <div class="form-group"><label>Date</label><input type="date" id="si_date"></div>
-            <div class="form-group"><label>IPO Name</label><input type="text" id="si_ipoName" list="dl_si_ipoName" placeholder="e.g. Tata Capital" oninput="onSelfIPOFieldChange()" onchange="onSelfIPOFieldChange()"><datalist id="dl_si_ipoName"></datalist><div class="qp-row" id="qp_si_ipoName"></div></div>
-            <div class="form-group"><label>Client ID (in whose name it was applied)</label><input type="text" id="si_clientId" list="dl_si_clientId" placeholder="e.g. FBO1234 / your name"><datalist id="dl_si_clientId"></datalist><div class="qp-row" id="qp_si_clientId"></div></div>
+            <div class="form-group"><label>Client ID (in whose name it was applied)</label><input type="text" id="si_clientId" list="dl_si_clientId" placeholder="e.g. FBO1234 / your name" onchange="onSelfClientIdAutoFill()"><datalist id="dl_si_clientId"></datalist><div class="qp-row" id="qp_si_clientId"></div></div>
             <div class="form-group"><label>Client / Investor Naam</label><input type="text" id="si_clientName" list="dl_si_clientName" placeholder="e.g. Ramesh Kumar"><datalist id="dl_si_clientName"></datalist><div class="qp-row" id="qp_si_clientName"></div></div>
             <div class="form-group"><label>Category</label><select id="si_cat" onchange="onSelfIPOFieldChange()"><option>Retail</option><option>sHNI</option><option>bHNI</option></select></div>
-            <div class="form-group"><label>Amount (can also enter manually)</label><input type="number" id="si_amount" list="dl_si_amount" placeholder="e.g. 15000"><datalist id="dl_si_amount"></datalist><div class="qp-row" id="qp_si_amount"></div></div>
+            <div class="form-group"><label>Amount (optional - can also enter manually)</label><input type="number" id="si_amount" list="dl_si_amount" placeholder="e.g. 15000"><datalist id="dl_si_amount"></datalist><div class="qp-row" id="qp_si_amount"></div></div>
             <div class="form-group"><label>Bank</label><input type="text" id="si_bank" list="dl_si_bank" placeholder="e.g. HDFC Bank"><datalist id="dl_si_bank"></datalist></div>
             <div class="form-group"><label>UPI ID</label><input type="text" id="si_upi" list="dl_si_upi" placeholder="e.g. name@okhdfc"><datalist id="dl_si_upi"></datalist><div class="qp-row" id="qp_si_upi"></div></div>
             <div class="form-group"><label>PAN Card</label><input type="text" id="si_pan" list="dl_si_pan" placeholder="e.g. ABCDE1234F" style="text-transform:uppercase;"><datalist id="dl_si_pan"></datalist></div>
@@ -1894,6 +1896,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
             <div class="form-group" style="align-self:end;"><button class="btn-submit" onclick="submitSelfIPO()">Add Entry</button></div>
           </div>
         </div>
+        <div id="siIpoGainsDisplay" style="margin:-10px 0 16px;font-size:13px;color:var(--muted);"></div>
         <div class="stats-grid" id="selfIPOStats"></div>
         <div id="selfIPOTable"></div>
       </div>
@@ -2096,7 +2099,7 @@ var accStat='all',myAccStat='all',dashF='today',accDupOnly=false,teamWorkingOnly
 var leadCatF='all',myLeadCatF='all';
 var leadConvF='all',myLeadConvF='all',meetConvF='all',myMeetConvF='all';
 var wlStatF='all';
-var ipoSelId=null,ipoCatF='All',ipoBrokerF='All',ipoRefF=null,ipoBuyerF=null,ipoTab='apps',ipoMode='buy',ipoModeUserSet=false;
+var ipoSelId=null,ipoCatF='All',ipoBrokerF='All',ipoRefF=null,ipoBuyerF=null,ipoTab='apps',ipoMode='buy',ipoModeUserSet=false,siIpoId=null,_newIPOForSelf=false;
 function setLeadConv(v,varName){if(varName==='leadConvF')leadConvF=v;else myLeadConvF=v;renderPage(curPage());}
 function setMeetConv(v,varName){if(varName==='meetConvF')meetConvF=v;else myMeetConvF=v;renderPage(curPage());}
 var finTab='income';
@@ -3499,6 +3502,88 @@ function quickPickSet(fieldId,i){
   if(fieldId==='si_amount'){siLastAutoAmt=v;}
   else onSelfIPOFieldChange();
 }
+/* v84: Self Application now links to the SAME IPO_Master list used by Application Buy (Select IPO +
+   New IPO + Edit Listing Gains), instead of a free-typed IPO Name - lets profit auto-calculate for
+   Allotted applications and avoids re-entering gains twice for the same real-world IPO. */
+function selfIpoMasterFor(row){
+  if(row['IPO_ID'])return (allData.IPO_Master||[]).find(function(ip){return ip['IPO_ID']===row['IPO_ID'];});
+  var nameL=(row['IPO Name']||'').trim().toLowerCase();
+  if(!nameL)return null;
+  return (allData.IPO_Master||[]).find(function(ip){return (ip['IPO_Name']||'').trim().toLowerCase()===nameL;});
+}
+function selfIPOProfit(row){
+  if((row['Status']||'')!=='Allotted')return 0;
+  var ipo=selfIpoMasterFor(row);
+  if(!ipo)return 0;
+  var cat=row['Category']||'Retail';
+  var gain=cat==='sHNI'?ipo['sHNI_Gain']:(cat==='bHNI'?ipo['bHNI_Gain']:ipo['Retail_Gain']);
+  return parseFloat(gain)||0;
+}
+function currentSelfIPOObj(){return (allData.IPO_Master||[]).find(function(ip){return ip['IPO_ID']===siIpoId;});}
+function populateSelfIPOSelect(){
+  var ipos=allData.IPO_Master||[];
+  var sel=document.getElementById('si_ipoSelect');
+  if(!sel)return;
+  var cur=siIpoId;
+  var nameCounts={};
+  ipos.forEach(function(ip){var n=ip['IPO_Name']||'';nameCounts[n]=(nameCounts[n]||0)+1;});
+  sel.innerHTML='';
+  ipos.forEach(function(ip){
+    var o=document.createElement('option');o.value=ip['IPO_ID'];
+    var label=ip['IPO_Name']||'';
+    if(nameCounts[label]>1)label+=' ('+(ip['Created_Date']||'')+')';
+    o.textContent=label;sel.appendChild(o);
+  });
+  if(!ipos.length){sel.innerHTML='<option value="">No IPO yet - click + New IPO</option>';siIpoId=null;renderSiIpoGainsDisplay();return;}
+  if(cur&&ipos.some(function(ip){return ip['IPO_ID']===cur;}))sel.value=cur;
+  else sel.value=ipos[ipos.length-1]['IPO_ID'];
+  siIpoId=sel.value;
+  renderSiIpoGainsDisplay();
+}
+function onSelfIPOSelectChange(){siIpoId=document.getElementById('si_ipoSelect').value;renderSiIpoGainsDisplay();onSelfIPOFieldChange();}
+function renderSiIpoGainsDisplay(){
+  var el=document.getElementById('siIpoGainsDisplay');
+  if(!el)return;
+  var ipo=currentSelfIPOObj();
+  if(!ipo){el.innerHTML='';return;}
+  var rowsForThis=(allData.SelfIPO||[]).filter(function(r){return r['IPO_ID']===siIpoId;});
+  var appliedCt=rowsForThis.length;
+  var allottedCt=rowsForThis.filter(function(r){return r['Status']==='Allotted';}).length;
+  var netProfit=rowsForThis.filter(function(r){return r['Status']==='Allotted';}).reduce(function(s,r){return s+selfIPOProfit(r);},0);
+  el.innerHTML='<b>'+(ipo['IPO_Name']||'')+'</b> listing gain — Retail: <b>'+fmt(parseFloat(ipo['Retail_Gain'])||0)+'</b>/app &nbsp;|&nbsp; sHNI: <b>'+fmt(parseFloat(ipo['sHNI_Gain'])||0)+'</b>/app &nbsp;|&nbsp; bHNI: <b>'+fmt(parseFloat(ipo['bHNI_Gain'])||0)+'</b>/app'
+    +(((parseFloat(ipo['Retail_Gain'])||0)===0&&(parseFloat(ipo['sHNI_Gain'])||0)===0&&(parseFloat(ipo['bHNI_Gain'])||0)===0)?' <span style="color:var(--danger);">— not set yet, Allotted profit will show &#8377;0 until you edit this</span>':'')
+    +'<br>This IPO so far: '+appliedCt+' applied &#183; '+allottedCt+' allotted &#183; Net profit: <b style="color:var(--accent);">&#8377;'+fmt(netProfit)+'</b>';
+}
+function onSelfClientIdAutoFill(){
+  var cidEl=document.getElementById('si_clientId');
+  if(!cidEl)return;
+  var cid=(cidEl.value||'').trim().toLowerCase();
+  if(!cid)return;
+  var matches=(allData.SelfIPO||[]).filter(function(r){return (r['Client ID']||'').trim().toLowerCase()===cid;});
+  if(!matches.length)return;
+  matches.sort(function(a,b){return (b['Date']||'').localeCompare(a['Date']||'');});
+  var m=matches[0];
+  var nameEl=document.getElementById('si_clientName'),bankEl=document.getElementById('si_bank'),upiEl=document.getElementById('si_upi'),panEl=document.getElementById('si_pan');
+  if(nameEl&&!nameEl.value&&m['Client Name'])nameEl.value=m['Client Name'];
+  if(bankEl&&!bankEl.value&&m['Bank'])bankEl.value=m['Bank'];
+  if(upiEl&&!upiEl.value&&m['UPI ID'])upiEl.value=m['UPI ID'];
+  if(panEl&&!panEl.value&&m['PAN'])panEl.value=m['PAN'];
+}
+function populateEsiIpoSelect(curId,curName){
+  var sel=document.getElementById('esi_ipoSelect');
+  if(!sel)return;
+  var ipos=allData.IPO_Master||[];
+  var nameCounts={};ipos.forEach(function(ip){var n=ip['IPO_Name']||'';nameCounts[n]=(nameCounts[n]||0)+1;});
+  sel.innerHTML=ipos.map(function(ip){
+    var label=ip['IPO_Name']||'';if(nameCounts[label]>1)label+=' ('+(ip['Created_Date']||'')+')';
+    return '<option value="'+ip['IPO_ID']+'">'+siEsc(label)+'</option>';
+  }).join('');
+  if(curId&&ipos.some(function(ip){return ip['IPO_ID']===curId;}))sel.value=curId;
+  else if(curName){
+    var byName=ipos.find(function(ip){return (ip['IPO_Name']||'').trim().toLowerCase()===curName.trim().toLowerCase();});
+    if(byName)sel.value=byName['IPO_ID'];
+  }
+}
 function populateSelfIPODatalists(){
   if(!currentUser)return;
   /* v77: agar user abhi is form ke kisi bhi field me type/select kar raha hai (naya ya edit modal),
@@ -3511,26 +3596,25 @@ function populateSelfIPODatalists(){
     var dl=document.getElementById(id);if(!dl)return;
     dl.innerHTML=vals.map(function(v){return '<option value="'+siEsc(v)+'">';}).join('');
   }
-  var ipoNames=siUniqVals(all,'IPO Name'),clientIds=siUniqVals(mine,'Client ID'),clientNames=siUniqVals(mine,'Client Name'),banks=siUniqVals(mine,'Bank'),upis=siUniqVals(mine,'UPI ID'),pans=siUniqVals(mine,'PAN'),amounts=siUniqVals(all,'Amount');
-  fillDatalist('dl_si_ipoName',ipoNames);
+  var clientIds=siUniqVals(mine,'Client ID'),clientNames=siUniqVals(mine,'Client Name'),banks=siUniqVals(mine,'Bank'),upis=siUniqVals(mine,'UPI ID'),pans=siUniqVals(mine,'PAN'),amounts=siUniqVals(all,'Amount');
   fillDatalist('dl_si_clientId',clientIds);
   fillDatalist('dl_si_clientName',clientNames);
   fillDatalist('dl_si_bank',banks);
   fillDatalist('dl_si_upi',upis);
   fillDatalist('dl_si_pan',pans);
   fillDatalist('dl_si_amount',amounts);
-  renderQuickPicks('si_ipoName','qp_si_ipoName',ipoNames.slice(0,6));
   renderQuickPicks('si_clientId','qp_si_clientId',clientIds.slice(0,6));
   renderQuickPicks('si_clientName','qp_si_clientName',clientNames.slice(0,6));
   renderQuickPicks('si_upi','qp_si_upi',upis.slice(0,6));
+  populateSelfIPOSelect();
   onSelfIPOFieldChange();
 }
 function onSelfIPOFieldChange(){
-  var ipoNameEl=document.getElementById('si_ipoName'),catEl=document.getElementById('si_cat'),amtEl=document.getElementById('si_amount');
-  if(!ipoNameEl||!catEl||!amtEl)return;
-  var ipoName=(ipoNameEl.value||'').trim().toLowerCase(),cat=catEl.value,combo=ipoName+'|'+cat;
-  if(!ipoName){renderQuickPicks('si_amount','qp_si_amount',[]);return;}
-  var matches=(allData.SelfIPO||[]).filter(function(r){return (r['IPO Name']||'').trim().toLowerCase()===ipoName&&r['Category']===cat&&r['Amount'];});
+  var catEl=document.getElementById('si_cat'),amtEl=document.getElementById('si_amount');
+  if(!catEl||!amtEl)return;
+  var cat=catEl.value,combo=(siIpoId||'')+'|'+cat;
+  if(!siIpoId){renderQuickPicks('si_amount','qp_si_amount',[]);return;}
+  var matches=(allData.SelfIPO||[]).filter(function(r){return r['IPO_ID']===siIpoId&&r['Category']===cat&&r['Amount'];});
   var amtVals=siUniqVals(matches,'Amount',6);
   renderQuickPicks('si_amount','qp_si_amount',amtVals);
   if(amtVals.length){
@@ -3541,13 +3625,15 @@ function onSelfIPOFieldChange(){
   }
   siLastAutoCombo=combo;
 }
-function findSelfIPODupe(ipoName,pan,clientId,excludeRowNum){
-  /* v78: ek IPO me same PAN ya same Client ID dobara add na ho paye - 2 clients ka PAN/Client ID same nahi ho sakta */
-  var ipoL=ipoName.trim().toLowerCase(),panU=(pan||'').trim().toUpperCase(),cidL=(clientId||'').trim().toLowerCase();
+function findSelfIPODupe(ipoId,ipoName,pan,clientId,excludeRowNum){
+  /* v78: ek IPO me same PAN ya same Client ID dobara add na ho paye - 2 clients ka PAN/Client ID same nahi ho sakta
+     v84: same-IPO match ab IPO_ID se (name se sirf legacy rows ke liye jinke paas IPO_ID nahi hai) */
+  var ipoL=(ipoName||'').trim().toLowerCase(),panU=(pan||'').trim().toUpperCase(),cidL=(clientId||'').trim().toLowerCase();
   if(!panU&&!cidL)return null;
   return (allData.SelfIPO||[]).find(function(r){
     if(excludeRowNum&&String(r['_rowNum'])===String(excludeRowNum))return false;
-    if((r['IPO Name']||'').trim().toLowerCase()!==ipoL)return false;
+    var sameIpo=ipoId?((r['IPO_ID']||'')===ipoId):((r['IPO Name']||'').trim().toLowerCase()===ipoL);
+    if(!sameIpo)return false;
     var rPan=(r['PAN']||'').trim().toUpperCase(),rCid=(r['Client ID']||'').trim().toLowerCase();
     if(panU&&rPan&&rPan===panU)return true;
     if(cidL&&rCid&&rCid===cidL)return true;
@@ -3555,22 +3641,23 @@ function findSelfIPODupe(ipoName,pan,clientId,excludeRowNum){
   })||null;
 }
 function submitSelfIPO(){
-  var ipoName=(document.getElementById('si_ipoName').value||'').trim();
+  var ipoObj=currentSelfIPOObj();
+  if(!siIpoId||!ipoObj){showToast('Select an IPO first (or click + New IPO to create one)','error');return;}
+  var ipoName=ipoObj['IPO_Name']||'';
   var amount=document.getElementById('si_amount').value;
   var clientId=(document.getElementById('si_clientId').value||'').trim();
   var pan=(document.getElementById('si_pan').value||'').trim().toUpperCase();
-  if(!ipoName){showToast('IPO Name is required','error');return;}
-  var dupe=findSelfIPODupe(ipoName,pan,clientId);
+  var dupe=findSelfIPODupe(siIpoId,ipoName,pan,clientId);
   if(dupe){
     var which=(pan&&(dupe['PAN']||'').trim().toUpperCase()===pan)?('PAN '+pan):('Client ID '+clientId);
     showToast('This '+which+' has already been added for IPO ('+ipoName+') ('+(dupe['Employee Name']||'')+', '+(dupe['Date']||'')+') &#8212; 2 clients cannot have the same PAN/Client ID','error');
     return;
   }
-  var p={action:'addSelfIPO','Date':document.getElementById('si_date').value||td(),'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch||'','IPO Name':ipoName,'Client ID':clientId,'Client Name':(document.getElementById('si_clientName').value||'').trim(),'Bank':(document.getElementById('si_bank').value||'').trim(),'UPI ID':(document.getElementById('si_upi').value||'').trim(),'PAN':pan,'Category':document.getElementById('si_cat').value,'Amount':amount||'','Status':'Applied','Remarks':(document.getElementById('si_remarks').value||'').trim()};
+  var p={action:'addSelfIPO','Date':document.getElementById('si_date').value||td(),'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch||'','IPO Name':ipoName,'IPO_ID':siIpoId,'Client ID':clientId,'Client Name':(document.getElementById('si_clientName').value||'').trim(),'Bank':(document.getElementById('si_bank').value||'').trim(),'UPI ID':(document.getElementById('si_upi').value||'').trim(),'PAN':pan,'Category':document.getElementById('si_cat').value,'Amount':amount||'','Status':'Applied','Remarks':(document.getElementById('si_remarks').value||'').trim()};
   postData(p).then(function(r){
     if(r&&r.success){
       showToast('Self IPO entry added','success');
-      /* v76: IPO Name/Category/Amount sticky rakhe (baar baar select na karna pade) - sirf client-specific fields clear */
+      /* v76: IPO/Category/Amount sticky rakhe (baar baar select na karna pade) - sirf client-specific fields clear */
       ['si_clientId','si_clientName','si_bank','si_upi','si_pan','si_remarks'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});
       setTimeout(function(){loadAll(2);populateSelfIPODatalists();},600);
     } else showToast('Failed: '+(r&&r.error||''),'error');
@@ -3592,18 +3679,22 @@ function renderSelfIPOPage(){
   var allotted=rows.filter(function(r){return r['Status']==='Allotted';}).length;
   var applied=rows.length;
   var totAmt=rows.reduce(function(s,r){return s+(parseFloat(r['Amount'])||0);},0);
+  var totProfit=rows.filter(function(r){return r['Status']==='Allotted';}).reduce(function(s,r){return s+selfIPOProfit(r);},0);
   document.getElementById('selfIPOStats').innerHTML=mkStats([
     {label:'Total Entries',value:applied,sub:'applications',color:'purple'},
     {label:'Allotted',value:allotted,sub:'out of '+applied,color:'green'},
-    {label:'Total Amount',value:fmt(totAmt),sub:'applied so far',color:'blue'}
+    {label:'Total Amount',value:fmt(totAmt),sub:'applied so far',color:'blue'},
+    {label:'Net Profit',value:fmt(totProfit),sub:'from allotted applications',color:'green'}
   ]);
   if(!rows.length){box.innerHTML='<div class="no-data">No entries yet</div>';return;}
   rows=rows.slice().sort(function(a,b){return (b['Date']||'').localeCompare(a['Date']||'');});
-  var h='<table><thead><tr>'+(isAdm?'<th>Team</th>':'')+'<th>Date</th><th>IPO Name</th><th>Client ID</th><th>Client Naam</th><th>Category</th><th>Amount</th><th>Bank</th><th>UPI</th><th>PAN</th><th>Status</th><th>Remarks</th><th></th></tr></thead><tbody>';
+  var h='<table><thead><tr>'+(isAdm?'<th>Team</th>':'')+'<th>Date</th><th>IPO Name</th><th>Client ID</th><th>Client Naam</th><th>Category</th><th>Amount</th><th>Bank</th><th>UPI</th><th>PAN</th><th>Status</th><th>Profit</th><th>Remarks</th><th></th></tr></thead><tbody>';
   rows.forEach(function(r){
     var st=r['Status']||'Applied';
+    var profit=selfIPOProfit(r);
     h+='<tr>'+(isAdm?'<td>'+(r['Employee Name']||'-')+'</td>':'')+'<td>'+(r['Date']||'-')+'</td><td style="font-weight:600;">'+(r['IPO Name']||'-')+'</td><td>'+(r['Client ID']||'-')+'</td><td>'+(r['Client Name']||'-')+'</td><td>'+(r['Category']||'-')+'</td><td class="money">'+fmt(r['Amount']||0)+'</td><td>'+(r['Bank']||'-')+'</td><td>'+(r['UPI ID']||'-')+'</td><td>'+(r['PAN']||'-')+'</td>'
       +'<td><select onchange="setSelfIPOStatus('+r['_rowNum']+',this.value)" style="font-size:12px;padding:3px 5px;"><option'+(st==='Applied'?' selected':'')+'>Applied</option><option'+(st==='Allotted'?' selected':'')+'>Allotted</option><option'+(st==='Not Allotted'?' selected':'')+'>Not Allotted</option></select></td>'
+      +'<td class="money" style="'+(st==='Allotted'?'color:var(--accent);font-weight:700;':'color:var(--muted);')+'">'+(st==='Allotted'?fmt(profit):'-')+'</td>'
       +'<td style="white-space:normal;max-width:160px;color:var(--muted);">'+(r['Remarks']||'-')+'</td>'
       +'<td><button class="btn-edit" onclick="openEditSelfIPOModal('+r['_rowNum']+')">&#9998;</button><button class="btn-del" onclick="confirmDel(\'SelfIPO\','+r['_rowNum']+')">&#128465;</button></td>'
       +'</tr>';
@@ -3617,7 +3708,7 @@ function openEditSelfIPOModal(rowNum){
   var h='<div class="modal-title">Edit Self Application Entry</div>';
   h+='<div class="form-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:6px 20px;">';
   h+='<div class="form-group"><label>Date</label><input type="date" id="esi_date" value="'+siEsc(r['Date']||'')+'"></div>';
-  h+='<div class="form-group"><label>IPO Name</label><input type="text" id="esi_ipoName" list="dl_si_ipoName" value="'+siEsc(r['IPO Name']||'')+'"></div>';
+  h+='<div class="form-group"><label>Select IPO</label><select id="esi_ipoSelect"></select></div>';
   h+='<div class="form-group"><label>Client ID</label><input type="text" id="esi_clientId" list="dl_si_clientId" value="'+siEsc(r['Client ID']||'')+'"></div>';
   h+='<div class="form-group"><label>Client Naam</label><input type="text" id="esi_clientName" list="dl_si_clientName" value="'+siEsc(r['Client Name']||'')+'"></div>';
   h+='<div class="form-group"><label>Category</label><select id="esi_cat"><option'+(r['Category']==='Retail'?' selected':'')+'>Retail</option><option'+(r['Category']==='sHNI'?' selected':'')+'>sHNI</option><option'+(r['Category']==='bHNI'?' selected':'')+'>bHNI</option></select></div>';
@@ -3631,13 +3722,17 @@ function openEditSelfIPOModal(rowNum){
   h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="submitEditSelfIPO('+rowNum+')">Save</button></div>';
   document.getElementById('modalBox').innerHTML=h;
   document.getElementById('modal').className='show';
+  populateEsiIpoSelect(r['IPO_ID'],r['IPO Name']);
 }
 function submitEditSelfIPO(rowNum){
-  var ipoName=(document.getElementById('esi_ipoName').value||'').trim();
-  if(!ipoName){showToast('IPO Name is required','error');return;}
+  var esiSel=document.getElementById('esi_ipoSelect');
+  var editIpoId=esiSel?esiSel.value:'';
+  var editIpoObj=(allData.IPO_Master||[]).find(function(ip){return ip['IPO_ID']===editIpoId;});
+  if(!editIpoId||!editIpoObj){showToast('Select an IPO','error');return;}
+  var ipoName=editIpoObj['IPO_Name']||'';
   var editClientId=(document.getElementById('esi_clientId').value||'').trim();
   var editPan=(document.getElementById('esi_pan').value||'').trim().toUpperCase();
-  var editDupe=findSelfIPODupe(ipoName,editPan,editClientId,rowNum);
+  var editDupe=findSelfIPODupe(editIpoId,ipoName,editPan,editClientId,rowNum);
   if(editDupe){
     var editWhich=(editPan&&(editDupe['PAN']||'').trim().toUpperCase()===editPan)?('PAN '+editPan):('Client ID '+editClientId);
     showToast('This '+editWhich+' is already added in another entry for IPO ('+ipoName+') ('+(editDupe['Employee Name']||'')+', '+(editDupe['Date']||'')+') &#8212; 2 clients cannot have the same PAN/Client ID','error');
@@ -3646,6 +3741,7 @@ function submitEditSelfIPO(rowNum){
   var vals={
     'Date':document.getElementById('esi_date').value||'',
     'IPO Name':ipoName,
+    'IPO_ID':editIpoId,
     'Client ID':editClientId,
     'Client Name':(document.getElementById('esi_clientName').value||'').trim(),
     'Category':document.getElementById('esi_cat').value,
@@ -12843,7 +12939,8 @@ function renderIPOWhatIf(){
   ]);
 }
 
-function openNewIPOModal(){
+function openNewIPOModal(forSelf){
+  _newIPOForSelf=!!forSelf;
   var html='<div class="modal-title">Create New IPO</div>';
   html+='<div class="form-group"><label>IPO Name</label><input type="text" id="ipn_name" placeholder="e.g. Tata Capital IPO"></div>';
   html+='<div class="form-group"><label>Retail Listing Gain (&#8377;/application)</label><input type="number" id="ipn_retail" value="0"></div>';
@@ -12857,15 +12954,21 @@ function submitNewIPO(){
   var name=(document.getElementById('ipn_name').value||'').trim();
   if(!name){showToast('IPO Name required','error');return;}
   var p={action:'addIPOMaster','IPO_Name':name,'Retail_Gain':parseFloat(document.getElementById('ipn_retail').value)||0,'sHNI_Gain':parseFloat(document.getElementById('ipn_shni').value)||0,'bHNI_Gain':parseFloat(document.getElementById('ipn_bhni').value)||0,'Rejection_Penalty':parseFloat(document.getElementById('ipn_penalty').value)||0,'Created_By':currentUser.name};
+  var wasForSelf=_newIPOForSelf;
   postData(p).then(function(r){
     closeModal();
-    if(r&&r.success){showToast('IPO created','success');ipoSelId=r.ipoId;loadAll();}
+    if(r&&r.success){
+      showToast('IPO created','success');
+      if(wasForSelf){siIpoId=r.ipoId;}else{ipoSelId=r.ipoId;}
+      _newIPOForSelf=false;
+      loadAll();
+    }
     else showToast('Failed: '+(r&&r.error||''),'error');
   }).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
 }
 
-function openEditIPOGainsModal(){
-  var ipo=currentIPO();
+function openEditIPOGainsModal(forSelf){
+  var ipo=forSelf?currentSelfIPOObj():currentIPO();
   if(!ipo){showToast('Select an IPO first','error');return;}
   var html='<div class="modal-title">Edit Listing Gains — '+(ipo['IPO_Name']||'')+'</div>';
   html+='<p style="color:var(--muted);font-size:12px;margin-bottom:10px;">&#8377;/application gain used to auto-calculate profit &amp; client net for Allotted applications in this IPO.</p>';
@@ -12874,10 +12977,10 @@ function openEditIPOGainsModal(){
   html+='<div class="form-group"><label>bHNI Listing Gain (&#8377;/application)</label><input type="number" id="ipg_bhni" value="'+(parseFloat(ipo['bHNI_Gain'])||0)+'"></div>';
   html+='<p style="color:var(--muted);font-size:12px;margin:14px 0 10px;border-top:1px solid var(--border,#2a2f3a);padding-top:10px;">&#8377;/application penalty auto-applied to ALL applications marked <b>Rejection</b> in this IPO. To set a different penalty for a specific application, use its Edit (&#9998;) button to set it manually &#8212; leaving it blank there will use this default.</p>';
   html+='<div class="form-group"><label>Rejection Penalty (&#8377;/application)</label><input type="number" id="ipg_penalty" value="'+(parseFloat(ipo['Rejection_Penalty'])||0)+'"></div>';
-  html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="saveIPOGains('+ipo['_rowNum']+')">Save</button></div>';
+  html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="saveIPOGains('+ipo['_rowNum']+','+(forSelf?'true':'false')+')">Save</button></div>';
   document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
 }
-function saveIPOGains(rowNum){
+function saveIPOGains(rowNum,forSelf){
   var vals={
     'Retail_Gain':parseFloat(document.getElementById('ipg_retail').value)||0,
     'sHNI_Gain':parseFloat(document.getElementById('ipg_shni').value)||0,
@@ -12886,7 +12989,11 @@ function saveIPOGains(rowNum){
   };
   postData({action:'editRow',sheet:'IPO_Master',rowNum:rowNum,vals:vals}).then(function(r){
     closeModal();
-    if(r&&r.success){showToast('Listing gains & rejection penalty updated','success');patchRowLocal('IPO_Master',rowNum,vals);renderIPOGainsDisplay();renderIPOTabBody();}
+    if(r&&r.success){
+      showToast('Listing gains & rejection penalty updated','success');
+      patchRowLocal('IPO_Master',rowNum,vals);
+      if(forSelf){renderSiIpoGainsDisplay();renderSelfIPOPage();}else{renderIPOGainsDisplay();renderIPOTabBody();}
+    }
     else showToast('Failed: '+(r&&r.error||''),'error');
   }).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
 }
