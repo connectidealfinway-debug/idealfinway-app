@@ -8232,13 +8232,13 @@ function buildChoicePreview(){
     {label:'Matched',value:matched,sub:'matched to employees',color:'purple'},
     {label:'Unmatched',value:unmatched.length,sub:'will go to IDEAL.OFFICE',color:unmatched.length?'amber':'green'}
   ])+'</div>';
-  h+='<div class="table-wrap" style="margin-bottom:16px;"><div class="table-inner"><table><thead><tr><th>Team</th><th>Branch</th><th>Clients</th><th>Brokerage</th><th>Share</th></tr></thead><tbody>';
+  h+='<div class="table-wrap" style="margin-bottom:16px;"><div class="table-inner"><table><thead><tr><th>Team</th><th>Branch</th><th>Clients</th><th>Brokerage (Remisier)</th><th>Total Brokerage</th><th>Share</th></tr></thead><tbody>';
   Object.keys(empSum).sort(function(a,b){return empSum[b].amt-empSum[a].amt;}).forEach(function(k){
     var e=empSum[k];var pc=(k===ADMIN_ID)?0:getCommission(k);
     var basis=(k===ADMIN_ID)?'Remisier':getEmpBrokBasis(k);
     var shareBase=basis==='Total'?e.tot:e.amt;
     var basisTag=basis==='Total'?' <span class="badge amber" title="This team member\'s Commission % applies to the FULL Choice brokerage (Total), not just this Remisier share">Total Brok</span>':'';
-    h+='<tr><td style="font-weight:600;">'+e.name+(k===ADMIN_ID?' (Direct/Unmatched)':'')+basisTag+'</td><td>'+e.branch+'</td><td>'+e.n+'</td><td class="money">'+fmt(e.amt)+'</td><td class="money">'+(pc?fmt(r2(shareBase*pc/100))+' ('+pc+'%)':'-')+'</td></tr>';
+    h+='<tr><td style="font-weight:600;">'+e.name+(k===ADMIN_ID?' (Direct/Unmatched)':'')+basisTag+'</td><td>'+e.branch+'</td><td>'+e.n+'</td><td class="money">'+fmt(e.amt)+'</td><td class="money" style="color:var(--muted);">'+fmt(e.tot)+'</td><td class="money">'+(pc?fmt(r2(shareBase*pc/100))+' ('+pc+'%)':'-')+'</td></tr>';
   });
   h+='</tbody></table></div></div>';
   if(unmatched.length){
