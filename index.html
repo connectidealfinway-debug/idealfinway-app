@@ -963,6 +963,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
 
     <div class="page" id="page-myTasks">
       <div class="page-header"><h1>&#128221; My Tasks</h1><p>Tasks assigned to you &#8212; mark them done as you complete them</p></div>
+      <div style="margin-bottom:16px;"><button class="btn-submit" onclick="openAddMyTaskModal()">&#128221; + Add Task (for myself)</button></div>
       <div style="margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;">
         <select id="mt_filterStatus" onchange="renderMyTasksPage()" style="max-width:160px;"><option value="">All Status</option><option value="Pending">Pending</option><option value="Done">Done</option></select>
       </div>
@@ -2816,7 +2817,7 @@ function loadAll(attempt){
         SelfIPO:r.selfIpo||r.SelfIPO||[],
         GrowthTargets:r.growthTargets||r.GrowthTargets||[]
       };
-      saveCache();checkSIPAlerts();autoPunchIn();var __navTeamEarly=document.getElementById('navMyTeam');if(__navTeamEarly)__navTeamEarly.style.display=(currentUser&&currentUser.role!=='admin')?'flex':'none';var __navIPOEarly=document.getElementById('navIPO');if(__navIPOEarly)__navIPOEarly.style.display='flex';var __navIPOFinEarly=document.getElementById('navIPOFin');if(__navIPOFinEarly)__navIPOFinEarly.style.display='flex';renderPage(curPage());refreshFamilyDatalist();loadEmps();setTimeout(checkMyTasksPopup,300);setTimeout(checkDueTomorrowPopup,600);setTimeout(check315Reminder,900);setTimeout(checkWLRKComments,1200);renderAnnounceBanner();renderMyTasksBanner();renderLinksBanner();renderLinksAdminBox();if(!window._stlCleanupDone){window._stlCleanupDone=true;getJSON('cleanupOldSettlement').catch(function(){});}
+      saveCache();checkSIPAlerts();autoPunchIn();var __navTeamEarly=document.getElementById('navMyTeam');if(__navTeamEarly)__navTeamEarly.style.display=(currentUser&&currentUser.role!=='admin')?'flex':'none';var __navIPOEarly=document.getElementById('navIPO');if(__navIPOEarly)__navIPOEarly.style.display='flex';var __navIPOFinEarly=document.getElementById('navIPOFin');if(__navIPOFinEarly)__navIPOFinEarly.style.display='flex';renderPage(curPage());refreshFamilyDatalist();loadEmps();setTimeout(checkMyTasksPopup,300);setTimeout(checkDueTomorrowPopup,600);setTimeout(check315Reminder,900);setTimeout(checkWLRKComments,1200);renderAnnounceBanner();renderMyTasksBanner();renderLinksBanner();renderLinksAdminBox();if(!window._stlCleanupDone){window._stlCleanupDone=true;getJSON('cleanupOldSettlement').catch(function(){});}if(!window._taskCleanupDone){window._taskCleanupDone=true;getJSON('cleanupOldDoneTasks').catch(function(){});}
     }else if(attempt<3){
       setTimeout(function(){loadAll(attempt+1);},4000);
     }else{
@@ -3854,11 +3855,12 @@ function renderMyTasksPage(){
   var h='<table><thead><tr><th>Date</th><th>Assigned By</th><th>Client</th><th>Task</th><th>Status</th><th>Remarks</th><th>Completed</th><th></th></tr></thead><tbody>';
   rows.forEach(function(t){
     var isDone=t['Status']==='Done';
+    var isSelfTask=t['Assigned By']===currentUser.userId&&t['Assigned To']===currentUser.userId;
     h+='<tr'+(isDone?'':' style="background:rgba(245,158,11,0.08);"')+'><td>'+(t['Date Assigned']||'-')+'</td><td style="font-weight:600;">'+(t['Assigned By Name']||'-')+'</td><td>'+(t['Client Name']||'-')+'</td><td style="white-space:normal;max-width:260px;">'+(t['Task']||'-')+'</td>'
       +'<td><span class="badge '+(isDone?'green':'amber')+'">'+(t['Status']||'Pending')+'</span></td>'
       +'<td style="white-space:normal;max-width:220px;color:var(--muted);">'+(t['Remarks']||'-')+'</td>'
       +'<td>'+(t['Completed Date']||'-')+'</td>'
-      +'<td>'+(isDone?'':'<button class="btn-save" onclick="openMarkTaskDoneModal('+t['_rowNum']+')">&#10003; Done</button>')+'</td></tr>';
+      +'<td>'+(isDone?'':'<button class="btn-save" onclick="openMarkTaskDoneModal('+t['_rowNum']+')">&#10003; Done</button> ')+(isSelfTask?'<button class="btn-edit" onclick="openEditMyTaskModal('+t['_rowNum']+')">&#9998;</button>':'')+'</td></tr>';
   });
   h+='</tbody></table>';
   box.innerHTML=h;
@@ -3905,15 +3907,15 @@ function submitMarkTaskDone(rowNum){
     else showToast('Failed: '+(r&&r.error||''),'error');
   }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
+/* Aug 25 2026: 'Myself' option removed from both pickers below - self-tasks are now created/edited
+   ONLY via the dedicated My Tasks page flow (openAddMyTaskModal/openEditMyTaskModal), never through the
+   Team Tasks / Admin Tasks 'Assign to' dropdown, so a self-assigned task can never accidentally end up
+   filtered out of a list it was just created from. */
 function taskAssignableEmployees(){
-  var team=teamMembersOf(currentUser.userId).slice();
-  team.push({'Employee ID':currentUser.userId,'Name':'Myself ('+currentUser.name+')','Branch':currentUser.branch||'',_self:true});
-  return team;
+  return teamMembersOf(currentUser.userId).slice();
 }
 function adminAllTaskEmployees(){
-  var list=(employees||[]).filter(function(e){return (e['Status']||'Active')==='Active';}).slice();
-  list.push({'Employee ID':currentUser.userId,'Name':'Myself ('+currentUser.name+')','Branch':currentUser.branch||'',_self:true});
-  return list;
+  return (employees||[]).filter(function(e){return (e['Status']||'Active')==='Active';}).slice();
 }
 function renderAdminTasksPage(){populateAdminTaskEmpSelect();renderAdminTasksTable();}
 function populateAdminTaskEmpSelect(){
@@ -3926,7 +3928,7 @@ function populateAdminTaskEmpSelect(){
 }
 function renderAdminTasksTable(){
   var box=document.getElementById('admtTasksTable');if(!box||!currentUser)return;
-  var all=(allData.TeamTasks||[]).filter(function(t){return t['Assigned By']===currentUser.userId;});
+  var all=(allData.TeamTasks||[]).filter(function(t){return t['Assigned By']===currentUser.userId&&t['Assigned To']!==currentUser.userId;}); /* self-assigned tasks belong only in My Tasks, per explicit user request */
   var fEmpSel=document.getElementById('admt_filterEmp'),fStat=document.getElementById('admt_filterStatus');
   var rows=all;
   if(fEmpSel&&fEmpSel.value)rows=rows.filter(function(t){return t['Assigned To']===fEmpSel.value;});
@@ -4000,9 +4002,66 @@ function submitAssignTask(){
     else showToast('Failed: '+(r&&r.error||''),'error');
   }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
+/* ===== My Tasks: self-task Add/Edit (Aug 25 2026) =====
+   User's explicit request: a self-assigned task (Assigned By===Assigned To===self) should be
+   creatable/editable ONLY from the My Tasks page, and must never appear on the Team Tasks (My Team) or
+   Admin Tasks pages - see renderTeamTasksTable/renderAdminTasksTable's Assigned-To exclusion filter and
+   the removal of the 'Myself' option from those two pages' Assign-New-Task modals. This modal always
+   writes Assigned By = Assigned To = currentUser.userId, no employee picker needed. */
+function openAddMyTaskModal(){
+  var h='<div class="modal-title">&#128221; Add Task (for myself)</div>';
+  h+='<div class="form-group"><label>Client Name (optional)</label><input type="text" id="amt_client" placeholder="e.g. Ramesh Kumar"></div>';
+  h+='<div class="form-group"><label>What Needs to Be Done</label><textarea id="amt_task" rows="3" placeholder="e.g. Call this client, arrange a meeting"></textarea></div>';
+  h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-submit" onclick="submitAddMyTask()">Add Task</button></div>';
+  document.getElementById('modalBox').innerHTML=h;
+  document.getElementById('modal').className='show';
+}
+function submitAddMyTask(){
+  var client=(document.getElementById('amt_client').value||'').trim();
+  var task=(document.getElementById('amt_task').value||'').trim();
+  if(!task){showToast('Task description is required','error');return;}
+  var p={action:'addTeamTask','Date Assigned':td(),'Assigned By':currentUser.userId,'Assigned By Name':currentUser.name,'Assigned To':currentUser.userId,'Assigned To Name':'Myself','Branch':currentUser.branch||'','Client Name':client,'Task':task,'Status':'Pending'};
+  postData(p).then(function(r){
+    if(r&&r.success){showToast('Task added','success');closeModal();setTimeout(function(){loadAll(2);},600);}
+    else showToast('Failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+function openEditMyTaskModal(rowNum){
+  var t=(allData.TeamTasks||[]).find(function(x){return String(x['_rowNum'])===String(rowNum);});
+  if(!t){showToast('Task not found','error');return;}
+  var h='<div class="modal-title">&#9998; Edit Task</div>';
+  h+='<div class="form-group"><label>Client Name (optional)</label><input type="text" id="emt_client" value="'+siEsc(t['Client Name']||'')+'"></div>';
+  h+='<div class="form-group"><label>What Needs to Be Done</label><textarea id="emt_task" rows="3">'+siEsc(t['Task']||'')+'</textarea></div>';
+  h+='<div class="form-group"><label>Status</label><select id="emt_status"><option'+((t['Status']||'Pending')==='Pending'?' selected':'')+'>Pending</option><option'+(t['Status']==='Done'?' selected':'')+'>Done</option></select></div>';
+  h+='<div class="form-group"><label>Remarks</label><input type="text" id="emt_remarks" value="'+siEsc(t['Remarks']||'')+'"></div>';
+  h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-del" onclick="confirmDel(\'TeamTasks\','+rowNum+')">&#128465; Delete</button><button class="btn-save" onclick="submitEditMyTask('+rowNum+')">Save</button></div>';
+  document.getElementById('modalBox').innerHTML=h;
+  document.getElementById('modal').className='show';
+}
+function submitEditMyTask(rowNum){
+  var task=(document.getElementById('emt_task').value||'').trim();
+  if(!task){showToast('Task description is required','error');return;}
+  var newStatus=document.getElementById('emt_status').value;
+  var t=(allData.TeamTasks||[]).find(function(x){return String(x['_rowNum'])===String(rowNum);});
+  var wasDone=t&&t['Status']==='Done';
+  var vals={
+    'Client Name':(document.getElementById('emt_client').value||'').trim(),
+    'Task':task,
+    'Status':newStatus,
+    'Remarks':(document.getElementById('emt_remarks').value||'').trim()
+  };
+  if(newStatus==='Done'&&!wasDone)vals['Completed Date']=td();
+  if(newStatus!=='Done')vals['Completed Date']='';
+  patchRowLocal('TeamTasks',rowNum,vals);
+  closeModal();renderMyTasksBanner();renderNotifBell();if(curPage()==='myTasks')renderMyTasksPage();
+  postData({action:'editRow',sheet:'TeamTasks',rowNum:rowNum,vals:vals}).then(function(r){
+    if(r&&r.success){showToast('Task updated','success');setTimeout(function(){loadAll(2);},600);}
+    else showToast('Failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
 function renderTeamTasksTable(){
   var box=document.getElementById('teamTasksTable');if(!box||!currentUser)return;
-  var all=(allData.TeamTasks||[]).filter(function(t){return t['Assigned By']===currentUser.userId;});
+  var all=(allData.TeamTasks||[]).filter(function(t){return t['Assigned By']===currentUser.userId&&t['Assigned To']!==currentUser.userId;}); /* self-assigned tasks belong only in My Tasks, per explicit user request */
   var fEmpSel=document.getElementById('tt_filterEmp'),fStat=document.getElementById('tt_filterStatus');
   var rows=all;
   if(fEmpSel&&fEmpSel.value)rows=rows.filter(function(t){return t['Assigned To']===fEmpSel.value;});
