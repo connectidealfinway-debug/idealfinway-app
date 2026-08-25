@@ -471,6 +471,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
         <div class="nav-item" onclick="showPage('myStudents')">My Students</div>
         <div class="nav-item" onclick="showPage('myPoints')">&#11088; My Points</div>
       </div>
+      <div class="nav-item" onclick="showPage('myHealthCheck')">&#127981; Health Check <span id="myHealthBadge" class="notif-badge" style="display:none;margin-left:6px;">0</span></div>
       <div class="nav-item" onclick="showPage('contest')">&#127942; Contests</div>
       <div class="nav-item" onclick="showPage('client360')">&#128269; Client Search</div>
       <div class="nav-item" onclick="showPage('callTrade')">&#128222; Call &amp; Trade</div>
@@ -671,6 +672,14 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       <div style="margin-bottom:14px;"><button class="btn-submit" style="width:auto;padding:10px 24px;" onclick="renderHealthCheckPage()">&#8635; Run Health Check</button> <span id="healthLastRun" style="color:var(--muted);font-size:12px;margin-left:10px;"></span></div>
       <div class="stats-grid" id="healthStats"></div>
       <div id="healthResults"></div>
+    </div>
+
+    <!-- MY HEALTH CHECK (employee-facing, scoped to own clients only) -->
+    <div class="page" id="page-myHealthCheck">
+      <div class="page-header"><h1>&#127981; Health Check &#8212; My Clients</h1><p>Data mistakes / pending items found on your own Accounts, SIP, Self Application &amp; Insurance clients - fix these when you can</p></div>
+      <div style="margin-bottom:14px;"><button class="btn-submit" style="width:auto;padding:10px 24px;" onclick="renderMyHealthCheckPage()">&#8635; Run Health Check</button> <span id="myHealthLastRun" style="color:var(--muted);font-size:12px;margin-left:10px;"></span></div>
+      <div class="stats-grid" id="myHealthStats"></div>
+      <div id="myHealthResults"></div>
     </div>
 
     <!-- GROWTH & TARGETS -->
@@ -2477,7 +2486,11 @@ function computeReminders(){
     });
   }
   var myTasks=(allData.TeamTasks||[]).filter(function(t){return t['Assigned To']===currentUser.userId&&(t['Status']||'Pending')!=='Done';});
-  return {sipTomorrow:sipTomorrow,meetToday:meetToday,pendStud:pendStud,tomorrow:tomorrow,tradeAlerts:tradeAlerts,dueReminders:dueReminders,starredWatch:starredWatch,holdingAlerts:holdingAlerts,settlementAlerts:settlementAlerts,watchlistAlerts:watchlistAlerts,myTasks:myTasks};
+  /* v88: employee-facing Health Check alerts (data issues on their own clients) - admin already has
+     the full System Health Check page, so this is intentionally skipped for admin to avoid a noisy
+     346-issue badge on their own bell. */
+  var myHealthAlerts=isAdm?[]:runHealthCheckForSelf(currentUser.userId);
+  return {sipTomorrow:sipTomorrow,meetToday:meetToday,pendStud:pendStud,tomorrow:tomorrow,tradeAlerts:tradeAlerts,dueReminders:dueReminders,starredWatch:starredWatch,holdingAlerts:holdingAlerts,settlementAlerts:settlementAlerts,watchlistAlerts:watchlistAlerts,myTasks:myTasks,myHealthAlerts:myHealthAlerts};
 }
 function buildReminderHTML(r){
   var isAdm=currentUser&&currentUser.role==='admin';
@@ -2489,6 +2502,13 @@ function buildReminderHTML(r){
     h+='<div style="padding:10px 4px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:13px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">'
       +'<span>&#128221; You have <b>'+r.myTasks.length+'</b> task(s) assigned to you</span>'
       +'<button class="btn-mini" onclick="closeModal();showPage(\'myTasks\');">&#128064; My Tasks</button>'
+      +'</div>';
+  }
+  if(r.myHealthAlerts&&r.myHealthAlerts.length){
+    var hcCritical=r.myHealthAlerts.filter(function(x){return x.sev==='critical';}).length;
+    h+='<div style="padding:10px 4px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:13px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">'
+      +'<span>&#127981; <b>'+r.myHealthAlerts.length+'</b> data issue(s) on your clients'+(hcCritical?' <span style="color:var(--danger,#ef4444);">('+hcCritical+' critical)</span>':'')+'</span>'
+      +'<button class="btn-mini" onclick="closeModal();showPage(\'myHealthCheck\');">&#128064; View</button>'
       +'</div>';
   }
   if(r.meetToday.length){
@@ -2581,7 +2601,7 @@ function buildReminderHTML(r){
         +'</div>';
     }).join('')+'</div>';
   }
-  if(!r.meetToday.length&&!r.sipTomorrow.length&&!r.pendStud.length&&!(r.tradeAlerts&&r.tradeAlerts.length)&&!(r.dueReminders&&r.dueReminders.length)&&!(r.starredWatch&&r.starredWatch.length)&&!(r.holdingAlerts&&r.holdingAlerts.length)&&!(r.settlementAlerts&&r.settlementAlerts.length)&&!(r.watchlistAlerts&&r.watchlistAlerts.length)&&!(r.myTasks&&r.myTasks.length)){
+  if(!r.meetToday.length&&!r.sipTomorrow.length&&!r.pendStud.length&&!(r.tradeAlerts&&r.tradeAlerts.length)&&!(r.dueReminders&&r.dueReminders.length)&&!(r.starredWatch&&r.starredWatch.length)&&!(r.holdingAlerts&&r.holdingAlerts.length)&&!(r.settlementAlerts&&r.settlementAlerts.length)&&!(r.watchlistAlerts&&r.watchlistAlerts.length)&&!(r.myTasks&&r.myTasks.length)&&!(r.myHealthAlerts&&r.myHealthAlerts.length)){
     h+='<div style="color:var(--muted,#8a94a6);padding:14px 0;">No pending reminders. All clear! &#9989;</div>';
   }
   h+='<div class="modal-actions"><button class="btn-save" onclick="closeModal()">Got it</button></div>';
@@ -2591,11 +2611,16 @@ function buildReminderHTML(r){
 function renderNotifBell(){
   var el=document.getElementById('notifBell');if(!el||!currentUser)return;
   var r=computeReminders();
-  var n=r.sipTomorrow.length+r.meetToday.length+r.pendStud.length+(r.tradeAlerts?r.tradeAlerts.length:0)+(r.dueReminders?r.dueReminders.length:0)+(r.starredWatch?r.starredWatch.length:0)+(r.holdingAlerts?r.holdingAlerts.length:0)+(r.settlementAlerts?r.settlementAlerts.length:0)+(r.watchlistAlerts?r.watchlistAlerts.length:0)+(r.myTasks?r.myTasks.length:0);
+  var n=r.sipTomorrow.length+r.meetToday.length+r.pendStud.length+(r.tradeAlerts?r.tradeAlerts.length:0)+(r.dueReminders?r.dueReminders.length:0)+(r.starredWatch?r.starredWatch.length:0)+(r.holdingAlerts?r.holdingAlerts.length:0)+(r.settlementAlerts?r.settlementAlerts.length:0)+(r.watchlistAlerts?r.watchlistAlerts.length:0)+(r.myTasks?r.myTasks.length:0)+(r.myHealthAlerts?r.myHealthAlerts.length:0);
   el.style.display='flex';
   el.classList.toggle('has-alert',n>0);
   var badge=document.getElementById('notifCount');
   if(badge)badge.textContent=n;
+  var hcBadge=document.getElementById('myHealthBadge');
+  if(hcBadge){
+    var hcN=r.myHealthAlerts?r.myHealthAlerts.length:0;
+    if(hcN>0){hcBadge.textContent=hcN;hcBadge.style.display='inline-block';}else hcBadge.style.display='none';
+  }
 }
 function showReminderModal(){
   var r=computeReminders();
@@ -2609,7 +2634,7 @@ function checkDueTomorrowPopup(){
   if(localStorage.getItem(key))return;
   localStorage.setItem(key,'1');
   var r=computeReminders();
-  if(!r.sipTomorrow.length&&!r.meetToday.length&&!r.pendStud.length&&!(r.tradeAlerts&&r.tradeAlerts.length)&&!(r.dueReminders&&r.dueReminders.length)&&!(r.starredWatch&&r.starredWatch.length)&&!(r.holdingAlerts&&r.holdingAlerts.length)&&!(r.settlementAlerts&&r.settlementAlerts.length)&&!(r.watchlistAlerts&&r.watchlistAlerts.length)&&!(r.myTasks&&r.myTasks.length))return;
+  if(!r.sipTomorrow.length&&!r.meetToday.length&&!r.pendStud.length&&!(r.tradeAlerts&&r.tradeAlerts.length)&&!(r.dueReminders&&r.dueReminders.length)&&!(r.starredWatch&&r.starredWatch.length)&&!(r.holdingAlerts&&r.holdingAlerts.length)&&!(r.settlementAlerts&&r.settlementAlerts.length)&&!(r.watchlistAlerts&&r.watchlistAlerts.length)&&!(r.myTasks&&r.myTasks.length)&&!(r.myHealthAlerts&&r.myHealthAlerts.length))return;
   playAlertSound();
   document.getElementById('modalBox').innerHTML=buildReminderHTML(r);
   document.getElementById('modal').className='show';
@@ -3143,6 +3168,7 @@ function renderPage(id){
   else if(id==='adminIns')renderIns();
   else if(id==='adminAcc'){renderAccTable();renderAccProcessTable();}
   else if(id==='healthCheck')renderHealthCheckPage();
+  else if(id==='myHealthCheck')renderMyHealthCheckPage();
   else if(id==='growthTrack')renderGrowthPage();
   else if(id==='adminLeads')renderALeads();
   else if(id==='adminStudents')renderAdminStudents();
@@ -5067,7 +5093,10 @@ function healthGoToSearch(pageId,searchId,term){
 }
 function runHealthCheck(){
   var issues=[];
-  function add(sev,cat,title,detail,action){issues.push({sev:sev,cat:cat,title:title,detail:detail,action:action});}
+  /* ownerIds (optional, Aug 25 2026): lowercased trimmed Employee ID(s) this specific issue concerns -
+     lets runHealthCheckForSelf() filter the exact same scan down to "issues on my own clients" for the
+     employee-facing Health Check page, with zero change to the admin scan's own behavior/output. */
+  function add(sev,cat,title,detail,action,ownerIds){issues.push({sev:sev,cat:cat,title:title,detail:detail,action:action,ownerIds:ownerIds||null});}
   var today=new Date();today.setHours(0,0,0,0);
   function daysAgo(dateStr){var d=new Date((dateStr||'')+'T00:00:00');if(isNaN(d))return null;return Math.round((today-d)/86400000);}
 
@@ -5097,31 +5126,31 @@ function runHealthCheck(){
   accAll.forEach(function(r){var cid=(r['Client ID']||'').trim();if(!cid)return;var eid=(r['Employee ID']||'').trim().toLowerCase();if(!accCidMap[cid])accCidMap[cid]={};accCidMap[cid][eid]=true;});
   Object.keys(accCidMap).forEach(function(cid){
     var eids=Object.keys(accCidMap[cid]);
-    if(eids.length>1)add('critical','Accounts','Duplicate Client ID (different team members)','Client ID "'+cid+'" belongs to '+eids.length+' different team members - brokerage/commission could go to the wrong team member.',{label:'View in Accounts',fn:function(){healthGoToSearch('adminAcc','srch-acc',cid);}});
+    if(eids.length>1)add('critical','Accounts','Duplicate Client ID (different team members)','Client ID "'+cid+'" belongs to '+eids.length+' different team members - brokerage/commission could go to the wrong team member.',{label:'View in Accounts',fn:function(){healthGoToSearch('adminAcc','srch-acc',cid);}},eids);
   });
   /* Client ID looks like a raw phone number - classic sign of Name/ID/Phone fields getting shifted at entry time (e.g. FBO1684 case: real ID went into Name, phone went into ID, phone field lost its value) */
   accAll.filter(function(r){return (r['Client ID']||'').trim();}).forEach(function(r){
     var cidV=(r['Client ID']||'').trim();
-    if(/^[6-9]\d{9}$/.test(cidV))add('critical','Accounts','Client ID looks like a phone number','"'+(r['Client Name']||'-')+'" has Client ID "'+cidV+'" which looks like a phone number, not a real Client ID - fields were likely entered in the wrong boxes (Name/ID/Phone got shifted). Check if the real ID ended up in the Name field instead.',{label:'View in Accounts',fn:function(){healthGoToSearch('adminAcc','srch-acc',r['Client Name']||cidV);}});
+    if(/^[6-9]\d{9}$/.test(cidV))add('critical','Accounts','Client ID looks like a phone number','"'+(r['Client Name']||'-')+'" has Client ID "'+cidV+'" which looks like a phone number, not a real Client ID - fields were likely entered in the wrong boxes (Name/ID/Phone got shifted). Check if the real ID ended up in the Name field instead.',{label:'View in Accounts',fn:function(){healthGoToSearch('adminAcc','srch-acc',r['Client Name']||cidV);}},[(r['Employee ID']||'').trim().toLowerCase()]);
   });
   /* Client Phone present but not a plausible phone number (e.g. "Inactive", a PAN, a masked value, or a 9-digit typo) */
   accAll.filter(function(r){return (r['Client ID']||'').trim();}).forEach(function(r){
     var ph=(r['Client Phone']||'').trim();
     if(!ph)return;
     var digits=ph.replace(/\D/g,'');
-    if(digits.length<10)add('warning','Accounts','Phone looks invalid','"'+(r['Client Name']||r['Client ID']||'-')+'" ('+(r['Client ID']||'-')+') has Client Phone "'+ph+'" which does not look like a valid 10-digit phone number - could be a typo, a wrong value in the wrong field, or a masked entry.',{label:'View in Accounts',fn:function(){healthGoToSearch('adminAcc','srch-acc',r['Client Name']||r['Client ID']);}});
+    if(digits.length<10)add('warning','Accounts','Phone looks invalid','"'+(r['Client Name']||r['Client ID']||'-')+'" ('+(r['Client ID']||'-')+') has Client Phone "'+ph+'" which does not look like a valid 10-digit phone number - could be a typo, a wrong value in the wrong field, or a masked entry.',{label:'View in Accounts',fn:function(){healthGoToSearch('adminAcc','srch-acc',r['Client Name']||r['Client ID']);}},[(r['Employee ID']||'').trim().toLowerCase()]);
   });
   accAll.filter(function(r){return (r['Client ID']||'').trim();}).forEach(function(r){
-    if(!(r['Client Phone']||'').trim())add('warning','Accounts','Phone missing','"'+(r['Client Name']||r['Client ID']||'-')+'" ('+(r['Client ID']||'-')+') has no phone number.',{label:'View in Accounts',fn:function(){healthGoToSearch('adminAcc','srch-acc',r['Client Name']||r['Client ID']);}});
+    if(!(r['Client Phone']||'').trim())add('warning','Accounts','Phone missing','"'+(r['Client Name']||r['Client ID']||'-')+'" ('+(r['Client ID']||'-')+') has no phone number.',{label:'View in Accounts',fn:function(){healthGoToSearch('adminAcc','srch-acc',r['Client Name']||r['Client ID']);}},[(r['Employee ID']||'').trim().toLowerCase()]);
   });
   accAll.filter(function(r){return !(r['Client ID']||'').trim();}).forEach(function(r){
     var d=daysAgo(r['Date']);
-    if(d!==null&&d>=14)add('warning','Accounts','Under Process 14+ days pending','"'+(r['Client Name']||'-')+'" account has been Under Process for '+d+' days - follow up on the Client ID.',{label:'View Under Process',fn:function(){setAccMode('process');healthGoToSearch('adminAcc','srch-accProcess',r['Client Name']);}});
+    if(d!==null&&d>=14)add('warning','Accounts','Under Process 14+ days pending','"'+(r['Client Name']||'-')+'" account has been Under Process for '+d+' days - follow up on the Client ID.',{label:'View Under Process',fn:function(){setAccMode('process');healthGoToSearch('adminAcc','srch-accProcess',r['Client Name']);}},[(r['Employee ID']||'').trim().toLowerCase()]);
   });
 
   /* ---- SIP / Mutual Fund ---- */
   (allData.SIP||[]).forEach(function(r){
-    if((r['Type']||'SIP')==='SIP'&&!(r['SIP Due Date']||'').trim())add('warning','SIP','Due Date missing','The SIP for "'+(r['Client Name']||'-')+'" has no Due Date set - the monthly recurring reminder will never trigger.',{label:'View in SIP',fn:function(){healthGoToSearch('adminSIP','srch-sip',r['Client Name']);}});
+    if((r['Type']||'SIP')==='SIP'&&!(r['SIP Due Date']||'').trim())add('warning','SIP','Due Date missing','The SIP for "'+(r['Client Name']||'-')+'" has no Due Date set - the monthly recurring reminder will never trigger.',{label:'View in SIP',fn:function(){healthGoToSearch('adminSIP','srch-sip',r['Client Name']);}},[(r['Employee ID']||'').trim().toLowerCase()]);
   });
 
   /* ---- IPO (Application Buy) ---- */
@@ -5180,13 +5209,13 @@ function runHealthCheck(){
     if(selfKeyMap[k].length>1){
       var r=selfKeyMap[k][0];
       if(flaggedSelfRows[r['_rowNum']])return;flaggedSelfRows[r['_rowNum']]=true;
-      add('warning','Self Application','Duplicate PAN/Client ID in same IPO','The same PAN/Client ID has been added '+selfKeyMap[k].length+' times in "'+(r['IPO Name']||'-')+'".',{label:'View',fn:function(){showPage('ipo');setIPOMode('self',true);}});
+      add('warning','Self Application','Duplicate PAN/Client ID in same IPO','The same PAN/Client ID has been added '+selfKeyMap[k].length+' times in "'+(r['IPO Name']||'-')+'".',{label:'View',fn:function(){showPage('ipo');setIPOMode('self',true);}},[(r['Employee ID']||'').trim().toLowerCase()]);
     }
   });
 
   /* ---- Insurance ---- */
   (allData.Insurance||[]).forEach(function(r){
-    if(!(r['Client Phone']||'').trim())add('info','Insurance','Phone missing','"'+(r['Client Name']||'-')+'" has no phone number in the Insurance record.',{label:'View in Insurance',fn:function(){healthGoToSearch('adminIns','srch-ins',r['Client Name']);}});
+    if(!(r['Client Phone']||'').trim())add('info','Insurance','Phone missing','"'+(r['Client Name']||'-')+'" has no phone number in the Insurance record.',{label:'View in Insurance',fn:function(){healthGoToSearch('adminIns','srch-ins',r['Client Name']);}},[(r['Employee ID']||'').trim().toLowerCase()]);
   });
 
   /* ---- Monthly Hisab (payout calculation audit) - money-critical, checked mechanically ---- */
@@ -5220,9 +5249,30 @@ function runHealthCheck(){
   return issues;
 }
 function renderHealthCheckPage(){
-  var statsEl=document.getElementById('healthStats');
+  renderHealthCheckInto(runHealthCheck(),'healthStats','healthResults','healthLastRun');
+}
+/* ===== My Health Check (Aug 25 2026): employee-facing view of the SAME scan, filtered down to only
+   issues tagged with this employee's own Employee ID (see ownerIds on add() inside runHealthCheck()),
+   and only the client-data categories an employee can actually act on (Accounts/SIP/Self Application/
+   Insurance) - Employees/Settlement stay admin-only since they aren't client data an employee can fix.
+   Zero change to the admin scan itself - this is a pure filter over the same issues array. */
+function runHealthCheckForSelf(uid){
+  if(!uid)return [];
+  var allowedCats={Accounts:1,SIP:1,'Self Application':1,Insurance:1};
+  var uidL=String(uid).trim().toLowerCase();
+  return runHealthCheck().filter(function(i){
+    if(!allowedCats[i.cat])return false;
+    if(!i.ownerIds||!i.ownerIds.length)return false;
+    return i.ownerIds.indexOf(uidL)!==-1;
+  });
+}
+function renderMyHealthCheckPage(){
+  var issues=currentUser?runHealthCheckForSelf(currentUser.userId):[];
+  renderHealthCheckInto(issues,'myHealthStats','myHealthResults','myHealthLastRun');
+}
+function renderHealthCheckInto(issues,statsId,resultsId,lastRunId){
+  var statsEl=document.getElementById(statsId);
   if(!statsEl)return;
-  var issues=runHealthCheck();
   var counts={critical:0,warning:0,info:0};
   issues.forEach(function(i){counts[i.sev]=(counts[i.sev]||0)+1;});
   statsEl.innerHTML=mkStats([
@@ -5245,23 +5295,23 @@ function renderHealthCheckPage(){
       h+='<div class="table-wrap"><table><thead><tr><th style="width:80px;">Severity</th><th>Issue</th><th>Detail</th><th style="width:150px;">Action</th></tr></thead><tbody>';
       list.forEach(function(i,idx){
         var sevBadge=i.sev==='critical'?'<span class="badge red">Critical</span>':(i.sev==='warning'?'<span class="badge amber">Warning</span>':'<span class="badge blue">Info</span>');
-        var btnId='healthFixBtn_'+cat.replace(/[^a-zA-Z0-9]/g,'')+'_'+idx;
+        var btnId=resultsId+'_healthFixBtn_'+cat.replace(/[^a-zA-Z0-9]/g,'')+'_'+idx;
         h+='<tr><td>'+sevBadge+'</td><td><b>'+i.title+'</b></td><td style="font-size:12px;">'+i.detail+'</td><td>'+(i.action?('<button class="btn-mini" id="'+btnId+'">'+i.action.label+'</button>'):'-')+'</td></tr>';
       });
       h+='</tbody></table></div>';
     });
   }
-  document.getElementById('healthResults').innerHTML=h;
+  document.getElementById(resultsId).innerHTML=h;
   catKeys.forEach(function(cat){
     var list=cats[cat].slice().sort(function(a,b){return sevRank[a.sev]-sevRank[b.sev];});
     list.forEach(function(i,idx){
       if(!i.action)return;
-      var btnId='healthFixBtn_'+cat.replace(/[^a-zA-Z0-9]/g,'')+'_'+idx;
+      var btnId=resultsId+'_healthFixBtn_'+cat.replace(/[^a-zA-Z0-9]/g,'')+'_'+idx;
       var btn=document.getElementById(btnId);
       if(btn)btn.onclick=i.action.fn;
     });
   });
-  var lastRunEl=document.getElementById('healthLastRun');
+  var lastRunEl=document.getElementById(lastRunId);
   if(lastRunEl)lastRunEl.textContent='Last checked: '+new Date().toLocaleString();
 }
 /* ===== GROWTH & TARGETS (v80) - targets are now editable rows in the GrowthTargets sheet,
