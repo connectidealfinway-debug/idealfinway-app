@@ -573,7 +573,15 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
     <!-- MY PROFILE (self-service KYC completion: Gmail, PAN, Aadhaar) -->
     <div class="page" id="page-myProfile">
       <div class="page-header"><h1>My Profile</h1><p>Keep your Gmail ID, PAN &amp; Aadhaar up to date - required for salary slips, KYC and compliance</p></div>
+      <div id="moneyVaultEntryBox"></div>
       <div id="myProfileBox"></div>
+    </div>
+
+    <!-- MY MONEY VAULT (private personal finance tracker - admin/employee) -->
+    <div class="page" id="page-moneyVault">
+      <div class="page-header"><h1>&#128176; My Money Vault</h1><p>Your personal income, expenses, loans &amp; net worth tracker</p></div>
+      <div class="prev-ok" style="margin-bottom:14px;">&#128274; 100% Private - this data is visible only to you. Not your manager, not even the admin can see it.</div>
+      <div id="mvBox"></div>
     </div>
 
     <!-- CLIENT 360 (search + full profile, Choice Connect Client Details Report style) -->
@@ -2034,6 +2042,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
     <div class="nav-item" onclick="showStuPage('stuClasses')">&#127909; Class Links</div>
     <div class="nav-item" onclick="showStuPage('stuTests')">&#128221; Test Series</div>
     <div class="nav-item" onclick="showStuPage('stuRefer')">&#128176; Refer &amp; Earn</div>
+    <div class="nav-item" onclick="showStuPage('stuMoneyVault')">&#128176; Money Vault</div>
     <div class="sidebar-bottom"><button class="btn-logout" onclick="logout()">&#8592; Logout</button></div>
   </nav>
   <main id="stuMain">
@@ -2069,6 +2078,11 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
     <div class="page" id="spage-stuRefer">
       <div class="page-header"><h1>&#128176; Refer &amp; Earn</h1><p>The referral form and account-opening link will appear here.</p></div>
       <p style="color:var(--muted);padding:20px;">&#128679; This feature is launching soon.</p>
+    </div>
+    <div class="page" id="spage-stuMoneyVault">
+      <div class="page-header"><h1>&#128176; My Money Vault</h1><p>Your personal income, expenses, loans &amp; net worth tracker</p></div>
+      <div class="prev-ok" style="margin-bottom:14px;">&#128274; 100% Private - this data is visible only to you. Not even the admin can see it.</div>
+      <div id="stuMvBox"></div>
     </div>
   </main>
 </div>
@@ -3223,7 +3237,8 @@ function renderPage(id){
   else if(id==='contest')renderContestPage();
   else if(id==='bizOverview')renderBizOverview();
   else if(id==='client360'){var e=document.getElementById('c360_q');if(e)e.value='';document.getElementById('c360_results').innerHTML='';document.getElementById('c360_profile').innerHTML='';}
-  else if(id==='myProfile')renderMyProfile();
+  else if(id==='myProfile'){renderMyProfile();renderMoneyVaultEntry();}
+  else if(id==='moneyVault')renderMoneyVault();
   else if(id==='ipo')setIPOMode(ipoModeUserSet?ipoMode:(canIPOAccess()?'buy':'self'));
 }
 
@@ -5090,6 +5105,364 @@ function healthGoToSearch(pageId,searchId,term){
     var el=document.getElementById(searchId);
     if(el){el.value=term;el.dispatchEvent(new Event('input'));}
   }
+}
+/* ===== MY MONEY VAULT (Aug 25 2026): fully private personal finance tracker - income, expenses,
+   who-owes-whom ledger, and a manual assets/loans snapshot for net worth. Available to every logged-in
+   user (admin/employee/student) via My Profile (admin+employee) or a dedicated nav item (student), all
+   sharing these exact same functions keyed only off currentUser.userId - nothing here is client data,
+   it is the LOGGED-IN PERSON'S OWN money. Backed by getMyFinance(uid) on the server, which is NEVER part
+   of the bulk getData() payload every browser downloads - see the Code.gs comment above getMyFinance()
+   for why that separation is what actually makes the "100% Private" promise true, not just a UI label. */
+var pfData={finance:[],ledger:[],assets:[]};
+var pfLoaded=false;
+var pfFilterKey='month';
+var PF_INCOME_CATS=['Salary','Business / Brokerage','Bonus','Gift','Other'];
+var PF_EXPENSE_CATS=['Office','Travel','Food & Outing','Clothes','Family / Home','Bills & Rent','Health','Shopping','Entertainment','Other'];
+var PF_ASSET_TYPES=['Bank Balance','Demat Holding','SIP Value','Loan Outstanding','Other Asset','Other Liability'];
+
+function fetchMyFinance(){
+  var qs='action=getMyFinance&t='+Date.now()+'&uid='+encodeURIComponent(currentUser.userId);
+  return fetch(API+'?'+qs).then(function(r){return r.text();}).then(function(t){return JSON.parse(t);}).then(function(r){if(r&&r.success)return r;return postData({action:'getMyFinance',uid:currentUser.userId});}).catch(function(){return postData({action:'getMyFinance',uid:currentUser.userId});});
+}
+function loadMyFinance(cb){
+  if(!currentUser){if(cb)cb();return;}
+  fetchMyFinance().then(function(r){
+    if(r&&r.success){pfData.finance=r.finance||[];pfData.ledger=r.ledger||[];pfData.assets=r.assets||[];}
+    pfLoaded=true;
+    if(cb)cb();
+  }).catch(function(){pfLoaded=true;if(cb)cb();});
+}
+function renderMoneyVaultEntry(){
+  var el=document.getElementById('moneyVaultEntryBox');
+  if(!el||!currentUser)return;
+  el.innerHTML='<div class="form-card" style="margin-bottom:16px;background:linear-gradient(135deg,#0f2540,#0a3d2e);border:1px solid rgba(63,191,127,0.35);cursor:pointer;" onclick="showPage(\'moneyVault\')">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">'
+    +'<div><div style="font-weight:700;font-size:16px;color:#fff;">&#128176; My Money Vault</div>'
+    +'<div style="font-size:12px;color:#b9c4d0;margin-top:4px;">Track your own income, expenses, loans &amp; net worth &#8212; private to you.<br>You\'re earning, but are you tracking it? Start today.</div></div>'
+    +'<button class="btn-submit" style="width:auto;padding:10px 20px;" onclick="event.stopPropagation();showPage(\'moneyVault\')">Open &#8594;</button>'
+    +'</div></div>';
+}
+function renderMoneyVault(){ loadMoneyVaultInto('mvBox'); }
+function renderStuMoneyVault(){ loadMoneyVaultInto('stuMvBox'); }
+function loadMoneyVaultInto(targetId){
+  var el=document.getElementById(targetId);
+  if(!el)return;
+  if(!pfLoaded){
+    el.innerHTML='<div class="no-data" style="padding:30px;text-align:center;">Loading your private data...</div>';
+    loadMyFinance(function(){ renderMoneyVaultBox(targetId); });
+    return;
+  }
+  renderMoneyVaultBox(targetId);
+}
+function pfSetFilter(f,targetId){ pfFilterKey=f; renderMoneyVaultBox(targetId); }
+function pfFilteredFinance(){ return fDate(pfData.finance||[], pfFilterKey); }
+function pfTotals(rows){
+  var inc=0,exp=0;
+  rows.forEach(function(r){ var amt=parseFloat(r['Amount'])||0; if(r['Type']==='Income')inc+=amt; else exp+=amt; });
+  return {income:inc,expense:exp,net:inc-exp};
+}
+function pfCategoryBreakdown(rows){
+  var m={};
+  rows.filter(function(r){return r['Type']==='Expense';}).forEach(function(r){
+    var c=r['Category']||'Other'; m[c]=(m[c]||0)+(parseFloat(r['Amount'])||0);
+  });
+  return Object.keys(m).map(function(k){return {cat:k,amt:m[k]};}).sort(function(a,b){return b.amt-a.amt;});
+}
+function pfAssetsSummary(){
+  var groups={'Bank Balance':0,'Demat Holding':0,'SIP Value':0,'Other Asset':0,'Loan Outstanding':0,'Other Liability':0};
+  (pfData.assets||[]).forEach(function(r){ var t=r['Asset_Type']||''; if(groups[t]!==undefined)groups[t]+=(parseFloat(r['Amount'])||0); });
+  var totalAssets=groups['Bank Balance']+groups['Demat Holding']+groups['SIP Value']+groups['Other Asset'];
+  var totalLiab=groups['Loan Outstanding']+groups['Other Liability'];
+  return {groups:groups,totalAssets:totalAssets,totalLiab:totalLiab,netWorth:totalAssets-totalLiab};
+}
+function pfLedgerSummary(){
+  var toReceive=0,toPay=0;
+  (pfData.ledger||[]).forEach(function(r){
+    if((r['Status']||'Pending')!=='Pending')return;
+    var amt=parseFloat(r['Amount'])||0;
+    if(r['Direction']==='I Gave')toReceive+=amt; else toPay+=amt;
+  });
+  return {toReceive:toReceive,toPay:toPay};
+}
+function pfMonthTrend(){
+  var now=new Date(),y=now.getFullYear(),m=now.getMonth();
+  var cmStart=new Date(y,m,1),lmStart=new Date(y,m-1,1),lmEnd=new Date(y,m,0,23,59,59);
+  var rows=pfData.finance||[];
+  function sumIn(type,from,to){
+    return rows.filter(function(r){
+      if(r['Type']!==type)return false;
+      var d=new Date((r['Date']||'')+'T00:00:00');
+      return !isNaN(d)&&d>=from&&d<=to;
+    }).reduce(function(s,r){return s+(parseFloat(r['Amount'])||0);},0);
+  }
+  return {cmExp:sumIn('Expense',cmStart,now),lmExp:sumIn('Expense',lmStart,lmEnd),cmInc:sumIn('Income',cmStart,now),lmInc:sumIn('Income',lmStart,lmEnd)};
+}
+function renderMoneyVaultBox(targetId){
+  var el=document.getElementById(targetId);
+  if(!el||!currentUser)return;
+  var rows=pfFilteredFinance();
+  var tot=pfTotals(rows);
+  var trend=pfMonthTrend();
+  var expBadge=trend.lmExp>0?Math.round(((trend.cmExp-trend.lmExp)/trend.lmExp)*100):(trend.cmExp>0?100:0);
+  var incBadge=trend.lmInc>0?Math.round(((trend.cmInc-trend.lmInc)/trend.lmInc)*100):(trend.cmInc>0?100:0);
+  var assetsSum=pfAssetsSummary();
+  var ledgerSum=pfLedgerSummary();
+  var catBreak=pfCategoryBreakdown(rows);
+
+  var h='';
+  h+='<div style="font-size:13px;color:var(--muted,#8a94a6);font-style:italic;margin-bottom:14px;">You\'re earning &#8212; but are you tracking it? Most people can\'t say where their money actually goes. Log it here, once a day, and let the numbers tell you.</div>';
+
+  h+='<div class="filter-bar">';
+  var fLabels={today:'Today',yesterday:'Yesterday',week:'This Week',month:'This Month',quarter:'Quarter',year:'This Year',all:'All Time'};
+  ['today','yesterday','week','month','quarter','year','all'].forEach(function(f){
+    h+='<button class="filter-btn'+(pfFilterKey===f?' active':'')+'" onclick="pfSetFilter(\''+f+'\',\''+targetId+'\')">'+fLabels[f]+'</button>';
+  });
+  h+='</div>';
+
+  h+='<div class="stats-grid">'+mkStats([
+    {label:'Income',value:fmt(tot.income),sub:(incBadge>=0?'+':'')+incBadge+'% vs last month',color:'green'},
+    {label:'Expense',value:fmt(tot.expense),sub:(expBadge>=0?'+':'')+expBadge+'% vs last month',color:'red'},
+    {label:'Net Savings',value:fmt(tot.net),sub:'income - expense, this period',color:tot.net>=0?'blue':'amber'},
+    {label:'Net Worth',value:fmt(assetsSum.netWorth),sub:'assets - liabilities, current',color:'purple'}
+  ])+'</div>';
+
+  h+='<div style="display:flex;gap:10px;flex-wrap:wrap;margin:14px 0;">';
+  h+='<button class="btn-submit" style="width:auto;padding:10px 18px;" onclick="openAddIncomeModal(\''+targetId+'\')">&#43; Add Income</button>';
+  h+='<button class="btn-submit" style="width:auto;padding:10px 18px;background:var(--danger,#ef4444);" onclick="openAddExpenseModal(\''+targetId+'\')">&#43; Add Expense</button>';
+  h+='<button class="btn-cancel" style="width:auto;padding:10px 18px;" onclick="openAddLedgerModal(\''+targetId+'\')">&#43; Money Given / Taken</button>';
+  h+='<button class="btn-cancel" style="width:auto;padding:10px 18px;" onclick="openManageAssetsModal(\''+targetId+'\')">&#127974; Manage Assets &amp; Loans</button>';
+  h+='</div>';
+
+  h+='<div class="form-card" style="margin-bottom:16px;">';
+  h+='<div style="font-weight:700;margin-bottom:10px;">&#127974; Assets &amp; Liabilities (current)</div>';
+  h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;font-size:13px;">';
+  [['Bank Balance',assetsSum.groups['Bank Balance']],['Demat Holding',assetsSum.groups['Demat Holding']],['SIP Value',assetsSum.groups['SIP Value']],['Other Assets',assetsSum.groups['Other Asset']],['Loans Outstanding',assetsSum.groups['Loan Outstanding']],['Other Liabilities',assetsSum.groups['Other Liability']]].forEach(function(p){
+    h+='<div><div style="color:var(--muted,#8a94a6);">'+p[0]+'</div><div style="font-weight:700;">'+fmt(p[1])+'</div></div>';
+  });
+  h+='</div></div>';
+
+  h+='<div class="form-card" style="margin-bottom:16px;">';
+  h+='<div style="font-weight:700;margin-bottom:10px;">&#129309; Who Owes Whom</div>';
+  h+='<div style="display:flex;gap:24px;flex-wrap:wrap;font-size:13px;margin-bottom:10px;">';
+  h+='<div><div style="color:var(--muted,#8a94a6);">To Receive (pending)</div><div style="font-weight:700;color:var(--accent,#3fbf7f);">'+fmt(ledgerSum.toReceive)+'</div></div>';
+  h+='<div><div style="color:var(--muted,#8a94a6);">To Pay (pending)</div><div style="font-weight:700;color:var(--danger,#ef4444);">'+fmt(ledgerSum.toPay)+'</div></div>';
+  h+='</div>';
+  h+=mkLedgerTable(targetId);
+  h+='</div>';
+
+  if(catBreak.length){
+    h+='<div class="form-card" style="margin-bottom:16px;">';
+    h+='<div style="font-weight:700;margin-bottom:10px;">&#128202; Expense by Category (this period)</div>';
+    var maxAmt=catBreak[0].amt||1;
+    catBreak.forEach(function(c){
+      var pct=Math.round((c.amt/maxAmt)*100);
+      h+='<div style="margin-bottom:8px;"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;"><span>'+siEsc(c.cat)+'</span><span>'+fmt(c.amt)+'</span></div><div class="gprog-track"><div class="gprog-fill" style="width:'+pct+'%;"></div></div></div>';
+    });
+    h+='</div>';
+  }
+
+  h+='<div class="form-card">';
+  h+='<div style="font-weight:700;margin-bottom:10px;">&#128203; Transactions (this period)</div>';
+  h+=mkFinanceTable(rows,targetId);
+  h+='</div>';
+
+  el.innerHTML=h;
+}
+function mkFinanceTable(rows,targetId){
+  if(!rows.length)return '<div class="no-data">No entries in this period yet. Add your first income or expense above.</div>';
+  var sorted=rows.slice().sort(function(a,b){return (b['Date']||'')<(a['Date']||'')?-1:1;});
+  var h='<div class="table-wrap"><table><thead><tr><th>Date</th><th>Type</th><th>Category</th><th>Amount</th><th>Note</th><th style="width:90px;">Action</th></tr></thead><tbody>';
+  sorted.forEach(function(r){
+    var isInc=r['Type']==='Income';
+    h+='<tr><td>'+(r['Date']||'-')+'</td><td><span class="badge '+(isInc?'green':'red')+'">'+r['Type']+'</span></td><td>'+siEsc(r['Category']||'-')+'</td><td style="font-weight:700;color:'+(isInc?'var(--accent,#3fbf7f)':'var(--danger,#ef4444)')+';">'+fmt(r['Amount'])+'</td><td style="font-size:12px;">'+siEsc(r['Note']||'')+'</td>'
+      +'<td><button class="btn-edit" onclick="openEditFinanceModal('+r['_rowNum']+',\''+targetId+'\')">&#9998;</button> <button class="btn-del" onclick="pfDeleteRow(\'PersonalFinance\','+r['_rowNum']+',\''+targetId+'\')">&#128465;</button></td></tr>';
+  });
+  h+='</tbody></table></div>';
+  return h;
+}
+function mkLedgerTable(targetId){
+  var rows=(pfData.ledger||[]).slice().sort(function(a,b){return (b['Date']||'')<(a['Date']||'')?-1:1;});
+  if(!rows.length)return '<div class="no-data">No ledger entries yet.</div>';
+  var h='<div class="table-wrap"><table><thead><tr><th>Person</th><th>Direction</th><th>Amount</th><th>Date</th><th>Status</th><th style="width:130px;">Action</th></tr></thead><tbody>';
+  rows.forEach(function(r){
+    var give=r['Direction']==='I Gave';
+    h+='<tr><td>'+siEsc(r['Person_Name']||'-')+'</td><td><span class="badge '+(give?'blue':'amber')+'">'+r['Direction']+'</span></td><td style="font-weight:700;">'+fmt(r['Amount'])+'</td><td>'+(r['Date']||'-')+'</td><td>'+((r['Status']||'Pending')==='Settled'?'<span class="badge green">Settled</span>':'<span class="badge amber">Pending</span>')+'</td>'
+      +'<td>'+((r['Status']||'Pending')!=='Settled'?'<button class="btn-edit" onclick="pfSettleLedger('+r['_rowNum']+',\''+targetId+'\')">&#10003;</button> ':'')+'<button class="btn-edit" onclick="openEditLedgerModal('+r['_rowNum']+',\''+targetId+'\')">&#9998;</button> <button class="btn-del" onclick="pfDeleteRow(\'PersonalLedger\','+r['_rowNum']+',\''+targetId+'\')">&#128465;</button></td></tr>';
+  });
+  h+='</tbody></table></div>';
+  return h;
+}
+function openAddIncomeModal(targetId){
+  var h='<div class="modal-title">&#43; Add Income</div>';
+  h+='<div class="form-group"><label>Date</label><input type="date" id="pf_i_date" value="'+td()+'"></div>';
+  h+='<div class="form-group"><label>Category</label><input type="text" id="pf_i_cat" list="pfIncomeCats" value="Salary"></div>';
+  h+='<datalist id="pfIncomeCats">'+PF_INCOME_CATS.map(function(c){return '<option value="'+c+'">';}).join('')+'</datalist>';
+  h+='<div class="form-group"><label>Amount</label><input type="number" id="pf_i_amt" placeholder="0"></div>';
+  h+='<div class="form-group"><label>Note (optional)</label><input type="text" id="pf_i_note" placeholder="e.g. August salary"></div>';
+  h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-submit" onclick="submitAddIncome(\''+targetId+'\')">Add</button></div>';
+  document.getElementById('modalBox').innerHTML=h;document.getElementById('modal').className='show';
+}
+function submitAddIncome(targetId){
+  var amt=parseFloat(document.getElementById('pf_i_amt').value)||0;
+  if(amt<=0){showToast('Enter a valid amount','error');return;}
+  var p={action:'addGeneric',sheet:'PersonalFinance',Entry_ID:'PF'+Date.now(),User_ID:currentUser.userId,User_Name:currentUser.name,Role:currentUser.role,Date:document.getElementById('pf_i_date').value||td(),Type:'Income',Category:(document.getElementById('pf_i_cat').value||'Other').trim(),Amount:amt,Note:(document.getElementById('pf_i_note').value||'').trim(),Created_Date:td()};
+  postData(p).then(function(r){
+    if(r&&r.success){showToast('Income added','success');closeModal();loadMyFinance(function(){renderMoneyVaultBox(targetId);});}
+    else showToast('Failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+function openAddExpenseModal(targetId){
+  var h='<div class="modal-title">&#43; Add Expense</div>';
+  h+='<div class="form-group"><label>Date</label><input type="date" id="pf_x_date" value="'+td()+'"></div>';
+  h+='<div class="form-group"><label>Category</label><input type="text" id="pf_x_cat" list="pfExpenseCats" placeholder="e.g. Office"></div>';
+  h+='<datalist id="pfExpenseCats">'+PF_EXPENSE_CATS.map(function(c){return '<option value="'+c+'">';}).join('')+'</datalist>';
+  h+='<div class="form-group"><label>Amount</label><input type="number" id="pf_x_amt" placeholder="0"></div>';
+  h+='<div class="form-group"><label>Note (optional)</label><input type="text" id="pf_x_note" placeholder="e.g. lunch with client"></div>';
+  h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-submit" onclick="submitAddExpense(\''+targetId+'\')">Add</button></div>';
+  document.getElementById('modalBox').innerHTML=h;document.getElementById('modal').className='show';
+}
+function submitAddExpense(targetId){
+  var amt=parseFloat(document.getElementById('pf_x_amt').value)||0;
+  if(amt<=0){showToast('Enter a valid amount','error');return;}
+  var p={action:'addGeneric',sheet:'PersonalFinance',Entry_ID:'PF'+Date.now(),User_ID:currentUser.userId,User_Name:currentUser.name,Role:currentUser.role,Date:document.getElementById('pf_x_date').value||td(),Type:'Expense',Category:(document.getElementById('pf_x_cat').value||'Other').trim(),Amount:amt,Note:(document.getElementById('pf_x_note').value||'').trim(),Created_Date:td()};
+  postData(p).then(function(r){
+    if(r&&r.success){showToast('Expense added','success');closeModal();loadMyFinance(function(){renderMoneyVaultBox(targetId);});}
+    else showToast('Failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+function openEditFinanceModal(rowNum,targetId){
+  var r=(pfData.finance||[]).find(function(x){return String(x['_rowNum'])===String(rowNum);});
+  if(!r){showToast('Entry not found','error');return;}
+  var cats=r['Type']==='Income'?PF_INCOME_CATS:PF_EXPENSE_CATS;
+  var h='<div class="modal-title">&#9998; Edit '+r['Type']+'</div>';
+  h+='<div class="form-group"><label>Date</label><input type="date" id="pf_e_date" value="'+(r['Date']||td())+'"></div>';
+  h+='<div class="form-group"><label>Category</label><input type="text" id="pf_e_cat" list="pfEditCats" value="'+siEsc(r['Category']||'')+'"></div>';
+  h+='<datalist id="pfEditCats">'+cats.map(function(c){return '<option value="'+c+'">';}).join('')+'</datalist>';
+  h+='<div class="form-group"><label>Amount</label><input type="number" id="pf_e_amt" value="'+(parseFloat(r['Amount'])||0)+'"></div>';
+  h+='<div class="form-group"><label>Note</label><input type="text" id="pf_e_note" value="'+siEsc(r['Note']||'')+'"></div>';
+  h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-del" onclick="pfDeleteRow(\'PersonalFinance\','+rowNum+',\''+targetId+'\')">&#128465; Delete</button><button class="btn-save" onclick="submitEditFinance('+rowNum+',\''+targetId+'\')">Save</button></div>';
+  document.getElementById('modalBox').innerHTML=h;document.getElementById('modal').className='show';
+}
+function submitEditFinance(rowNum,targetId){
+  var vals={Date:document.getElementById('pf_e_date').value||td(),Category:(document.getElementById('pf_e_cat').value||'Other').trim(),Amount:parseFloat(document.getElementById('pf_e_amt').value)||0,Note:(document.getElementById('pf_e_note').value||'').trim()};
+  postData({action:'editRow',sheet:'PersonalFinance',rowNum:rowNum,vals:vals}).then(function(r){
+    if(r&&r.success){showToast('Updated','success');closeModal();loadMyFinance(function(){renderMoneyVaultBox(targetId);});}
+    else showToast('Failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+function openAddLedgerModal(targetId){
+  var h='<div class="modal-title">&#43; Money Given / Taken</div>';
+  h+='<div class="form-group"><label>Person Name</label><input type="text" id="pl_name" placeholder="e.g. Rahul"></div>';
+  h+='<div class="form-group"><label>Direction</label><select id="pl_dir"><option value="I Gave">I Gave (they owe me)</option><option value="I Took">I Took (I owe them)</option></select></div>';
+  h+='<div class="form-group"><label>Amount</label><input type="number" id="pl_amt" placeholder="0"></div>';
+  h+='<div class="form-group"><label>Date</label><input type="date" id="pl_date" value="'+td()+'"></div>';
+  h+='<div class="form-group"><label>Note (optional)</label><input type="text" id="pl_note" placeholder="e.g. for petrol"></div>';
+  h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-submit" onclick="submitAddLedger(\''+targetId+'\')">Add</button></div>';
+  document.getElementById('modalBox').innerHTML=h;document.getElementById('modal').className='show';
+}
+function submitAddLedger(targetId){
+  var name=(document.getElementById('pl_name').value||'').trim();
+  var amt=parseFloat(document.getElementById('pl_amt').value)||0;
+  if(!name){showToast('Person name required','error');return;}
+  if(amt<=0){showToast('Enter a valid amount','error');return;}
+  var p={action:'addGeneric',sheet:'PersonalLedger',Entry_ID:'PL'+Date.now(),User_ID:currentUser.userId,User_Name:currentUser.name,Person_Name:name,Direction:document.getElementById('pl_dir').value,Amount:amt,Date:document.getElementById('pl_date').value||td(),Note:(document.getElementById('pl_note').value||'').trim(),Status:'Pending',Settled_Date:''};
+  postData(p).then(function(r){
+    if(r&&r.success){showToast('Entry added','success');closeModal();loadMyFinance(function(){renderMoneyVaultBox(targetId);});}
+    else showToast('Failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+function openEditLedgerModal(rowNum,targetId){
+  var r=(pfData.ledger||[]).find(function(x){return String(x['_rowNum'])===String(rowNum);});
+  if(!r){showToast('Entry not found','error');return;}
+  var h='<div class="modal-title">&#9998; Edit Ledger Entry</div>';
+  h+='<div class="form-group"><label>Person Name</label><input type="text" id="ple_name" value="'+siEsc(r['Person_Name']||'')+'"></div>';
+  h+='<div class="form-group"><label>Direction</label><select id="ple_dir"><option value="I Gave"'+(r['Direction']==='I Gave'?' selected':'')+'>I Gave (they owe me)</option><option value="I Took"'+(r['Direction']==='I Took'?' selected':'')+'>I Took (I owe them)</option></select></div>';
+  h+='<div class="form-group"><label>Amount</label><input type="number" id="ple_amt" value="'+(parseFloat(r['Amount'])||0)+'"></div>';
+  h+='<div class="form-group"><label>Date</label><input type="date" id="ple_date" value="'+(r['Date']||td())+'"></div>';
+  h+='<div class="form-group"><label>Note</label><input type="text" id="ple_note" value="'+siEsc(r['Note']||'')+'"></div>';
+  h+='<div class="form-group"><label>Status</label><select id="ple_status"><option value="Pending"'+((r['Status']||'Pending')==='Pending'?' selected':'')+'>Pending</option><option value="Settled"'+(r['Status']==='Settled'?' selected':'')+'>Settled</option></select></div>';
+  h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-del" onclick="pfDeleteRow(\'PersonalLedger\','+rowNum+',\''+targetId+'\')">&#128465; Delete</button><button class="btn-save" onclick="submitEditLedger('+rowNum+',\''+targetId+'\')">Save</button></div>';
+  document.getElementById('modalBox').innerHTML=h;document.getElementById('modal').className='show';
+}
+function submitEditLedger(rowNum,targetId){
+  var r=(pfData.ledger||[]).find(function(x){return String(x['_rowNum'])===String(rowNum);});
+  var newStatus=document.getElementById('ple_status').value;
+  var vals={Person_Name:(document.getElementById('ple_name').value||'').trim(),Direction:document.getElementById('ple_dir').value,Amount:parseFloat(document.getElementById('ple_amt').value)||0,Date:document.getElementById('ple_date').value||td(),Note:(document.getElementById('ple_note').value||'').trim(),Status:newStatus};
+  if(newStatus==='Settled'&&(!r||r['Status']!=='Settled'))vals['Settled_Date']=td();
+  if(newStatus!=='Settled')vals['Settled_Date']='';
+  postData({action:'editRow',sheet:'PersonalLedger',rowNum:rowNum,vals:vals}).then(function(res){
+    if(res&&res.success){showToast('Updated','success');closeModal();loadMyFinance(function(){renderMoneyVaultBox(targetId);});}
+    else showToast('Failed: '+(res&&res.error||''),'error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+function pfSettleLedger(rowNum,targetId){
+  postData({action:'editRow',sheet:'PersonalLedger',rowNum:rowNum,vals:{Status:'Settled','Settled_Date':td()}}).then(function(r){
+    if(r&&r.success){showToast('Marked settled','success');loadMyFinance(function(){renderMoneyVaultBox(targetId);});}
+    else showToast('Failed','error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+function openManageAssetsModal(targetId){
+  var h='<div class="modal-title">&#127974; Manage Assets &amp; Loans</div>';
+  h+='<div style="font-size:12px;color:var(--muted,#8a94a6);margin-bottom:10px;">Add each bank account, your demat/SIP current value, or any loan separately. Update the amount here any time it changes &#8212; this always reflects your CURRENT balance, not a monthly log.</div>';
+  h+='<div id="pfAssetsList">'+mkAssetsList(targetId)+'</div>';
+  h+='<div style="font-weight:700;margin:14px 0 8px;">Add New</div>';
+  h+='<div class="form-group"><label>Type</label><select id="pa_type">'+PF_ASSET_TYPES.map(function(t){return '<option value="'+t+'">'+t+'</option>';}).join('')+'</select></div>';
+  h+='<div class="form-group"><label>Label</label><input type="text" id="pa_label" placeholder="e.g. HDFC Savings, Home Loan"></div>';
+  h+='<div class="form-group"><label>Amount</label><input type="number" id="pa_amt" placeholder="0"></div>';
+  h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal();renderMoneyVaultBox(\''+targetId+'\')">Close</button><button class="btn-submit" onclick="submitAddAsset(\''+targetId+'\')">&#43; Add</button></div>';
+  document.getElementById('modalBox').innerHTML=h;document.getElementById('modal').className='show';
+}
+function mkAssetsList(targetId){
+  var rows=pfData.assets||[];
+  if(!rows.length)return '<div class="no-data">No assets/loans added yet.</div>';
+  var h='<div class="table-wrap"><table><thead><tr><th>Type</th><th>Label</th><th>Amount</th><th style="width:90px;">Action</th></tr></thead><tbody>';
+  rows.forEach(function(r){
+    h+='<tr><td>'+siEsc(r['Asset_Type']||'-')+'</td><td>'+siEsc(r['Label']||'-')+'</td><td style="font-weight:700;">'+fmt(r['Amount'])+'</td>'
+      +'<td><button class="btn-edit" onclick="openEditAssetModal('+r['_rowNum']+',\''+targetId+'\')">&#9998;</button> <button class="btn-del" onclick="pfDeleteAsset('+r['_rowNum']+',\''+targetId+'\')">&#128465;</button></td></tr>';
+  });
+  h+='</tbody></table></div>';
+  return h;
+}
+function submitAddAsset(targetId){
+  var label=(document.getElementById('pa_label').value||'').trim();
+  var amt=parseFloat(document.getElementById('pa_amt').value)||0;
+  if(!label){showToast('Label required','error');return;}
+  var p={action:'addGeneric',sheet:'PersonalAssets',Entry_ID:'PA'+Date.now(),User_ID:currentUser.userId,User_Name:currentUser.name,Asset_Type:document.getElementById('pa_type').value,Label:label,Amount:amt,Date:td(),Note:''};
+  postData(p).then(function(r){
+    if(r&&r.success){showToast('Added','success');loadMyFinance(function(){openManageAssetsModal(targetId);});}
+    else showToast('Failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+function openEditAssetModal(rowNum,targetId){
+  var r=(pfData.assets||[]).find(function(x){return String(x['_rowNum'])===String(rowNum);});
+  if(!r){showToast('Not found','error');return;}
+  var h='<div class="modal-title">&#9998; Edit Asset / Loan</div>';
+  h+='<div class="form-group"><label>Type</label><select id="pae_type">'+PF_ASSET_TYPES.map(function(t){return '<option value="'+t+'"'+(r['Asset_Type']===t?' selected':'')+'>'+t+'</option>';}).join('')+'</select></div>';
+  h+='<div class="form-group"><label>Label</label><input type="text" id="pae_label" value="'+siEsc(r['Label']||'')+'"></div>';
+  h+='<div class="form-group"><label>Amount</label><input type="number" id="pae_amt" value="'+(parseFloat(r['Amount'])||0)+'"></div>';
+  h+='<div class="modal-actions"><button class="btn-cancel" onclick="openManageAssetsModal(\''+targetId+'\')">Back</button><button class="btn-del" onclick="pfDeleteAsset('+rowNum+',\''+targetId+'\')">&#128465; Delete</button><button class="btn-save" onclick="submitEditAsset('+rowNum+',\''+targetId+'\')">Save</button></div>';
+  document.getElementById('modalBox').innerHTML=h;document.getElementById('modal').className='show';
+}
+function submitEditAsset(rowNum,targetId){
+  var vals={Asset_Type:document.getElementById('pae_type').value,Label:(document.getElementById('pae_label').value||'').trim(),Amount:parseFloat(document.getElementById('pae_amt').value)||0};
+  postData({action:'editRow',sheet:'PersonalAssets',rowNum:rowNum,vals:vals}).then(function(r){
+    if(r&&r.success){showToast('Updated','success');loadMyFinance(function(){openManageAssetsModal(targetId);});}
+    else showToast('Failed','error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+function pfDeleteAsset(rowNum,targetId){
+  if(!confirm('Delete this entry?'))return;
+  postData({action:'deleteRow',sheet:'PersonalAssets',rowNum:rowNum}).then(function(r){
+    if(r&&r.success){showToast('Deleted','success');loadMyFinance(function(){openManageAssetsModal(targetId);});}
+    else showToast('Failed','error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
+}
+function pfDeleteRow(sheet,rowNum,targetId){
+  if(!confirm('Delete this entry?'))return;
+  postData({action:'deleteRow',sheet:sheet,rowNum:rowNum}).then(function(r){
+    if(r&&r.success){showToast('Deleted','success');closeModal();loadMyFinance(function(){renderMoneyVaultBox(targetId);});}
+    else showToast('Failed','error');
+  }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
 function runHealthCheck(){
   var issues=[];
@@ -10370,6 +10743,7 @@ function showStuPage(id){
   else if(id==='stuTests')loadStudentDataStudent(renderStuTests);
   else if(id==='stuAttendance')loadStudentDataStudent(renderStuAttendance);
   else if(id==='stuRefer')loadStudentDataStudent(renderStuRefer);
+  else if(id==='stuMoneyVault')renderStuMoneyVault();
   closeStuMobileNav();
   window.scrollTo(0,0);
 }
