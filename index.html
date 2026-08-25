@@ -924,7 +924,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
         </div>
       </div>
       <div class="filter-bar" id="teamJumpBar" style="position:sticky;top:0;z-index:5;background:var(--bg,#0d1117);padding:8px 4px;flex-wrap:wrap;border-radius:8px;"><button class="filter-btn" onclick="document.getElementById('teamSecBrok').scrollIntoView({behavior:'smooth',block:'start'})">💰 Brokerage</button><button class="filter-btn" onclick="document.getElementById('teamSecAcc').scrollIntoView({behavior:'smooth',block:'start'})">👤 Accounts</button><button class="filter-btn" onclick="document.getElementById('teamSecHold').scrollIntoView({behavior:'smooth',block:'start'})">💼 Holding</button><button class="filter-btn" onclick="document.getElementById('teamSecSIP').scrollIntoView({behavior:'smooth',block:'start'})">📈 SIP</button><button class="filter-btn" onclick="document.getElementById('teamSecIns').scrollIntoView({behavior:'smooth',block:'start'})">🛡 Insurance</button><button class="filter-btn" onclick="document.getElementById('teamSecStud').scrollIntoView({behavior:'smooth',block:'start'})">🎓 Students</button><button class="filter-btn" onclick="document.getElementById('teamSecCCL').scrollIntoView({behavior:'smooth',block:'start'})">📞 Call &amp; Trade</button><button class="filter-btn" onclick="document.getElementById('teamSecCT').scrollIntoView({behavior:'smooth',block:'start'})">📋 Call Log</button><button class="filter-btn" onclick="document.getElementById('teamSecFin').scrollIntoView({behavior:'smooth',block:'start'})">₹ Income/Expense</button></div><div class="stats-grid" id="teamStats"></div>
-      <h3 id="teamSecBrok" style="margin:24px 0 10px;">Brokerage (Client-wise)</h3>
+      <h3 id="teamSecBrok" style="margin:24px 0 10px;">Brokerage (This Month, Date-wise)</h3>
       <div id="teamBrokTable"></div>
       <h3 id="teamSecAcc" style="margin:24px 0 10px;">Accounts</h3>
       <div style="margin-bottom:10px;"><select id="team_accsort" onchange="setTeamAccSort(this.value)" style="max-width:240px;"><option value="">Sort: Working Clients First</option><option value="cid">Sort: Client ID (FBO1,2,3...)</option><option value="brokerage">Sort: Brokerage (High to Low)</option></select></div>
@@ -2971,13 +2971,14 @@ function renderMyTeamData(){
   var acc=fEmpStrict(allData.Accounts||[],uid),sip=fEmpStrict(allData.SIP||[],uid),ins=fEmpStrict(allData.Insurance||[],uid),stud=fEmpStrict(allData.Students||[],uid);
   var cbrok=fEmpStrict(allData.ClientBrokerage||[],uid),manBrok=fEmpStrict(allData.Brokerage||[],uid);
   var pct=getCommission(uid);
-  var cbrokT=cbrok.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
-  var manBrokT=manBrok.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
+  var cbrokMonth=fDate(cbrok,'month'),manBrokMonth=fDate(manBrok,'month');
+  var cbrokT=cbrokMonth.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
+  var manBrokT=manBrokMonth.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
   var totBrok=r2(cbrokT+manBrokT);
   var uniqC={};cbrok.forEach(function(r){uniqC[(r['Client ID']||'').trim()]=1;});
   var teamWorkingAcc=acc.filter(function(r){return uniqC[(r['Client ID']||'').trim()];});
   document.getElementById('teamStats').innerHTML=mkStats([
-    {label:'Total Brokerage',value:fmt(totBrok),sub:'lifetime, all clients',color:'red'},
+    {label:'This Month Brokerage',value:fmt(totBrok),sub:curMonth()+' &#183; all clients',color:'red'},
     {label:'Working Clients',value:Object.keys(uniqC).length,sub:(teamWorkingOnly?'showing working clients only, click to show all':'with brokerage, click to filter')+' &#128064;',color:'purple',onclick:'toggleTeamWorking()'},
     {label:'Accounts',value:acc.length,sub:'clients, click to show all &#128064;',color:'green',onclick:'showAllTeamClients()'},
     {label:'SIP/MF',value:sip.length,sub:'entries',color:'blue'},
@@ -2998,13 +2999,13 @@ function renderMyTeamData(){
       return bw-aw;
     });
   }
-  var agg=aggByClient(cbrok);
+  var aggD=aggByDate(cbrokMonth);
   var bh='';
-  if(agg.length){
-    bh='<table><thead><tr><th>#</th><th>Client ID</th><th>Client Name</th><th>Entries</th><th>Brokerage</th></tr></thead><tbody>';
-    agg.forEach(function(c,i){bh+='<tr><td>'+(i+1)+'</td><td>'+(c.cid||'-')+'</td><td style="font-weight:600;">'+(c.name||'-')+'</td><td>'+c.n+'</td><td class="money">'+fmt(c.amt)+'</td></tr>';});
+  if(aggD.length){
+    bh='<table><thead><tr><th>#</th><th>Date</th><th>Entries</th><th>Brokerage</th></tr></thead><tbody>';
+    aggD.forEach(function(c,i){bh+='<tr><td>'+(i+1)+'</td><td>'+(c.date||'-')+'</td><td>'+c.n+'</td><td class="money">'+fmt(c.amt)+'</td></tr>';});
     bh+='</tbody></table>';
-  } else bh='<div class="no-data">No client brokerage yet</div>';
+  } else bh='<div class="no-data">No client brokerage this month</div>';
   document.getElementById('teamBrokTable').innerHTML=bh;
   document.getElementById('teamAccTable').innerHTML=mkAccTable(accDisplay,{},(teamAccSortBy==='cid'?'cid':(teamAccSortBy==='brokerage'?'brokerage':undefined)),cbrokAmtMap);   var teamHold=fEmpStrict(allData.ClientHolding||[],uid);   var teamHoldAgg=holdingClientAgg(teamHold);   var teamHoldValue=teamHoldAgg.reduce(function(s,c){return s+c.totalValue;},0);   var teamHoldLedger=teamHoldAgg.reduce(function(s,c){return s+c.ledger;},0);   document.getElementById('teamHoldStats').innerHTML=mkStats([     {label:'Clients with Holding',value:teamHoldAgg.length,sub:'uploaded data',color:'blue'},     {label:'Total Holding Value',value:fmt(teamHoldValue),sub:'combined',color:'green'},     {label:'Total Ledger Balance',value:fmt(teamHoldLedger),sub:(teamHoldLedger>=0?'net credit':'net debit'),color:teamHoldLedger>=0?'green':'red'}   ]);   document.getElementById('teamHoldTable').innerHTML=mkHoldingTable(teamHoldAgg,true);
   document.getElementById('teamSIPTable').innerHTML=mkTable(sip,[{k:'Date',l:'Date'},{k:'Employee Name',l:'Employee'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Client ID'},{k:'Client Phone',l:'Phone'},{k:'Type',l:'Type'},{k:'Amount',l:'Amount',money:true},{k:'SIP Due Date',l:'Due Date'}],'SIP');
@@ -8057,6 +8058,14 @@ function aggByClient(rows,amtField){
   var m={};
   rows.forEach(function(r){var k=(r['Client ID']||'').trim().toUpperCase();if(!m[k])m[k]={cid:r['Client ID'],name:r['Client Name']||'',emp:r['Employee Name']||'',amt:0,n:0};m[k].amt+=parseFloat(r[amtField]||0);m[k].n++;if(r['Client Name'])m[k].name=r['Client Name'];});
   return Object.keys(m).map(function(k){return m[k];}).sort(function(a,b){return b.amt-a.amt;});
+}
+/* v86: date-wise aggregation (mirror of aggByClient, grouped by Date instead of Client ID) - used where a
+   team member's brokerage should be seen as a daily trail rather than a per-client lifetime total. */
+function aggByDate(rows,amtField){
+  amtField=amtField||'Amount';
+  var m={};
+  rows.forEach(function(r){var k=r['Date']||'';if(!m[k])m[k]={date:k,amt:0,n:0};m[k].amt+=parseFloat(r[amtField]||0);m[k].n++;});
+  return Object.keys(m).map(function(k){return m[k];}).sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
 }
 /* Choice back-office jaisa: rows=clients (top pehle), columns=dates */
 function mkMatrix(rows){
