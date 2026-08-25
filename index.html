@@ -583,6 +583,10 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
           <input type="text" id="c360_q" class="srch" style="flex:1;" placeholder="Type client name or Client ID..." onkeyup="if(event.key==='Enter')searchClient360()">
           <button class="btn-save" onclick="searchClient360()">&#128269; Search</button>
         </div>
+        <div style="margin-top:10px;display:flex;align-items:center;gap:8px;">
+          <span style="font-size:12px;color:var(--muted);">Or browse a family:</span>
+          <select id="c360_familyFilter" onchange="browseClient360Family()" style="max-width:220px;"><option value="">-- Select Family Group --</option></select>
+        </div>
       </div>
       <div id="c360_results"></div>
       <div id="c360_profile"></div>
@@ -698,6 +702,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
         <button class="filter-btn" onclick="setF('year',this,'sip')">This Year</button>
         <button class="filter-btn" onclick="setF('all',this,'sip')">All Time</button>
         <input class="srch" id="srch-sip" placeholder="&#128269; Search client..." oninput="renderSIP()">
+        <select id="sip_familyFilter" onchange="renderSIP()" style="max-width:190px;" title="Show only one family group's entries"><option value="">All Families</option></select>
       </div>
       <div id="sipCalDiv"></div>
       <div id="sipDayDiv"></div>
@@ -726,6 +731,11 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
     <div class="page" id="page-adminAcc">
       <div class="page-header"><h1>Account Opening Records</h1><p>All demat account openings</p></div>
       <div id="accAttentionPanel"></div><div id="accAttentionDetail"></div>
+      <div id="accBulkBar" style="display:none;background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.3);border-radius:8px;padding:10px 14px;margin-bottom:12px;align-items:center;gap:12px;flex-wrap:wrap;">
+        <span id="accBulkCount" style="font-weight:700;color:#8b5cf6;"></span>
+        <button class="btn-call" style="background:rgba(139,92,246,0.15);color:#8b5cf6;" onclick="openBulkFamilyModal()">&#128106; Assign to Family Group</button>
+        <button class="btn-cancel" onclick="clearAccBulkSel()">Clear Selection</button>
+      </div>
       <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
         <button class="tab-btn active" id="accModeTabCompleted" onclick="setAccMode('completed')">&#9989; Completed Demat</button>
         <button class="tab-btn" id="accModeTabProcess" onclick="setAccMode('process')">&#8987; Under Process Demat <span id="accProcessCount"></span></button>
@@ -743,7 +753,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
           <button class="filter-btn active" onclick="setAccStat('all',this)">All</button>
           <button class="filter-btn" onclick="setAccStat('active',this)">Active</button>
           <button class="filter-btn" onclick="setAccStat('inactive',this)">Inactive</button>
-          <input class="srch" id="srch-acc" placeholder="&#128269; Search client/ID..." oninput="renderAccTable()"><select onchange="setAccSort(this.value)" style="max-width:210px;"><option value="">Sort: Recent Entry</option><option value="cid">Sort: Client ID (FBO1,2,3...)</option><option value="lastcall">Sort: Last Call (recent first)</option></select>
+          <input class="srch" id="srch-acc" placeholder="&#128269; Search client/ID..." oninput="renderAccTable()"><select onchange="setAccSort(this.value)" style="max-width:210px;"><option value="">Sort: Recent Entry</option><option value="cid">Sort: Client ID (FBO1,2,3...)</option><option value="lastcall">Sort: Last Call (recent first)</option></select><select id="acc_familyFilter" onchange="renderAccTable()" style="max-width:190px;" title="Show only one family group's accounts"><option value="">All Families</option></select>
         </div>
         <div class="stats-grid" id="accStats"></div><div id="accStatDiv"></div>
         <div class="table-wrap"><div class="table-inner" id="accTable"></div></div>
@@ -1159,7 +1169,12 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
 
       <div class="filter-bar">
         <input class="srch" id="srch-ccl" placeholder="&#128269; Search client..." oninput="renderCallTradePage()">
+        <select id="ccl_familyFilter" onchange="renderCallTradePage()" style="max-width:190px;" title="Show only one family group's clients"><option value="">All Families</option></select>
         <button class="filter-btn" id="ccl_showInactiveBtn" onclick="toggleCCLInactive()">Show Inactive</button>
+      </div>
+      <div id="cclFamilyCallBar" style="display:none;background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.3);border-radius:8px;padding:10px 14px;margin-bottom:12px;align-items:center;gap:12px;flex-wrap:wrap;">
+        <span id="cclFamilyCallCount" style="font-weight:700;color:#8b5cf6;"></span>
+        <button class="btn-call" style="background:rgba(139,92,246,0.15);color:#8b5cf6;" onclick="openLogFamilyCallModal()">&#128222; Log Family Call</button>
       </div>
       <div class="table-wrap"><div class="table-inner" id="cclTable"></div></div>
 
@@ -1374,6 +1389,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
         </div>
         <div class="form-group"><label>Location <span style="color:var(--muted);font-weight:400;">- where is the client from? (city/town) - optional</span></label><input type="text" id="a_location" placeholder="e.g. Hisar"></div>
         <div class="form-group"><label>Profession <span style="color:var(--muted);font-weight:400;">- what does the client do for work? - optional</span></label><input type="text" id="a_profession" placeholder="e.g. Farmer, Business, Job, Student"></div>
+        <div class="form-group"><label>Family Group <span style="color:var(--muted);font-weight:400;">- optional, group multiple accounts of the same family together so you don't have to call each one separately</span></label><input type="text" id="a_family" list="familyGroupDatalist" placeholder="e.g. Sharma Family" onfocus="refreshFamilyDatalist()"><datalist id="familyGroupDatalist"></datalist></div>
         <div class="form-group"><label>Active In (you can select multiple)</label>
           <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;">
             <label style="display:flex;align-items:center;gap:5px;font-weight:400;font-size:13px;"><input type="checkbox" id="a_actTrading" style="width:auto;"> Trading</label>
@@ -2800,7 +2816,7 @@ function loadAll(attempt){
         SelfIPO:r.selfIpo||r.SelfIPO||[],
         GrowthTargets:r.growthTargets||r.GrowthTargets||[]
       };
-      saveCache();checkSIPAlerts();autoPunchIn();var __navTeamEarly=document.getElementById('navMyTeam');if(__navTeamEarly)__navTeamEarly.style.display=(currentUser&&currentUser.role!=='admin')?'flex':'none';var __navIPOEarly=document.getElementById('navIPO');if(__navIPOEarly)__navIPOEarly.style.display='flex';var __navIPOFinEarly=document.getElementById('navIPOFin');if(__navIPOFinEarly)__navIPOFinEarly.style.display='flex';renderPage(curPage());loadEmps();setTimeout(checkMyTasksPopup,300);setTimeout(checkDueTomorrowPopup,600);setTimeout(check315Reminder,900);setTimeout(checkWLRKComments,1200);renderAnnounceBanner();renderMyTasksBanner();renderLinksBanner();renderLinksAdminBox();if(!window._stlCleanupDone){window._stlCleanupDone=true;getJSON('cleanupOldSettlement').catch(function(){});}
+      saveCache();checkSIPAlerts();autoPunchIn();var __navTeamEarly=document.getElementById('navMyTeam');if(__navTeamEarly)__navTeamEarly.style.display=(currentUser&&currentUser.role!=='admin')?'flex':'none';var __navIPOEarly=document.getElementById('navIPO');if(__navIPOEarly)__navIPOEarly.style.display='flex';var __navIPOFinEarly=document.getElementById('navIPOFin');if(__navIPOFinEarly)__navIPOFinEarly.style.display='flex';renderPage(curPage());refreshFamilyDatalist();loadEmps();setTimeout(checkMyTasksPopup,300);setTimeout(checkDueTomorrowPopup,600);setTimeout(check315Reminder,900);setTimeout(checkWLRKComments,1200);renderAnnounceBanner();renderMyTasksBanner();renderLinksBanner();renderLinksAdminBox();if(!window._stlCleanupDone){window._stlCleanupDone=true;getJSON('cleanupOldSettlement').catch(function(){});}
     }else if(attempt<3){
       setTimeout(function(){loadAll(attempt+1);},4000);
     }else{
@@ -2847,6 +2863,46 @@ function canAddFinance(){return !!(currentUser&&(hasFinanceSubEmployee()||curren
    everyone else (employee or finance role) needs the admin-granted IPO_Access flag on their
    Employee row. Nav item + whole page are hidden client-side when this is false. */
 function canIPOAccess(){return !!(currentUser&&(currentUser.role==='admin'||currentUser['IPO_Access']==='Yes'));}
+/* ===== Family Group (Aug 25 2026): single grouping tag set once on the Accounts row, looked up live
+   everywhere a client appears (Accounts/SIP/Insurance/Call&Trade/Client Search) rather than copied into
+   every sheet - Accounts stays the single source of truth. Assign/edit permission = same as editing that
+   specific Account (no new permission system), per explicit user decision. */
+function familyGroupsList(){
+  var set={};
+  (allData.Accounts||[]).forEach(function(r){
+    var g=(r['Family Group']||'').trim();
+    if(g)set[g]=1;
+  });
+  return Object.keys(set).sort(function(a,b){return a.localeCompare(b);});
+}
+function familyGroupOf(clientId){
+  clientId=(clientId||'').trim();
+  if(!clientId)return '';
+  var r=(allData.Accounts||[]).find(function(x){return (x['Client ID']||'').trim()===clientId&&(x['Family Group']||'').trim();});
+  return r?(r['Family Group']||'').trim():'';
+}
+function familyBadge(clientId){
+  var g=familyGroupOf(clientId);
+  if(!g)return '';
+  return ' <span class="badge purple" style="font-size:9px;" title="Family Group: '+g+'">&#128106; '+g+'</span>';
+}
+function refreshFamilyDatalist(){
+  var dl=document.getElementById('familyGroupDatalist');
+  if(dl)dl.innerHTML=familyGroupsList().map(function(g){return '<option value="'+g.replace(/"/g,'&quot;')+'">';}).join('');
+  ['acc_familyFilter','sip_familyFilter','ccl_familyFilter','c360_familyFilter'].forEach(populateFamilyFilterSelect);
+}
+/* Family Group filter <select> populator - used on Accounts/SIP/Call&Trade/Client Search. Preserves the
+   currently chosen value across re-population (e.g. after loadAll refresh) so an active filter doesn't
+   silently reset. Not used on Insurance - its 'Client ID' field is actually a Policy Number, a different
+   ID space than the demat Client ID, so family lookups there would never match. */
+function populateFamilyFilterSelect(selId){
+  var sel=document.getElementById(selId);
+  if(!sel)return;
+  var cur=sel.value;
+  var placeholder=sel.options&&sel.options[0]?sel.options[0].outerHTML:'<option value="">All Families</option>';
+  sel.innerHTML=placeholder+familyGroupsList().map(function(g){return '<option value="'+g.replace(/"/g,'&quot;')+'">'+g+'</option>';}).join('');
+  if(cur)sel.value=cur;
+}
 function forEmpObj(selId){
   var sel=document.getElementById(selId);
   var v=sel?sel.value:'';
@@ -3170,7 +3226,7 @@ function mkTable(rows,cols,sheet){
       else if(c.k==='Status'){var a=(v==='Active'||v==='-');h+='<td><span class="badge '+(a?'green':'red')+'">'+(a?'Active':'Inactive')+'</span></td>';}
       else if(c.k==='Type'){var lp=v==='Lumpsum';h+='<td><span class="badge '+(lp?'lump':'sip')+'">'+v+'</span></td>';}
       else if(c.k==='Meeting Done'||c.k==='MetDone'){h+='<td><span class="badge '+(v==='Yes'?'green':'amber')+'">'+v+'</span></td>';}
-      else h+='<td>'+v+'</td>';
+      else h+='<td>'+v+(c.familyBadge?familyBadge(v):'')+'</td>';
     });
     if(sheet){var rn=row._rowNum||0;h+='<td><button class="btn-edit" onclick="openEdit(\''+sheet+'\','+rn+',this.closest(\'tr\'))">&#9998;</button><button class="btn-del" onclick="confirmDel(\''+sheet+'\','+rn+')">&#128465;</button></td>';}
     h+='</tr>';
@@ -4532,6 +4588,7 @@ function renderSIP(){
   renderSectionAttention('sipAttentionPanel','sipAttentionDetail',false,['sipDue']);
   var rows=fDate(allData.SIP||[],filters['sip']||'today');
   var q=getSrch('srch-sip');rows=srchFilter(rows,q,['Client Name','Client ID']);
+  var sipFamF=document.getElementById('sip_familyFilter');if(sipFamF&&sipFamF.value)rows=rows.filter(function(r){return familyGroupOf(r['Client ID'])===sipFamF.value;});
   var sipR=rows.filter(function(r){return (r['Type']||'SIP')==='SIP';});
   var lumpR=rows.filter(function(r){return r['Type']==='Lumpsum';});
   var sipAmt=sipR.reduce(function(s,r){return s+parseFloat(r['Amount']||0);},0);
@@ -4544,7 +4601,7 @@ function renderSIP(){
     {label:'Combined Total',value:fmt(sipAmt+lumpAmt),sub:rows.length+' entries',color:'blue',onclick:"showSIPStat('all')"}
   ]);
   window._sipStatCache={sip:sipR,lump:lumpR,all:rows};
-  document.getElementById('sipTable').innerHTML=mkTable(rows,[{k:'Date',l:'Date'},{k:'Employee Name',l:'Employee'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Client ID'},{k:'Client Phone',l:'Phone'},{k:'Type',l:'Type'},{k:'Amount',l:'Amount',money:true},{k:'SIP Due Date',l:'Due Date'}],'SIP');
+  document.getElementById('sipTable').innerHTML=mkTable(rows,[{k:'Date',l:'Date'},{k:'Employee Name',l:'Employee'},{k:'Client Name',l:'Client'},{k:'Client ID',l:'Client ID',familyBadge:true},{k:'Client Phone',l:'Phone'},{k:'Type',l:'Type'},{k:'Amount',l:'Amount',money:true},{k:'SIP Due Date',l:'Due Date'}],'SIP');
 }
 
 function showSIPStat(kind){
@@ -4581,6 +4638,7 @@ function renderAccTable(){
   if(accStat==='active')rows=rows.filter(function(r){return (r['Status']||'Active')==='Active';});
   if(accStat==='inactive')rows=rows.filter(function(r){return r['Status']==='Inactive';});
   var q=getSrch('srch-acc');rows=srchFilter(rows,q,['Client Name','Client ID','Employee Name']);
+  var accFamF=document.getElementById('acc_familyFilter');if(accFamF&&accFamF.value)rows=rows.filter(function(r){return (r['Family Group']||'').trim()===accFamF.value;});
   var cidMap={};
   allAcc.forEach(function(r){var cid=(r['Client ID']||'').trim(),eid=(r['Employee ID']||r['Employee Name']||'').trim();if(!cid)return;if(!cidMap[cid])cidMap[cid]=[];if(cidMap[cid].indexOf(eid)===-1)cidMap[cid].push(eid);});
   var dupSet={};Object.keys(cidMap).forEach(function(cid){if(cidMap[cid].length>1)dupSet[cid]=cidMap[cid];});
@@ -4593,11 +4651,71 @@ function renderAccTable(){
     {label:'Inactive',value:rows.length-active,sub:'inactive',color:'amber',onclick:"setAccStat('inactive',event.currentTarget);document.getElementById('accTable').scrollIntoView({behavior:'smooth'});"},
     {label:'Duplicate IDs',value:Object.keys(dupSet).length,sub:(accDupOnly?'showing duplicates only, click to show all':'same client ID, click to view')+' &#128064;',color:'red',onclick:'toggleAccDup()'}
   ]);
-  document.getElementById('accTable').innerHTML=mkAccTable(rows,dupSet,accSortBy);
+  document.getElementById('accTable').innerHTML=mkAccTable(rows,dupSet,accSortBy,undefined,true);
+  updateAccBulkBar();
 }
 
 var accStarSort=false;
 function toggleAccStarSort(){accStarSort=!accStarSort;renderPage(curPage());}
+/* ===== Family Group bulk-assign (Aug 25 2026): select multiple existing Accounts rows on the admin
+   Accounts table and tag them all with one Family Group in a single action - the real use case is
+   grouping accounts that ALREADY exist, not just new ones going forward. Sequential (not parallel)
+   editRow calls to avoid sheet write contention. Only wired on the main admin Accounts table
+   (mkAccTable's bulkMode param defaults to false everywhere else - My Team/360-view/My Accounts
+   tables are unaffected). */
+var accBulkSelected={};
+function toggleAccBulkSel(rowNum,checked){
+  if(checked)accBulkSelected[rowNum]=true;else delete accBulkSelected[rowNum];
+  updateAccBulkBar();
+}
+function toggleAccBulkAll(cb){
+  var checked=cb.checked;
+  document.querySelectorAll('#accTable .accBulkCb').forEach(function(el){
+    el.checked=checked;
+    if(checked)accBulkSelected[el.dataset.rownum]=true;else delete accBulkSelected[el.dataset.rownum];
+  });
+  updateAccBulkBar();
+}
+function clearAccBulkSel(){accBulkSelected={};renderPage(curPage());}
+function updateAccBulkBar(){
+  var bar=document.getElementById('accBulkBar'),cnt=document.getElementById('accBulkCount');
+  if(!bar||!cnt)return;
+  var n=Object.keys(accBulkSelected).length;
+  if(n>0){bar.style.display='flex';cnt.textContent=n+' account'+(n>1?'s':'')+' selected';}
+  else bar.style.display='none';
+}
+function openBulkFamilyModal(){
+  var n=Object.keys(accBulkSelected).length;
+  if(!n){showToast('No accounts selected','error');return;}
+  var html='<div class="modal-title">Assign Family Group &#8212; '+n+' account'+(n>1?'s':'')+'</div>';
+  html+='<div class="form-group"><label>Family Group Name</label><input type="text" id="bfg_name" list="familyGroupDatalist" placeholder="e.g. Sharma Family" onfocus="refreshFamilyDatalist()"></div>';
+  html+='<div style="font-size:11px;color:var(--muted,#8a94a6);margin-bottom:10px;">This will set the same Family Group on all '+n+' selected account'+(n>1?'s':'')+'. Any existing Family Group on those accounts will be overwritten.</div>';
+  html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="submitBulkFamilyModal()">Assign</button></div>';
+  document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
+}
+function submitBulkFamilyModal(){
+  var name=(document.getElementById('bfg_name').value||'').trim();
+  if(!name){showToast('Enter a family group name','error');return;}
+  var rowNums=Object.keys(accBulkSelected);
+  closeModal();
+  showToast('Assigning to '+rowNums.length+' account(s)...','success');
+  var vals={'Family Group':name};
+  var chain=Promise.resolve();var okCount=0,failCount=0;
+  rowNums.forEach(function(rn){
+    chain=chain.then(function(){
+      return postData({action:'editRow',sheet:'Accounts',rowNum:rn,vals:vals}).then(function(r){
+        if(r&&r.success){patchRowLocal('Accounts',rn,vals);okCount++;}else failCount++;
+      }).catch(function(){failCount++;});
+    });
+  });
+  chain.then(function(){
+    accBulkSelected={};
+    showToast('Family Group assigned to '+okCount+' account(s)'+(failCount?(' - '+failCount+' failed'):''),failCount?'error':'success');
+    renderPage(curPage());
+    refreshFamilyDatalist();
+    setTimeout(function(){loadAll(2);},600);
+  });
+}
 function toggleAccStar(rowNum,current){
   var v=current==='Yes'?'No':'Yes';
   patchRowLocal('Accounts',rowNum,{'Starred':v});
@@ -4607,9 +4725,9 @@ function toggleAccStar(rowNum,current){
     else setTimeout(function(){loadAll(2);},600);
   }).catch(function(e){showToast('Error: '+e.message,'error');});
 }
-function mkAccTable(rows,dupSet,sortMode,amtMap){
+function mkAccTable(rows,dupSet,sortMode,amtMap,bulkMode){
   if(!rows||!rows.length)return '<div class="no-data">No accounts found</div>';
-  var h='<table><thead><tr><th style="cursor:pointer;" onclick="toggleAccStarSort()" title="Click to bring important (starred) clients to the top - click again to undo">'+(accStarSort?'&#11088;':'&#9734;')+'</th><th>Date</th><th>Team</th><th>Client</th><th>Client ID</th><th>Phone</th><th>Last Call</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+  var h='<table><thead><tr>'+(bulkMode?'<th><input type="checkbox" onclick="toggleAccBulkAll(this)" title="Select all shown"></th>':'')+'<th style="cursor:pointer;" onclick="toggleAccStarSort()" title="Click to bring important (starred) clients to the top - click again to undo">'+(accStarSort?'&#11088;':'&#9734;')+'</th><th>Date</th><th>Team</th><th>Client</th><th>Client ID</th><th>Phone</th><th>Last Call</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
   var ordered=rows.slice().reverse();if(sortMode==='cid'){ordered.sort(function(a,b){var na=parseInt((a['Client ID']||'').replace(/[^0-9]/g,''),10);var nb=parseInt((b['Client ID']||'').replace(/[^0-9]/g,''),10);if(isNaN(na))na=999999999;if(isNaN(nb))nb=999999999;return na-nb;});}else if(sortMode==='lastcall'){ordered.sort(function(a,b){var da=a['Last Call Date']?new Date(a['Last Call Date']):null;var db=b['Last Call Date']?new Date(b['Last Call Date']):null;da=(da&&!isNaN(da))?da:null;db=(db&&!isNaN(db))?db:null;if(!da&&!db)return 0;if(!da)return 1;if(!db)return -1;return db-da;});}else if(sortMode==='brokerage'&&amtMap){ordered.sort(function(a,b){var ak=(a['Client ID']||'').trim().toUpperCase(),bk=(b['Client ID']||'').trim().toUpperCase();return (amtMap[bk]||0)-(amtMap[ak]||0);});}
   ordered.sort(function(a,b){
     var da=dupSet&&dupSet[(a['Client ID']||'').trim()]?1:0;
@@ -4626,8 +4744,9 @@ function mkAccTable(rows,dupSet,sortMode,amtMap){
     var cid=(r['Client ID']||'').trim(),isDup=dupSet&&dupSet[cid];
     var starred=r['Starred']==='Yes';
     h+='<tr'+(isDup?' class="dup-row"':'')+'>'+
+      (bulkMode?('<td><input type="checkbox" class="accBulkCb" data-rownum="'+r['_rowNum']+'" onchange="toggleAccBulkSel(this.dataset.rownum,this.checked)"'+(accBulkSelected[r['_rowNum']]?' checked':'')+'></td>'):'')+
       '<td><span style="cursor:pointer;font-size:16px;color:'+(starred?'#f59e0b':'var(--muted)')+';" onclick="toggleAccStar('+r['_rowNum']+',\''+(r['Starred']||'No')+'\')" title="'+(starred?'Important client - click to unstar':'Click to mark as important client')+'">'+(starred?'&#9733;':'&#9734;')+'</span></td>'+
-      '<td>'+r['Date']+'</td><td>'+r['Employee Name']+'</td><td>'+r['Client Name']+' <span style="cursor:pointer;color:var(--accent);" onclick="openAccInfoModal('+r['_rowNum']+')" title="View Reference, Location, Profession &amp; other details">&#8505;&#65039;</span>'+contestBadgeForAccountDate(r['Date'])+'</td>'+
+      '<td>'+r['Date']+'</td><td>'+r['Employee Name']+'</td><td>'+r['Client Name']+' <span style="cursor:pointer;color:var(--accent);" onclick="openAccInfoModal('+r['_rowNum']+')" title="View Reference, Location, Profession &amp; other details">&#8505;&#65039;</span>'+contestBadgeForAccountDate(r['Date'])+familyBadge(cid)+'</td>'+
       '<td>'+(isDup?'<span class="dup-badge">&#9888;</span>':'')+cid+'</td>'+
       '<td>'+r['Client Phone']+'</td>';
     h+='<td>'+(r['Last Call Date']?('<b>'+r['Last Call Date']+'</b><br><span style="font-size:10px;color:var(--muted,#8a94a6);">'+(r['Last Call Remarks']||'-')+'</span>'):'<span style="font-size:11px;color:var(--muted,#8a94a6);">Not called yet</span>')+(r['Remarks']?('<br><span style="font-size:10px;color:#3fbf7f;" title="General remarks about this client">&#128221; '+r['Remarks']+'</span>'):'')+'</td>';
@@ -4660,6 +4779,7 @@ function openAccInfoModal(rowNum){
   html+=row('How Client Came (Reference)',r['Reference'],'&#128100;');
   html+=row('Location',r['Location'],'&#128205;');
   html+=row('Profession / Business',r['Profession'],'&#128188;');
+  html+=row('Family Group',r['Family Group'],'&#128106;');
   html+=row('Account Type',r['Account Type'],'&#128203;');
   html+=row('Source',r['Source'],'&#127760;');
   if((r['Remarks']||'').trim())html+=row('Remarks',r['Remarks'],'&#128221;');
@@ -6744,6 +6864,32 @@ function searchClient360(){
   var h='<div class="form-card" style="margin-bottom:16px;"><div style="font-weight:700;font-size:13px;margin-bottom:10px;color:var(--muted);">'+candidates.length+' matches - click to view</div>';
   candidates.forEach(function(c){
     h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;" onclick="showClient360Profile(\''+(c.cid||'').replace(/'/g,"\\\\'")+'\',\''+(c.name||'').replace(/'/g,"\\\\'")+'\')">'+
+      '<div><b>'+(c.name||'-')+'</b> <span style="color:var(--muted);font-size:12px;">'+(c.cid||'no ID')+'</span>'+familyBadge(c.cid)+(c.inScope?'':' <span class="badge amber" style="margin-left:6px;font-size:10px;">restricted view</span>')+'</div>'+
+      '<div style="font-size:12px;color:var(--muted);">'+(c.emp||'-')+' &#8594;</div></div>';
+  });
+  h+='</div>';
+  resultsEl.innerHTML=h;
+}
+/* Family Group browse (Aug 25 2026): lets the user pick a family from the dropdown instead of typing a
+   name/ID, and see every member of that family at once - reuses the exact multi-match result rendering
+   from searchClient360 so behaviour/permissions (restricted-view badge) stay identical. */
+function browseClient360Family(){
+  var famSel=document.getElementById('c360_familyFilter');
+  var fam=famSel?famSel.value:'';
+  var resultsEl=document.getElementById('c360_results');
+  var profileEl=document.getElementById('c360_profile');
+  if(profileEl)profileEl.innerHTML='';
+  if(!fam){resultsEl.innerHTML='';return;}
+  var qEl=document.getElementById('c360_q');if(qEl)qEl.value='';
+  var scopeIds=client360ScopeIds();
+  var candidates=(allData.Accounts||[]).filter(function(r){return (r['Family Group']||'').trim()===fam;}).map(function(r){
+    return {cid:(r['Client ID']||'').trim(),name:r['Client Name']||'',emp:r['Employee Name']||'',empId:(r['Employee ID']||'').trim()};
+  }).map(function(c){c.inScope=!scopeIds||!!scopeIds[(c.empId||'').toLowerCase()];return c;});
+  if(!candidates.length){resultsEl.innerHTML='<div class="no-data">No accounts found in this family group</div>';return;}
+  if(candidates.length===1){resultsEl.innerHTML='';showClient360Profile(candidates[0].cid,candidates[0].name);return;}
+  var h='<div class="form-card" style="margin-bottom:16px;"><div style="font-weight:700;font-size:13px;margin-bottom:10px;color:var(--muted);">'+candidates.length+' member(s) in &quot;'+fam+'&quot; - click to view</div>';
+  candidates.forEach(function(c){
+    h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;" onclick="showClient360Profile(\''+(c.cid||'').replace(/'/g,"\\\\'")+'\',\''+(c.name||'').replace(/'/g,"\\\\'")+'\')">'+
       '<div><b>'+(c.name||'-')+'</b> <span style="color:var(--muted);font-size:12px;">'+(c.cid||'no ID')+'</span>'+(c.inScope?'':' <span class="badge amber" style="margin-left:6px;font-size:10px;">restricted view</span>')+'</div>'+
       '<div style="font-size:12px;color:var(--muted);">'+(c.emp||'-')+' &#8594;</div></div>';
   });
@@ -6798,7 +6944,7 @@ function showClient360Profile(cid,name){
 
   var h='<div class="form-card" style="margin-bottom:16px;">'+
     '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:12px;">'+
-      '<div><div style="font-size:19px;font-weight:700;">'+displayName+'</div>'+
+      '<div><div style="font-size:19px;font-weight:700;">'+displayName+familyBadge(displayId)+'</div>'+
       '<div style="color:var(--muted);font-size:13px;">'+displayId+(phone?' &#183; '+phone:'')+(acc['Branch']?' &#183; '+acc['Branch']:'')+'</div>'+
       '<div style="color:var(--muted);font-size:12px;margin-top:4px;">Handled by: <b>'+(acc['Employee Name']||'-')+'</b></div></div>'+
       '<div style="text-align:right;">'+(accRows.length?'<span class="badge '+(isAct?'green':'red')+'">'+(isAct?'Active':'Inactive')+'</span>'+chips:'')+
@@ -7641,8 +7787,8 @@ function submitAccount(){
   var statusComputed=(actTrading==='Yes'||actSIP==='Yes'||actInv==='Yes'||actIPO==='Yes')?'Active':'Inactive';
   var cphoneVal=document.getElementById('a_cphone').value.trim();
   var addToCTChecked=document.getElementById('a_addToCT')&&document.getElementById('a_addToCT').checked;
-  var p={action:'addAccount','Date':document.getElementById('a_date').value||td(),'Employee ID':fe.id,'Employee Name':fe.name,'Branch':fe.branch,'Client Name':cn,'Client ID':cid,'Client Phone':cphoneVal,'Status':statusComputed,'Trading Active':actTrading,'SIP Active':actSIP,'Investment Active':actInv,'IPO Active':actIPO,'Remarks':document.getElementById('a_remarks').value.trim(),'Account Type':document.getElementById('a_acctype').value,'Source':document.getElementById('a_source').value,'NSE Trade Done':'No','NSE Trade Date':'','Reference':ref.refBy,'Location':(document.getElementById('a_location').value||'').trim(),'Profession':(document.getElementById('a_profession').value||'').trim()};
-  doSubmit(p,'Accounts',document.querySelector('#page-addAcc .btn-submit'),'Add Account',function(){document.getElementById('a_cname').value='';document.getElementById('a_cid').value='';document.getElementById('a_cphone').value='';document.getElementById('a_remarks').value='';document.getElementById('a_location').value='';document.getElementById('a_profession').value='';document.getElementById('a_actTrading').checked=false;document.getElementById('a_actSIP').checked=false;document.getElementById('a_actInvestment').checked=false;document.getElementById('a_actIPO').checked=false;document.getElementById('a_reftype').value='Direct';document.getElementById('a_refOther').value='';onRefTypeChange('a');if(document.getElementById('a_addToCT'))document.getElementById('a_addToCT').checked=false;});
+  var p={action:'addAccount','Date':document.getElementById('a_date').value||td(),'Employee ID':fe.id,'Employee Name':fe.name,'Branch':fe.branch,'Client Name':cn,'Client ID':cid,'Client Phone':cphoneVal,'Status':statusComputed,'Trading Active':actTrading,'SIP Active':actSIP,'Investment Active':actInv,'IPO Active':actIPO,'Remarks':document.getElementById('a_remarks').value.trim(),'Account Type':document.getElementById('a_acctype').value,'Source':document.getElementById('a_source').value,'NSE Trade Done':'No','NSE Trade Date':'','Reference':ref.refBy,'Location':(document.getElementById('a_location').value||'').trim(),'Profession':(document.getElementById('a_profession').value||'').trim(),'Family Group':(document.getElementById('a_family').value||'').trim()};
+  doSubmit(p,'Accounts',document.querySelector('#page-addAcc .btn-submit'),'Add Account',function(){document.getElementById('a_cname').value='';document.getElementById('a_cid').value='';document.getElementById('a_cphone').value='';document.getElementById('a_remarks').value='';document.getElementById('a_location').value='';document.getElementById('a_profession').value='';document.getElementById('a_family').value='';document.getElementById('a_actTrading').checked=false;document.getElementById('a_actSIP').checked=false;document.getElementById('a_actInvestment').checked=false;document.getElementById('a_actIPO').checked=false;document.getElementById('a_reftype').value='Direct';document.getElementById('a_refOther').value='';onRefTypeChange('a');if(document.getElementById('a_addToCT'))document.getElementById('a_addToCT').checked=false;});
   if(dupChk.byId){setTimeout(function(){showDupAccountAddedPopup(dupChk.byId);},400);}
   /* v73: 'IPO Active' checkbox (already existed for the account's own flags) now ALSO auto-shifts
      the client into the IPO Calling List, per explicit user request - no separate checkbox needed,
@@ -8546,7 +8692,7 @@ function mkHoldingTable(agg,isAdm){
   agg.forEach(function(c){
     var exp=!!holdingExpanded[c.cid];
     h+='<tr style="cursor:pointer;" onclick="toggleHoldingClient(\''+c.cid+'\')">';
-    h+='<td style="font-weight:600;">'+(c.cname||'-')+'<br><span style="font-size:10px;color:var(--muted,#8a94a6);">'+c.cid+'</span></td>';
+    h+='<td style="font-weight:600;">'+(c.cname||'-')+familyBadge(c.cid)+'<br><span style="font-size:10px;color:var(--muted,#8a94a6);">'+c.cid+'</span></td>';
     if(isAdm)h+='<td>'+(c.empName||'-')+'</td>';
     h+='<td class="money" style="color:'+(c.ledger>=0?'var(--accent,#3fbf7f)':'var(--danger,#ef4444)')+';font-weight:700;">'+fmt(c.ledger)+(c.ledger>0?' <span class="badge green" style="font-size:9px;">Fund Available</span>':'')+'</td>';
     h+='<td class="money">'+fmt(c.totalValue)+'</td>';
@@ -11485,7 +11631,7 @@ function mkIPOCallListTable(rows){
     else appliedBadge='<span class="badge amber">Pending</span>';
     var catBadge=r['IPO Applied']==='Yes'&&r['IPO Category']?('<span class="badge blue">'+r['IPO Category']+'</span>'):'-';
     var upiBadge=r['UPI ID']?('<span class="badge green" title="'+r['UPI ID']+'">&#10003; Saved</span>'):'<span style="color:var(--muted,#8a94a6);font-size:11px;">-</span>';
-    h+='<tr><td>'+(r['Client Name']||'-')+'<br><span style="font-size:10px;color:var(--muted,#8a94a6);">'+(r['Client ID']||'')+'</span></td>';
+    h+='<tr><td>'+(r['Client Name']||'-')+familyBadge(r['Client ID'])+'<br><span style="font-size:10px;color:var(--muted,#8a94a6);">'+(r['Client ID']||'')+'</span></td>';
     h+='<td>'+(r['Client Phone']?('<a href="tel:'+r['Client Phone']+'" style="color:var(--accent,#3fbf7f);font-weight:700;text-decoration:none;">'+r['Client Phone']+'</a>'):'-')+'</td>';
     if(showEmp)h+='<td>'+(r['Employee Name']||'-')+'</td>';
     h+='<td>'+callBadge+'</td><td>'+appliedBadge+'</td><td>'+catBadge+'</td><td>'+upiBadge+'</td>';
@@ -11676,7 +11822,7 @@ function mkCallClientTable(rows){
     var inactive=status==='Inactive';
     h+='<tr style="cursor:pointer;'+(inactive?'opacity:.5;':'')+'" onclick="openCallLogModal('+r['_rowNum']+')">';
     h+='<td style="font-weight:600;">'+(r['Client ID']||'-')+'</td>';
-    h+='<td>'+(r['Client Name']||'-')+(r['Remarks']?'<br><span style="font-size:10px;color:var(--muted,#8a94a6);">'+r['Remarks']+'</span>':'')+'</td>';
+    h+='<td>'+(r['Client Name']||'-')+familyBadge(cid)+(r['Remarks']?'<br><span style="font-size:10px;color:var(--muted,#8a94a6);">'+r['Remarks']+'</span>':'')+'</td>';
     h+='<td>'+(r['Client Phone']||'-')+'</td>';
     h+='<td>'+(r['Trading Type']||'-')+'</td>';if(canManage)h+='<td>'+(r['Employee Name']||'-')+'</td>';
     if(onBreak){
@@ -11798,6 +11944,95 @@ function saveNewCallLog(){
     renderLMHistory();renderCallTradePage();
   });
 }
+/* ===== Family Group: combined "Log Family Call" (Aug 25 2026) =====
+   User's explicit choice: when a Family Group filter is active on the Call & Trade roster, don't make
+   them call each of the N family members separately - let them type ONE remark/status and apply it to
+   everyone in the filtered family. Reuses the exact same 'addCallTrade' backend action and payload shape
+   as the existing single-client Call Log flow (saveNewCallLog above) - looped per member, NOT a new
+   combined schema - so every member still keeps their own individual CallTrade history row afterward. */
+function updateFamilyCallBar(famVal,filteredRoster){
+  var bar=document.getElementById('cclFamilyCallBar'),cnt=document.getElementById('cclFamilyCallCount');
+  if(!bar||!cnt)return;
+  if(famVal&&filteredRoster&&filteredRoster.length){
+    bar.style.display='flex';
+    cnt.textContent='"'+famVal+'" — '+filteredRoster.length+' client'+(filteredRoster.length>1?'s':'')+' in this family';
+  } else bar.style.display='none';
+}
+function openLogFamilyCallModal(){
+  var rows=window._cclFamilyFiltered||[];
+  if(!rows.length){showToast('Select a Family Group filter first','error');return;}
+  var html='<div class="modal-title">Log Family Call &#8212; '+rows.length+' client'+(rows.length>1?'s':'')+'</div>';
+  html+='<p style="color:var(--muted,#8a94a6);font-size:12px;margin:-8px 0 14px;">This single entry will be logged for every member below - each keeps their own individual call history.</p>';
+  html+='<div style="max-height:110px;overflow:auto;border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:14px;font-size:12px;color:var(--muted,#8a94a6);">'+rows.map(function(r){return (r['Client Name']||r['Client ID']||'-');}).join(', ')+'</div>';
+  html+='<div class="form-group"><label>Trading Type</label><select id="lfc_type">'+['Intraday','Swing Trading','Long Term Investment','F&O','Commodity'].map(function(t){return '<option value="'+t+'">'+t+'</option>';}).join('')+'</select></div>';
+  html+='<div class="form-group"><label>Call Status</label><select id="lfc_callStatus" onchange="toggleLFCFields()"><option value="Not Called">Not Called</option><option value="Called">Called</option></select></div>';
+  html+='<div class="form-group" id="lfc_pickStatusGroup" style="display:none;"><label>Pick Status</label><select id="lfc_pickStatus" onchange="toggleLFCPickStatus()"><option value="">-- Select --</option><option value="Picked">Picked</option><option value="Not Picked">Not Picked</option></select></div>';
+  html+='<div class="form-group" id="lfc_notPickedReasonGroup" style="display:none;"><label>Reason (Not Picked)</label><input type="text" id="lfc_notPickedReason"></div>';
+  html+='<div class="form-group" id="lfc_tradeDoneGroup" style="display:none;"><label>Trade Done?</label><select id="lfc_tradeDone" onchange="toggleLFCTradeDone()"><option value="">-- Select --</option><option value="Yes">Yes</option><option value="No">No</option></select></div>';
+  html+='<div class="form-group" id="lfc_tradedInGroup" style="display:none;"><label>Traded In</label><input type="text" id="lfc_tradedIn" placeholder="e.g. Reliance, Nifty Fut"></div>';
+  html+='<div class="form-group"><label>Remarks (applies to all)</label><textarea id="lfc_remarks" placeholder="e.g. Whole family briefed on market update..."></textarea></div>';
+  html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="submitLogFamilyCallModal()">Log for All '+rows.length+'</button></div>';
+  document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
+}
+function toggleLFCFields(){
+  var v=document.getElementById('lfc_callStatus').value;
+  var show=(v==='Called');
+  document.getElementById('lfc_pickStatusGroup').style.display=show?'block':'none';
+  if(!show){
+    document.getElementById('lfc_pickStatus').value='';
+    document.getElementById('lfc_notPickedReasonGroup').style.display='none';
+    document.getElementById('lfc_tradeDoneGroup').style.display='none';
+    document.getElementById('lfc_tradedInGroup').style.display='none';
+  }
+}
+function toggleLFCPickStatus(){
+  var v=document.getElementById('lfc_pickStatus').value;
+  document.getElementById('lfc_notPickedReasonGroup').style.display=(v==='Not Picked')?'block':'none';
+  document.getElementById('lfc_tradeDoneGroup').style.display=(v==='Picked')?'block':'none';
+  if(v!=='Picked')document.getElementById('lfc_tradedInGroup').style.display='none';
+}
+function toggleLFCTradeDone(){
+  var v=document.getElementById('lfc_tradeDone').value;
+  document.getElementById('lfc_tradedInGroup').style.display=(v==='Yes')?'block':'none';
+}
+function submitLogFamilyCallModal(){
+  var rows=window._cclFamilyFiltered||[];
+  if(!rows.length){closeModal();return;}
+  var callStatus=document.getElementById('lfc_callStatus').value;
+  var pickStatus=document.getElementById('lfc_pickStatus').value||'';
+  var tradeDone=document.getElementById('lfc_tradeDone').value||'';
+  if(callStatus==='Called'&&!pickStatus){showToast('Select Pick Status','error');return;}
+  var type=document.getElementById('lfc_type').value;
+  var notPickedReason=pickStatus==='Not Picked'?(document.getElementById('lfc_notPickedReason').value||'').trim():'';
+  var tradedIn=tradeDone==='Yes'?(document.getElementById('lfc_tradedIn').value||'').trim():'';
+  var remarks=(document.getElementById('lfc_remarks').value||'').trim();
+  closeModal();
+  showToast('Logging call for '+rows.length+' family member(s)...','success');
+  var chain=Promise.resolve();var okCount=0,failCount=0;
+  rows.forEach(function(row){
+    chain=chain.then(function(){
+      var p={
+        action:'addCallTrade','Date':td(),
+        'Employee ID':row['Employee ID']||currentUser.userId,
+        'Employee Name':row['Employee Name']||currentUser.name,
+        'Branch':row['Branch']||currentUser.branch,
+        'Client ID':row['Client ID']||'','Client Name':row['Client Name']||'','Client Phone':row['Client Phone']||'',
+        'Trading Type':type,'Call Status':callStatus,
+        'Pick Status':callStatus==='Called'?pickStatus:'',
+        'Not Picked Reason':notPickedReason,
+        'Trade Done':pickStatus==='Picked'?tradeDone:'',
+        'Traded In':tradedIn,
+        'Remarks':remarks
+      };
+      return postData(p).then(function(r){if(r&&r.success)okCount++;else failCount++;}).catch(function(){failCount++;});
+    });
+  });
+  chain.then(function(){
+    showToast('Family call logged: '+okCount+' saved'+(failCount?(' - '+failCount+' failed'):''),failCount?'error':'success');
+    renderCallTradePage();
+    setTimeout(function(){loadAll(2);},600);
+  });
+}
 function openCCLManageModal(rowNum){
   var row=(allData.CallClients||[]).find(function(r){return String(r['_rowNum'])===String(rowNum);});
   if(!row){showToast('Client not found - reloading','error');loadAll();return;}
@@ -11852,6 +12087,7 @@ function openAccEditModal(rowNum){
   html+='<div class="form-group"><label>Client Phone</label><input type="text" id="ae_cphone" value="'+(row['Client Phone']||'')+'"></div>';
   html+='<div class="form-group"><label>Location <span style="color:var(--muted);font-weight:400;">- optional</span></label><input type="text" id="ae_location" value="'+(row['Location']||'')+'" placeholder="e.g. Hisar"></div>';
   html+='<div class="form-group"><label>Profession <span style="color:var(--muted);font-weight:400;">- optional</span></label><input type="text" id="ae_profession" value="'+(row['Profession']||'')+'" placeholder="e.g. Farmer, Business, Job, Student"></div>';
+  html+='<div class="form-group"><label>Family Group <span style="color:var(--muted);font-weight:400;">- optional, group multiple accounts of the same family together</span></label><input type="text" id="ae_family" list="familyGroupDatalist" value="'+(row['Family Group']||'')+'" placeholder="e.g. Sharma Family" onfocus="refreshFamilyDatalist()"></div>';
   html+='<div class="form-group"><label>Active In</label><div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;">';
   html+='<label style="display:flex;align-items:center;gap:5px;font-weight:400;font-size:13px;"><input type="checkbox" id="ae_actTrading" style="width:auto;"'+((row['Trading Active']||'')==='Yes'?' checked':'')+'> Trading</label>';
   html+='<label style="display:flex;align-items:center;gap:5px;font-weight:400;font-size:13px;"><input type="checkbox" id="ae_actSIP" style="width:auto;"'+((row['SIP Active']||'')==='Yes'?' checked':'')+'> SIP</label>';
@@ -11883,6 +12119,7 @@ function saveAccEditModal(rowNum){
     'Client Phone':newCphone,
     'Location':(document.getElementById('ae_location').value||'').trim(),
     'Profession':(document.getElementById('ae_profession').value||'').trim(),
+    'Family Group':(document.getElementById('ae_family').value||'').trim(),
     'Trading Active':actTrading,'SIP Active':actSIP,'Investment Active':actInv,'IPO Active':actIPO,
     'Remarks':(document.getElementById('ae_remarks').value||'').trim(),
     'Status':statusComputed
@@ -11993,8 +12230,13 @@ function renderCallTradePage(){
   var cRows=cclRows();
   var q2=getSrch('srch-ccl');
   var filteredRoster=srchFilter(cRows,q2,['Client ID','Client Name','Client Phone']);
+  var cclFamF=document.getElementById('ccl_familyFilter');
+  var cclFamVal=cclFamF?cclFamF.value:'';
+  if(cclFamVal)filteredRoster=filteredRoster.filter(function(r){return familyGroupOf(r['Client ID'])===cclFamVal;});
   var cclEl=document.getElementById('cclTable');
   if(cclEl)cclEl.innerHTML=mkCallClientTable(filteredRoster);
+  window._cclFamilyFiltered=cclFamVal?filteredRoster:[];
+  updateFamilyCallBar(cclFamVal,filteredRoster);
 
   var rows=ctRows();
   rows=fDate(rows,filters['ct']||'all');
