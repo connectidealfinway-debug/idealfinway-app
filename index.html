@@ -2946,6 +2946,13 @@ var FAMILY_FILTER_ROUTES={
 };
 function clickFamilyBadge(g){
   if(!g)return;
+  /* Aug 26 2026 fix: a regular team member (not company-wide/finance access) must NEVER fall through
+     to the admin's full unscoped Accounts page - that page has zero per-employee filtering built in
+     (it assumes only admin/finance-access users can ever reach it via the nav, which this click-through
+     was silently bypassing). For everyone without financeWideAccess(), show a small scoped popup instead
+     that only lists accounts from THEIR OWN clients plus their own team's clients (teamMembersOf) in this
+     family group - never the rest of the office. */
+  if(!financeWideAccess()){showMyFamilyGroupDetail(g);return;}
   var route=FAMILY_FILTER_ROUTES[curPage()];
   var needNav=!route;
   if(needNav){showPage('adminAcc');route=FAMILY_FILTER_ROUTES['adminAcc'];}
@@ -2957,6 +2964,35 @@ function clickFamilyBadge(g){
     if(anchor)anchor.scrollIntoView({behavior:'smooth',block:'center'});
   };
   if(needNav)setTimeout(apply,60);else apply();
+}
+/* Scoped Family Group popup for regular team members (not company-wide access): own clients + own
+   team's clients only, same family group, matching the exact scoping this app already uses everywhere
+   else for "my sub-team" (teamMembersOf) - see FinanceWideAccess()/refEligibleEmployees() for the same
+   pattern applied to other features. */
+function myFamilyScopeIds(){
+  var ids=[String(currentUser.userId).trim()];
+  teamMembersOf(currentUser.userId).forEach(function(e){ids.push(String(e['Employee ID']).trim());});
+  return ids;
+}
+function showMyFamilyGroupDetail(g){
+  var ids=myFamilyScopeIds();
+  var rows=(allData.Accounts||[]).filter(function(r){
+    return (r['Family Group']||'').trim()===g&&(r['Client ID']||'').trim()&&ids.indexOf((r['Employee ID']||'').trim())!==-1;
+  });
+  var hasTeam=teamMembersOf(currentUser.userId).length>0;
+  var html='<div class="modal-title">&#128106; Family Group: '+g+'</div>';
+  html+='<div style="font-size:11px;color:var(--muted,#8a94a6);margin-bottom:10px;">Showing only your own clients'+(hasTeam?' and your team\'s clients':'')+' in this family group.</div>';
+  if(!rows.length){
+    html+='<div style="padding:24px;text-align:center;color:var(--muted,#8a94a6);">No accounts in this family group are visible to you.</div>';
+  } else {
+    html+='<div class="table-wrap"><table><thead><tr><th>Client Name</th><th>Client ID</th>'+(hasTeam?'<th>Team Member</th>':'')+'<th>Status</th></tr></thead><tbody>';
+    rows.forEach(function(r){
+      html+='<tr><td>'+(r['Client Name']||'-')+'</td><td>'+(r['Client ID']||'-')+'</td>'+(hasTeam?'<td>'+(r['Employee Name']||'-')+'</td>':'')+'<td>'+(r['Status']||'Active')+'</td></tr>';
+    });
+    html+='</tbody></table></div>';
+  }
+  html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Close</button></div>';
+  document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
 }
 /* Family Groups chip bar (Aug 26 2026): a visible "section" above the Accounts table listing every
    Family Group in use with its account count, so the family filter doesn't stay hidden inside a small
