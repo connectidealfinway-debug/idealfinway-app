@@ -5232,6 +5232,22 @@ function renderMyAccProcessTable(){
    Each issue carries an "action" with a real closure (not a serialized onclick string) so it can
    safely capture full row objects; buttons are wired via .onclick after the HTML is inserted. */
 function healthGoToSearch(pageId,searchId,term){
+  /* Aug 26 2026 fix: Employee Health Check (runHealthCheckForSelf) reuses the exact same issue
+     objects - and their action.fn navigation targets - as the full admin Health Check. Those targets
+     (adminAcc/adminSIP/adminIns) are unscoped admin pages that show the whole company, which is the
+     same leak class already fixed for Family Group badges (see clickFamilyBadge()). Remap to the
+     matching "My X" scoped page/search-box pair for anyone without financeWideAccess() - admin/
+     finance-wide-access users are unaffected, they still land on the full admin page as before. */
+  var MY_SCOPE_MAP={
+    'adminAcc|srch-acc':{page:'myAcc',search:'srch-myAcc'},
+    'adminAcc|srch-accProcess':{page:'myAcc',search:'srch-myAccProcess'},
+    'adminSIP|srch-sip':{page:'mySIP',search:'srch-mySIP'},
+    'adminIns|srch-ins':{page:'myIns',search:'srch-myIns'}
+  };
+  if(!financeWideAccess()){
+    var mapped=MY_SCOPE_MAP[pageId+'|'+searchId];
+    if(mapped){pageId=mapped.page;searchId=mapped.search;}
+  }
   showPage(pageId);
   if(searchId&&term){
     var el=document.getElementById(searchId);
@@ -5650,7 +5666,7 @@ function runHealthCheck(){
   });
   accAll.filter(function(r){return !(r['Client ID']||'').trim();}).forEach(function(r){
     var d=daysAgo(r['Date']);
-    if(d!==null&&d>=14)add('warning','Accounts','Under Process 14+ days pending','"'+(r['Client Name']||'-')+'" account has been Under Process for '+d+' days - follow up on the Client ID.',{label:'View Under Process',fn:function(){setAccMode('process');healthGoToSearch('adminAcc','srch-accProcess',r['Client Name']);}},[(r['Employee ID']||'').trim().toLowerCase()]);
+    if(d!==null&&d>=14)add('warning','Accounts','Under Process 14+ days pending','"'+(r['Client Name']||'-')+'" account has been Under Process for '+d+' days - follow up on the Client ID.',{label:'View Under Process',fn:function(){(financeWideAccess()?setAccMode:setMyAccMode)('process');healthGoToSearch('adminAcc','srch-accProcess',r['Client Name']);}},[(r['Employee ID']||'').trim().toLowerCase()]);
   });
 
   /* ---- SIP / Mutual Fund ---- */
