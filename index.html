@@ -1457,6 +1457,9 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
         </div>
         <div class="form-group"><label>Follow-up Date</label><input type="date" id="l_followup"></div>
         <div class="form-group"><label>Remarks</label><textarea id="l_remarks" placeholder="Any notes..."></textarea></div>
+        <div class="form-group"><label>Joint With <span style="color:var(--muted);font-weight:400;">- optional, tag a 2nd team member if you both did this lead together. It will then show in both your Leads lists, and either of you can add call updates that the other will see.</span></label>
+          <select id="l_coemp" onfocus="populateCoEmpPicker('l_coemp')"><option value="">-- None (just me) --</option></select>
+        </div>
         <button class="btn-submit" onclick="submitLead()">Add Lead</button>
       </div>
     </div>
@@ -1533,6 +1536,9 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
         </div>
         <div class="form-group" id="m_prod_group"><label>Convert Product</label>
           <select id="m_prod"><option value="">-</option><option value="SIP/MF">SIP / Mutual Fund</option><option value="Insurance">Insurance</option><option value="Demat">Demat / Account</option><option value="Other">Other</option></select>
+        </div>
+        <div class="form-group"><label>Joint With <span style="color:var(--muted);font-weight:400;">- optional, tag a 2nd team member if you both attended this meeting together. It will then show in both your Meetings lists, and either of you can see updates the other adds.</span></label>
+          <select id="m_coemp" onfocus="populateCoEmpPicker('m_coemp')"><option value="">-- None (just me) --</option></select>
         </div>
         <button class="btn-submit" onclick="submitMeeting()">Add Meeting</button>
       </div>
@@ -2215,7 +2221,7 @@ function fDate(rows,f){
 }
 function fEmp(rows,uid){
   var name=currentUser?currentUser.name:'';
-  return rows.filter(function(r){return (r['Employee ID']||'').trim()===uid.trim()||(r['Employee Name']||'').trim().toLowerCase()===name.trim().toLowerCase();});
+  return rows.filter(function(r){return (r['Employee ID']||'').trim()===uid.trim()||(r['Employee Name']||'').trim().toLowerCase()===name.trim().toLowerCase()||(r['Co Employee ID']||'').trim()===uid.trim();});
 }
 function fEmpStrict(rows,uid){if(Array.isArray(uid)){var __s={};uid.forEach(function(u){__s[String(u).trim()]=1;});return rows.filter(function(r){return __s[(r['Employee ID']||'').trim()];});}
   return rows.filter(function(r){return (r['Employee ID']||'').trim()===String(uid).trim();});
@@ -3016,6 +3022,38 @@ function onRefTypeChange(prefix){
   var refOtherGroup=document.getElementById(prefix+'_refOtherGroup');
   if(refEmpGroup)refEmpGroup.style.display=(t==='Employee')?'':'none';
   if(refOtherGroup)refOtherGroup.style.display=(t==='Other')?'':'none';
+}
+/* ===== Joint Lead/Meeting tagging (Aug 26 2026): lets a 2nd team member be tagged on a Leads or
+   Meetings entry at creation time, so BOTH employees see that entry in their own My Leads/My Meetings
+   list (fEmp() above matches on Co Employee ID too) - any status/call-log update either of them makes
+   is on the SAME sheet row, so the other person sees it automatically, no separate sync needed.
+   Company-wide picker (not scoped to the viewer's own sub-team) since a joint lead/meeting can be with
+   any colleague, not just someone under you. */
+function coEmployeePickerList(){
+  return (employees||[]).filter(function(e){return (e['Status']||'Active')==='Active';}).slice();
+}
+function populateCoEmpPicker(selId){
+  var sel=document.getElementById(selId);
+  if(!sel)return;
+  var cur=sel.value;
+  var placeholder=sel.options&&sel.options[0]?sel.options[0].outerHTML:'<option value="">-- None (just me) --</option>';
+  sel.innerHTML=placeholder+coEmployeePickerList().filter(function(e){return e['Employee ID']!==currentUser.userId;}).map(function(e){return '<option value="'+e['Employee ID']+'">'+e['Name']+'</option>';}).join('');
+  if(cur)sel.value=cur;
+}
+function coEmpFromSelect(selId){
+  var sel=document.getElementById(selId);
+  var id=sel?sel.value:'';
+  if(!id)return {id:'',name:''};
+  var e=employees.find(function(x){return x['Employee ID']===id;});
+  return e?{id:e['Employee ID'],name:e['Name']}:{id:'',name:''};
+}
+/* Joint badge - shown next to the client name on Leads/Meetings rows so it's visible at a glance
+   which entries are shared, and with whom. */
+function jointBadge(r){
+  var id=(r['Co Employee ID']||'').trim();
+  var nm=(r['Co Employee Name']||'').trim();
+  if(!id||!nm)return '';
+  return ' <span class="badge blue" style="font-size:9px;" title="Joint entry - also visible to '+nm+', either of you can add updates">&#128101; with '+nm+'</span>';
 }
 function refEligibleEmployees(){
   /* v50: "Which Employee Referred?" list ab sirf viewer ke apne sub-employees dikhata h - poori company ki list nahi.
@@ -7994,7 +8032,7 @@ function mkLeads(rows,showEmp,canDel){
     var catC={'SIP/MF':'green','Insurance':'blue','Account':'purple','Student':'pink','Other':'amber'}[cat]||'blue';
     var conv=r['Converted']==='Yes';
     h+='<tr><td>'+(r['Date']||'-')+'</td>'+(showEmp?'<td>'+(r['Employee Name']||'-')+'</td>':'')+
-      '<td style="font-weight:600;">'+(r['Client Name']||'-')+'</td><td>'+(r['Client Phone']||'-')+'</td>'+
+      '<td style="font-weight:600;">'+(r['Client Name']||'-')+jointBadge(r)+'</td><td>'+(r['Client Phone']||'-')+'</td>'+
       '<td><span class="badge '+catC+'">'+cat+'</span></td><td>'+(r['Contact']||'-')+'</td>'+
       '<td><span class="badge '+(met==='Yes'?'green':'amber')+'">'+met+'</span></td>'+
       '<td>'+(r['Follow Up']||'-')+'</td>'+
@@ -8180,15 +8218,16 @@ function submitMeeting(){
   var cn=document.getElementById('m_cname').value.trim();
   if(!cn){showToast('Enter Client/Person name','error');return;}
   var conv=document.getElementById('m_conv').value;
-  var p={action:'addMeeting','Date':document.getElementById('m_date').value||td(),'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch,'Client Name':cn,'Client Phone':document.getElementById('m_cphone').value.trim(),'Reference By':document.getElementById('m_ref').value.trim(),'Regarding':document.getElementById('m_regarding').value,'Attendees':document.getElementById('m_attendees').value.trim(),'Remarks':document.getElementById('m_remarks').value.trim(),'Next Meeting':document.getElementById('m_next').value||'','Converted':conv,'Convert Product':conv==='Yes'?document.getElementById('m_prod').value:''};
-  doSubmit(p,'Meetings',document.querySelector('#page-addMeeting .btn-submit'),'Add Meeting',function(){document.getElementById('m_cname').value='';document.getElementById('m_cphone').value='';document.getElementById('m_ref').value='';document.getElementById('m_attendees').value='';document.getElementById('m_remarks').value='';document.getElementById('m_next').value='';});
+  var coEmp=coEmpFromSelect('m_coemp');
+  var p={action:'addMeeting','Date':document.getElementById('m_date').value||td(),'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch,'Client Name':cn,'Client Phone':document.getElementById('m_cphone').value.trim(),'Reference By':document.getElementById('m_ref').value.trim(),'Regarding':document.getElementById('m_regarding').value,'Attendees':document.getElementById('m_attendees').value.trim(),'Remarks':document.getElementById('m_remarks').value.trim(),'Next Meeting':document.getElementById('m_next').value||'','Converted':conv,'Convert Product':conv==='Yes'?document.getElementById('m_prod').value:'','Co Employee ID':coEmp.id,'Co Employee Name':coEmp.name};
+  doSubmit(p,'Meetings',document.querySelector('#page-addMeeting .btn-submit'),'Add Meeting',function(){document.getElementById('m_cname').value='';document.getElementById('m_cphone').value='';document.getElementById('m_ref').value='';document.getElementById('m_attendees').value='';document.getElementById('m_remarks').value='';document.getElementById('m_next').value='';var ce=document.getElementById('m_coemp');if(ce)ce.value='';});
 }
 function mkMeetingTable(rows,showEmp){
   if(!rows||!rows.length)return '<div class="no-data">No meetings found</div>';
   var h='<table><thead><tr><th>Date</th>'+(showEmp?'<th>Team</th>':'')+'<th>Client</th><th>Phone</th><th>Ref By</th><th>Regarding</th><th>Attendees</th><th>Next Mtg</th><th>Converted</th><th>Remarks</th><th>Actions</th></tr></thead><tbody>';
   rows.slice().reverse().forEach(function(r){
     var conv=r['Converted']||'No';var cc=conv==='Yes'?'green':'amber';
-    h+='<tr><td>'+(r['Date']||'-')+'</td>'+(showEmp?'<td>'+(r['Employee Name']||'-')+'</td>':'')+'<td>'+(r['Client Name']||'-')+'</td><td>'+(r['Client Phone']||'-')+'</td><td>'+(r['Reference By']||'-')+'</td><td>'+(r['Regarding']||'-')+'</td><td>'+(r['Attendees']||'-')+'</td><td>'+(r['Next Meeting']||'-')+'</td><td><span class="badge '+cc+'">'+conv+((conv==='Yes'&&r['Convert Product'])?' &#183; '+r['Convert Product']:'')+'</span></td><td>'+(r['Remarks']||'-')+'</td><td><button class="btn-del" onclick="confirmDel(\'Meetings\','+r['_rowNum']+')">&#128465;</button>'+(conv!=='Yes'&&r['_rowNum']?' <button class="btn-edit" style="background:rgba(63,191,127,0.15);color:var(--accent);" onclick="markMeetingConverted('+r['_rowNum']+')">&#10003; Converted</button>':'')+'</td></tr>';
+    h+='<tr><td>'+(r['Date']||'-')+'</td>'+(showEmp?'<td>'+(r['Employee Name']||'-')+'</td>':'')+'<td>'+(r['Client Name']||'-')+jointBadge(r)+'</td><td>'+(r['Client Phone']||'-')+'</td><td>'+(r['Reference By']||'-')+'</td><td>'+(r['Regarding']||'-')+'</td><td>'+(r['Attendees']||'-')+'</td><td>'+(r['Next Meeting']||'-')+'</td><td><span class="badge '+cc+'">'+conv+((conv==='Yes'&&r['Convert Product'])?' &#183; '+r['Convert Product']:'')+'</span></td><td>'+(r['Remarks']||'-')+'</td><td><button class="btn-del" onclick="confirmDel(\'Meetings\','+r['_rowNum']+')">&#128465;</button>'+(conv!=='Yes'&&r['_rowNum']?' <button class="btn-edit" style="background:rgba(63,191,127,0.15);color:var(--accent);" onclick="markMeetingConverted('+r['_rowNum']+')">&#10003; Converted</button>':'')+'</td></tr>';
   });
   return h+'</tbody></table>';
 }
@@ -8346,8 +8385,9 @@ function submitAccount(){
 
 function submitLead(){
   var cn=document.getElementById('l_cname').value.trim();if(!cn){showToast('Client name required','error');return;}
-  var p={action:'addLead','Date':document.getElementById('l_date').value||td(),'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch,'Client Name':cn,'Client Phone':document.getElementById('l_cphone').value.trim(),'Category':document.getElementById('l_cat').value,'Contact':document.getElementById('l_contact').value,'Meeting Done':document.getElementById('l_met').value,'Follow Up':document.getElementById('l_followup').value,'Remarks':document.getElementById('l_remarks').value.trim()};
-  doSubmit(p,'Leads',document.querySelector('#page-addLead .btn-submit'),'Add Lead',function(){document.getElementById('l_cname').value='';document.getElementById('l_cphone').value='';document.getElementById('l_remarks').value='';});
+  var coEmp=coEmpFromSelect('l_coemp');
+  var p={action:'addLead','Date':document.getElementById('l_date').value||td(),'Employee ID':currentUser.userId,'Employee Name':currentUser.name,'Branch':currentUser.branch,'Client Name':cn,'Client Phone':document.getElementById('l_cphone').value.trim(),'Category':document.getElementById('l_cat').value,'Contact':document.getElementById('l_contact').value,'Meeting Done':document.getElementById('l_met').value,'Follow Up':document.getElementById('l_followup').value,'Remarks':document.getElementById('l_remarks').value.trim(),'Co Employee ID':coEmp.id,'Co Employee Name':coEmp.name};
+  doSubmit(p,'Leads',document.querySelector('#page-addLead .btn-submit'),'Add Lead',function(){document.getElementById('l_cname').value='';document.getElementById('l_cphone').value='';document.getElementById('l_remarks').value='';var ce=document.getElementById('l_coemp');if(ce)ce.value='';});
 }
 
 function calcStudentPending(){
