@@ -758,6 +758,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
         <button class="tab-btn" id="accModeTabProcess" onclick="setAccMode('process')">&#8987; Under Process Demat <span id="accProcessCount"></span></button>
       </div>
       <div id="accModeCompleted">
+        <div id="accFamilyChipsBar" style="display:none;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px;background:rgba(139,92,246,0.06);border:1px solid rgba(139,92,246,0.25);border-radius:8px;padding:10px 12px;"></div>
         <div class="filter-bar">
           <button class="filter-btn active" onclick="setF('today',this,'acc')">Today</button>
           <button class="filter-btn" onclick="setF('yesterday',this,'acc')">Yesterday</button>
@@ -2924,12 +2925,68 @@ function familyGroupOf(clientId){
 function familyBadge(clientId){
   var g=familyGroupOf(clientId);
   if(!g)return '';
-  return ' <span class="badge purple" style="font-size:9px;" title="Family Group: '+g+'">&#128106; '+g+'</span>';
+  return ' <span class="badge purple" style="font-size:9px;cursor:pointer;" title="Family Group: '+g+' - click to see all accounts in this family" onclick="event.stopPropagation();clickFamilyBadge(\''+escId(g)+'\')">&#128106; '+g+'</span>';
+}
+/* Family Group click-through (Aug 26 2026): clicking a family badge anywhere in the app (Accounts, SIP,
+   Call&Trade, Client Search, IPO Calling List...) jumps to the page that actually has a working Family
+   Group filter for that data and applies it - so "which accounts belong to this family" is always one
+   click away, not a separate dropdown you have to know to open. Accounts is the fallback destination for
+   any page (like Client 360) that doesn't have its own family filter, since Accounts is the source of
+   truth for Family Group. */
+var FAMILY_FILTER_ROUTES={
+  adminAcc:{sel:'acc_familyFilter',fn:'renderAccTable'},
+  adminSIP:{sel:'sip_familyFilter',fn:'renderSIP'},
+  callTrade:{sel:'ccl_familyFilter',fn:'renderCallTradePage'}
+};
+function clickFamilyBadge(g){
+  if(!g)return;
+  var route=FAMILY_FILTER_ROUTES[curPage()];
+  var needNav=!route;
+  if(needNav){showPage('adminAcc');route=FAMILY_FILTER_ROUTES['adminAcc'];}
+  var apply=function(){
+    var sel=document.getElementById(route.sel);
+    if(sel)sel.value=g;
+    if(typeof window[route.fn]==='function')window[route.fn]();
+    var anchor=document.getElementById(route.sel);
+    if(anchor)anchor.scrollIntoView({behavior:'smooth',block:'center'});
+  };
+  if(needNav)setTimeout(apply,60);else apply();
+}
+/* Family Groups chip bar (Aug 26 2026): a visible "section" above the Accounts table listing every
+   Family Group in use with its account count, so the family filter doesn't stay hidden inside a small
+   dropdown - clicking a chip filters accTable to just that family's accounts (rendered right below, in
+   the same table), and a Clear Filter chip appears when a filter is active. */
+function renderAccFamilyChips(){
+  var box=document.getElementById('accFamilyChipsBar');
+  if(!box)return;
+  var counts={};
+  (allData.Accounts||[]).forEach(function(r){
+    var g=(r['Family Group']||'').trim();
+    if(g)counts[g]=(counts[g]||0)+1;
+  });
+  var fams=Object.keys(counts).sort(function(a,b){return a.localeCompare(b);});
+  if(!fams.length){box.style.display='none';box.innerHTML='';return;}
+  var sel=document.getElementById('acc_familyFilter');
+  var active=sel?sel.value:'';
+  box.style.display='flex';
+  var h='<span style="font-size:11px;color:var(--muted,#8a94a6);font-weight:700;">&#128106; Family Groups:</span>';
+  h+=fams.map(function(g){
+    var isActive=(g===active);
+    return '<span class="badge purple" style="cursor:pointer;font-size:11px;padding:5px 10px;'+(isActive?'background:#8b5cf6;color:#fff;':'')+'" onclick="setAccFamilyFilterChip(\''+escId(g)+'\')">&#128106; '+g+' <span style="opacity:.8;">('+counts[g]+')</span></span>';
+  }).join('');
+  if(active)h+='<span class="badge" style="cursor:pointer;font-size:11px;padding:5px 10px;" onclick="setAccFamilyFilterChip(\'\')">&#10006; Clear Filter</span>';
+  box.innerHTML=h;
+}
+function setAccFamilyFilterChip(g){
+  var sel=document.getElementById('acc_familyFilter');
+  if(sel)sel.value=g;
+  renderAccTable();
 }
 function refreshFamilyDatalist(){
   var dl=document.getElementById('familyGroupDatalist');
   if(dl)dl.innerHTML=familyGroupsList().map(function(g){return '<option value="'+g.replace(/"/g,'&quot;')+'">';}).join('');
   ['acc_familyFilter','sip_familyFilter','ccl_familyFilter','c360_familyFilter'].forEach(populateFamilyFilterSelect);
+  renderAccFamilyChips();
 }
 /* Family Group filter <select> populator - used on Accounts/SIP/Call&Trade/Client Search. Preserves the
    currently chosen value across re-population (e.g. after loadAll refresh) so an active filter doesn't
@@ -4733,6 +4790,7 @@ function showInsStat(kind){
 }
 function renderAccTable(){
   renderSectionAttention('accAttentionPanel','accAttentionDetail',false,['accountsStuck','clientDropOff']);
+  renderAccFamilyChips();
   var allAcc=(allData.Accounts||[]).filter(function(r){return (r['Client ID']||'').trim();}); // Completed only - blank Client ID = Under Process (separate tab)
   var rows=fDate(allAcc,filters['acc']||'all');
   if(accStat==='active')rows=rows.filter(function(r){return (r['Status']||'Active')==='Active';});
