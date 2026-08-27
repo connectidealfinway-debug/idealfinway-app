@@ -1926,10 +1926,10 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
             <div class="form-group"><label>&nbsp;</label><button class="btn-mini add" type="button" onclick="openNewIPOModal(true)">&#43; New IPO</button></div>
             <div class="form-group"><label>&nbsp;</label><button class="btn-mini" type="button" onclick="openEditIPOGainsModal(true)">&#9998; Edit Listing Gains</button></div>
             <div class="form-group"><label>Date</label><input type="date" id="si_date"></div>
-            <div class="form-group"><label>Client ID (in whose name it was applied)</label><input type="text" id="si_clientId" list="dl_si_clientId" placeholder="e.g. FBO1234 / your name" onchange="onSelfClientIdAutoFill()"><datalist id="dl_si_clientId"></datalist><div class="qp-row" id="qp_si_clientId"></div></div>
-            <div class="form-group"><label>Client / Investor Naam</label><input type="text" id="si_clientName" list="dl_si_clientName" placeholder="e.g. Ramesh Kumar"><datalist id="dl_si_clientName"></datalist><div class="qp-row" id="qp_si_clientName"></div></div>
+            <div class="form-group"><label>Client ID (in whose name it was applied)</label><input type="text" id="si_clientId" list="dl_si_clientId" placeholder="e.g. FBO1234 / your name" onchange="onSelfClientIdAutoFill()"><datalist id="dl_si_clientId"></datalist></div>
+            <div class="form-group"><label>Client / Investor Naam</label><input type="text" id="si_clientName" list="dl_si_clientName" placeholder="e.g. Ramesh Kumar"><datalist id="dl_si_clientName"></datalist></div>
             <div class="form-group"><label>Category</label><select id="si_cat" onchange="onSelfIPOFieldChange()"><option>Retail</option><option>sHNI</option><option>bHNI</option></select></div>
-            <div class="form-group"><label>Amount (optional - can also enter manually)</label><input type="number" id="si_amount" list="dl_si_amount" placeholder="e.g. 15000"><datalist id="dl_si_amount"></datalist><div class="qp-row" id="qp_si_amount"></div></div>
+            <div class="form-group"><label>Amount (optional - can also enter manually)</label><input type="number" id="si_amount" list="dl_si_amount" placeholder="e.g. 15000"><datalist id="dl_si_amount"></datalist></div>
             <div class="form-group"><label>Bank</label><input type="text" id="si_bank" list="dl_si_bank" placeholder="e.g. HDFC Bank"><datalist id="dl_si_bank"></datalist></div>
             <div class="form-group"><label>UPI ID</label><input type="text" id="si_upi" list="dl_si_upi" placeholder="e.g. name@okhdfc"><datalist id="dl_si_upi"></datalist><div class="qp-row" id="qp_si_upi"></div></div>
             <div class="form-group"><label>PAN Card</label><input type="text" id="si_pan" list="dl_si_pan" placeholder="e.g. ABCDE1234F" style="text-transform:uppercase;"><datalist id="dl_si_pan"></datalist></div>
@@ -3715,13 +3715,14 @@ function siUniqVals(arr,key,limit){
   return out;
 }
 var selfIPOQP={},siLastAutoAmt=null,siLastAutoCombo=null;
-function renderQuickPicks(fieldId,containerId,values){
+function renderQuickPicks(fieldId,containerId,values,label){
   selfIPOQP[fieldId]=values;
   var el=document.getElementById(containerId);
   if(!el)return;
   if(!values||!values.length){el.innerHTML='';return;}
-  el.innerHTML='<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px;">'+values.map(function(v,i){
-    return '<span onclick="quickPickSet(\''+fieldId+'\','+i+')" style="cursor:pointer;font-size:11px;padding:2px 8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.14);border-radius:10px;color:var(--muted,#8a94a6);">'+siEsc(v)+'</span>';
+  var head=label?('<div style="font-size:11px;color:var(--muted,#8a94a6);margin:4px 0 2px;">'+label+'</div>'):'';
+  el.innerHTML=head+'<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px;">'+values.map(function(v,i){
+    return '<span onclick="quickPickSet(\''+fieldId+'\','+i+')" style="cursor:pointer;font-size:11px;padding:3px 9px;background:rgba(139,92,246,0.12);border:1px solid rgba(139,92,246,0.35);border-radius:10px;color:var(--text,#fff);">'+siEsc(v)+'</span>';
   }).join('')+'</div>';
 }
 function quickPickSet(fieldId,i){
@@ -3788,16 +3789,28 @@ function onSelfClientIdAutoFill(){
   var cidEl=document.getElementById('si_clientId');
   if(!cidEl)return;
   var cid=(cidEl.value||'').trim().toLowerCase();
-  if(!cid)return;
+  if(!cid){renderQuickPicks('si_upi','qp_si_upi',[]);return;}
   var matches=(allData.SelfIPO||[]).filter(function(r){return (r['Client ID']||'').trim().toLowerCase()===cid;});
-  if(!matches.length)return;
+  if(!matches.length){renderQuickPicks('si_upi','qp_si_upi',[]);return;}
   matches.sort(function(a,b){return (b['Date']||'').localeCompare(a['Date']||'');});
   var m=matches[0];
   var nameEl=document.getElementById('si_clientName'),bankEl=document.getElementById('si_bank'),upiEl=document.getElementById('si_upi'),panEl=document.getElementById('si_pan');
   if(nameEl&&!nameEl.value&&m['Client Name'])nameEl.value=m['Client Name'];
   if(bankEl&&!bankEl.value&&m['Bank'])bankEl.value=m['Bank'];
-  if(upiEl&&!upiEl.value&&m['UPI ID'])upiEl.value=m['UPI ID'];
   if(panEl&&!panEl.value&&m['PAN'])panEl.value=m['PAN'];
+  /* v95: this client may have applied with more than one UPI ID across past applications - auto-
+     filling just the most recent one silently could apply this new one under the wrong UPI. If only
+     one UPI is on file, fill it in directly like before; if there are several, ask which one was used
+     this time instead of guessing. Saving this new entry with whichever UPI is chosen (or a brand new
+     one, if typed manually) is what grows the list of "known UPIs" for this client for next time -
+     no separate UPI-management screen needed. */
+  var upiVals=siUniqVals(matches,'UPI ID',6);
+  if(upiVals.length>1){
+    renderQuickPicks('si_upi','qp_si_upi',upiVals,'This client has used multiple UPI IDs before - which one applied this time?');
+  } else {
+    renderQuickPicks('si_upi','qp_si_upi',[]);
+    if(upiEl&&!upiEl.value&&m['UPI ID'])upiEl.value=m['UPI ID'];
+  }
 }
 function populateEsiIpoSelect(curId,curName){
   var sel=document.getElementById('esi_ipoSelect');
@@ -3833,9 +3846,6 @@ function populateSelfIPODatalists(){
   fillDatalist('dl_si_upi',upis);
   fillDatalist('dl_si_pan',pans);
   fillDatalist('dl_si_amount',amounts);
-  renderQuickPicks('si_clientId','qp_si_clientId',clientIds.slice(0,6));
-  renderQuickPicks('si_clientName','qp_si_clientName',clientNames.slice(0,6));
-  renderQuickPicks('si_upi','qp_si_upi',upis.slice(0,6));
   populateSelfIPOSelect();
   onSelfIPOFieldChange();
 }
@@ -3843,10 +3853,9 @@ function onSelfIPOFieldChange(){
   var catEl=document.getElementById('si_cat'),amtEl=document.getElementById('si_amount');
   if(!catEl||!amtEl)return;
   var cat=catEl.value,combo=(siIpoId||'')+'|'+cat;
-  if(!siIpoId){renderQuickPicks('si_amount','qp_si_amount',[]);return;}
+  if(!siIpoId)return;
   var matches=(allData.SelfIPO||[]).filter(function(r){return r['IPO_ID']===siIpoId&&r['Category']===cat&&r['Amount'];});
   var amtVals=siUniqVals(matches,'Amount',6);
-  renderQuickPicks('si_amount','qp_si_amount',amtVals);
   if(amtVals.length){
     var latest=amtVals[0];
     if(!amtEl.value||amtEl.value===siLastAutoAmt||combo!==siLastAutoCombo){
@@ -13874,12 +13883,16 @@ function openNewIPOModal(forSelf){
   html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="submitNewIPO()">Create</button></div>';
   document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
 }
+var _newIPOBusy=false;
 function submitNewIPO(){
-  var name=(document.getElementById('ipn_name').value||'').trim();
-  if(!name){showToast('IPO Name required','error');return;}
+  if(_newIPOBusy)return; // Aug 26 2026 fix: this was the actual cause of duplicate IPO_Master rows -
+  var name=(document.getElementById('ipn_name').value||'').trim();               // a fast double-click
+  if(!name){showToast('IPO Name required','error');return;}                      // sent 2 separate
+  _newIPOBusy=true;                                                              // addIPOMaster calls
   var p={action:'addIPOMaster','IPO_Name':name,'Retail_Gain':parseFloat(document.getElementById('ipn_retail').value)||0,'sHNI_Gain':parseFloat(document.getElementById('ipn_shni').value)||0,'bHNI_Gain':parseFloat(document.getElementById('ipn_bhni').value)||0,'Rejection_Penalty':parseFloat(document.getElementById('ipn_penalty').value)||0,'Created_By':currentUser.name};
   var wasForSelf=_newIPOForSelf;
   postData(p).then(function(r){
+    _newIPOBusy=false;
     closeModal();
     if(r&&r.success){
       showToast('IPO created','success');
@@ -13888,24 +13901,29 @@ function submitNewIPO(){
       loadAll();
     }
     else showToast('Failed: '+(r&&r.error||''),'error');
-  }).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
+  }).catch(function(e){_newIPOBusy=false;closeModal();showToast('Error: '+e.message,'error');});
 }
 
 function openEditIPOGainsModal(forSelf){
   var ipo=forSelf?currentSelfIPOObj():currentIPO();
   if(!ipo){showToast('Select an IPO first','error');return;}
-  var html='<div class="modal-title">Edit Listing Gains — '+(ipo['IPO_Name']||'')+'</div>';
+  var html='<div class="modal-title">Edit / Delete IPO — '+(ipo['IPO_Name']||'')+'</div>';
+  html+='<div class="form-group"><label>IPO Name</label><input type="text" id="ipg_name" value="'+siEsc(ipo['IPO_Name']||'')+'"></div>';
   html+='<p style="color:var(--muted);font-size:12px;margin-bottom:10px;">&#8377;/application gain used to auto-calculate profit &amp; client net for Allotted applications in this IPO.</p>';
   html+='<div class="form-group"><label>Retail Listing Gain (&#8377;/application)</label><input type="number" id="ipg_retail" value="'+(parseFloat(ipo['Retail_Gain'])||0)+'"></div>';
   html+='<div class="form-group"><label>sHNI Listing Gain (&#8377;/application)</label><input type="number" id="ipg_shni" value="'+(parseFloat(ipo['sHNI_Gain'])||0)+'"></div>';
   html+='<div class="form-group"><label>bHNI Listing Gain (&#8377;/application)</label><input type="number" id="ipg_bhni" value="'+(parseFloat(ipo['bHNI_Gain'])||0)+'"></div>';
   html+='<p style="color:var(--muted);font-size:12px;margin:14px 0 10px;border-top:1px solid var(--border,#2a2f3a);padding-top:10px;">&#8377;/application penalty auto-applied to ALL applications marked <b>Rejection</b> in this IPO. To set a different penalty for a specific application, use its Edit (&#9998;) button to set it manually &#8212; leaving it blank there will use this default.</p>';
   html+='<div class="form-group"><label>Rejection Penalty (&#8377;/application)</label><input type="number" id="ipg_penalty" value="'+(parseFloat(ipo['Rejection_Penalty'])||0)+'"></div>';
-  html+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="saveIPOGains('+ipo['_rowNum']+','+(forSelf?'true':'false')+')">Save</button></div>';
+  html+='<div class="modal-actions" style="justify-content:space-between;"><button class="btn-cancel" style="background:rgba(220,50,50,0.12);color:#e05252;border-color:rgba(220,50,50,0.35);" onclick="deleteIPOMasterEntry('+ipo['_rowNum']+',\''+ipo['IPO_ID']+'\','+(forSelf?'true':'false')+')">&#128465; Delete IPO</button><span><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" onclick="saveIPOGains('+ipo['_rowNum']+','+(forSelf?'true':'false')+')">Save</button></span></div>';
   document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').className='show';
 }
 function saveIPOGains(rowNum,forSelf){
+  var nameEl=document.getElementById('ipg_name');
+  var newName=nameEl?(nameEl.value||'').trim():'';
+  if(!newName){showToast('IPO Name required','error');return;}
   var vals={
+    'IPO_Name':newName,
     'Retail_Gain':parseFloat(document.getElementById('ipg_retail').value)||0,
     'sHNI_Gain':parseFloat(document.getElementById('ipg_shni').value)||0,
     'bHNI_Gain':parseFloat(document.getElementById('ipg_bhni').value)||0,
@@ -13914,9 +13932,31 @@ function saveIPOGains(rowNum,forSelf){
   postData({action:'editRow',sheet:'IPO_Master',rowNum:rowNum,vals:vals}).then(function(r){
     closeModal();
     if(r&&r.success){
-      showToast('Listing gains & rejection penalty updated','success');
+      showToast('IPO updated','success');
       patchRowLocal('IPO_Master',rowNum,vals);
       if(forSelf){renderSiIpoGainsDisplay();renderSelfIPOPage();}else{renderIPOGainsDisplay();renderIPOTabBody();}
+    }
+    else showToast('Failed: '+(r&&r.error||''),'error');
+  }).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
+}
+/* Aug 26 2026: delete an IPO_Master entry - only when nothing references it (IPO_Applications or
+   SelfIPO rows for this IPO_ID), so a genuinely-in-use IPO or one with real application history can
+   never be silently orphaned by deleting it. Covers both accidental duplicate-click entries and
+   deliberate mistakes (wrong IPO created, nothing added against it yet). */
+function deleteIPOMasterEntry(rowNum,ipoId,forSelf){
+  var appCt=(allData.IPO_Applications||[]).filter(function(a){return a['IPO_ID']===ipoId;}).length;
+  var selfCt=(allData.SelfIPO||[]).filter(function(s){return s['IPO_ID']===ipoId;}).length;
+  if(appCt||selfCt){
+    showToast('Cannot delete - this IPO has '+(appCt?appCt+' application(s)':'')+(appCt&&selfCt?' and ':'')+(selfCt?selfCt+' self-application entrie(s)':'')+' linked to it.','error');
+    return;
+  }
+  if(!confirm('Delete this IPO? This cannot be undone.'))return;
+  postData({action:'deleteRow',sheet:'IPO_Master',rowNum:rowNum}).then(function(r){
+    closeModal();
+    if(r&&r.success){
+      showToast('IPO deleted','success');
+      if(forSelf){siIpoId=null;}else{ipoSelId=null;}
+      loadAll();
     }
     else showToast('Failed: '+(r&&r.error||''),'error');
   }).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
