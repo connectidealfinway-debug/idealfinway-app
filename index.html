@@ -10103,6 +10103,7 @@ function renderMyHisab(){
     if(le){
       h+='<div class="hisab-card" style="border:1px dashed var(--accent,#3fbf7f);">';
       h+='<div class="hisab-head"><div class="emp-name">'+liveMo+' <span style="font-size:11px;font-weight:600;color:var(--accent,#3fbf7f);">&#9679; LIVE</span></div><span class="badge amber">Running total &#183; not yet finalized</span></div>';
+      h+='<div style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.4);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:var(--text,#fff);"><b>&#9888; Provisional, not final.</b> This is a running total based on the work done so far this month (as of today, '+td()+') - it will keep changing as more entries come in. The finance team will calculate and confirm your real, final settlement only after '+liveMo+' is fully complete.</div>';
       h+='<div class="hisab-grid">';
       if(le.isPartner){
         h+='<div class="hisab-cell"><div class="lbl">Net Profit Pool</div><div class="val">'+fmt(le.pool)+'</div></div>';
