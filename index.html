@@ -8793,7 +8793,7 @@ function computeHisabTotals(mo){
     var auto=empBrok(eid);
     var brok=auto>0?auto:(st.savedBrok||0);
     var c=calc(brok,st);
-    byEmp[eid]={net:c.net,status:st.status,isPartner:false};
+    byEmp[eid]={net:c.net,status:st.status,isPartner:false,brok:brok,pct:st.pct,share:c.share,adds:c.adds,deds:c.deds,lines:st.lines};
     staffPay+=c.net;
   });
   staffPay=r2(staffPay);
@@ -8804,7 +8804,7 @@ function computeHisabTotals(mo){
     var eid=e['Employee ID'];
     var st=getRow(e);
     var c=calc(pool,st);
-    byEmp[eid]={net:c.net,status:st.status,isPartner:true};
+    byEmp[eid]={net:c.net,status:st.status,isPartner:true,pool:pool,pct:st.pct,share:c.share,adds:c.adds,deds:c.deds,lines:st.lines,ownBrok:empBrok(eid)};
     totPay+=c.net;
     if(st.status==='Paid'){paidAmt+=c.net;paidN++;}else pendAmt+=c.net;
   });
@@ -10086,8 +10086,44 @@ function renderMyHisab(){
   var uid=currentUser.userId;
   var rows=(allData.Hisab||[]).filter(function(r){return (r['Employee ID']||'').trim().toLowerCase()===uid.trim().toLowerCase();});
   rows.sort(function(a,b){return (b['Month']||'').localeCompare(a['Month']||'');});
-  if(!rows.length){document.getElementById('myHisabCards').innerHTML='<div class="no-data">No settlement generated yet. The finance team will prepare it at month end.</div>';return;}
   var h='';
+  /* Aug 27 2026: live running total for the CURRENT (not yet finalized) month - uses the exact same
+     computeHisabTotals() the admin's Monthly Hisab / Finance Dashboard / Admin Dashboard already share,
+     so it can never drift out of sync with the real eventual settlement; it simply reflects however many
+     days of this month's brokerage/income/expense data exist so far. Works for both employee (Commission %
+     of Brokerage) and partner (Partnership % of Net Profit Pool) automatically, since computeHisabTotals()
+     already branches by role - one implementation, both "sections" covered. Hidden once finance actually
+     finalizes this month for this person (a real saved Hisab row exists) - it then shows normally below
+     with its real Paid/Pending status instead of duplicating as "live". */
+  var liveMo=curMonth();
+  var alreadyFinalized=rows.some(function(r){return r['Month']===liveMo;});
+  if(!alreadyFinalized){
+    var liveHt=computeHisabTotals(liveMo);
+    var le=liveHt.byEmp[uid];
+    if(le){
+      h+='<div class="hisab-card" style="border:1px dashed var(--accent,#3fbf7f);">';
+      h+='<div class="hisab-head"><div class="emp-name">'+liveMo+' <span style="font-size:11px;font-weight:600;color:var(--accent,#3fbf7f);">&#9679; LIVE</span></div><span class="badge amber">Running total &#183; not yet finalized</span></div>';
+      h+='<div class="hisab-grid">';
+      if(le.isPartner){
+        h+='<div class="hisab-cell"><div class="lbl">Net Profit Pool</div><div class="val">'+fmt(le.pool)+'</div></div>';
+        h+='<div class="hisab-cell"><div class="lbl">Partnership %</div><div class="val">'+le.pct+'%</div></div>';
+        h+='<div class="hisab-cell"><div class="lbl">Partner Share</div><div class="val">'+fmt(le.share)+'</div></div>';
+      }else{
+        h+='<div class="hisab-cell"><div class="lbl">Brokerage</div><div class="val">'+fmt(le.brok)+'</div></div>';
+        h+='<div class="hisab-cell"><div class="lbl">Commission %</div><div class="val">'+le.pct+'%</div></div>';
+        h+='<div class="hisab-cell"><div class="lbl">Brok Share</div><div class="val">'+fmt(le.share)+'</div></div>';
+      }
+      h+='<div class="hisab-cell"><div class="lbl">Additions</div><div class="val" style="color:var(--accent);">+'+fmt(le.adds)+'</div></div>';
+      h+='<div class="hisab-cell"><div class="lbl">Deductions</div><div class="val" style="color:var(--danger);">-'+fmt(le.deds)+'</div></div>';
+      h+='<div class="hisab-cell"><div class="lbl">Net (so far)</div><div class="val hisab-net">'+fmt(le.net)+'</div></div>';
+      h+='</div>';
+      if(le.isPartner)h+='<div style="font-size:12px;color:var(--muted);margin:8px 0;">&#8505; Their own clients\' brokerage (for reference only): <b style="color:var(--text);">'+fmt(le.ownBrok)+'</b> - partner receives '+le.pct+'% of net income, not brokerage commission</div>';
+      le.lines.forEach(function(l){h+='<div class="hisab-line"><span>'+(l.t==='add'?'+ ':'&#8722; ')+l.l+'</span><b>'+fmt(l.a)+'</b></div>';});
+      h+='<div style="font-size:11px;color:var(--muted);margin-top:8px;">Updates automatically as new entries come in this month. The finance team will review and finalize the real settlement at month end.</div>';
+      h+='</div>';
+    }
+  }
+  if(!rows.length&&!h){document.getElementById('myHisabCards').innerHTML='<div class="no-data">No settlement generated yet. The finance team will prepare it at month end.</div>';return;}
   rows.forEach(function(r){
     var lines=[];try{lines=JSON.parse(r['Details']||'[]');}catch(e){}
     h+='<div class="hisab-card"><div class="hisab-head"><div class="emp-name">'+r['Month']+'</div><span class="badge '+((r['Status']||'')==='Paid'?'green':'amber')+'">'+(r['Status']||'Pending')+(r['Paid Date']?' &#183; '+r['Paid Date']:'')+'</span></div>';
