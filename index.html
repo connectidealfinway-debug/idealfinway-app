@@ -10297,7 +10297,12 @@ function renderLeaderCommission(){
   var cbMonth=fMonth(allData.ClientBrokerage||[],mo);
   function empBrokLC(eid){return empBrokFromRows(eid,cbMonth);}
   var leaders=employees.filter(function(e){return directRecruitsOf(e['Employee ID']).length>0;});
-  var grandTotal=0,h='';
+  /* Aug 27 2026: partners deliberately do NOT get Leader Commission auto-added to their own Monthly
+     Settlement (see computeAutoLines()/getRow() - by design they receive only their % of the net profit
+     pool, no separate bonuses) - this table still SHOWS what a partner's recruit would have earned them
+     for transparency, but it must never claim that amount is "auto-added", since it isn't. Track
+     staff-payable and partner-informational totals separately so the summary stat stays accurate. */
+  var grandTotal=0,partnerInfoTotal=0,h='';
   if(!leaders.length){
     h='<div class="no-data">No Leader-Recruit pair set yet. Edit a team member in Manage Team and set the "Recruiter (Leader)" field.</div>';
   }else{
@@ -10305,20 +10310,29 @@ function renderLeaderCommission(){
     leaders.forEach(function(ld){
       var bd=leaderCommissionBreakdown(ld['Employee ID'],empBrokLC);
       if(!bd.rows.length)return;
+      var isPartnerLeader=isPartnerRole(ld['Employee ID']);
       bd.rows.forEach(function(row,i){
         h+='<tr>';
-        if(i===0)h+='<td rowspan="'+bd.rows.length+'" style="font-weight:700;vertical-align:top;">'+ld['Name']+(bd.rows.length>1?'<br><span style="font-weight:400;font-size:12px;color:var(--accent);">Total: '+fmt(bd.total)+'</span>':'')+'</td>';
+        if(i===0){
+          h+='<td rowspan="'+bd.rows.length+'" style="font-weight:700;vertical-align:top;">'+ld['Name']
+            +(isPartnerLeader?' <span class="badge purple" style="font-size:9px;" title="Partners receive only their % of the net profit pool - this amount is shown for reference only and is NOT added separately to their settlement">PARTNER</span>':'')
+            +(bd.rows.length>1?'<br><span style="font-weight:400;font-size:12px;color:var(--accent);">Total: '+fmt(bd.total)+'</span>':'')
+            +(isPartnerLeader?'<br><span style="font-weight:400;font-size:11px;color:var(--muted,#8a94a6);">Not added separately - included in pool %</span>':'')
+            +'</td>';
+        }
         h+='<td>'+row.name+'</td><td>'+fmt(row.brok)+'</td><td>'+row.pct+'%</td><td>'+fmt(row.residual)+'</td><td style="font-weight:700;color:var(--accent);">'+fmt(row.comm)+'</td>';
         h+='</tr>';
       });
-      grandTotal+=bd.total;
+      if(isPartnerLeader)partnerInfoTotal+=bd.total;else grandTotal+=bd.total;
     });
     h+='</tbody></table>';
   }
-  document.getElementById('lcStats').innerHTML=mkStats([
+  var statsArr=[
     {label:'Leaders (with active recruits)',value:leaders.filter(function(l){return directRecruitsOf(l['Employee ID']).length>0;}).length,sub:'',color:'blue'},
-    {label:'Total Leader Commission ('+mo+')',value:fmt(r2(grandTotal)),sub:"auto-added to Leader's Monthly Settlement",color:'amber'}
-  ]);
+    {label:'Total Leader Commission ('+mo+')',value:fmt(r2(grandTotal)),sub:"auto-added to Leader's Monthly Settlement (staff only)",color:'amber'}
+  ];
+  if(partnerInfoTotal>0)statsArr.push({label:'Partner Leaders (reference only)',value:fmt(r2(partnerInfoTotal)),sub:'NOT added separately - partners receive % of net profit pool instead',color:'purple'});
+  document.getElementById('lcStats').innerHTML=mkStats(statsArr);
   document.getElementById('lcTable').innerHTML=h;
   renderLeaderMilestones();
 }
