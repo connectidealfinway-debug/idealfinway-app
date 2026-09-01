@@ -791,6 +791,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       <div class="page-header"><h1>&#127942; Contests</h1><p>Track your level in ongoing contests</p></div>
       <div id="contestLaunchBox"></div>
       <div id="contestList"></div>
+      <div id="pastContestList"></div>
     </div>
 
     <!-- ADMIN LEADS -->
@@ -6190,9 +6191,19 @@ function contestComboLevelInfo(contest,empId){
     pending:pending, perMetric:perMetric, levels:levels
   };
 }
-function activeContests(){
+function isContestActiveNow(c){
   var today=td();
-  return (allData.Contests||[]).filter(function(c){return (c['Status']||'Active')==='Active' && c['End Date']>=today;});
+  return (c['Status']||'Active')==='Active' && c['End Date']>=today;
+}
+function activeContests(){
+  return (allData.Contests||[]).filter(isContestActiveNow);
+}
+/* v99: Past Contests - anything that's manually Ended OR whose End Date has passed, so results/winners
+   remain permanently visible (admin's full record + everyone's own history) instead of just vanishing
+   from the page once the date rolls over. Sorted newest-ended first. */
+function pastContests(){
+  return (allData.Contests||[]).filter(function(c){return !isContestActiveNow(c);})
+    .sort(function(a,b){return (b['End Date']||'').localeCompare(a['End Date']||'');});
 }
 /* v33.2: har entry (eligible ho ya na ho) admin ko dikhe, taaki pata chale kiska trade abhi baaki hai */
 function contestIneligibleReason(metricName,r){
@@ -6607,7 +6618,7 @@ function contestEmployeeCard(contest,empId,empName){
   h+='<div class="contest-sub">'+contest['Start Date']+' to '+contest['End Date']+' &#183; '+metrics.join(' + ')+'</div>';
   h+='<div id="contestLB_'+contest['Contest ID']+'"></div>';
   h+=mkContestRulesBlock(contest);
-  if(metrics.indexOf('Account Opening')!==-1)h+=mkContestQuickAddAccount(contest['Contest ID']);
+  if(metrics.indexOf('Account Opening')!==-1 && isContestActiveNow(contest))h+=mkContestQuickAddAccount(contest['Contest ID']);
   h+='<div class="contest-body">';
   if(!isCombo){
     var metricName=metrics[0];
@@ -6646,7 +6657,7 @@ function contestAdminCard(contest){
   h+='<div id="contestLB_'+contest['Contest ID']+'"></div>';
   if(contest['_rowNum'])h+='<div id="contestEditBox_'+contest['_rowNum']+'" style="display:none;"></div>';
   h+=mkContestRulesBlock(contest,true);
-  if(metrics.indexOf('Account Opening')!==-1)h+=mkContestQuickAddAccount(contest['Contest ID']);
+  if(metrics.indexOf('Account Opening')!==-1 && isContestActiveNow(contest))h+=mkContestQuickAddAccount(contest['Contest ID']);
   var medals=['&#129351;','&#129352;','&#129353;'];
   if(!isCombo){
     var metricName0=metrics[0];
@@ -6904,13 +6915,63 @@ function renderContestPage(){
   if(box){box.innerHTML=isAdm?mkContestLaunchForm():'';if(isAdm)renderCxLevelsSection();}
   var contests=activeContests();
   var listEl=document.getElementById('contestList');
-  if(!listEl)return;
-  if(!contests.length){listEl.innerHTML='<div class="no-data">No active contest right now'+(isAdm?'. Launch a new contest from above!':'.')+'</div>';return;}
-  var h='';
-  contests.forEach(function(c){
-    h+=isAdm?contestAdminCard(c):contestEmployeeCard(c,currentUser.userId,currentUser.name);
+  if(listEl){
+    if(!contests.length){
+      listEl.innerHTML='<div class="no-data">No active contest right now'+(isAdm?'. Launch a new contest from above!':'.')+'</div>';
+    } else {
+      var h='';
+      contests.forEach(function(c){
+        h+=isAdm?contestAdminCard(c):contestEmployeeCard(c,currentUser.userId,currentUser.name);
+      });
+      listEl.innerHTML=h;
+    }
+  }
+  var pastEl=document.getElementById('pastContestList');
+  if(pastEl)pastEl.innerHTML=renderPastContestsSection();
+}
+/* v99: Past Contests section - full history stays visible forever (admin record + everyone's own past
+   results), collapsed by default so it doesn't clutter the page once many contests have run. Each row
+   expands into the EXACT same admin/employee card used for active contests (contestAdminCard /
+   contestEmployeeCard) - same leaderboard, same per-employee drill-down, same stats table - so results
+   for an ended contest are provably identical to what was shown while it was live, nothing re-derived. */
+function renderPastContestsSection(){
+  var past=pastContests();
+  if(!past.length)return '';
+  var isAdm=currentUser&&currentUser.role==='admin';
+  var h='<div style="margin-top:26px;">';
+  h+='<div style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 0;border-top:1px solid var(--border);" onclick="togglePastContestsSection()">';
+  h+='<span style="font-size:16px;font-weight:800;">&#127937; Past Contests ('+past.length+')</span>';
+  h+='<span id="pastContestsToggleHint" style="color:var(--muted);font-size:12px;">tap to view final results / winners</span>';
+  h+='</div>';
+  h+='<div id="pastContestsBody" style="display:none;">';
+  past.forEach(function(c){
+    var cid=c['Contest ID'];
+    h+='<div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:10px;">';
+    h+='<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">';
+    h+='<div><div style="font-weight:700;">&#127942; '+c['Title']+' <span class="badge amber" style="font-size:10px;">'+((c['Status']||'Active')==='Ended'?'Ended':'Closed (date over)')+'</span></div>';
+    h+='<div class="contest-sub">'+c['Start Date']+' to '+c['End Date']+' &#183; '+contestMetricList(c).join(' + ')+'</div></div>';
+    h+='<button class="btn-mini" onclick="togglePastContestDetail(\''+cid+'\')">&#128202; View Final Result / Winners</button>';
+    h+='</div><div id="pastContestDetail_'+cid+'"></div></div>';
   });
-  listEl.innerHTML=h;
+  h+='</div></div>';
+  return h;
+}
+function togglePastContestsSection(){
+  var el=document.getElementById('pastContestsBody');
+  var hint=document.getElementById('pastContestsToggleHint');
+  if(!el)return;
+  var show=el.style.display==='none';
+  el.style.display=show?'block':'none';
+  if(hint)hint.textContent=show?'tap to hide':'tap to view final results / winners';
+}
+function togglePastContestDetail(contestId){
+  var el=document.getElementById('pastContestDetail_'+contestId);
+  if(!el)return;
+  if(el.innerHTML){el.innerHTML='';return;}
+  var contest=(allData.Contests||[]).find(function(c){return c['Contest ID']===contestId;});
+  if(!contest)return;
+  var isAdm=currentUser&&currentUser.role==='admin';
+  el.innerHTML=isAdm?contestAdminCard(contest):contestEmployeeCard(contest,currentUser.userId,currentUser.name);
 }
 function toggleContestLaunch(){
   var el=document.getElementById('contestLaunchFormBody');
