@@ -366,6 +366,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       <div class="nav-item" onclick="showPage('client360')">&#128269; Client Search</div>
       <div class="nav-item" onclick="showPage('adminEmps')">&#128101; Team Performance</div>
       <div class="nav-item" onclick="showPage('contest')">&#127942; Contests</div>
+      <div class="nav-item" onclick="showPage('ranking')">&#127937; Ranking</div>
       <div class="nav-item" onclick="showPage('finDash')">&#128176; Finance Dashboard</div>
       <div class="nav-item" onclick="showPage('ipo')">&#128200; IPO</div>
       <div class="nav-item" onclick="showPage('callTrade')">&#128222; Call &amp; Trade</div>
@@ -426,6 +427,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       <div class="nav-item" onclick="showPage('addExpense')">&#43; Add Expense</div>
       <div class="nav-item" onclick="showPage('finRecords')">&#8377; Income &amp; Expense</div>
       <div class="nav-item" onclick="showPage('hisab')">&#9878; Monthly Settlement</div>
+      <div class="nav-item" onclick="showPage('ranking')">&#127937; Ranking</div>
       <div class="nav-item" id="navIPOFin" onclick="showPage('ipo')">&#128200; IPO</div>
       <div class="nav-section">Attendance</div>
       <div class="nav-item" onclick="showPage('markAttendance')">&#9711; My Attendance</div>
@@ -462,7 +464,6 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       <div class="nav-sec" onclick="toggleGrp('gMy',this)"><span class="arr">&#9656;</span>My Records</div>
       <div class="nav-grp" id="gMy" style="display:none">
         <div class="nav-item" onclick="showPage('myBrok')">&#36; Brokerage</div>
-        <div class="nav-item" onclick="showPage('myHisab')">&#9878; My Settlement</div>
         <div class="nav-item" onclick="showPage('mySIP')">SIP / MF</div>
         <div class="nav-item" onclick="showPage('myIns')">Insurance</div>
         <div class="nav-item" onclick="showPage('myAcc')">Accounts</div>
@@ -473,6 +474,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       </div>
       <div class="nav-item" onclick="showPage('myHealthCheck')">&#127981; Health Check <span id="myHealthBadge" class="notif-badge" style="display:none;margin-left:6px;">0</span></div>
       <div class="nav-item" onclick="showPage('contest')">&#127942; Contests</div>
+      <div class="nav-item" onclick="showPage('ranking')">&#127937; Ranking</div>
       <div class="nav-item" onclick="showPage('client360')">&#128269; Client Search</div>
       <div class="nav-item" onclick="showPage('callTrade')">&#128222; Call &amp; Trade</div>
       <div class="nav-sec" onclick="toggleGrp('gToolsE',this)"><span class="arr">&#9656;</span>Daily Tools</div>
@@ -574,6 +576,8 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
     <div class="page" id="page-myProfile">
       <div class="page-header"><h1>My Profile</h1><p>Keep your Gmail ID, PAN &amp; Aadhaar up to date - required for salary slips, KYC and compliance</p></div>
       <div id="moneyVaultEntryBox"></div>
+      <div class="sec-title" style="margin-top:4px;">&#9878; My Settlement</div>
+      <div id="myHisabCards"></div>
       <div id="myProfileBox"></div>
     </div>
 
@@ -792,6 +796,13 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       <div id="contestLaunchBox"></div>
       <div id="contestList"></div>
       <div id="pastContestList"></div>
+    </div>
+
+    <!-- TEAM RANKING (v101) - always-on leaderboard, separate from Contests (no launch/end, nothing to
+         configure) - simply "how is everyone doing this month/quarter", view-only for everyone. -->
+    <div class="page" id="page-ranking">
+      <div class="page-header"><h1>&#127937; Team Ranking</h1><p>Live leaderboard - Brokerage, SIP &amp; Insurance, Monthly &amp; Quarterly. View only - figures are pulled directly from real records and cannot be edited here.</p></div>
+      <div id="rankingBody"></div>
     </div>
 
     <!-- ADMIN LEADS -->
@@ -1901,12 +1912,6 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
       <div id="hisabPLDetail"></div>
       <div class="sec-title">Team-wise Settlement</div>
       <div id="hisabCards"></div>
-    </div>
-
-    <!-- ===== v22: MY HISAB (employee payslip) ===== -->
-    <div class="page" id="page-myHisab">
-      <div class="page-header"><h1>My Settlement</h1><p>Your month-wise settlement (view only)</p></div>
-      <div id="myHisabCards"></div>
     </div>
 
     <!-- ===== v62: IPO MODULE — fully separate module; IPO figures are NEVER added into any
@@ -3365,11 +3370,11 @@ function renderPage(id){
   else if(id==='addExpense')initExpenseForm();
   else if(id==='finRecords')renderFinRecords();
   else if(id==='hisab')renderHisab();
-  else if(id==='myHisab')renderMyHisab();
   else if(id==='contest')renderContestPage();
+  else if(id==='ranking')renderRankingPage();
   else if(id==='bizOverview')renderBizOverview();
   else if(id==='client360'){var e=document.getElementById('c360_q');if(e)e.value='';document.getElementById('c360_results').innerHTML='';document.getElementById('c360_profile').innerHTML='';}
-  else if(id==='myProfile'){renderMyProfile();renderMoneyVaultEntry();}
+  else if(id==='myProfile'){renderMyProfile();renderMoneyVaultEntry();renderMyHisab();}
   else if(id==='moneyVault')renderMoneyVault();
   else if(id==='ipo')setIPOMode(ipoModeUserSet?ipoMode:(canIPOAccess()?'buy':'self'));
 }
@@ -7001,6 +7006,130 @@ function togglePastContestDetail(contestId){
   var isAdm=currentUser&&currentUser.role==='admin';
   el.innerHTML=isAdm?contestAdminCard(contest):contestEmployeeCard(contest,currentUser.userId,currentUser.name);
   cxOpenState['pastContestDetail_'+contestId]=true;
+}
+/* ===== v101: TEAM RANKING - simple always-on leaderboard, deliberately separate from the Contest engine
+   above. A Contest is an admin-launched, time-bound campaign with configurable levels/rewards/rules that
+   starts and ends. Ranking is the opposite: always live, nothing to launch or configure per-period, just
+   "how is everyone doing this month/quarter" for Brokerage/SIP/Insurance. 100% derived from real data
+   (ClientBrokerage/SIP/Insurance, via the same empBrokFromRows() basis-aware helper Hisab/Leader Commission
+   already use) - there is no field here anyone can type into, satisfying "koi usko edit na kar sake".
+   The ONLY admin control is which employees appear in the list at all (Show In Ranking, per employee via
+   Manage Team - see saveEmp()) - default is included (opt-out), matching "sabki ranking sabko dikhe" (show
+   everyone's ranking to everyone) unless the admin explicitly excludes someone. Reuses the existing
+   contestLeaderboardPodiumCard()/contestLeaderboardAvatar()/contestLeaderboardScoreDisplay() functions for
+   the top-3 photo podium - a ranking row is shaped as {id,name,score,isAmount:true} specifically so those
+   functions work completely unchanged. */
+var RANKING_METRICS=['Brokerage','SIP','Insurance'];
+var rkState={metric:'Brokerage',period:'month'};
+function toYMD(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function rankingPeriodRange(period){
+  var now=new Date();
+  if(period==='quarter'){
+    var qStartMonth=Math.floor(now.getMonth()/3)*3;
+    var start=new Date(now.getFullYear(),qStartMonth,1);
+    var end=new Date(now.getFullYear(),qStartMonth+3,0);
+    var qNum=Math.floor(now.getMonth()/3)+1;
+    return {start:toYMD(start),end:toYMD(end),label:'Q'+qNum+' '+now.getFullYear()+' ('+start.toLocaleString('en-US',{month:'short'})+'-'+end.toLocaleString('en-US',{month:'short'})+')'};
+  }
+  var start=new Date(now.getFullYear(),now.getMonth(),1);
+  var end=new Date(now.getFullYear(),now.getMonth()+1,0);
+  return {start:toYMD(start),end:toYMD(end),label:start.toLocaleString('en-US',{month:'long',year:'numeric'})};
+}
+function rankingIncludedEmployees(){
+  return employees.filter(function(e){return (e['Status']||'Active')==='Active'&&(e['Show In Ranking']||'Yes')!=='No';});
+}
+function rankingBrokerageAmounts(range){
+  var rows=(allData.ClientBrokerage||[]).filter(function(r){return contestDateInRange(r['Date'],range.start,range.end);});
+  var uidSet={};rows.forEach(function(r){var uid=(r['Employee ID']||'').trim();if(uid)uidSet[uid]=true;});
+  var out={};Object.keys(uidSet).forEach(function(uid){out[uid]=empBrokFromRows(uid,rows);});
+  return out;
+}
+function rankingSheetMetricAmounts(sheetName,amountField,eligibleFn,range){
+  var rows=(allData[sheetName]||[]).filter(function(r){return contestDateInRange(r['Date'],range.start,range.end)&&(!eligibleFn||eligibleFn(r));});
+  var out={};
+  rows.forEach(function(r){
+    var uid=(r['Employee ID']||'').trim();if(!uid)return;
+    out[uid]=(out[uid]||0)+(parseFloat(r[amountField])||0);
+  });
+  return out;
+}
+function buildRanking(metric,period){
+  var range=rankingPeriodRange(period);
+  var amounts;
+  if(metric==='Brokerage')amounts=rankingBrokerageAmounts(range);
+  else if(metric==='SIP')amounts=rankingSheetMetricAmounts('SIP','Amount',function(r){return (r['Type']||'SIP')==='SIP';},range);
+  else amounts=rankingSheetMetricAmounts('Insurance','Premium',null,range);
+  var list=rankingIncludedEmployees().map(function(e){
+    var uid=e['Employee ID'];
+    return {id:uid,name:e['Name'],branch:e['Branch'],role:(e['Role']||'employee').toLowerCase(),score:r2(amounts[uid]||0),isAmount:true};
+  });
+  list.sort(function(a,b){return b.score-a.score;});
+  list.forEach(function(r,i){r.rank=i+1;});
+  return {range:range,list:list};
+}
+var RANKING_QUOTES=[
+  "Consistency compounds - small wins today become the leaderboard tomorrow.",
+  "Every top rank was once a first entry. Keep showing up.",
+  "Numbers do not lie - and neither does effort. Great work shows here first.",
+  "The client you served well today is the rank you will see next month.",
+  "Discipline beats motivation. This board rewards the ones who show up daily.",
+  "Your best month is still ahead of you - go earn that #1.",
+  "Progress, not perfection. Every entry here moved someone up the chart.",
+  "Leaders are not born on this board - they are built one client at a time.",
+  "Small, steady effort every day outperforms a big push once a month.",
+  "The team's growth is the sum of everyone's daily work - thank you for showing up."
+];
+function rankingQuoteOfDay(){
+  var d=new Date();var seed=d.getFullYear()*1000+((d.getMonth()+1)*31+d.getDate());
+  return RANKING_QUOTES[seed%RANKING_QUOTES.length];
+}
+function rkSetMetric(m){rkState.metric=m;renderRankingPage();}
+function rkSetPeriod(p){rkState.period=p;renderRankingPage();}
+function renderRankingPage(){
+  var box=document.getElementById('rankingBody');
+  if(!box)return;
+  var built=buildRanking(rkState.metric,rkState.period);
+  var myId=currentUser&&currentUser.userId;
+  var myRow=built.list.find(function(r){return r.id===myId;});
+  var h='';
+  h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">';
+  RANKING_METRICS.forEach(function(m){
+    h+='<button class="filter-btn'+(rkState.metric===m?' active':'')+'" onclick="rkSetMetric(\''+m+'\')">'+m+'</button>';
+  });
+  h+='</div>';
+  h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">';
+  [['month','This Month'],['quarter','This Quarter']].forEach(function(p){
+    h+='<button class="filter-btn'+(rkState.period===p[0]?' active':'')+'" onclick="rkSetPeriod(\''+p[0]+'\')">'+p[1]+'</button>';
+  });
+  h+='</div>';
+  h+='<div style="color:var(--muted);font-size:12px;margin-bottom:14px;">'+rkState.metric+' Ranking &#183; '+built.range.label+' &#183; view only, figures cannot be edited</div>';
+  h+='<div style="background:linear-gradient(135deg,rgba(63,191,127,.12),rgba(63,191,127,.03));border:1px solid rgba(63,191,127,.25);border-radius:10px;padding:12px 16px;margin-bottom:18px;font-style:italic;color:var(--text);font-size:13px;">&#10077; '+rankingQuoteOfDay()+' &#10078;</div>';
+  if(!built.list.length){
+    h+='<div class="no-data">No one is currently included in the ranking.</div>';
+  } else {
+    var emp=employees.find(function(e){return e['Employee ID']===myId;});
+    if(emp){
+      h+='<div style="background:var(--card2);border-radius:10px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;font-weight:700;flex-wrap:wrap;gap:8px;">';
+      h+='<span>Your Rank ('+rkState.metric+', '+(rkState.period==='month'?'This Month':'This Quarter')+')</span>';
+      h+='<span>'+(myRow?('#'+myRow.rank+' of '+built.list.length+' &#183; '+fmt(myRow.score)):((emp['Show In Ranking']||'Yes')==='No'?'Not shown in ranking':'Not participating yet'))+'</span>';
+      h+='</div>';
+    }
+    h+='<div style="display:flex;justify-content:center;align-items:flex-end;gap:16px;margin-bottom:24px;flex-wrap:wrap;">';
+    h+=contestLeaderboardPodiumCard(built.list[1],2)+contestLeaderboardPodiumCard(built.list[0],1)+contestLeaderboardPodiumCard(built.list[2],3);
+    h+='</div>';
+    h+='<div class="table-wrap"><div class="table-inner"><table><thead><tr><th>Rank</th><th>Team Member</th><th>Branch</th><th>'+rkState.metric+'</th></tr></thead><tbody>';
+    var medals=['&#129351;','&#129352;','&#129353;'];
+    built.list.forEach(function(row){
+      h+='<tr'+(row.id===myId?' style="background:rgba(63,191,127,0.08);"':'')+'>';
+      h+='<td class="contest-medal">'+(medals[row.rank-1]||row.rank)+'</td>';
+      h+='<td style="display:flex;align-items:center;gap:8px;">'+contestLeaderboardAvatar(row,26)+'<span style="font-weight:700;">'+row.name+'</span>'+(row.id===myId?' <span style="color:var(--accent);font-size:10px;">(You)</span>':'')+'</td>';
+      h+='<td>'+row.branch+'</td>';
+      h+='<td style="font-weight:700;color:var(--accent);">'+fmt(row.score)+'</td>';
+      h+='</tr>';
+    });
+    h+='</tbody></table></div></div>';
+  }
+  box.innerHTML=h;
 }
 function toggleContestLaunch(){
   var el=document.getElementById('contestLaunchFormBody');
@@ -10686,6 +10815,7 @@ function editEmpModal(empId){
   h+='<div class="form-group"><label style="display:flex;align-items:center;gap:6px;font-weight:600;"><input type="checkbox" id="ee_finaccess" style="width:auto;"'+(emp['FinanceAccess']==='Yes'?' checked':'')+'> Income/Expense Access (admin granted) - this team member will get the Add Income/Add Expense option, even without a finance ID in their sub-team</label></div>';
   h+='<div class="form-group"><label style="display:flex;align-items:center;gap:6px;font-weight:600;"><input type="checkbox" id="ee_ipoaccess" style="width:auto;"'+(emp['IPO_Access']==='Yes'?' checked':'')+'> IPO Access (admin granted) - this team member will get the IPO nav item with full read/write on the IPO module</label></div>';
   h+='<div class="form-group"><label style="display:flex;align-items:center;gap:6px;font-weight:600;"><input type="checkbox" id="ee_studentaccess" style="width:auto;"'+(emp['StudentAccess']==='Yes'?' checked':'')+'> &#127891; Student Section Access (admin granted) - this team member will get the Student Section nav (Pending Registrations, All Students) to manage students on your behalf</label></div>';
+  h+='<div class="form-group"><label style="display:flex;align-items:center;gap:6px;font-weight:600;"><input type="checkbox" id="ee_showranking" style="width:auto;"'+((emp['Show In Ranking']||'Yes')!=='No'?' checked':'')+'> &#127937; Show in Team Ranking (default: shown) - uncheck to hide this person from the Brokerage/SIP/Insurance ranking leaderboard entirely</label></div>';
   h+='<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-save" data-eid="'+empId+'" onclick="saveEmp(this.dataset.eid)">Save</button></div>';
   document.getElementById('modalBox').innerHTML=h;document.getElementById('modal').className='show';
   toggleEeDesignation();
@@ -10699,7 +10829,7 @@ function saveEmp(empId){
   if(email&&!isValidEmail(email)){showToast('Gmail ID looks invalid - fix it or leave blank','error');return;}
   if(pan&&!isValidPAN(pan)){showToast('PAN format looks invalid (expected ABCDE1234F) - fix it or leave blank','error');return;}
   if(aadhaar&&!isValidAadhaar(aadhaar)){showToast('Aadhaar must be 12 digits - fix it or leave blank','error');return;}
-  var p={action:'updateEmployee','Employee ID':empId,_rowNum:emp._rowNum,'Name':document.getElementById('ee_name').value.trim(),'Branch':document.getElementById('ee_branch').value,'Role':document.getElementById('ee_role').value||'employee','Designation':document.getElementById('ee_desig')?document.getElementById('ee_desig').value:'','Status':emp['Status']||'Active','Commission':numOrDefault(document.getElementById('ee_comm').value,50),'Email':email,'Salary':parseFloat(document.getElementById('ee_sal').value)||0,'Parent ID':Array.prototype.slice.call(document.querySelectorAll('.ee_parent_cb:checked')).map(function(el){return el.value;}).join(','),'FinanceAccess':document.getElementById('ee_finaccess').checked?'Yes':'No','IPO_Access':document.getElementById('ee_ipoaccess').checked?'Yes':'No','StudentAccess':document.getElementById('ee_studentaccess')?(document.getElementById('ee_studentaccess').checked?'Yes':'No'):(emp['StudentAccess']||'No'),'PAN':pan,'Aadhaar':aadhaar,'Recruiter ID':document.getElementById('ee_recruiter')?document.getElementById('ee_recruiter').value:(emp['Recruiter ID']||''),'Join Date':document.getElementById('ee_joindate')?document.getElementById('ee_joindate').value:(emp['Join Date']||''),'Brokerage Basis':document.getElementById('ee_brokbasis')?document.getElementById('ee_brokbasis').value:(emp['Brokerage Basis']||'Remisier')};
+  var p={action:'updateEmployee','Employee ID':empId,_rowNum:emp._rowNum,'Name':document.getElementById('ee_name').value.trim(),'Branch':document.getElementById('ee_branch').value,'Role':document.getElementById('ee_role').value||'employee','Designation':document.getElementById('ee_desig')?document.getElementById('ee_desig').value:'','Status':emp['Status']||'Active','Commission':numOrDefault(document.getElementById('ee_comm').value,50),'Email':email,'Salary':parseFloat(document.getElementById('ee_sal').value)||0,'Parent ID':Array.prototype.slice.call(document.querySelectorAll('.ee_parent_cb:checked')).map(function(el){return el.value;}).join(','),'FinanceAccess':document.getElementById('ee_finaccess').checked?'Yes':'No','IPO_Access':document.getElementById('ee_ipoaccess').checked?'Yes':'No','StudentAccess':document.getElementById('ee_studentaccess')?(document.getElementById('ee_studentaccess').checked?'Yes':'No'):(emp['StudentAccess']||'No'),'Show In Ranking':document.getElementById('ee_showranking')?(document.getElementById('ee_showranking').checked?'Yes':'No'):(emp['Show In Ranking']||'Yes'),'PAN':pan,'Aadhaar':aadhaar,'Recruiter ID':document.getElementById('ee_recruiter')?document.getElementById('ee_recruiter').value:(emp['Recruiter ID']||''),'Join Date':document.getElementById('ee_joindate')?document.getElementById('ee_joindate').value:(emp['Join Date']||''),'Brokerage Basis':document.getElementById('ee_brokbasis')?document.getElementById('ee_brokbasis').value:(emp['Brokerage Basis']||'Remisier')};
   (function(){var rid=p['Recruiter ID'];if(rid){var ids=(p['Parent ID']||'').split(',').map(function(x){return x.trim();}).filter(Boolean);if(ids.indexOf(rid)===-1){ids.push(rid);p['Parent ID']=ids.join(',');}}})();
   var np=document.getElementById('ee_pass').value.trim();if(np)p['Password']=np;
   postData(p).then(function(r){closeModal();if(r&&r.success){showToast('Updated!','success');loadEmps();}else showToast('Failed','error');}).catch(function(e){closeModal();showToast('Error: '+e.message,'error');});
