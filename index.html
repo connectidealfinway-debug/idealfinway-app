@@ -7020,19 +7020,27 @@ function togglePastContestDetail(contestId){
    the top-3 photo podium - a ranking row is shaped as {id,name,score,isAmount:true} specifically so those
    functions work completely unchanged. */
 var RANKING_METRICS=['Brokerage','SIP','Insurance'];
-var rkState={metric:'Brokerage',period:'month'};
+var rkState={metric:'Brokerage',period:'month',offset:0}; /* v105: offset = how many periods back
+  from the current one (0 = current month/quarter, 1 = previous, 2 = the one before that, ...).
+  Only the admin-only Previous/Next controls in renderRankingPage() ever change this - regular
+  employees always see offset:0 (current period only), unchanged from before. */
 function toYMD(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
-function rankingPeriodRange(period){
+function rankingPeriodRange(period,offset){
+  offset=offset||0;
   var now=new Date();
   if(period==='quarter'){
-    var qStartMonth=Math.floor(now.getMonth()/3)*3;
-    var start=new Date(now.getFullYear(),qStartMonth,1);
-    var end=new Date(now.getFullYear(),qStartMonth+3,0);
-    var qNum=Math.floor(now.getMonth()/3)+1;
-    return {start:toYMD(start),end:toYMD(end),label:'Q'+qNum+' '+now.getFullYear()+' ('+start.toLocaleString('en-US',{month:'short'})+'-'+end.toLocaleString('en-US',{month:'short'})+')'};
+    var curQIndex=now.getFullYear()*4+Math.floor(now.getMonth()/3);
+    var qIndex=curQIndex-offset;
+    var y=Math.floor(qIndex/4);
+    var qPos=qIndex-y*4; /* 0-3, safe for negative qIndex too since y is floor()'d */
+    var qStartMonth=qPos*3;
+    var start=new Date(y,qStartMonth,1);
+    var end=new Date(y,qStartMonth+3,0);
+    var qNum=qPos+1;
+    return {start:toYMD(start),end:toYMD(end),label:'Q'+qNum+' '+y+' ('+start.toLocaleString('en-US',{month:'short'})+'-'+end.toLocaleString('en-US',{month:'short'})+')'};
   }
-  var start=new Date(now.getFullYear(),now.getMonth(),1);
-  var end=new Date(now.getFullYear(),now.getMonth()+1,0);
+  var start=new Date(now.getFullYear(),now.getMonth()-offset,1);
+  var end=new Date(now.getFullYear(),now.getMonth()-offset+1,0);
   return {start:toYMD(start),end:toYMD(end),label:start.toLocaleString('en-US',{month:'long',year:'numeric'})};
 }
 var rkPending={}; /* v103: empId -> 'Yes'/'No' - locally staged Show-In-Ranking changes not yet saved.
@@ -7067,8 +7075,8 @@ function rankingSheetMetricAmounts(sheetName,amountField,eligibleFn,range){
   });
   return out;
 }
-function buildRanking(metric,period){
-  var range=rankingPeriodRange(period);
+function buildRanking(metric,period,offset){
+  var range=rankingPeriodRange(period,offset);
   var amounts;
   if(metric==='Brokerage')amounts=rankingBrokerageAmounts(range);
   else if(metric==='SIP')amounts=rankingSheetMetricAmounts('SIP','Amount',function(r){return (r['Type']||'SIP')==='SIP';},range);
@@ -7098,7 +7106,12 @@ function rankingQuoteOfDay(){
   return RANKING_QUOTES[seed%RANKING_QUOTES.length];
 }
 function rkSetMetric(m){rkState.metric=m;renderRankingPage();}
-function rkSetPeriod(p){rkState.period=p;renderRankingPage();}
+function rkSetPeriod(p){rkState.period=p;rkState.offset=0;renderRankingPage();}
+function rkShiftPeriod(delta){
+  rkState.offset=Math.max(0,(rkState.offset||0)+delta);
+  renderRankingPage();
+}
+function rkResetToCurrent(){rkState.offset=0;renderRankingPage();}
 var rkManageOpen=false;
 function rkToggleManage(){rkManageOpen=!rkManageOpen;renderRankingPage();}
 function rkMarkPending(empId,checked){
@@ -7150,10 +7163,11 @@ function rkSaveManage(){
 function renderRankingPage(){
   var box=document.getElementById('rankingBody');
   if(!box)return;
-  var built=buildRanking(rkState.metric,rkState.period);
+  var isAdm=currentUser&&currentUser.role==='admin';
+  var effOffset=isAdm?(rkState.offset||0):0;
+  var built=buildRanking(rkState.metric,rkState.period,effOffset);
   var myId=currentUser&&currentUser.userId;
   var myRow=built.list.find(function(r){return r.id===myId;});
-  var isAdm=currentUser&&currentUser.role==='admin';
   var h='';
   h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">';
   RANKING_METRICS.forEach(function(m){
@@ -7165,7 +7179,18 @@ function renderRankingPage(){
     h+='<button class="filter-btn'+(rkState.period===p[0]?' active':'')+'" onclick="rkSetPeriod(\''+p[0]+'\')">'+p[1]+'</button>';
   });
   h+='</div>';
-  h+='<div style="color:var(--muted);font-size:12px;margin-bottom:14px;">'+rkState.metric+' Ranking &#183; '+built.range.label+'</div>';
+  h+='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;">';
+  h+='<span style="color:var(--muted);font-size:12px;">'+rkState.metric+' Ranking &#183; '+built.range.label+'</span>';
+  if(isAdm){
+    h+='<span style="display:flex;gap:6px;align-items:center;">';
+    h+='<button class="filter-btn" style="padding:2px 10px;font-size:12px;" onclick="rkShiftPeriod(1)" title="View the previous '+(rkState.period==='month'?'month':'quarter')+'">&#8592; Previous</button>';
+    if(effOffset>0){
+      h+='<button class="filter-btn" style="padding:2px 10px;font-size:12px;" onclick="rkShiftPeriod(-1)" title="View the next '+(rkState.period==='month'?'month':'quarter')+'">Next &#8594;</button>';
+      h+='<button class="filter-btn" style="padding:2px 10px;font-size:12px;" onclick="rkResetToCurrent()">Back to current</button>';
+    }
+    h+='</span>';
+  }
+  h+='</div>';
   if(isAdm){
     var pendingCount=Object.keys(rkPending).length;
     h+='<div style="margin-bottom:16px;">';
