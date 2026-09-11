@@ -6032,6 +6032,7 @@ function undoNSETradeDone(rowNum){
    Har contest ek ya zyada 'Metric Type' se bandhi hai (comma-separated = COMBO, sab metrics AND-logic se milte hain).
    Naya built-in metric add karna ho to CONTEST_METRICS me entry daalo. Naya CUSTOM metric admin khud "Other" se
    bina code ke bana sakta hai — uska progress sirf employee ke apne click se badhta hai (ManualContestEntries sheet). */
+var cxOpenState={}; /* v100: see restoreContestOpenState() - remembers which Contest-page sections the user has expanded so a background 5s data refresh doesn't silently collapse them */
 var CONTEST_METRICS = {
   'Account Opening': {
     sheet:'Accounts', label:'Demat Account Opening', unitLabel:'account',
@@ -6808,7 +6809,7 @@ function contestLeaderboardPodiumCard(row,place){
 function toggleContestLeaderboard(contestId){
   var el=document.getElementById('contestLB_'+contestId);
   if(!el)return;
-  if(el.innerHTML){el.innerHTML='';return;}
+  if(el.innerHTML){el.innerHTML='';cxOpenState['contestLB_'+contestId]=false;return;}
   var contest=(allData.Contests||[]).find(function(c){return c['Contest ID']===contestId;});
   if(!contest)return;
   var ranked=contestLeaderboardRanked(contest);
@@ -6844,6 +6845,7 @@ function toggleContestLeaderboard(contestId){
   }
   h+='</div>';
   document.getElementById('contestLB_'+contestId).innerHTML=h;
+  cxOpenState['contestLB_'+contestId]=true;
 }
 function contestDrillEmployee(contestId,empId){
   var contest=(allData.Contests||[]).find(function(c){return c['Contest ID']===contestId;});
@@ -6907,6 +6909,7 @@ function contestDrillEmployee(contestId,empId){
   }
   h+='</div>';
   el.innerHTML=h;
+  cxOpenState['contestDrill_'+contestId]=empId;
   el.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 function renderContestPage(){
@@ -6928,6 +6931,30 @@ function renderContestPage(){
   }
   var pastEl=document.getElementById('pastContestList');
   if(pastEl)pastEl.innerHTML=renderPastContestsSection();
+  restoreContestOpenState();
+}
+/* v100: the Contest page gets fully rebuilt by renderContestPage() every time ANY live data changes
+   anywhere in the app (checkForUpdates() polls every 5s and calls renderPage(curPage()) on whatever
+   page is open - see loadAll()). Unlike form inputs, isUserTyping() does nothing here since these are
+   plain read-only expand/collapse sections, so a background refresh silently collapsed Past Contests,
+   the Leaderboard, and the per-employee drill-down the instant they were opened - "click krte hi band
+   ho jata hai" (closes right after clicking), reported 2026-09-11. Fix: cxOpenState remembers what the
+   user had open; every toggle function now records itself there, and this restore step replays those
+   same toggle calls right after a fresh render (which always starts everything collapsed/empty, so
+   calling the toggle once is enough to reopen it with current data). Order matters - a leaderboard or
+   drill-down can be nested inside a Past Contest's detail card, so that must be reopened first or the
+   nested container won't exist yet. */
+function restoreContestOpenState(){
+  if(cxOpenState['pastContestsBody'])togglePastContestsSection();
+  Object.keys(cxOpenState).forEach(function(k){
+    if(k.indexOf('pastContestDetail_')===0&&cxOpenState[k])togglePastContestDetail(k.slice('pastContestDetail_'.length));
+  });
+  Object.keys(cxOpenState).forEach(function(k){
+    if(k.indexOf('contestLB_')===0&&cxOpenState[k])toggleContestLeaderboard(k.slice('contestLB_'.length));
+  });
+  Object.keys(cxOpenState).forEach(function(k){
+    if(k.indexOf('contestDrill_')===0&&cxOpenState[k])contestDrillEmployee(k.slice('contestDrill_'.length),cxOpenState[k]);
+  });
 }
 /* v99: Past Contests section - full history stays visible forever (admin record + everyone's own past
    results), collapsed by default so it doesn't clutter the page once many contests have run. Each row
@@ -6963,15 +6990,17 @@ function togglePastContestsSection(){
   var show=el.style.display==='none';
   el.style.display=show?'block':'none';
   if(hint)hint.textContent=show?'tap to hide':'tap to view final results / winners';
+  cxOpenState['pastContestsBody']=show;
 }
 function togglePastContestDetail(contestId){
   var el=document.getElementById('pastContestDetail_'+contestId);
   if(!el)return;
-  if(el.innerHTML){el.innerHTML='';return;}
+  if(el.innerHTML){el.innerHTML='';cxOpenState['pastContestDetail_'+contestId]=false;return;}
   var contest=(allData.Contests||[]).find(function(c){return c['Contest ID']===contestId;});
   if(!contest)return;
   var isAdm=currentUser&&currentUser.role==='admin';
   el.innerHTML=isAdm?contestAdminCard(contest):contestEmployeeCard(contest,currentUser.userId,currentUser.name);
+  cxOpenState['pastContestDetail_'+contestId]=true;
 }
 function toggleContestLaunch(){
   var el=document.getElementById('contestLaunchFormBody');
