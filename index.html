@@ -7019,7 +7019,11 @@ function togglePastContestDetail(contestId){
    contestLeaderboardPodiumCard()/contestLeaderboardAvatar()/contestLeaderboardScoreDisplay() functions for
    the top-3 photo podium - a ranking row is shaped as {id,name,score,isAmount:true} specifically so those
    functions work completely unchanged. */
-var RANKING_METRICS=['Brokerage','SIP','Insurance'];
+var RANKING_METRICS=['Brokerage','SIP','Insurance','Accounts'];
+var RANKING_METRIC_ISAMOUNT={'Brokerage':true,'SIP':true,'Insurance':true,'Accounts':false}; /* v107:
+  'Accounts' is a plain count (how many demat accounts each person opened) not a rupee amount - reuses
+  contestLeaderboardScoreDisplay()'s existing isAmount:false path (already built for Contest count
+  metrics) so it renders as "N accounts" instead of a currency figure, no new display code needed. */
 var rkState={metric:'Brokerage',period:'month',offset:0}; /* v105: offset = how many periods back
   from the current one (0 = current month/quarter, 1 = previous, 2 = the one before that, ...).
   Only the admin-only Previous/Next controls in renderRankingPage() ever change this - regular
@@ -7075,15 +7079,30 @@ function rankingSheetMetricAmounts(sheetName,amountField,eligibleFn,range){
   });
   return out;
 }
+function rankingAccountOpeningCounts(range){
+  /* Every Accounts row opened in the period, counted by whoever opened it - no Type/Source/NSE-Trade
+     filtering like the Contest engine's narrower 'Account Opening' metric applies (that one only
+     counts contest-eligible entries); this is meant to answer the plain question "who opened how
+     many accounts this month", so every row counts. */
+  var rows=(allData.Accounts||[]).filter(function(r){return contestDateInRange(r['Date'],range.start,range.end);});
+  var out={};
+  rows.forEach(function(r){
+    var uid=(r['Employee ID']||'').trim();if(!uid)return;
+    out[uid]=(out[uid]||0)+1;
+  });
+  return out;
+}
 function buildRanking(metric,period,offset){
   var range=rankingPeriodRange(period,offset);
   var amounts;
   if(metric==='Brokerage')amounts=rankingBrokerageAmounts(range);
   else if(metric==='SIP')amounts=rankingSheetMetricAmounts('SIP','Amount',function(r){return (r['Type']||'SIP')==='SIP';},range);
-  else amounts=rankingSheetMetricAmounts('Insurance','Premium',null,range);
+  else if(metric==='Insurance')amounts=rankingSheetMetricAmounts('Insurance','Premium',null,range);
+  else amounts=rankingAccountOpeningCounts(range);
+  var isAmt=RANKING_METRIC_ISAMOUNT[metric]!==false;
   var list=rankingIncludedEmployees().map(function(e){
     var uid=e['Employee ID'];
-    return {id:uid,name:e['Name'],branch:e['Branch'],role:(e['Role']||'employee').toLowerCase(),score:r2(amounts[uid]||0),isAmount:true};
+    return {id:uid,name:e['Name'],branch:e['Branch'],role:(e['Role']||'employee').toLowerCase(),score:r2(amounts[uid]||0),isAmount:isAmt,unitLabel:'account'};
   });
   list.sort(function(a,b){return b.score-a.score;});
   list.forEach(function(r,i){r.rank=i+1;});
@@ -7225,7 +7244,7 @@ function renderRankingPage(){
     if(emp){
       h+='<div style="background:var(--card2);border-radius:10px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;font-weight:700;flex-wrap:wrap;gap:8px;">';
       h+='<span>Your Rank ('+rkState.metric+', '+(rkState.period==='month'?'This Month':'This Quarter')+')</span>';
-      h+='<span>'+(myRow?('#'+myRow.rank+' of '+built.list.length+' &#183; '+fmt(myRow.score)):((emp['Show In Ranking']||'Yes')==='No'?'Not shown in ranking':'Not participating yet'))+'</span>';
+      h+='<span>'+(myRow?('#'+myRow.rank+' of '+built.list.length+' &#183; '+contestLeaderboardScoreDisplay(myRow)):((emp['Show In Ranking']||'Yes')==='No'?'Not shown in ranking':'Not participating yet'))+'</span>';
       h+='</div>';
     }
     h+='<div style="display:flex;justify-content:center;align-items:flex-end;gap:16px;margin-bottom:24px;flex-wrap:wrap;">';
@@ -7240,7 +7259,7 @@ function renderRankingPage(){
       h+='<td style="display:flex;align-items:center;gap:8px;">'+contestLeaderboardAvatar(row,26)+'<span style="font-weight:700;">'+row.name+'</span>'+(row.id===myId?' <span style="color:var(--accent);font-size:10px;">(You)</span>':'')+'</td>';
       h+='<td>'+row.branch+'</td>';
       var showAmt=isAdm||rkState.metric!=='Brokerage'||row.rank<=3||row.id===myId;
-      h+='<td style="font-weight:700;color:var(--accent);">'+(showAmt?fmt(row.score):'<span style="color:var(--muted);font-weight:400;">&#8212;</span>')+'</td>';
+      h+='<td style="font-weight:700;color:var(--accent);">'+(showAmt?contestLeaderboardScoreDisplay(row):'<span style="color:var(--muted);font-weight:400;">&#8212;</span>')+'</td>';
       h+='</tr>';
     });
     h+='</tbody></table></div></div>';
