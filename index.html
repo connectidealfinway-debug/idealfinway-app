@@ -7035,8 +7035,22 @@ function rankingPeriodRange(period){
   var end=new Date(now.getFullYear(),now.getMonth()+1,0);
   return {start:toYMD(start),end:toYMD(end),label:start.toLocaleString('en-US',{month:'long',year:'numeric'})};
 }
+var rkPending={}; /* v103: empId -> 'Yes'/'No' - locally staged Show-In-Ranking changes not yet saved.
+  Kept as a SEPARATE global from `employees` on purpose: the 5s background poll (checkForUpdates -> loadAll ->
+  loadEmps()) unconditionally replaces the whole `employees` array with a fresh server fetch on almost every
+  cycle (very frequent given 12+ active team members). Writing straight into an emp object and firing an
+  immediate postData() per checkbox click raced against that poll - if loadEmps() re-fetched before the
+  write had committed/propagated, it silently reverted the checkbox back to checked, which is exactly what
+  was reported (multiple unchecks all auto-reverting to checked a few seconds later). Staging in rkPending
+  survives any number of loadEmps() refreshes untouched, and actual writes only happen one-at-a-time via
+  rkSaveManage() (see below), never concurrently, so there is no more write/read race. */
 function rankingIncludedEmployees(){
-  return employees.filter(function(e){return (e['Status']||'Active')==='Active'&&(e['Show In Ranking']||'Yes')!=='No';});
+  return employees.filter(function(e){
+    var eid=e['Employee ID'];
+    var ov=rkPending[eid];
+    var show=(ov!==undefined)?(ov==='Yes'):((e['Show In Ranking']||'Yes')!=='No');
+    return (e['Status']||'Active')==='Active'&&show;
+  });
 }
 function rankingBrokerageAmounts(range){
   var rows=(allData.ClientBrokerage||[]).filter(function(r){return contestDateInRange(r['Date'],range.start,range.end);});
@@ -7087,19 +7101,51 @@ function rkSetMetric(m){rkState.metric=m;renderRankingPage();}
 function rkSetPeriod(p){rkState.period=p;renderRankingPage();}
 var rkManageOpen=false;
 function rkToggleManage(){rkManageOpen=!rkManageOpen;renderRankingPage();}
-function rkToggleShowInRanking(empId,checked){
+function rkMarkPending(empId,checked){
   var emp=employees.find(function(e){return e['Employee ID']===empId;});
-  if(!emp)return;
-  var prev=emp['Show In Ranking']||'Yes';
-  emp['Show In Ranking']=checked?'Yes':'No';
+  var base=emp?((emp['Show In Ranking']||'Yes')!=='No'):true;
+  var wantYes=checked;
+  if(wantYes===base)delete rkPending[empId]; else rkPending[empId]=wantYes?'Yes':'No';
   renderRankingPage();
-  var p={action:'updateEmployee'};
-  Object.keys(emp).forEach(function(k){if(k!=='_rowNum')p[k]=emp[k];});
-  p._rowNum=emp._rowNum;
-  postData(p).then(function(r){
-    if(!r||!r.success){emp['Show In Ranking']=prev;renderRankingPage();showToast('Failed to update','error');}
-    else{showToast('Updated!','success');}
-  }).catch(function(e){emp['Show In Ranking']=prev;renderRankingPage();showToast('Error: '+e.message,'error');});
+}
+function rkDiscardManage(){
+  rkPending={};
+  renderRankingPage();
+  showToast('Changes discarded','success');
+}
+function rkSaveManage(){
+  var ids=Object.keys(rkPending);
+  if(!ids.length){showToast('No changes to save','error');return;}
+  var btn=document.getElementById('rkSaveBtn');
+  if(btn){btn.disabled=true;btn.innerText='Saving...';}
+  var failed=[];
+  var i=0;
+  function next(){
+    if(i>=ids.length){
+      if(btn){btn.disabled=false;btn.innerText='Save Changes';}
+      if(failed.length)showToast('Saved, but failed for: '+failed.join(', '),'error');
+      else showToast('Ranking visibility updated!','success');
+      loadEmps();
+      renderRankingPage();
+      return;
+    }
+    var eid=ids[i];var val=rkPending[eid];i++;
+    var emp=employees.find(function(e){return e['Employee ID']===eid;});
+    if(!emp){delete rkPending[eid];next();return;}
+    var p={action:'updateEmployee'};
+    Object.keys(emp).forEach(function(k){if(k!=='_rowNum')p[k]=emp[k];});
+    p['Show In Ranking']=val;
+    p._rowNum=emp._rowNum;
+    /* sequential, one row at a time - never fire the next postData until this one has fully
+       resolved, so a background loadEmps() firing right after Save always sees a committed write,
+       not a mid-flight one from an overlapping concurrent request. */
+    postData(p).then(function(r){
+      if(!r||!r.success){failed.push(emp['Name']);}
+      else{emp['Show In Ranking']=val;delete rkPending[eid];}
+      next();
+    }).catch(function(){failed.push(emp['Name']);next();});
+  }
+  next();
 }
 function renderRankingPage(){
   var box=document.getElementById('rankingBody');
@@ -7121,17 +7167,28 @@ function renderRankingPage(){
   h+='</div>';
   h+='<div style="color:var(--muted);font-size:12px;margin-bottom:14px;">'+rkState.metric+' Ranking &#183; '+built.range.label+'</div>';
   if(isAdm){
+    var pendingCount=Object.keys(rkPending).length;
     h+='<div style="margin-bottom:16px;">';
-    h+='<button class="filter-btn" onclick="rkToggleManage()">&#9881;&#65039; Manage who is shown in ranking'+(rkManageOpen?' &#9650;':' &#9660;')+'</button>';
+    h+='<button class="filter-btn" onclick="rkToggleManage()">&#9881;&#65039; Manage who is shown in ranking'+(pendingCount?' ('+pendingCount+' unsaved)':'')+(rkManageOpen?' &#9650;':' &#9660;')+'</button>';
     if(rkManageOpen){
       h+='<div style="background:var(--card2);border-radius:10px;padding:14px 18px;margin-top:10px;">';
-      h+='<div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Uncheck a team member to hide them from the Brokerage/SIP/Insurance ranking leaderboard. Everyone is shown by default.</div>';
-      h+='<div style="display:flex;flex-wrap:wrap;gap:10px 20px;">';
+      h+='<div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Uncheck a team member to hide them from the Brokerage/SIP/Insurance ranking leaderboard, then click Save Changes. Everyone is shown by default.</div>';
+      h+='<div style="display:flex;flex-wrap:wrap;gap:10px 20px;margin-bottom:'+(pendingCount?'14px':'0')+';">';
       employees.filter(function(e){return (e['Status']||'Active')==='Active';}).forEach(function(e){
-        var shown=(e['Show In Ranking']||'Yes')!=='No';
-        h+='<label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;"><input type="checkbox"'+(shown?' checked':'')+' onchange="rkToggleShowInRanking(\''+e['Employee ID']+'\',this.checked)"> '+e['Name']+'</label>';
+        var eid=e['Employee ID'];
+        var ov=rkPending[eid];
+        var shown=(ov!==undefined)?(ov==='Yes'):((e['Show In Ranking']||'Yes')!=='No');
+        h+='<label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;'+(ov!==undefined?'color:var(--accent);':'')+'"><input type="checkbox"'+(shown?' checked':'')+' onchange="rkMarkPending(\''+eid+'\',this.checked)"> '+e['Name']+(ov!==undefined?' *':'')+'</label>';
       });
-      h+='</div></div>';
+      h+='</div>';
+      if(pendingCount){
+        h+='<div style="display:flex;gap:10px;align-items:center;">';
+        h+='<button class="btn-save" id="rkSaveBtn" onclick="rkSaveManage()">Save Changes</button>';
+        h+='<button class="btn-cancel" onclick="rkDiscardManage()">Discard</button>';
+        h+='<span style="font-size:12px;color:var(--muted);">'+pendingCount+' unsaved change'+(pendingCount>1?'s':'')+' - marked with *</span>';
+        h+='</div>';
+      }
+      h+='</div>';
     }
     h+='</div>';
   }
