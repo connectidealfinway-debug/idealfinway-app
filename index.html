@@ -7231,7 +7231,7 @@ function renderRankingPage(){
     h+='<div style="display:flex;justify-content:center;align-items:flex-end;gap:16px;margin-bottom:24px;flex-wrap:wrap;">';
     h+=contestLeaderboardPodiumCard(built.list[1],2)+contestLeaderboardPodiumCard(built.list[0],1)+contestLeaderboardPodiumCard(built.list[2],3);
     h+='</div>';
-    h+='<div style="color:var(--muted);font-size:11px;margin-bottom:8px;">'+(rkState.metric==='Brokerage'?'Amount shown only for the top 3 and your own row - everyone else just shows rank order.':'')+'</div>';
+    h+='<div style="color:var(--muted);font-size:11px;margin-bottom:8px;">'+(rkState.metric==='Brokerage'&&!isAdm?'Amount shown only for the top 3 and your own row - everyone else just shows rank order.':'')+'</div>';
     h+='<div class="table-wrap"><div class="table-inner"><table><thead><tr><th>Rank</th><th>Team Member</th><th>Branch</th><th>'+rkState.metric+'</th></tr></thead><tbody>';
     var medals=['&#129351;','&#129352;','&#129353;'];
     built.list.forEach(function(row){
@@ -7239,7 +7239,7 @@ function renderRankingPage(){
       h+='<td class="contest-medal">'+(medals[row.rank-1]||row.rank)+'</td>';
       h+='<td style="display:flex;align-items:center;gap:8px;">'+contestLeaderboardAvatar(row,26)+'<span style="font-weight:700;">'+row.name+'</span>'+(row.id===myId?' <span style="color:var(--accent);font-size:10px;">(You)</span>':'')+'</td>';
       h+='<td>'+row.branch+'</td>';
-      var showAmt=rkState.metric!=='Brokerage'||row.rank<=3||row.id===myId;
+      var showAmt=isAdm||rkState.metric!=='Brokerage'||row.rank<=3||row.id===myId;
       h+='<td style="font-weight:700;color:var(--accent);">'+(showAmt?fmt(row.score):'<span style="color:var(--muted);font-weight:400;">&#8212;</span>')+'</td>';
       h+='</tr>';
     });
